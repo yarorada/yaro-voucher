@@ -20,7 +20,7 @@ const CreateVoucher = () => {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              Zpět
             </Button>
             <div className="flex items-center gap-4">
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
@@ -30,13 +30,13 @@ const CreateVoucher = () => {
                 className="gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                Odhlásit
               </Button>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-foreground">Create New Voucher</h1>
+          <h1 className="text-4xl font-bold text-foreground">Vytvořit nový voucher</h1>
           <p className="text-muted-foreground mt-2">
-            Generate a professional travel voucher for your client
+            Vygenerujte profesionální cestovní voucher pro svého klienta
           </p>
         </header>
 

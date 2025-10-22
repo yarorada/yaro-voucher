@@ -64,12 +64,12 @@ export const VoucherForm = () => {
     e.preventDefault();
     
     if (!clientName.trim()) {
-      toast.error("Please enter client name");
+      toast.error("Prosím zadejte jméno klienta");
       return;
     }
 
     if (services.some(s => !s.name.trim())) {
-      toast.error("Please fill in all service names");
+      toast.error("Prosím vyplňte všechny názvy služeb");
       return;
     }
 
@@ -102,11 +102,11 @@ export const VoucherForm = () => {
 
       if (insertError) throw insertError;
 
-      toast.success("Voucher created successfully!");
+      toast.success("Voucher úspěšně vytvořen!");
       navigate('/vouchers');
     } catch (error) {
       console.error('Error creating voucher:', error);
-      toast.error("Failed to create voucher");
+      toast.error("Nepodařilo se vytvořit voucher");
     } finally {
       setLoading(false);
     }
@@ -115,26 +115,26 @@ export const VoucherForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-6 shadow-[var(--shadow-medium)]">
-        <h2 className="text-2xl font-bold mb-4 text-foreground">Client Information</h2>
+        <h2 className="text-2xl font-bold mb-4 text-foreground">Informace o klientovi</h2>
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="clientName">Main Client Name *</Label>
+            <Label htmlFor="clientName">Jméno hlavního klienta *</Label>
             <Input
               id="clientName"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="Enter client name"
+              placeholder="Zadejte jméno klienta"
               required
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label>Other Travelers (Optional)</Label>
+              <Label>Další cestující (nepovinné)</Label>
               <Button type="button" onClick={addTraveler} size="sm" variant="outline">
                 <Plus className="h-4 w-4 mr-1" />
-                Add Traveler
+                Přidat cestujícího
               </Button>
             </div>
             {otherTravelers.map((traveler, index) => (
@@ -142,7 +142,7 @@ export const VoucherForm = () => {
                 <Input
                   value={traveler}
                   onChange={(e) => updateTraveler(index, e.target.value)}
-                  placeholder="Traveler name"
+                  placeholder="Jméno cestujícího"
                 />
                 <Button
                   type="button"
@@ -157,7 +157,7 @@ export const VoucherForm = () => {
           </div>
 
           <div>
-            <Label htmlFor="expirationDate">Expiration Date (Optional)</Label>
+            <Label htmlFor="expirationDate">Datum expirace (nepovinné)</Label>
             <Input
               id="expirationDate"
               type="date"
@@ -170,10 +170,10 @@ export const VoucherForm = () => {
 
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Services</h2>
+          <h2 className="text-2xl font-bold text-foreground">Služby</h2>
           <Button type="button" onClick={addService} size="sm" variant="outline">
             <Plus className="h-4 w-4 mr-1" />
-            Add Service
+            Přidat službu
           </Button>
         </div>
 
@@ -181,7 +181,7 @@ export const VoucherForm = () => {
           {services.map((service, index) => (
             <Card key={index} className="p-4 bg-muted">
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-foreground">Service {index + 1}</h3>
+                <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
                 {services.length > 1 && (
                   <Button
                     type="button"
@@ -196,11 +196,11 @@ export const VoucherForm = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Service Name *</Label>
+                  <Label>Název služby *</Label>
                   <Input
                     value={service.name}
                     onChange={(e) => updateService(index, "name", e.target.value)}
-                    placeholder="e.g., Hotel Stay, Golf Tee Time"
+                    placeholder="např. Pobyt v hotelu, Golf Tee Time"
                     required
                   />
                 </div>
@@ -212,7 +212,7 @@ export const VoucherForm = () => {
                   />
                 </div>
                 <div>
-                  <Label>Date</Label>
+                  <Label>Datum</Label>
                   <Input
                     type="date"
                     value={service.date}
@@ -220,7 +220,7 @@ export const VoucherForm = () => {
                   />
                 </div>
                 <div>
-                  <Label>Time</Label>
+                  <Label>Čas</Label>
                   <Input
                     type="time"
                     value={service.time}
@@ -228,11 +228,11 @@ export const VoucherForm = () => {
                   />
                 </div>
                 <div>
-                  <Label>Price</Label>
+                  <Label>Cena</Label>
                   <Input
                     value={service.price}
                     onChange={(e) => updateService(index, "price", e.target.value)}
-                    placeholder="e.g., $500"
+                    placeholder="např. 500 Kč"
                   />
                 </div>
               </div>
@@ -247,7 +247,7 @@ export const VoucherForm = () => {
         className="w-full bg-[var(--gradient-primary)] hover:opacity-90"
         disabled={loading}
       >
-        {loading ? "Creating Voucher..." : "Create Voucher"}
+        {loading ? "Vytvářím voucher..." : "Vytvořit voucher"}
       </Button>
     </form>
   );

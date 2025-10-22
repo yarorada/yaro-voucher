@@ -44,7 +44,7 @@ const VoucherDetail = () => {
       setVoucher(data);
     } catch (error) {
       console.error('Error fetching voucher:', error);
-      toast.error("Failed to load voucher");
+      toast.error("Nepodařilo se načíst voucher");
       navigate('/vouchers');
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ const VoucherDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
-        <p className="text-muted-foreground">Loading voucher...</p>
+        <p className="text-muted-foreground">Načítám voucher...</p>
       </div>
     );
   }
@@ -74,7 +74,7 @@ const VoucherDetail = () => {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Vouchers
+              Zpět na vouchery
             </Button>
             <div className="flex items-center gap-4">
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
@@ -84,7 +84,7 @@ const VoucherDetail = () => {
                 className="gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                Odhlásit
               </Button>
             </div>
           </div>

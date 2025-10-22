@@ -40,7 +40,7 @@ const VouchersList = () => {
       setVouchers(data || []);
     } catch (error) {
       console.error('Error fetching vouchers:', error);
-      toast.error("Failed to load vouchers");
+      toast.error("Nepodařilo se načíst vouchery");
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ const VouchersList = () => {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Home
+              Domů
             </Button>
             <div className="flex items-center gap-4">
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
@@ -75,16 +75,16 @@ const VouchersList = () => {
                 className="gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                Odhlásit
               </Button>
             </div>
           </div>
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">Vouchers</h1>
+              <h1 className="text-4xl font-bold text-foreground">Vouchery</h1>
               <p className="text-muted-foreground mt-2">
-                Manage and view all travel vouchers
+                Správa a prohlížení všech cestovních voucherů
               </p>
             </div>
             <Button
@@ -92,35 +92,35 @@ const VouchersList = () => {
               className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2"
             >
               <Plus className="h-4 w-4" />
-              Create New Voucher
+              Vytvořit nový voucher
             </Button>
           </div>
         </header>
 
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading vouchers...</p>
+            <p className="text-muted-foreground">Načítám vouchery...</p>
           </div>
         ) : vouchers.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">No Vouchers Yet</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Zatím žádné vouchery</h2>
             <p className="text-muted-foreground mb-6">
-              Create your first travel voucher to get started
+              Vytvořte svůj první cestovní voucher
             </p>
             <Button
               onClick={() => navigate("/create")}
               className="bg-[var(--gradient-primary)] hover:opacity-90"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create First Voucher
+              Vytvořit první voucher
             </Button>
           </Card>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-muted-foreground">
-                Total Vouchers: <span className="font-semibold text-foreground">{vouchers.length}</span>
+                Celkem voucherů: <span className="font-semibold text-foreground">{vouchers.length}</span>
               </p>
             </div>
 
@@ -142,21 +142,21 @@ const VouchersList = () => {
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span>
-                        <span className="font-semibold text-foreground">Services:</span>{" "}
+                        <span className="font-semibold text-foreground">Služby:</span>{" "}
                         {voucher.services.length}
                       </span>
                       <span>
-                        <span className="font-semibold text-foreground">Issue Date:</span>{" "}
+                        <span className="font-semibold text-foreground">Datum vydání:</span>{" "}
                         {formatDate(voucher.issue_date)}
                       </span>
                       <span>
-                        <span className="font-semibold text-foreground">Created:</span>{" "}
+                        <span className="font-semibold text-foreground">Vytvořeno:</span>{" "}
                         {formatDate(voucher.created_at)}
                       </span>
                     </div>
                   </div>
                   <Button variant="outline">
-                    View Details
+                    Zobrazit detail
                   </Button>
                 </div>
               </Card>

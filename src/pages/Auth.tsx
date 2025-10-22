@@ -10,8 +10,8 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { z } from "zod";
 
 const authSchema = z.object({
-  email: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must be less than 100 characters"),
+  email: z.string().email("Neplatná emailová adresa").max(255, "Email musí mít méně než 255 znaků"),
+  password: z.string().min(6, "Heslo musí mít alespoň 6 znaků").max(100, "Heslo musí mít méně než 100 znaků"),
 });
 
 const Auth = () => {
@@ -47,7 +47,7 @@ const Auth = () => {
     const validation = authSchema.safeParse({ email, password });
     if (!validation.success) {
       toast({
-        title: "Validation Error",
+        title: "Chyba validace",
         description: validation.error.errors[0].message,
         variant: "destructive",
       });
@@ -66,13 +66,13 @@ const Auth = () => {
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             toast({
-              title: "Login Failed",
-              description: "Invalid email or password. Please try again.",
+              title: "Přihlášení selhalo",
+              description: "Neplatný email nebo heslo. Zkuste to prosím znovu.",
               variant: "destructive",
             });
           } else {
             toast({
-              title: "Login Failed",
+              title: "Přihlášení selhalo",
               description: error.message,
               variant: "destructive",
             });
@@ -90,29 +90,29 @@ const Auth = () => {
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
-              title: "Signup Failed",
-              description: "This email is already registered. Please login instead.",
+              title: "Registrace selhala",
+              description: "Tento email je již registrován. Místo toho se přihlaste.",
               variant: "destructive",
             });
           } else {
             toast({
-              title: "Signup Failed",
+              title: "Registrace selhala",
               description: error.message,
               variant: "destructive",
             });
           }
         } else {
           toast({
-            title: "Account Created",
-            description: "Your account has been created successfully. You can now login.",
+            title: "Účet vytvořen",
+            description: "Váš účet byl úspěšně vytvořen. Nyní se můžete přihlásit.",
           });
           setIsLogin(true);
         }
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Chyba",
+        description: "Nastala neočekávaná chyba. Zkuste to prosím znovu.",
         variant: "destructive",
       });
     } finally {
@@ -128,12 +128,12 @@ const Auth = () => {
             <img src={yaroLogo} alt="YARO Travel" className="h-16" />
           </div>
           <CardTitle className="text-2xl text-center">
-            {isLogin ? "Welcome Back" : "Create Account"}
+            {isLogin ? "Vítejte zpět" : "Vytvořit účet"}
           </CardTitle>
           <CardDescription className="text-center">
             {isLogin
-              ? "Sign in to access your voucher management system"
-              : "Create an account to start managing vouchers"}
+              ? "Přihlaste se pro přístup k systému správy voucherů"
+              : "Vytvořte si účet a začněte spravovat vouchery"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -143,7 +143,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="vas@email.cz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -151,7 +151,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Heslo</Label>
               <Input
                 id="password"
                 type="password"
@@ -163,7 +163,7 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Processing..." : isLogin ? "Sign In" : "Sign Up"}
+              {loading ? "Zpracovávám..." : isLogin ? "Přihlásit se" : "Registrovat"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
@@ -174,8 +174,8 @@ const Auth = () => {
               disabled={loading}
             >
               {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+                ? "Nemáte účet? Zaregistrujte se"
+                : "Již máte účet? Přihlaste se"}
             </button>
           </div>
         </CardContent>

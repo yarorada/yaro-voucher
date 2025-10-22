@@ -21,16 +21,16 @@ const Index = () => {
               className="gap-2"
             >
               <LogOut className="h-4 w-4" />
-              Sign Out
+              Odhlásit
             </Button>
           </div>
           <img src={yaroLogo} alt="YARO Travel" className="h-20 mx-auto mb-6" />
           <h1 className="text-5xl font-bold text-foreground mb-4">
-            Travel Voucher Generator
+            Generátor cestovních voucherů
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Create professional PDF travel vouchers for your clients with automatic tracking
-            and secure storage
+            Vytvářejte profesionální PDF cestovní vouchery pro své klienty s automatickým sledováním
+            a bezpečným uložením
           </p>
         </header>
 
@@ -46,11 +46,11 @@ const Index = () => {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Create New Voucher
+                  Vytvořit nový voucher
                 </h2>
                 <p className="text-muted-foreground">
-                  Generate a new travel voucher with client details, services, and automatic
-                  voucher numbering
+                  Vygenerujte nový cestovní voucher s údaji klienta, službami a automatickým
+                  číslováním voucherů
                 </p>
               </div>
             </div>
@@ -98,16 +98,16 @@ const Index = () => {
         {/* Features Section */}
         <section className="mb-12">
           <h2 className="text-3xl font-bold text-foreground text-center mb-8">
-            Features
+            Funkce
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="p-6 text-center shadow-[var(--shadow-medium)]">
               <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">Auto-Generated Codes</h3>
+              <h3 className="font-bold text-foreground mb-2">Automaticky generované kódy</h3>
               <p className="text-sm text-muted-foreground">
-                Unique voucher codes (YARO-0001, YARO-0002...) automatically generated and tracked
+                Unikátní kódy voucherů (YARO-0001, YARO-0002...) automaticky generované a sledované
               </p>
             </Card>
 
@@ -115,9 +115,9 @@ const Index = () => {
               <div className="inline-flex p-3 rounded-full bg-accent/10 mb-4">
                 <Plane className="h-6 w-6 text-accent-foreground" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">Professional Design</h3>
+              <h3 className="font-bold text-foreground mb-2">Profesionální design</h3>
               <p className="text-sm text-muted-foreground">
-                Clean, modern layout perfect for printing or emailing to clients
+                Čistý, moderní vzhled ideální pro tisk nebo odeslání emailem klientům
               </p>
             </Card>
 
@@ -125,9 +125,9 @@ const Index = () => {
               <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
                 <List className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">Secure Storage</h3>
+              <h3 className="font-bold text-foreground mb-2">Bezpečné úložiště</h3>
               <p className="text-sm text-muted-foreground">
-                All vouchers stored securely with full history and easy retrieval
+                Všechny vouchery bezpečně uložené s kompletní historií a snadným získáním
               </p>
             </Card>
           </div>
@@ -141,7 +141,7 @@ const Index = () => {
             className="bg-[var(--gradient-primary)] hover:opacity-90 text-lg px-8 py-6"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Create Your First Voucher
+            Vytvořte svůj první voucher
           </Button>
         </div>
       </div>
