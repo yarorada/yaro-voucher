@@ -194,10 +194,12 @@ const Suppliers = () => {
                 Správa dodavatelů služeb
               </p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) handleDialogClose();
+            }}>
               <DialogTrigger asChild>
                 <Button
-                  onClick={() => handleDialogClose()}
                   className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2"
                 >
                   <Plus className="h-4 w-4" />
