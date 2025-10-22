@@ -201,7 +201,7 @@ const Suppliers = () => {
               }}>
                 <DialogTrigger asChild>
                   <Button
-                    className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2 shrink-0"
+                    className="bg-[var(--gradient-primary)] text-primary-foreground hover:opacity-90 gap-2 shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                     Přidat dodavatele
