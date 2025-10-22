@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, List, Plane, LogOut } from "lucide-react";
+import { FileText, Plus, List, Plane, LogOut, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +35,7 @@ const Index = () => {
         </header>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
           <Card 
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/create")}
@@ -66,10 +66,29 @@ const Index = () => {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  View All Vouchers
+                  Všechny vouchery
                 </h2>
                 <p className="text-muted-foreground">
-                  Browse, search, and manage all previously created travel vouchers
+                  Procházet a spravovat vytvořené vouchery
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
+            onClick={() => navigate("/suppliers")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <Building2 className="h-8 w-8 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Dodavatelé
+                </h2>
+                <p className="text-muted-foreground">
+                  Spravovat dodavatele služeb
                 </p>
               </div>
             </div>

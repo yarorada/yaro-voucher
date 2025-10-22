@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
 import VouchersList from "./pages/VouchersList";
 import VoucherDetail from "./pages/VoucherDetail";
+import Suppliers from "./pages/Suppliers";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -50,6 +51,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <VoucherDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              <ProtectedRoute>
+                <Suppliers />
               </ProtectedRoute>
             }
           />

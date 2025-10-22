@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { SupplierCombobox } from "@/components/SupplierCombobox";
 
 interface Service {
   name: string;
@@ -204,11 +205,10 @@ export const VoucherForm = () => {
                   />
                 </div>
                 <div>
-                  <Label>Provider</Label>
-                  <Input
+                  <Label>Dodavatel</Label>
+                  <SupplierCombobox
                     value={service.provider}
-                    onChange={(e) => updateService(index, "provider", e.target.value)}
-                    placeholder="Provider name"
+                    onChange={(value) => updateService(index, "provider", value)}
                   />
                 </div>
                 <div>
