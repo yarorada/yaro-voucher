@@ -1,17 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, List, Plane } from "lucide-react";
+import { FileText, Plus, List, Plane, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-12 px-4">
         {/* Hero Section */}
         <header className="text-center mb-16">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              onClick={signOut}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
           <img src={yaroLogo} alt="YARO Travel" className="h-20 mx-auto mb-6" />
           <h1 className="text-5xl font-bold text-foreground mb-4">
             Travel Voucher Generator

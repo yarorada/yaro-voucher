@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, ArrowLeft } from "lucide-react";
+import { Plus, FileText, ArrowLeft, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import yaroLogo from "@/assets/yaro-logo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Voucher {
   id: string;
@@ -20,6 +21,7 @@ interface Voucher {
 
 const VouchersList = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,17 @@ const VouchersList = () => {
               <ArrowLeft className="h-4 w-4" />
               Home
             </Button>
-            <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+            <div className="flex items-center gap-4">
+              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+              <Button
+                variant="outline"
+                onClick={signOut}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
 import yaroLogo from "@/assets/yaro-logo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Voucher {
   id: string;
@@ -21,6 +22,7 @@ interface Voucher {
 const VoucherDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +76,17 @@ const VoucherDetail = () => {
               <ArrowLeft className="h-4 w-4" />
               Back to Vouchers
             </Button>
-            <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+            <div className="flex items-center gap-4">
+              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+              <Button
+                variant="outline"
+                onClick={signOut}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </header>
 

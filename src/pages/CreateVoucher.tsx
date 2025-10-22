@@ -1,11 +1,13 @@
 import { VoucherForm } from "@/components/VoucherForm";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const CreateVoucher = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
@@ -20,7 +22,17 @@ const CreateVoucher = () => {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+            <div className="flex items-center gap-4">
+              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+              <Button
+                variant="outline"
+                onClick={signOut}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
           <h1 className="text-4xl font-bold text-foreground">Create New Voucher</h1>
           <p className="text-muted-foreground mt-2">
