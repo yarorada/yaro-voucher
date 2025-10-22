@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -50,8 +86,48 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_travelers: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_main_client: boolean
+          voucher_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_main_client?: boolean
+          voucher_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_main_client?: boolean
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_travelers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_travelers_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vouchers: {
         Row: {
+          client_id: string | null
           client_name: string
           created_at: string
           expiration_date: string | null
@@ -64,6 +140,7 @@ export type Database = {
           voucher_number: number
         }
         Insert: {
+          client_id?: string | null
           client_name: string
           created_at?: string
           expiration_date?: string | null
@@ -76,6 +153,7 @@ export type Database = {
           voucher_number: number
         }
         Update: {
+          client_id?: string | null
           client_name?: string
           created_at?: string
           expiration_date?: string | null
@@ -87,7 +165,15 @@ export type Database = {
           voucher_code?: string
           voucher_number?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

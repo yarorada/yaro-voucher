@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, List, Plane, LogOut, Building2 } from "lucide-react";
+import { FileText, Plus, List, Plane, LogOut, Building2, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +35,7 @@ const Index = () => {
         </header>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card 
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/create")}
@@ -89,6 +89,25 @@ const Index = () => {
                 </h2>
                 <p className="text-muted-foreground">
                   Spravovat dodavatele služeb
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
+            onClick={() => navigate("/clients")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                <Users className="h-8 w-8 text-accent-foreground" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Klienti
+                </h2>
+                <p className="text-muted-foreground">
+                  Spravovat klienty a cestující
                 </p>
               </div>
             </div>
