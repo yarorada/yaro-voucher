@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 interface Service {
   name: string;
@@ -20,25 +21,25 @@ interface Service {
 export const VoucherForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [clientName, setClientName] = useState("");
-  const [otherTravelers, setOtherTravelers] = useState<string[]>([""]);
+  const [clientId, setClientId] = useState("");
+  const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>([]);
   const [expirationDate, setExpirationDate] = useState("");
   const [services, setServices] = useState<Service[]>([
     { name: "", date: "", time: "", provider: "", price: "" },
   ]);
 
   const addTraveler = () => {
-    setOtherTravelers([...otherTravelers, ""]);
+    setOtherTravelerIds([...otherTravelerIds, ""]);
   };
 
   const removeTraveler = (index: number) => {
-    setOtherTravelers(otherTravelers.filter((_, i) => i !== index));
+    setOtherTravelerIds(otherTravelerIds.filter((_, i) => i !== index));
   };
 
   const updateTraveler = (index: number, value: string) => {
-    const updated = [...otherTravelers];
+    const updated = [...otherTravelerIds];
     updated[index] = value;
-    setOtherTravelers(updated);
+    setOtherTravelerIds(updated);
   };
 
   const addService = () => {
@@ -63,8 +64,8 @@ export const VoucherForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!clientName.trim()) {
-      toast.error("Prosím zadejte jméno klienta");
+    if (!clientId) {
+      toast.error("Prosím vyberte klienta");
       return;
     }
 
@@ -85,22 +86,40 @@ export const VoucherForm = () => {
       // Get the voucher number from the code
       const voucherNumber = parseInt(codeData.split('-')[1]);
 
-      // Filter out empty travelers
-      const travelers = otherTravelers.filter(t => t.trim() !== "");
-
       // Insert voucher
-      const { error: insertError } = await supabase
+      const { data: voucherData, error: insertError } = await supabase
         .from('vouchers')
         .insert({
           voucher_code: codeData,
           voucher_number: voucherNumber,
-          client_name: clientName.trim(),
-          other_travelers: travelers.length > 0 ? travelers : null,
+          client_id: clientId,
+          client_name: "", // Keep for backwards compatibility, but will be derived from client_id
           services: services as any,
           expiration_date: expirationDate || null,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Insert main client relation
+      await supabase.from('voucher_travelers').insert({
+        voucher_id: voucherData.id,
+        client_id: clientId,
+        is_main_client: true,
+      });
+
+      // Insert other travelers
+      const filteredTravelers = otherTravelerIds.filter(id => id !== "");
+      if (filteredTravelers.length > 0) {
+        await supabase.from('voucher_travelers').insert(
+          filteredTravelers.map(id => ({
+            voucher_id: voucherData.id,
+            client_id: id,
+            is_main_client: false,
+          }))
+        );
+      }
 
       toast.success("Voucher úspěšně vytvořen!");
       navigate('/vouchers');
@@ -119,13 +138,10 @@ export const VoucherForm = () => {
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="clientName">Jméno hlavního klienta *</Label>
-            <Input
-              id="clientName"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Zadejte jméno klienta"
-              required
+            <Label htmlFor="clientId">Hlavní klient *</Label>
+            <ClientCombobox
+              value={clientId}
+              onChange={setClientId}
             />
           </div>
 
@@ -137,12 +153,11 @@ export const VoucherForm = () => {
                 Přidat cestujícího
               </Button>
             </div>
-            {otherTravelers.map((traveler, index) => (
+            {otherTravelerIds.map((travelerId, index) => (
               <div key={index} className="flex gap-2 mb-2">
-                <Input
-                  value={traveler}
-                  onChange={(e) => updateTraveler(index, e.target.value)}
-                  placeholder="Jméno cestujícího"
+                <ClientCombobox
+                  value={travelerId}
+                  onChange={(value) => updateTraveler(index, value)}
                 />
                 <Button
                   type="button"

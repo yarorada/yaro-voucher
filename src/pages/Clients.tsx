@@ -191,15 +191,15 @@ const Clients = () => {
                   Správa klientů a cestujících
                 </p>
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) handleDialogClose();
-              }}>
+              <Dialog
+                open={isDialogOpen}
+                onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) handleDialogClose();
+                }}
+              >
                 <DialogTrigger asChild>
-                  <Button
-                    variant="default"
-                    className="gap-2 shrink-0"
-                  >
+                  <Button variant="default" className="gap-2 shrink-0">
                     <Plus className="h-4 w-4" />
                     Přidat klienta
                   </Button>
@@ -313,9 +313,7 @@ const Clients = () => {
             <h2 className="text-2xl font-bold text-foreground mb-2">
               Zatím žádní klienti
             </h2>
-            <p className="text-muted-foreground mb-6">
-              Přidejte prvního klienta
-            </p>
+            <p className="text-muted-foreground mb-6">Přidejte prvního klienta</p>
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -348,33 +346,25 @@ const Clients = () => {
                 <div className="space-y-2 text-sm text-muted-foreground">
                   {client.email && (
                     <p>
-                      <span className="font-semibold text-foreground">
-                        Email:
-                      </span>{" "}
+                      <span className="font-semibold text-foreground">Email:</span>{" "}
                       {client.email}
                     </p>
                   )}
                   {client.phone && (
                     <p>
-                      <span className="font-semibold text-foreground">
-                        Telefon:
-                      </span>{" "}
+                      <span className="font-semibold text-foreground">Telefon:</span>{" "}
                       {client.phone}
                     </p>
                   )}
                   {client.address && (
                     <p>
-                      <span className="font-semibold text-foreground">
-                        Adresa:
-                      </span>{" "}
+                      <span className="font-semibold text-foreground">Adresa:</span>{" "}
                       {client.address}
                     </p>
                   )}
                   {client.notes && (
                     <p>
-                      <span className="font-semibold text-foreground">
-                        Poznámky:
-                      </span>{" "}
+                      <span className="font-semibold text-foreground">Poznámky:</span>{" "}
                       {client.notes}
                     </p>
                   )}
