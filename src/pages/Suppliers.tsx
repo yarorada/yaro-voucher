@@ -187,34 +187,35 @@ const Suppliers = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground">Dodavatelé</h1>
-              <p className="text-muted-foreground mt-2">
-                Správa dodavatelů služeb
-              </p>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) handleDialogClose();
-            }}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Přidat dodavatele
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingSupplier ? "Upravit dodavatele" : "Nový dodavatel"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Zadejte informace o dodavateli
-                  </DialogDescription>
-                </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground">Dodavatelé</h1>
+                <p className="text-muted-foreground mt-2">
+                  Správa dodavatelů služeb
+                </p>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) handleDialogClose();
+              }}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2 shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Přidat dodavatele
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSupplier ? "Upravit dodavatele" : "Nový dodavatel"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Zadejte informace o dodavateli
+                    </DialogDescription>
+                  </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">
@@ -298,7 +299,8 @@ const Suppliers = () => {
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
         </header>
 
