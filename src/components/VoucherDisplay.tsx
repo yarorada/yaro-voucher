@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Mail } from "lucide-react";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 interface Service {
   name: string;

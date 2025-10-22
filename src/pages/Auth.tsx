@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { z } from "zod";
 
 const authSchema = z.object({

@@ -2,7 +2,7 @@ import { VoucherForm } from "@/components/VoucherForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
 
 const CreateVoucher = () => {

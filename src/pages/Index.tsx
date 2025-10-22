@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileText, Plus, List, Plane, LogOut, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
