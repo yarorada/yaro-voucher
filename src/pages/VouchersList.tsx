@@ -6,7 +6,7 @@ import { Plus, FileText, ArrowLeft, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
 
 interface Voucher {
