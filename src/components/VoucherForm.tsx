@@ -18,15 +18,25 @@ interface Service {
   price: string;
 }
 
-export const VoucherForm = () => {
+interface VoucherFormProps {
+  voucherId?: string;
+  initialData?: {
+    clientId: string;
+    otherTravelerIds: string[];
+    expirationDate: string;
+    services: Service[];
+  };
+}
+
+export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [clientId, setClientId] = useState("");
-  const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>([]);
-  const [expirationDate, setExpirationDate] = useState("");
-  const [services, setServices] = useState<Service[]>([
-    { name: "", date: "", time: "", provider: "", price: "" },
-  ]);
+  const [clientId, setClientId] = useState(initialData?.clientId || "");
+  const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
+  const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
+  const [services, setServices] = useState<Service[]>(
+    initialData?.services || [{ name: "", date: "", time: "", provider: "", price: "" }]
+  );
 
   const addTraveler = () => {
     setOtherTravelerIds([...otherTravelerIds, ""]);
@@ -77,55 +87,99 @@ export const VoucherForm = () => {
     setLoading(true);
 
     try {
-      // Generate voucher code
-      const { data: codeData, error: codeError } = await supabase
-        .rpc('generate_voucher_code');
+      if (voucherId) {
+        // UPDATE MODE
+        // Update voucher
+        const { error: updateError } = await supabase
+          .from('vouchers')
+          .update({
+            client_id: clientId,
+            services: services as any,
+            expiration_date: expirationDate || null,
+          })
+          .eq('id', voucherId);
 
-      if (codeError) throw codeError;
+        if (updateError) throw updateError;
 
-      // Get the voucher number from the code
-      const voucherNumber = parseInt(codeData.split('-')[1]);
+        // Delete existing traveler relations
+        await supabase
+          .from('voucher_travelers')
+          .delete()
+          .eq('voucher_id', voucherId);
 
-      // Insert voucher
-      const { data: voucherData, error: insertError } = await supabase
-        .from('vouchers')
-        .insert({
-          voucher_code: codeData,
-          voucher_number: voucherNumber,
+        // Insert main client relation
+        await supabase.from('voucher_travelers').insert({
+          voucher_id: voucherId,
           client_id: clientId,
-          client_name: "", // Keep for backwards compatibility, but will be derived from client_id
-          services: services as any,
-          expiration_date: expirationDate || null,
-        })
-        .select()
-        .single();
+          is_main_client: true,
+        });
 
-      if (insertError) throw insertError;
+        // Insert other travelers
+        const filteredTravelers = otherTravelerIds.filter(id => id !== "");
+        if (filteredTravelers.length > 0) {
+          await supabase.from('voucher_travelers').insert(
+            filteredTravelers.map(id => ({
+              voucher_id: voucherId,
+              client_id: id,
+              is_main_client: false,
+            }))
+          );
+        }
 
-      // Insert main client relation
-      await supabase.from('voucher_travelers').insert({
-        voucher_id: voucherData.id,
-        client_id: clientId,
-        is_main_client: true,
-      });
+        toast.success("Voucher úspěšně aktualizován!");
+        navigate('/vouchers');
+      } else {
+        // CREATE MODE
+        // Generate voucher code
+        const { data: codeData, error: codeError } = await supabase
+          .rpc('generate_voucher_code');
 
-      // Insert other travelers
-      const filteredTravelers = otherTravelerIds.filter(id => id !== "");
-      if (filteredTravelers.length > 0) {
-        await supabase.from('voucher_travelers').insert(
-          filteredTravelers.map(id => ({
-            voucher_id: voucherData.id,
-            client_id: id,
-            is_main_client: false,
-          }))
-        );
+        if (codeError) throw codeError;
+
+        // Get the voucher number from the code
+        const voucherNumber = parseInt(codeData.split('-')[1]);
+
+        // Insert voucher
+        const { data: voucherData, error: insertError } = await supabase
+          .from('vouchers')
+          .insert({
+            voucher_code: codeData,
+            voucher_number: voucherNumber,
+            client_id: clientId,
+            client_name: "", // Keep for backwards compatibility, but will be derived from client_id
+            services: services as any,
+            expiration_date: expirationDate || null,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        // Insert main client relation
+        await supabase.from('voucher_travelers').insert({
+          voucher_id: voucherData.id,
+          client_id: clientId,
+          is_main_client: true,
+        });
+
+        // Insert other travelers
+        const filteredTravelers = otherTravelerIds.filter(id => id !== "");
+        if (filteredTravelers.length > 0) {
+          await supabase.from('voucher_travelers').insert(
+            filteredTravelers.map(id => ({
+              voucher_id: voucherData.id,
+              client_id: id,
+              is_main_client: false,
+            }))
+          );
+        }
+
+        toast.success("Voucher úspěšně vytvořen!");
+        navigate('/vouchers');
       }
-
-      toast.success("Voucher úspěšně vytvořen!");
-      navigate('/vouchers');
     } catch (error) {
-      console.error('Error creating voucher:', error);
-      toast.error("Nepodařilo se vytvořit voucher");
+      console.error('Error saving voucher:', error);
+      toast.error(voucherId ? "Nepodařilo se aktualizovat voucher" : "Nepodařilo se vytvořit voucher");
     } finally {
       setLoading(false);
     }
@@ -262,7 +316,10 @@ export const VoucherForm = () => {
         className="w-full bg-[var(--gradient-primary)] hover:opacity-90"
         disabled={loading}
       >
-        {loading ? "Vytvářím voucher..." : "Vytvořit voucher"}
+        {loading 
+          ? (voucherId ? "Ukládám změny..." : "Vytvářím voucher...") 
+          : (voucherId ? "Uložit změny" : "Vytvořit voucher")
+        }
       </Button>
     </form>
   );

@@ -1,47 +1,54 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { VoucherForm } from "@/components/VoucherForm";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Edit } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { VoucherDisplay } from "@/components/VoucherDisplay";
+import { ArrowLeft, LogOut } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-interface Voucher {
-  id: string;
-  voucher_code: string;
-  voucher_number: number;
-  client_name: string;
-  other_travelers: string[] | null;
-  services: any;
-  issue_date: string;
-  expiration_date: string | null;
-}
-
-const VoucherDetail = () => {
-  const { id } = useParams();
+const EditVoucher = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { signOut } = useAuth();
-  const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialData, setInitialData] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
-      fetchVoucher();
+      fetchVoucherData();
     }
   }, [id]);
 
-  const fetchVoucher = async () => {
+  const fetchVoucherData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch voucher
+      const { data: voucherData, error: voucherError } = await supabase
         .from('vouchers')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
-      setVoucher(data);
+      if (voucherError) throw voucherError;
+
+      // Fetch travelers
+      const { data: travelersData, error: travelersError } = await supabase
+        .from('voucher_travelers')
+        .select('client_id, is_main_client')
+        .eq('voucher_id', id);
+
+      if (travelersError) throw travelersError;
+
+      const mainClient = travelersData.find(t => t.is_main_client);
+      const otherTravelers = travelersData.filter(t => !t.is_main_client);
+
+      setInitialData({
+        clientId: mainClient?.client_id || "",
+        otherTravelerIds: otherTravelers.map(t => t.client_id),
+        expirationDate: voucherData.expiration_date || "",
+        services: voucherData.services || [],
+      });
     } catch (error) {
       console.error('Error fetching voucher:', error);
       toast.error("Nepodařilo se načíst voucher");
@@ -59,14 +66,14 @@ const VoucherDetail = () => {
     );
   }
 
-  if (!voucher) {
+  if (!initialData) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
-        <header className="mb-8 print:hidden">
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="outline"
@@ -74,17 +81,9 @@ const VoucherDetail = () => {
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Zpět na vouchery
+              Zpět
             </Button>
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/edit/${id}`)}
-                className="gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Upravit
-              </Button>
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
               <Button
                 variant="outline"
@@ -96,19 +95,16 @@ const VoucherDetail = () => {
               </Button>
             </div>
           </div>
+          <h1 className="text-4xl font-bold text-foreground">Upravit voucher</h1>
+          <p className="text-muted-foreground mt-2">
+            Upravte informace o voucheru
+          </p>
         </header>
 
-        <VoucherDisplay
-          voucherCode={voucher.voucher_code}
-          clientName={voucher.client_name}
-          otherTravelers={voucher.other_travelers || undefined}
-          services={voucher.services}
-          issueDate={voucher.issue_date}
-          expirationDate={voucher.expiration_date || undefined}
-        />
+        <VoucherForm voucherId={id} initialData={initialData} />
       </div>
     </div>
   );
 };
 
-export default VoucherDetail;
+export default EditVoucher;

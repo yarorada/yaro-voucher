@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, ArrowLeft, LogOut } from "lucide-react";
+import { Plus, FileText, ArrowLeft, LogOut, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -127,11 +127,10 @@ const VouchersList = () => {
             {vouchers.map((voucher) => (
               <Card
                 key={voucher.id}
-                className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer"
-                onClick={() => navigate(`/voucher/${voucher.id}`)}
+                className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1">
+                  <div className="flex-1 cursor-pointer" onClick={() => navigate(`/voucher/${voucher.id}`)}>
                     <div className="flex items-center gap-3 mb-2">
                       <Badge variant="outline" className="text-primary border-primary font-mono">
                         {voucher.voucher_code}
@@ -155,9 +154,24 @@ const VouchersList = () => {
                       </span>
                     </div>
                   </div>
-                  <Button variant="outline">
-                    Zobrazit detail
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/edit/${voucher.id}`);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Upravit
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/voucher/${voucher.id}`)}
+                    >
+                      Zobrazit detail
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
+import EditVoucher from "./pages/EditVoucher";
 import VouchersList from "./pages/VouchersList";
 import VoucherDetail from "./pages/VoucherDetail";
 import Suppliers from "./pages/Suppliers";
@@ -36,6 +37,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreateVoucher />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit/:id"
+            element={
+              <ProtectedRoute>
+                <EditVoucher />
               </ProtectedRoute>
             }
           />
