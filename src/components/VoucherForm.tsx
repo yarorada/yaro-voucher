@@ -3,12 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Service {
   name: string;
@@ -37,6 +46,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [services, setServices] = useState<Service[]>(
     initialData?.services || [{ name: "", date: "", time: "", provider: "", price: "" }]
   );
+  const [bulkImportText, setBulkImportText] = useState("");
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const addTraveler = () => {
     setOtherTravelerIds([...otherTravelerIds, ""]);
@@ -50,6 +61,70 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     const updated = [...otherTravelerIds];
     updated[index] = value;
     setOtherTravelerIds(updated);
+  };
+
+  const handleBulkImport = async () => {
+    if (!bulkImportText.trim()) {
+      toast.error("Prosím zadejte jména");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const lines = bulkImportText.split('\n').filter(line => line.trim());
+      const newTravelerIds: string[] = [];
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        const parts = trimmedLine.split(/\s+/);
+        if (parts.length < 2) {
+          toast.error(`Neplatný formát: "${trimmedLine}". Použijte formát "Jméno Příjmení"`);
+          continue;
+        }
+
+        const firstName = parts[0];
+        const lastName = parts.slice(1).join(' ');
+
+        // Check if client exists
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('first_name', firstName)
+          .eq('last_name', lastName)
+          .maybeSingle();
+
+        if (existingClient) {
+          newTravelerIds.push(existingClient.id);
+        } else {
+          // Create new client
+          const { data: newClient, error } = await supabase
+            .from('clients')
+            .insert({
+              first_name: firstName,
+              last_name: lastName,
+            })
+            .select('id')
+            .single();
+
+          if (error) throw error;
+          if (newClient) {
+            newTravelerIds.push(newClient.id);
+          }
+        }
+      }
+
+      setOtherTravelerIds([...otherTravelerIds, ...newTravelerIds]);
+      setBulkImportText("");
+      setBulkImportOpen(false);
+      toast.success(`Přidáno ${newTravelerIds.length} cestujících`);
+    } catch (error) {
+      console.error('Error bulk importing:', error);
+      toast.error("Nepodařilo se importovat cestující");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addService = () => {
@@ -202,10 +277,51 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Další cestující (nepovinné)</Label>
-              <Button type="button" onClick={addTraveler} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-1" />
-                Přidat cestujícího
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
+                  <DialogTrigger asChild>
+                    <Button type="button" size="sm" variant="outline">
+                      <Users className="h-4 w-4 mr-1" />
+                      Hromadný import
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Hromadný import cestujících</DialogTitle>
+                      <DialogDescription>
+                        Zadejte jména a příjmení, každé na nový řádek ve formátu "Jméno Příjmení"
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                      placeholder="Jan Novák&#10;Marie Svobodová&#10;Petr Dvořák"
+                      value={bulkImportText}
+                      onChange={(e) => setBulkImportText(e.target.value)}
+                      rows={10}
+                      className="font-mono"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setBulkImportOpen(false)}
+                      >
+                        Zrušit
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleBulkImport}
+                        disabled={loading}
+                      >
+                        Importovat
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button type="button" onClick={addTraveler} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Přidat cestujícího
+                </Button>
+              </div>
             </div>
             {otherTravelerIds.map((travelerId, index) => (
               <div key={index} className="flex gap-2 mb-2">
