@@ -677,18 +677,49 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         <FlightSearch onSelectFlight={addFlight} />
 
         {flights.length > 0 && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-3">
             <h3 className="font-semibold text-foreground">Vybrané lety:</h3>
             {flights.map((flight, index) => (
-              <Card key={index} className="p-3 bg-muted">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold text-sm">
-                      {flight.airline} - {flight.flightNumber}
+              <Card key={index} className="p-4 bg-muted border-l-4 border-l-primary">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex gap-3 flex-1">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <div>Departure: {flight.departure.iata} {flight.departure.airport} – {flight.departure.time}</div>
-                      <div>Arrival: {flight.arrival.iata} {flight.arrival.airport} – {flight.arrival.time}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-foreground">Let {index + 1}</span>
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                          {flight.flightNumber}
+                        </span>
+                      </div>
+                      <div className="font-semibold text-sm text-foreground mb-2">
+                        {flight.airline}
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">Odlet:</span>
+                          <span className="text-muted-foreground">
+                            {flight.departure.iata} {flight.departure.airport && `– ${flight.departure.airport}`}
+                          </span>
+                          <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded">
+                            {flight.departure.time}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">Přílet:</span>
+                          <span className="text-muted-foreground">
+                            {flight.arrival.iata} {flight.arrival.airport && `– ${flight.arrival.airport}`}
+                          </span>
+                          <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded">
+                            {flight.arrival.time}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <Button
