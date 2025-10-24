@@ -94,6 +94,19 @@ const Clients = () => {
         if (error) throw error;
         toast.success("Klient byl aktualizován");
       } else {
+        // Check for duplicate
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("first_name", formData.first_name.trim())
+          .eq("last_name", formData.last_name.trim())
+          .maybeSingle();
+
+        if (existingClient) {
+          toast.error("Klient s tímto jménem již existuje");
+          return;
+        }
+
         const { error } = await supabase.from("clients").insert({
           first_name: formData.first_name.trim(),
           last_name: formData.last_name.trim(),
@@ -176,6 +189,7 @@ const Clients = () => {
 
     let successCount = 0;
     let errorCount = 0;
+    let duplicateCount = 0;
 
     for (const line of lines) {
       const parts = line.split(/\s+/);
@@ -189,6 +203,19 @@ const Clients = () => {
       const email = parts.length >= 3 ? parts[2] : null;
 
       try {
+        // Check for duplicate
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("first_name", first_name.trim())
+          .eq("last_name", last_name.trim())
+          .maybeSingle();
+
+        if (existingClient) {
+          duplicateCount++;
+          continue;
+        }
+
         const { error } = await supabase.from("clients").insert({
           first_name: first_name.trim(),
           last_name: last_name.trim(),
@@ -206,6 +233,9 @@ const Clients = () => {
     if (successCount > 0) {
       toast.success(`Přidáno ${successCount} klientů`);
       fetchClients();
+    }
+    if (duplicateCount > 0) {
+      toast.warning(`${duplicateCount} duplicitních klientů přeskočeno`);
     }
     if (errorCount > 0) {
       toast.error(`${errorCount} klientů se nepodařilo přidat`);
