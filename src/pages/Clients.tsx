@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User } from "lucide-react";
+import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -36,6 +36,8 @@ const Clients = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [bulkImportText, setBulkImportText] = useState("");
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -161,6 +163,56 @@ const Clients = () => {
     });
   };
 
+  const handleBulkImport = async () => {
+    const lines = bulkImportText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length === 0) {
+      toast.error("Vložte alespoň jednoho klienta");
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const line of lines) {
+      const parts = line.split(/\s+/);
+      if (parts.length < 2) {
+        errorCount++;
+        continue;
+      }
+
+      const first_name = parts[0];
+      const last_name = parts.slice(1).join(" ");
+
+      try {
+        const { error } = await supabase.from("clients").insert({
+          first_name: first_name.trim(),
+          last_name: last_name.trim(),
+        });
+
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error("Error creating client:", error);
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Přidáno ${successCount} klientů`);
+      fetchClients();
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} klientů se nepodařilo přidat`);
+    }
+
+    setBulkImportText("");
+    setBulkImportOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
@@ -191,19 +243,59 @@ const Clients = () => {
                   Správa klientů a cestujících
                 </p>
               </div>
-              <Dialog
-                open={isDialogOpen}
-                onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) handleDialogClose();
-                }}
-              >
-                <DialogTrigger asChild>
-                  <Button variant="default" className="gap-2 shrink-0">
-                    <Plus className="h-4 w-4" />
-                    Přidat klienta
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="gap-2 shrink-0">
+                      <Users className="h-4 w-4" />
+                      Hromadný import
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl bg-background">
+                    <DialogHeader>
+                      <DialogTitle>Hromadný import klientů</DialogTitle>
+                      <DialogDescription>
+                        Vložte jména a příjmení klientů, každý na nový řádek ve
+                        formátu "Jméno Příjmení"
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <Textarea
+                        value={bulkImportText}
+                        onChange={(e) => setBulkImportText(e.target.value)}
+                        placeholder="Jan Novák&#10;Petr Dvořák&#10;Marie Svobodová"
+                        rows={10}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setBulkImportOpen(false);
+                            setBulkImportText("");
+                          }}
+                        >
+                          Zrušit
+                        </Button>
+                        <Button onClick={handleBulkImport}>Importovat</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog
+                  open={isDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) handleDialogClose();
+                  }}
+                >
+                  <DialogTrigger asChild>
+                    <Button variant="default" className="gap-2 shrink-0">
+                      <Plus className="h-4 w-4" />
+                      Přidat klienta
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
                   <DialogHeader>
                     <DialogTitle>
@@ -299,6 +391,7 @@ const Clients = () => {
                   </form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
           </div>
         </header>
