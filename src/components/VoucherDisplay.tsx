@@ -163,19 +163,19 @@ export const VoucherDisplay = ({
             <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
               <div>
-                <p className="font-semibold text-foreground">Address:</p>
-                <p>123 Travel Street</p>
-                <p>Tourism City, TC 12345</p>
+                <p className="font-semibold text-foreground">Adresa:</p>
+                <p>Bratranců Veverkových 680</p>
+                <p>Pardubice, 530 02</p>
               </div>
               <div>
-                <p className="font-semibold text-foreground">Contact:</p>
-                <p>Phone: +1 (555) 123-4567</p>
-                <p>Email: info@yarotravel.com</p>
+                <p className="font-semibold text-foreground">Kontakt:</p>
+                <p>Tel.: +420 602 102 108</p>
+                <p>Email: zajezdy@yarotravel.cz</p>
               </div>
               <div>
-                <p className="font-semibold text-foreground">Website:</p>
-                <p>www.yarotravel.com</p>
-                <p className="mt-2 text-xs">Available 24/7 for your travel needs</p>
+                <p className="font-semibold text-foreground">Web:</p>
+                <p>www.yarotravel.cz</p>
+                <p className="mt-2 text-xs">K dispozici 24/7 pro vaše cestovní potřeby</p>
               </div>
             </div>
           </div>
