@@ -130,7 +130,7 @@ All colors MUST be HSL.
 
 @media print {
   @page {
-    margin: 0.5cm;
+    margin: 1.5cm;
     size: A4;
   }
   
@@ -141,18 +141,5 @@ All colors MUST be HSL.
   
   #voucher-content {
     page-break-inside: avoid;
-    max-height: 100vh;
-  }
-  
-  /* Ensure compact layout */
-  * {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* Restore necessary spacing */
-  #voucher-content * {
-    margin: revert !important;
-    padding: revert !important;
   }
 }
