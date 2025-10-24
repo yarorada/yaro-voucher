@@ -168,6 +168,7 @@ const VoucherDetail = () => {
           supplierPhone={supplier?.phone}
           supplierAddress={supplier?.address}
           supplierNotes={supplier?.notes}
+          voucherId={voucher.id}
         />
       </div>
     </div>

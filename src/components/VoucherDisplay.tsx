@@ -2,6 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Mail } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface Service {
   name: string;
@@ -24,6 +27,7 @@ interface VoucherDisplayProps {
   supplierPhone?: string | null;
   supplierAddress?: string | null;
   supplierNotes?: string | null;
+  voucherId?: string;
 }
 
 export const VoucherDisplay = ({
@@ -39,10 +43,40 @@ export const VoucherDisplay = ({
   supplierPhone,
   supplierAddress,
   supplierNotes,
+  voucherId,
 }: VoucherDisplayProps) => {
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   const handleDownloadPDF = () => {
     window.print();
+  };
+
+  const handleSendEmail = async () => {
+    if (!voucherId) {
+      toast.error("Chyba: ID voucheru nebylo nalezeno");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-voucher-email', {
+        body: { voucherId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(`Email úspěšně odeslán na: ${data.recipients.join(', ')}`);
+      } else {
+        throw new Error(data?.error || 'Unknown error');
+      }
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast.error(`Chyba při odesílání emailu: ${error.message}`);
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -69,7 +103,13 @@ export const VoucherDisplay = ({
         <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
           <Download className="h-5 w-5" />
         </Button>
-        <Button variant="outline" className="flex-1" size="icon">
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          size="icon"
+          onClick={handleSendEmail}
+          disabled={isSendingEmail || !voucherId}
+        >
           <Mail className="h-5 w-5" />
         </Button>
       </div>
