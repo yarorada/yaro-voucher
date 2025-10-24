@@ -89,24 +89,24 @@ export const VoucherDisplay = ({
             </div>
           </div>
           
-          {/* Provider Contact */}
+          {/* Service Provider Contact */}
           {supplierName && (
-            <div className="bg-accent/10 border-l-4 border-accent p-4 rounded">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Dodavatel služeb:</h3>
+            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary">
+              <h3 className="text-sm font-bold text-foreground mb-3">Service Provider:</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 <div>
-                  <p className="font-medium text-foreground mb-1">Název:</p>
+                  <p className="font-semibold text-foreground mb-1">Name:</p>
                   <p className="text-muted-foreground">{supplierName}</p>
                 </div>
                 {supplierAddress && (
                   <div>
-                    <p className="font-medium text-foreground mb-1">Adresa:</p>
+                    <p className="font-semibold text-foreground mb-1">Address:</p>
                     <p className="text-muted-foreground">{supplierAddress}</p>
                   </div>
                 )}
                 {supplierEmail && (
                   <div>
-                    <p className="font-medium text-foreground mb-1">Email:</p>
+                    <p className="font-semibold text-foreground mb-1">Email:</p>
                     <p className="text-muted-foreground">{supplierEmail}</p>
                   </div>
                 )}
