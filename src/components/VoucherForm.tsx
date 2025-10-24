@@ -169,9 +169,39 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       return;
     }
 
-    if (services.some(s => !s.name.trim())) {
-      toast.error("Prosím vyplňte všechny názvy služeb");
-      return;
+    // Validate all service fields are filled
+    for (let i = 0; i < services.length; i++) {
+      const service = services[i];
+      
+      if (!service.name.trim()) {
+        toast.error(`Služba ${i + 1}: Vyplňte název služby`);
+        return;
+      }
+      
+      if (!service.pax.trim()) {
+        toast.error(`Služba ${i + 1}: Vyplňte PAX`);
+        return;
+      }
+      
+      if (!service.qty.trim()) {
+        toast.error(`Služba ${i + 1}: Vyplňte Qtd.`);
+        return;
+      }
+      
+      if (!service.dateFrom) {
+        toast.error(`Služba ${i + 1}: Vyplňte datum od`);
+        return;
+      }
+      
+      if (!service.dateTo) {
+        toast.error(`Služba ${i + 1}: Vyplňte datum do`);
+        return;
+      }
+      
+      if (service.dateFrom > service.dateTo) {
+        toast.error(`Služba ${i + 1}: Datum od musí být před datem do`);
+        return;
+      }
     }
 
     // Calculate expiration date as the latest dateTo from all services
@@ -459,23 +489,27 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   />
                 </div>
                 <div>
-                  <Label>PAX</Label>
+                  <Label>PAX *</Label>
                   <Input
                     value={service.pax}
                     onChange={(e) => updateService(index, "pax", e.target.value)}
                     placeholder="např. 2 ADT"
+                    required
+                    maxLength={50}
                   />
                 </div>
                 <div>
-                  <Label>Qtd.</Label>
+                  <Label>Qtd. *</Label>
                   <Input
                     value={service.qty}
                     onChange={(e) => updateService(index, "qty", e.target.value)}
                     placeholder="např. 1"
+                    required
+                    maxLength={20}
                   />
                 </div>
                 <div>
-                  <Label>Datum od</Label>
+                  <Label>Datum od *</Label>
                   <DateInput
                     value={service.dateFrom}
                     onChange={(date) => updateService(index, "dateFrom", date)}
@@ -483,7 +517,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   />
                 </div>
                 <div>
-                  <Label>Datum do</Label>
+                  <Label>Datum do *</Label>
                   <DateInput
                     value={service.dateTo}
                     onChange={(date) => updateService(index, "dateTo", date)}
