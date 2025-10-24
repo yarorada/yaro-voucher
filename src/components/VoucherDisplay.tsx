@@ -62,13 +62,11 @@ export const VoucherDisplay = ({
   return (
     <div className="space-y-4">
       <div className="flex gap-2 print:hidden">
-        <Button onClick={handleDownloadPDF} className="flex-1">
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
+        <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
+          <Download className="h-5 w-5" />
         </Button>
-        <Button variant="outline" className="flex-1">
-          <Mail className="h-4 w-4 mr-2" />
-          Email Voucher
+        <Button variant="outline" className="flex-1" size="icon">
+          <Mail className="h-5 w-5" />
         </Button>
       </div>
 
