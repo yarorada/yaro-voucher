@@ -131,11 +131,14 @@ export type Database = {
           client_name: string
           created_at: string
           expiration_date: string | null
+          flights: Json | null
           hotel_name: string | null
           id: string
           issue_date: string
           other_travelers: string[] | null
           services: Json
+          supplier_id: string | null
+          tee_times: Json | null
           updated_at: string
           voucher_code: string
           voucher_number: number
@@ -145,11 +148,14 @@ export type Database = {
           client_name: string
           created_at?: string
           expiration_date?: string | null
+          flights?: Json | null
           hotel_name?: string | null
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
           services: Json
+          supplier_id?: string | null
+          tee_times?: Json | null
           updated_at?: string
           voucher_code: string
           voucher_number: number
@@ -159,11 +165,14 @@ export type Database = {
           client_name?: string
           created_at?: string
           expiration_date?: string | null
+          flights?: Json | null
           hotel_name?: string | null
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
           services?: Json
+          supplier_id?: string | null
+          tee_times?: Json | null
           updated_at?: string
           voucher_code?: string
           voucher_number?: number
@@ -174,6 +183,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]

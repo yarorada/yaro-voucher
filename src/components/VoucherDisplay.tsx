@@ -14,11 +14,36 @@ interface Service {
   dateTo: string;
 }
 
+interface TeeTime {
+  date: string;
+  club: string;
+  time: string;
+  golfers: string;
+}
+
+interface Flight {
+  flightNumber: string;
+  airline: string;
+  departure: {
+    airport: string;
+    iata: string;
+    time: string;
+  };
+  arrival: {
+    airport: string;
+    iata: string;
+    time: string;
+  };
+  status: string;
+}
+
 interface VoucherDisplayProps {
   voucherCode: string;
   clientName: string;
   otherTravelers?: string[];
   services: Service[];
+  teeTimes?: TeeTime[];
+  flights?: Flight[];
   issueDate: string;
   expirationDate?: string;
   supplierName?: string;
@@ -35,6 +60,8 @@ export const VoucherDisplay = ({
   clientName,
   otherTravelers,
   services,
+  teeTimes,
+  flights,
   issueDate,
   expirationDate,
   supplierName,
@@ -209,6 +236,47 @@ export const VoucherDisplay = ({
             </table>
           </div>
         </div>
+
+        {/* Tee Time Section */}
+        {teeTimes && teeTimes.length > 0 && (
+          <div className="mb-6 print:mb-3">
+            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-base print:mb-2 print:pl-2">
+              Confirmed Tee Times
+            </h2>
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
+              <ul className="space-y-2 print:space-y-1">
+                {teeTimes.map((teeTime, index) => (
+                  <li key={index} className="text-muted-foreground">
+                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Flight Details Section */}
+        {flights && flights.length > 0 && (
+          <div className="mb-6 print:mb-3">
+            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-base print:mb-2 print:pl-2">
+              Flight Details
+            </h2>
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs space-y-3 print:space-y-2">
+              {flights.map((flight, index) => (
+                <div key={index}>
+                  <div className="mb-1 print:mb-0.5">
+                    <span className="font-semibold text-foreground">
+                      {index === 0 ? 'Arrival:' : 'Departure:'}
+                    </span>{' '}
+                    <span className="text-muted-foreground">
+                      {flight.flightNumber} {flight.airline} – {flight.departure.iata} {formatDate(flight.departure.time)} – {formatDate(flight.arrival.time)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Voucher Details */}
         <div className="mb-6 grid grid-cols-2 gap-4 print:mb-3 print:gap-2">
