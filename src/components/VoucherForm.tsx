@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -18,13 +18,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface Service {
   name: string;
   pax: string;
   qty: string;
-  dateFrom: string;
-  dateTo: string;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
 }
 
 interface VoucherFormProps {
@@ -46,7 +54,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
-    initialData?.services || [{ name: "", pax: "", qty: "", dateFrom: "", dateTo: "" }]
+    initialData?.services?.map(s => ({
+      ...s,
+      dateFrom: s.dateFrom ? new Date(s.dateFrom) : undefined,
+      dateTo: s.dateTo ? new Date(s.dateTo) : undefined,
+    })) || [{ name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined }]
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
@@ -132,7 +144,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const addService = () => {
     setServices([
       ...services,
-      { name: "", pax: "", qty: "", dateFrom: "", dateTo: "" },
+      { name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined },
     ]);
   };
 
@@ -142,9 +154,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     }
   };
 
-  const updateService = (index: number, field: keyof Service, value: string) => {
+  const updateService = (index: number, field: keyof Service, value: string | Date | undefined) => {
     const updated = [...services];
-    updated[index][field] = value;
+    updated[index][field] = value as any;
     setServices(updated);
   };
 
@@ -169,8 +181,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     // Calculate expiration date as the latest dateTo from all services
     const calculatedExpirationDate = services
       .map(s => s.dateTo)
-      .filter(date => date !== "")
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || null;
+      .filter((date): date is Date => date !== undefined)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    
+    const expirationDateString = calculatedExpirationDate 
+      ? format(calculatedExpirationDate, 'yyyy-MM-dd')
+      : null;
 
     setLoading(true);
 
@@ -178,13 +194,21 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       if (voucherId) {
         // UPDATE MODE
         // Update voucher
+        const servicesData = services.map(s => ({
+          name: s.name,
+          pax: s.pax,
+          qty: s.qty,
+          dateFrom: s.dateFrom ? format(s.dateFrom, 'yyyy-MM-dd') : '',
+          dateTo: s.dateTo ? format(s.dateTo, 'yyyy-MM-dd') : '',
+        }));
+
         const { error: updateError } = await supabase
           .from('vouchers')
           .update({
             client_id: clientId,
             hotel_name: hotelName.trim(),
-            services: services as any,
-            expiration_date: calculatedExpirationDate,
+            services: servicesData as any,
+            expiration_date: expirationDateString,
           })
           .eq('id', voucherId);
 
@@ -228,6 +252,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         // Get the voucher number from the code
         const voucherNumber = parseInt(codeData.split('-')[1]);
 
+        // Prepare services data
+        const servicesData = services.map(s => ({
+          name: s.name,
+          pax: s.pax,
+          qty: s.qty,
+          dateFrom: s.dateFrom ? format(s.dateFrom, 'yyyy-MM-dd') : '',
+          dateTo: s.dateTo ? format(s.dateTo, 'yyyy-MM-dd') : '',
+        }));
+
         // Insert voucher
         const { data: voucherData, error: insertError } = await supabase
           .from('vouchers')
@@ -237,8 +270,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             client_id: clientId,
             client_name: "", // Keep for backwards compatibility, but will be derived from client_id
             hotel_name: hotelName.trim(),
-            services: services as any,
-            expiration_date: calculatedExpirationDate,
+            services: servicesData as any,
+            expiration_date: expirationDateString,
           })
           .select()
           .single();
@@ -372,12 +405,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             <Input
               id="expirationDate"
               type="text"
-              value="Automaticky ze služeb (nejzazší datum)"
+              value="Automaticky ze sluzeb (nejzazsi datum)"
               disabled
               className="bg-muted"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Datum expirace bude automaticky nastaveno na nejzazší datum ze všech služeb
+              Datum expirace bude automaticky nastaveno na nejzazsi datum ze vsech sluzeb
             </p>
           </div>
         </div>
@@ -437,19 +470,63 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                 </div>
                 <div>
                   <Label>Datum od</Label>
-                  <Input
-                    type="date"
-                    value={service.dateFrom}
-                    onChange={(e) => updateService(index, "dateFrom", e.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !service.dateFrom && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {service.dateFrom ? (
+                          format(service.dateFrom, "dd.MM.yy")
+                        ) : (
+                          <span>Vybrat datum</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={service.dateFrom}
+                        onSelect={(date) => updateService(index, "dateFrom", date)}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Datum do</Label>
-                  <Input
-                    type="date"
-                    value={service.dateTo}
-                    onChange={(e) => updateService(index, "dateTo", e.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !service.dateTo && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {service.dateTo ? (
+                          format(service.dateTo, "dd.MM.yy")
+                        ) : (
+                          <span>Vybrat datum</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={service.dateTo}
+                        onSelect={(date) => updateService(index, "dateTo", date)}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </Card>
