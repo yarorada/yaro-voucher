@@ -166,6 +166,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       return;
     }
 
+    // Calculate expiration date as the latest dateTo from all services
+    const calculatedExpirationDate = services
+      .map(s => s.dateTo)
+      .filter(date => date !== "")
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || null;
+
     setLoading(true);
 
     try {
@@ -178,7 +184,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             client_id: clientId,
             hotel_name: hotelName.trim(),
             services: services as any,
-            expiration_date: expirationDate || null,
+            expiration_date: calculatedExpirationDate,
           })
           .eq('id', voucherId);
 
@@ -232,7 +238,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             client_name: "", // Keep for backwards compatibility, but will be derived from client_id
             hotel_name: hotelName.trim(),
             services: services as any,
-            expiration_date: expirationDate || null,
+            expiration_date: calculatedExpirationDate,
           })
           .select()
           .single();
@@ -362,13 +368,17 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           </div>
 
           <div>
-            <Label htmlFor="expirationDate">Datum expirace (nepovinné)</Label>
+            <Label htmlFor="expirationDate">Datum expirace</Label>
             <Input
               id="expirationDate"
-              type="date"
-              value={expirationDate}
-              onChange={(e) => setExpirationDate(e.target.value)}
+              type="text"
+              value="Automaticky ze služeb (nejzazší datum)"
+              disabled
+              className="bg-muted"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Datum expirace bude automaticky nastaveno na nejzazší datum ze všech služeb
+            </p>
           </div>
         </div>
       </Card>
