@@ -284,31 +284,32 @@ const VouchersList = () => {
                       </div>
                       <div className="flex gap-2">
                         <Button 
-                          variant="outline" 
+                          variant="outline"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDuplicate(voucher.id);
                           }}
                           disabled={loading}
                         >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Duplikovat
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button 
-                          variant="outline" 
+                          variant="outline"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/edit/${voucher.id}`);
                           }}
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Upravit
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline"
+                          size="icon"
                           onClick={() => navigate(`/voucher/${voucher.id}`)}
                         >
-                          Zobrazit detail
+                          <FileText className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
