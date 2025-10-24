@@ -4,19 +4,11 @@ import { Download, Mail } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 interface Service {
-  pax: string;
-  qty: string;
   name: string;
-  dateFrom: string;
-  dateTo: string;
-}
-
-interface Supplier {
-  name: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  notes?: string;
+  date: string;
+  time: string;
+  provider: string;
+  price: string;
 }
 
 interface VoucherDisplayProps {
@@ -26,7 +18,6 @@ interface VoucherDisplayProps {
   services: Service[];
   issueDate: string;
   expirationDate?: string;
-  supplier?: Supplier;
 }
 
 export const VoucherDisplay = ({
@@ -36,7 +27,6 @@ export const VoucherDisplay = ({
   services,
   issueDate,
   expirationDate,
-  supplier,
 }: VoucherDisplayProps) => {
   
   const handleDownloadPDF = () => {
@@ -50,27 +40,6 @@ export const VoucherDisplay = ({
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const formatServiceDate = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(-2);
-    return `${day}-${month}-${year}`;
-  };
-
-  const formatDateRange = (dateFrom: string, dateTo: string) => {
-    if (!dateFrom && !dateTo) return "TBD";
-    if (!dateTo) return formatServiceDate(dateFrom);
-    if (!dateFrom) return formatServiceDate(dateTo);
-    
-    const from = formatServiceDate(dateFrom);
-    const to = formatServiceDate(dateTo);
-    
-    if (from === to) return from;
-    return `${from} - ${to}`;
   };
 
   return (
@@ -91,68 +60,56 @@ export const VoucherDisplay = ({
         className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none"
       >
         {/* Header */}
-        <div className="border-b-2 border-border pb-4 mb-4">
-          <div className="flex justify-between items-start mb-4">
+        <div className="border-b-4 border-primary pb-6 mb-6">
+          <div className="flex justify-between items-start">
             <div>
-              <img src={yaroLogo} alt="YARO s.r.o." className="h-12 mb-1" />
-              <div className="text-xs text-muted-foreground">
-                <p>Bratranců Veverkových 680, Pardubice, 530 02</p>
-                <p>IČO: 07849290</p>
-                <p>Tel.: +420 602102108, www.yarotravel.cz</p>
-              </div>
+              <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2" />
+              <p className="text-sm text-muted-foreground">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-primary">NR. {voucherCode}</div>
+              <div className="text-3xl font-bold text-primary">{voucherCode}</div>
+              <p className="text-sm text-muted-foreground mt-1">Travel Voucher</p>
             </div>
           </div>
-          <h1 className="text-xl font-bold text-center text-foreground">SERVICE VOUCHER</h1>
         </div>
 
-        {/* Supplier Information */}
-        {supplier && (
-          <div className="mb-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-semibold text-foreground mb-2">For: {supplier.name}</p>
-            {supplier.address && (
-              <p className="text-sm text-muted-foreground">{supplier.address}</p>
-            )}
-            {supplier.phone && (
-              <p className="text-sm text-muted-foreground">Phone No.: {supplier.phone}</p>
-            )}
-            {supplier.notes && (
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{supplier.notes}</p>
-            )}
-            {supplier.email && (
-              <p className="text-sm text-muted-foreground">{supplier.email}</p>
-            )}
-          </div>
-        )}
-
-        {/* Client Names */}
+        {/* Client Information */}
         <div className="mb-6">
-          <h2 className="text-sm font-bold text-foreground mb-2">Client's Names:</h2>
-          <div className="text-sm text-muted-foreground">
-            <p className="mb-1">
-              <span className="font-semibold text-foreground">Main Client:</span> {clientName}
-            </p>
+          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3">
+            Client Information
+          </h2>
+          <div className="bg-muted p-4 rounded-lg">
+            <div className="mb-2">
+              <span className="font-semibold text-foreground">Main Client:</span>{" "}
+              <span className="text-muted-foreground">{clientName}</span>
+            </div>
             {otherTravelers && otherTravelers.length > 0 && (
-              <p>
-                <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
-                {otherTravelers.join(", ")}
-              </p>
+              <div>
+                <span className="font-semibold text-foreground">Other Travelers:</span>
+                <ul className="list-disc list-inside ml-4 text-muted-foreground">
+                  {otherTravelers.map((traveler, index) => (
+                    <li key={index}>{traveler}</li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>
 
         {/* Services Table */}
         <div className="mb-6">
+          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3">
+            Service Overview
+          </h2>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-border">
+            <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-2 text-left border border-border text-sm">PAX</th>
-                  <th className="p-2 text-left border border-border text-sm">Qtd.</th>
-                  <th className="p-2 text-left border border-border text-sm">Service</th>
-                  <th className="p-2 text-left border border-border text-sm">Date</th>
+                  <th className="p-3 text-left">Service</th>
+                  <th className="p-3 text-left">Date</th>
+                  <th className="p-3 text-left">Time</th>
+                  <th className="p-3 text-left">Provider</th>
+                  <th className="p-3 text-right">Price</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,17 +118,18 @@ export const VoucherDisplay = ({
                     key={index} 
                     className={index % 2 === 0 ? "bg-muted" : "bg-card"}
                   >
-                    <td className="p-2 text-foreground border border-border text-sm">
-                      {service.pax || "—"}
+                    <td className="p-3 font-medium text-foreground">{service.name}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {service.date ? formatDate(service.date) : "TBD"}
                     </td>
-                    <td className="p-2 text-foreground border border-border text-sm">
-                      {service.qty || "—"}
+                    <td className="p-3 text-muted-foreground">
+                      {service.time || "TBD"}
                     </td>
-                    <td className="p-2 text-foreground border border-border text-sm">
-                      {service.name}
+                    <td className="p-3 text-muted-foreground">
+                      {service.provider || "—"}
                     </td>
-                    <td className="p-2 text-foreground border border-border text-sm">
-                      {formatDateRange(service.dateFrom, service.dateTo)}
+                    <td className="p-3 text-right font-semibold text-foreground">
+                      {service.price || "—"}
                     </td>
                   </tr>
                 ))}
@@ -180,18 +138,52 @@ export const VoucherDisplay = ({
           </div>
         </div>
 
-        {/* Signature Section */}
-        <div className="mt-8 border-t border-border pt-4">
-          <div className="flex justify-between items-end">
-            <div className="text-sm text-muted-foreground">
-              <p className="mb-8">_______________________</p>
-              <p>Signature</p>
-            </div>
-            <div className="text-sm text-muted-foreground text-right">
-              <p className="mb-2">{formatDate(issueDate)}</p>
-              <p>Date</p>
+        {/* Voucher Details */}
+        <div className="mb-6 grid grid-cols-2 gap-4">
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-1">Issue Date</p>
+            <p className="font-semibold text-foreground">{formatDate(issueDate)}</p>
+          </div>
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-1">Expiration Date</p>
+            <p className="font-semibold text-foreground">
+              {expirationDate ? formatDate(expirationDate) : "No Expiration"}
+            </p>
+          </div>
+        </div>
+
+        {/* Company Information Footer */}
+        <div className="border-t-2 border-border pt-6">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg">
+            <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+              <div>
+                <p className="font-semibold text-foreground">Address:</p>
+                <p>123 Travel Street</p>
+                <p>Tourism City, TC 12345</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Contact:</p>
+                <p>Phone: +1 (555) 123-4567</p>
+                <p>Email: info@yarotravel.com</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Website:</p>
+                <p>www.yarotravel.com</p>
+                <p className="mt-2 text-xs">Available 24/7 for your travel needs</p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Terms & Conditions */}
+        <div className="mt-6 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground mb-1">Terms & Conditions:</p>
+          <p>
+            This voucher is valid for the services listed above. Please present this voucher
+            to service providers. Changes or cancellations must be made 48 hours in advance.
+            For assistance, contact YARO Travel support.
+          </p>
         </div>
       </Card>
     </div>

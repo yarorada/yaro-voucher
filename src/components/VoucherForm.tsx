@@ -20,11 +20,11 @@ import {
 } from "@/components/ui/dialog";
 
 interface Service {
-  pax: string;
-  qty: string;
   name: string;
-  dateFrom: string;
-  dateTo: string;
+  date: string;
+  time: string;
+  provider: string;
+  price: string;
 }
 
 interface VoucherFormProps {
@@ -35,7 +35,6 @@ interface VoucherFormProps {
     expirationDate: string;
     services: Service[];
     hotelName: string;
-    supplierId: string;
   };
 }
 
@@ -44,11 +43,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [loading, setLoading] = useState(false);
   const [clientId, setClientId] = useState(initialData?.clientId || "");
   const [hotelName, setHotelName] = useState(initialData?.hotelName || "");
-  const [supplierId, setSupplierId] = useState(initialData?.supplierId || "");
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
-    initialData?.services || [{ pax: "", qty: "", name: "", dateFrom: "", dateTo: "" }]
+    initialData?.services || [{ name: "", date: "", time: "", provider: "", price: "" }]
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
@@ -134,7 +132,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const addService = () => {
     setServices([
       ...services,
-      { pax: "", qty: "", name: "", dateFrom: "", dateTo: "" },
+      { name: "", date: "", time: "", provider: "", price: "" },
     ]);
   };
 
@@ -179,7 +177,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           .update({
             client_id: clientId,
             hotel_name: hotelName.trim(),
-            supplier_id: supplierId || null,
             services: services as any,
             expiration_date: expirationDate || null,
           })
@@ -234,7 +231,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             client_id: clientId,
             client_name: "", // Keep for backwards compatibility, but will be derived from client_id
             hotel_name: hotelName.trim(),
-            supplier_id: supplierId || null,
             services: services as any,
             expiration_date: expirationDate || null,
           })
@@ -295,14 +291,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               onChange={(e) => setHotelName(e.target.value)}
               placeholder="např. Hotel Paradise, Resort Sunshine"
               required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="supplierId">Dodavatel</Label>
-            <SupplierCombobox
-              value={supplierId}
-              onChange={setSupplierId}
             />
           </div>
 
@@ -413,22 +401,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label>PAX</Label>
-                  <Input
-                    value={service.pax}
-                    onChange={(e) => updateService(index, "pax", e.target.value)}
-                    placeholder="Počet osob"
-                  />
-                </div>
-                <div>
-                  <Label>Qtd.</Label>
-                  <Input
-                    value={service.qty}
-                    onChange={(e) => updateService(index, "qty", e.target.value)}
-                    placeholder="Množství"
-                  />
-                </div>
-                <div className="md:col-span-2">
                   <Label>Název služby *</Label>
                   <Input
                     value={service.name}
@@ -438,19 +410,34 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   />
                 </div>
                 <div>
-                  <Label>Datum od</Label>
-                  <Input
-                    type="date"
-                    value={service.dateFrom}
-                    onChange={(e) => updateService(index, "dateFrom", e.target.value)}
+                  <Label>Dodavatel</Label>
+                  <SupplierCombobox
+                    value={service.provider}
+                    onChange={(value) => updateService(index, "provider", value)}
                   />
                 </div>
                 <div>
-                  <Label>Datum do</Label>
+                  <Label>Datum</Label>
                   <Input
                     type="date"
-                    value={service.dateTo}
-                    onChange={(e) => updateService(index, "dateTo", e.target.value)}
+                    value={service.date}
+                    onChange={(e) => updateService(index, "date", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Čas</Label>
+                  <Input
+                    type="time"
+                    value={service.time}
+                    onChange={(e) => updateService(index, "time", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Cena</Label>
+                  <Input
+                    value={service.price}
+                    onChange={(e) => updateService(index, "price", e.target.value)}
+                    placeholder="např. 500 Kč"
                   />
                 </div>
               </div>

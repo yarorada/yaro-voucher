@@ -12,32 +12,11 @@ interface Voucher {
   id: string;
   voucher_code: string;
   voucher_number: number;
-  client_id: string;
-  supplier_id: string | null;
-  hotel_name: string;
+  client_name: string;
+  other_travelers: string[] | null;
   services: any;
   issue_date: string;
   expiration_date: string | null;
-  clients?: {
-    first_name: string;
-    last_name: string;
-  };
-  suppliers?: {
-    name: string;
-    address: string | null;
-    phone: string | null;
-    email: string | null;
-    notes: string | null;
-  };
-}
-
-interface VoucherTraveler {
-  client_id: string;
-  is_main_client: boolean;
-  clients: {
-    first_name: string;
-    last_name: string;
-  };
 }
 
 const VoucherDetail = () => {
@@ -45,7 +24,6 @@ const VoucherDetail = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [voucher, setVoucher] = useState<Voucher | null>(null);
-  const [travelers, setTravelers] = useState<VoucherTraveler[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,32 +34,14 @@ const VoucherDetail = () => {
 
   const fetchVoucher = async () => {
     try {
-      const { data: voucherData, error: voucherError } = await supabase
+      const { data, error } = await supabase
         .from('vouchers')
-        .select(`
-          *,
-          clients (first_name, last_name),
-          suppliers (name, address, phone, email, notes)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
-      if (voucherError) throw voucherError;
-      setVoucher(voucherData);
-
-      // Fetch all travelers for this voucher
-      const { data: travelersData, error: travelersError } = await supabase
-        .from('voucher_travelers')
-        .select(`
-          client_id,
-          is_main_client,
-          clients (first_name, last_name)
-        `)
-        .eq('voucher_id', id)
-        .order('is_main_client', { ascending: false });
-
-      if (travelersError) throw travelersError;
-      setTravelers(travelersData || []);
+      if (error) throw error;
+      setVoucher(data);
     } catch (error) {
       console.error('Error fetching voucher:', error);
       toast.error("Nepodařilo se načíst voucher");
@@ -140,28 +100,11 @@ const VoucherDetail = () => {
 
         <VoucherDisplay
           voucherCode={voucher.voucher_code}
-          clientName={
-            travelers.find(t => t.is_main_client)
-              ? `${travelers.find(t => t.is_main_client)!.clients.first_name} ${travelers.find(t => t.is_main_client)!.clients.last_name}`
-              : voucher.clients
-              ? `${voucher.clients.first_name} ${voucher.clients.last_name}`
-              : ""
-          }
-          otherTravelers={
-            travelers
-              .filter(t => !t.is_main_client)
-              .map(t => `${t.clients.first_name} ${t.clients.last_name}`)
-          }
+          clientName={voucher.client_name}
+          otherTravelers={voucher.other_travelers || undefined}
           services={voucher.services}
           issueDate={voucher.issue_date}
           expirationDate={voucher.expiration_date || undefined}
-          supplier={voucher.suppliers ? {
-            name: voucher.suppliers.name,
-            address: voucher.suppliers.address || undefined,
-            phone: voucher.suppliers.phone || undefined,
-            email: voucher.suppliers.email || undefined,
-            notes: voucher.suppliers.notes || undefined,
-          } : undefined}
         />
       </div>
     </div>

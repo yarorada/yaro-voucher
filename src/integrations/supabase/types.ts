@@ -136,7 +136,6 @@ export type Database = {
           issue_date: string
           other_travelers: string[] | null
           services: Json
-          supplier_id: string | null
           updated_at: string
           voucher_code: string
           voucher_number: number
@@ -151,7 +150,6 @@ export type Database = {
           issue_date?: string
           other_travelers?: string[] | null
           services: Json
-          supplier_id?: string | null
           updated_at?: string
           voucher_code: string
           voucher_number: number
@@ -166,7 +164,6 @@ export type Database = {
           issue_date?: string
           other_travelers?: string[] | null
           services?: Json
-          supplier_id?: string | null
           updated_at?: string
           voucher_code?: string
           voucher_number?: number
@@ -177,13 +174,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vouchers_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
