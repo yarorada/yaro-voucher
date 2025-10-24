@@ -185,12 +185,14 @@ const Clients = () => {
       }
 
       const first_name = parts[0];
-      const last_name = parts.slice(1).join(" ");
+      const last_name = parts.length >= 3 ? parts[1] : parts.slice(1).join(" ");
+      const email = parts.length >= 3 ? parts[2] : null;
 
       try {
         const { error } = await supabase.from("clients").insert({
           first_name: first_name.trim(),
           last_name: last_name.trim(),
+          email: email ? email.trim() : null,
         });
 
         if (error) throw error;
@@ -256,14 +258,14 @@ const Clients = () => {
                       <DialogTitle>Hromadný import klientů</DialogTitle>
                       <DialogDescription>
                         Vložte jména a příjmení klientů, každý na nový řádek ve
-                        formátu "Jméno Příjmení"
+                        formátu "Jméno Příjmení" nebo "Jméno Příjmení Email"
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <Textarea
                         value={bulkImportText}
                         onChange={(e) => setBulkImportText(e.target.value)}
-                        placeholder="Jan Novák&#10;Petr Dvořák&#10;Marie Svobodová"
+                        placeholder="Jan Novák jan.novak@email.cz&#10;Petr Dvořák&#10;Marie Svobodová marie@email.cz"
                         rows={10}
                       />
                       <div className="flex gap-2 justify-end">
