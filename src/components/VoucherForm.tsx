@@ -39,6 +39,7 @@ interface VoucherFormProps {
   voucherId?: string;
   initialData?: {
     clientId: string;
+    supplierId: string;
     otherTravelerIds: string[];
     expirationDate: string;
     services: Service[];
@@ -50,6 +51,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [clientId, setClientId] = useState(initialData?.clientId || "");
+  const [supplierId, setSupplierId] = useState(initialData?.supplierId || "");
   const [hotelName, setHotelName] = useState(initialData?.hotelName || "");
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
@@ -206,6 +208,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           .from('vouchers')
           .update({
             client_id: clientId,
+            supplier_id: supplierId || null,
             hotel_name: hotelName.trim(),
             services: servicesData as any,
             expiration_date: expirationDateString,
@@ -268,6 +271,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             voucher_code: codeData,
             voucher_number: voucherNumber,
             client_id: clientId,
+            supplier_id: supplierId || null,
             client_name: "", // Keep for backwards compatibility, but will be derived from client_id
             hotel_name: hotelName.trim(),
             services: servicesData as any,
@@ -319,6 +323,14 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             <ClientCombobox
               value={clientId}
               onChange={setClientId}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="supplierId">Dodavatel služeb</Label>
+            <SupplierCombobox
+              value={supplierId}
+              onChange={setSupplierId}
             />
           </div>
 

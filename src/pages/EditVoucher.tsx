@@ -43,12 +43,15 @@ const EditVoucher = () => {
       const mainClient = travelersData.find(t => t.is_main_client);
       const otherTravelers = travelersData.filter(t => !t.is_main_client);
 
+      const voucherDataAny = voucherData as any;
+
       setInitialData({
         clientId: mainClient?.client_id || "",
+        supplierId: voucherDataAny.supplier_id || "",
         otherTravelerIds: otherTravelers.map(t => t.client_id),
-        expirationDate: voucherData.expiration_date || "",
-        services: voucherData.services || [],
-        hotelName: voucherData.hotel_name || "",
+        expirationDate: voucherDataAny.expiration_date || "",
+        services: voucherDataAny.services || [],
+        hotelName: voucherDataAny.hotel_name || "",
       });
     } catch (error) {
       console.error('Error fetching voucher:', error);
