@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { Textarea } from "@/components/ui/textarea";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface Service {
@@ -482,63 +476,19 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                 </div>
                 <div>
                   <Label>Datum od</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !service.dateFrom && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {service.dateFrom ? (
-                          format(service.dateFrom, "dd.MM.yy")
-                        ) : (
-                          <span>Vybrat datum</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={service.dateFrom}
-                        onSelect={(date) => updateService(index, "dateFrom", date)}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DateInput
+                    value={service.dateFrom}
+                    onChange={(date) => updateService(index, "dateFrom", date)}
+                    placeholder="DD.MM.YYYY"
+                  />
                 </div>
                 <div>
                   <Label>Datum do</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !service.dateTo && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {service.dateTo ? (
-                          format(service.dateTo, "dd.MM.yy")
-                        ) : (
-                          <span>Vybrat datum</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={service.dateTo}
-                        onSelect={(date) => updateService(index, "dateTo", date)}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DateInput
+                    value={service.dateTo}
+                    onChange={(date) => updateService(index, "dateTo", date)}
+                    placeholder="DD.MM.YYYY"
+                  />
                 </div>
               </div>
             </Card>
