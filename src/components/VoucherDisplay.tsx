@@ -18,6 +18,10 @@ interface VoucherDisplayProps {
   services: Service[];
   issueDate: string;
   expirationDate?: string;
+  supplierName?: string;
+  supplierContact?: string | null;
+  supplierEmail?: string | null;
+  supplierPhone?: string | null;
 }
 
 export const VoucherDisplay = ({
@@ -27,6 +31,10 @@ export const VoucherDisplay = ({
   services,
   issueDate,
   expirationDate,
+  supplierName,
+  supplierContact,
+  supplierEmail,
+  supplierPhone,
 }: VoucherDisplayProps) => {
   
   const handleDownloadPDF = () => {
@@ -80,6 +88,23 @@ export const VoucherDisplay = ({
               <p className="text-sm text-muted-foreground mt-1">Travel Voucher</p>
             </div>
           </div>
+          
+          {/* Provider Contact */}
+          {supplierName && (
+            <div className="mt-6 bg-muted/50 p-4 rounded-lg">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Provider Contact:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                <div>
+                  <span className="font-medium text-foreground">{supplierName}</span>
+                  {supplierContact && <p>Contact: {supplierContact}</p>}
+                </div>
+                <div className="text-left md:text-right">
+                  {supplierPhone && <p>Tel.: {supplierPhone}</p>}
+                  {supplierEmail && <p>Email: {supplierEmail}</p>}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Client Information */}

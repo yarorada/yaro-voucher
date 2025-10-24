@@ -18,6 +18,7 @@ interface Voucher {
   services: any;
   issue_date: string;
   expiration_date: string | null;
+  supplier_id: string | null;
   clients?: {
     first_name: string;
     last_name: string;
@@ -40,6 +41,12 @@ const VoucherDetail = () => {
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [travelers, setTravelers] = useState<VoucherTraveler[]>([]);
   const [loading, setLoading] = useState(true);
+  const [supplier, setSupplier] = useState<{
+    name: string;
+    contact_person: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -56,7 +63,22 @@ const VoucherDetail = () => {
         .single();
 
       if (error) throw error;
-      setVoucher(data);
+      
+      const voucherData = data as any;
+      setVoucher(voucherData);
+
+      // Fetch supplier if exists
+      if (voucherData?.supplier_id) {
+        const { data: supplierData, error: supplierError } = await supabase
+          .from('suppliers')
+          .select('name, contact_person, email, phone')
+          .eq('id', voucherData.supplier_id)
+          .single();
+
+        if (!supplierError && supplierData) {
+          setSupplier(supplierData);
+        }
+      }
 
       // Fetch travelers
       const { data: travelersData, error: travelersError } = await supabase
@@ -138,6 +160,10 @@ const VoucherDetail = () => {
           services={voucher.services}
           issueDate={voucher.issue_date}
           expirationDate={voucher.expiration_date || undefined}
+          supplierName={supplier?.name}
+          supplierContact={supplier?.contact_person}
+          supplierEmail={supplier?.email}
+          supplierPhone={supplier?.phone}
         />
       </div>
     </div>
