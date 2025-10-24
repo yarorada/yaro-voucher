@@ -17,7 +17,6 @@ interface Voucher {
   other_travelers: string[] | null;
   services: any;
   tee_times?: any;
-  flights?: any;
   issue_date: string;
   expiration_date: string | null;
   supplier_id: string | null;
@@ -163,7 +162,6 @@ const VoucherDetail = () => {
           }
           services={voucher.services}
           teeTimes={voucher.tee_times}
-          flights={voucher.flights}
           issueDate={voucher.issue_date}
           expirationDate={voucher.expiration_date || undefined}
           supplierName={supplier?.name}

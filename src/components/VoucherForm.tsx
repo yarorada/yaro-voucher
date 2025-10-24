@@ -20,7 +20,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { FlightSearch } from "@/components/FlightSearch";
 
 interface Service {
   name: string;
@@ -37,22 +36,6 @@ interface TeeTime {
   golfers: string;
 }
 
-interface Flight {
-  flightNumber: string;
-  airline: string;
-  departure: {
-    airport: string;
-    iata: string;
-    time: string;
-  };
-  arrival: {
-    airport: string;
-    iata: string;
-    time: string;
-  };
-  status: string;
-}
-
 interface VoucherFormProps {
   voucherId?: string;
   initialData?: {
@@ -63,7 +46,6 @@ interface VoucherFormProps {
     services: Service[];
     hotelName: string;
     teeTimes?: TeeTime[];
-    flights?: Flight[];
   };
 }
 
@@ -88,7 +70,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       date: t.date ? new Date(t.date) : undefined,
     })) || []
   );
-  const [flights, setFlights] = useState<Flight[]>(initialData?.flights || []);
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
@@ -203,14 +184,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setTeeTimes(updated);
   };
 
-  const addFlight = (flight: Flight) => {
-    setFlights([...flights, flight]);
-  };
-
-  const removeFlight = (index: number) => {
-    setFlights(flights.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -298,7 +271,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             hotel_name: hotelName.trim(),
             services: servicesData as any,
             tee_times: teeTimesData as any,
-            flights: flights as any,
             expiration_date: expirationDateString,
           })
           .eq('id', voucherId);
@@ -371,7 +343,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             hotel_name: hotelName.trim(),
             services: servicesData as any,
             tee_times: teeTimesData as any,
-            flights: flights as any,
             expiration_date: expirationDateString,
           })
           .select()
@@ -674,76 +645,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         )}
       </Card>
 
-      {/* Flight Details Section */}
-      <Card className="p-6 shadow-[var(--shadow-medium)]">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Flight Details</h2>
-        </div>
-
-        <FlightSearch onSelectFlight={addFlight} />
-
-        {flights.length > 0 && (
-          <div className="mt-4 space-y-3">
-            <h3 className="font-semibold text-foreground">Vybrané lety:</h3>
-            {flights.map((flight, index) => (
-              <Card key={index} className="p-4 bg-muted border-l-4 border-l-primary">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex gap-3 flex-1">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold text-foreground">Let {index + 1}</span>
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                          {flight.flightNumber}
-                        </span>
-                      </div>
-                      <div className="font-semibold text-sm text-foreground mb-2">
-                        {flight.airline}
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">Odlet:</span>
-                          <span className="text-muted-foreground">
-                            {flight.departure.iata} {flight.departure.airport && `– ${flight.departure.airport}`}
-                          </span>
-                          <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded">
-                            {flight.departure.time}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">Přílet:</span>
-                          <span className="text-muted-foreground">
-                            {flight.arrival.iata} {flight.arrival.airport && `– ${flight.arrival.airport}`}
-                          </span>
-                          <span className="text-xs bg-muted-foreground/20 px-2 py-0.5 rounded">
-                            {flight.arrival.time}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => removeFlight(index)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Button 
+      <Button
         type="submit" 
         size="lg" 
         className="w-full"
