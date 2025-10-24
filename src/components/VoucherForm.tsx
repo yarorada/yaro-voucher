@@ -21,10 +21,10 @@ import {
 
 interface Service {
   name: string;
-  date: string;
-  time: string;
-  provider: string;
-  price: string;
+  pax: string;
+  qty: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
 interface VoucherFormProps {
@@ -46,7 +46,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
-    initialData?.services || [{ name: "", date: "", time: "", provider: "", price: "" }]
+    initialData?.services || [{ name: "", pax: "", qty: "", dateFrom: "", dateTo: "" }]
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
@@ -132,7 +132,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const addService = () => {
     setServices([
       ...services,
-      { name: "", date: "", time: "", provider: "", price: "" },
+      { name: "", pax: "", qty: "", dateFrom: "", dateTo: "" },
     ]);
   };
 
@@ -400,7 +400,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
+                <div className="md:col-span-2">
                   <Label>Název služby *</Label>
                   <Input
                     value={service.name}
@@ -410,34 +410,35 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   />
                 </div>
                 <div>
-                  <Label>Dodavatel</Label>
-                  <SupplierCombobox
-                    value={service.provider}
-                    onChange={(value) => updateService(index, "provider", value)}
+                  <Label>PAX</Label>
+                  <Input
+                    value={service.pax}
+                    onChange={(e) => updateService(index, "pax", e.target.value)}
+                    placeholder="např. 2 ADT"
                   />
                 </div>
                 <div>
-                  <Label>Datum</Label>
+                  <Label>Qtd.</Label>
+                  <Input
+                    value={service.qty}
+                    onChange={(e) => updateService(index, "qty", e.target.value)}
+                    placeholder="např. 1"
+                  />
+                </div>
+                <div>
+                  <Label>Datum od</Label>
                   <Input
                     type="date"
-                    value={service.date}
-                    onChange={(e) => updateService(index, "date", e.target.value)}
+                    value={service.dateFrom}
+                    onChange={(e) => updateService(index, "dateFrom", e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Čas</Label>
+                  <Label>Datum do</Label>
                   <Input
-                    type="time"
-                    value={service.time}
-                    onChange={(e) => updateService(index, "time", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Cena</Label>
-                  <Input
-                    value={service.price}
-                    onChange={(e) => updateService(index, "price", e.target.value)}
-                    placeholder="např. 500 Kč"
+                    type="date"
+                    value={service.dateTo}
+                    onChange={(e) => updateService(index, "dateTo", e.target.value)}
                   />
                 </div>
               </div>

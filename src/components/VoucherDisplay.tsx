@@ -5,10 +5,10 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 interface Service {
   name: string;
-  date: string;
-  time: string;
-  provider: string;
-  price: string;
+  pax: string;
+  qty: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
 interface VoucherDisplayProps {
@@ -40,6 +40,15 @@ export const VoucherDisplay = ({
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatServiceDate = (dateString: string) => {
+    if (!dateString) return "TBD";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}-${month}-${year}`;
   };
 
   return (
@@ -85,12 +94,8 @@ export const VoucherDisplay = ({
             </div>
             {otherTravelers && otherTravelers.length > 0 && (
               <div>
-                <span className="font-semibold text-foreground">Other Travelers:</span>
-                <ul className="list-disc list-inside ml-4 text-muted-foreground">
-                  {otherTravelers.map((traveler, index) => (
-                    <li key={index}>{traveler}</li>
-                  ))}
-                </ul>
+                <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
+                <span className="text-muted-foreground">{otherTravelers.join(", ")}</span>
               </div>
             )}
           </div>
@@ -105,11 +110,11 @@ export const VoucherDisplay = ({
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
+                  <th className="p-3 text-left">PAX</th>
+                  <th className="p-3 text-left">Qtd.</th>
                   <th className="p-3 text-left">Service</th>
-                  <th className="p-3 text-left">Date</th>
-                  <th className="p-3 text-left">Time</th>
-                  <th className="p-3 text-left">Provider</th>
-                  <th className="p-3 text-right">Price</th>
+                  <th className="p-3 text-left">Date From</th>
+                  <th className="p-3 text-left">Date To</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,18 +123,18 @@ export const VoucherDisplay = ({
                     key={index} 
                     className={index % 2 === 0 ? "bg-muted" : "bg-card"}
                   >
+                    <td className="p-3 text-muted-foreground">
+                      {service.pax || "—"}
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {service.qty || "—"}
+                    </td>
                     <td className="p-3 font-medium text-foreground">{service.name}</td>
                     <td className="p-3 text-muted-foreground">
-                      {service.date ? formatDate(service.date) : "TBD"}
+                      {formatServiceDate(service.dateFrom)}
                     </td>
                     <td className="p-3 text-muted-foreground">
-                      {service.time || "TBD"}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {service.provider || "—"}
-                    </td>
-                    <td className="p-3 text-right font-semibold text-foreground">
-                      {service.price || "—"}
+                      {formatServiceDate(service.dateTo)}
                     </td>
                   </tr>
                 ))}
