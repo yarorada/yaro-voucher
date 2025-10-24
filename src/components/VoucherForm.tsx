@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { Textarea } from "@/components/ui/textarea";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -508,20 +508,13 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     maxLength={20}
                   />
                 </div>
-                <div>
-                  <Label>Datum od *</Label>
-                  <DateInput
-                    value={service.dateFrom}
-                    onChange={(date) => updateService(index, "dateFrom", date)}
-                    placeholder="DD.MM.YYYY"
-                  />
-                </div>
-                <div>
-                  <Label>Datum do *</Label>
-                  <DateInput
-                    value={service.dateTo}
-                    onChange={(date) => updateService(index, "dateTo", date)}
-                    placeholder="DD.MM.YYYY"
+                <div className="md:col-span-2">
+                  <Label>Datum od - do *</Label>
+                  <DateRangePicker
+                    dateFrom={service.dateFrom}
+                    dateTo={service.dateTo}
+                    onDateFromChange={(date) => updateService(index, "dateFrom", date)}
+                    onDateToChange={(date) => updateService(index, "dateTo", date)}
                   />
                 </div>
               </div>
