@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import {
@@ -532,11 +533,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
                   <Label>Název služby *</Label>
-                  <Input
+                  <ServiceCombobox
                     value={service.name}
-                    onChange={(e) => updateService(index, "name", e.target.value)}
-                    placeholder="např. Pobyt v hotelu, Golf Tee Time"
-                    required
+                    onChange={(value) => updateService(index, "name", value)}
                   />
                 </div>
                 <div>
