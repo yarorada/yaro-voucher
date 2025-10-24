@@ -33,28 +33,50 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     }, [value]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setInputValue(newValue);
+      let newValue = e.target.value;
+      
+      // Remove all non-digit characters for auto-formatting
+      const digitsOnly = newValue.replace(/\D/g, '');
+      
+      // Auto-format with dots as user types
+      if (digitsOnly.length > 0) {
+        let formatted = digitsOnly;
+        
+        // Add first dot after day (2 digits)
+        if (digitsOnly.length >= 3) {
+          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2);
+        }
+        
+        // Add second dot after month (2 digits)
+        if (digitsOnly.length >= 5) {
+          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2, 4) + '.' + digitsOnly.slice(4);
+        }
+        
+        // Limit to 10 characters (DD.MM.YYYY)
+        if (formatted.length > 10) {
+          formatted = formatted.slice(0, 10);
+        }
+        
+        setInputValue(formatted);
+        
+        // Try to parse the formatted input
+        const patterns = [
+          { format: "dd.MM.yyyy", regex: /^\d{2}\.\d{2}\.\d{4}$/ },
+          { format: "dd.MM.yy", regex: /^\d{2}\.\d{2}\.\d{2}$/ },
+        ];
 
-      // Try to parse the input
-      // Support formats: DD.MM.YYYY, DD.MM.YY, D.M.YYYY, D.M.YY
-      const patterns = [
-        { format: "dd.MM.yyyy", regex: /^\d{1,2}\.\d{1,2}\.\d{4}$/ },
-        { format: "dd.MM.yy", regex: /^\d{1,2}\.\d{1,2}\.\d{2}$/ },
-      ];
-
-      for (const pattern of patterns) {
-        if (pattern.regex.test(newValue)) {
-          const parsedDate = parse(newValue, pattern.format, new Date());
-          if (isValid(parsedDate)) {
-            onChange(parsedDate);
-            return;
+        for (const pattern of patterns) {
+          if (pattern.regex.test(formatted)) {
+            const parsedDate = parse(formatted, pattern.format, new Date());
+            if (isValid(parsedDate)) {
+              onChange(parsedDate);
+              return;
+            }
           }
         }
-      }
-
-      // If input is empty, clear the date
-      if (newValue === "") {
+      } else {
+        // If input is empty, clear the date
+        setInputValue("");
         onChange(undefined);
       }
     };
