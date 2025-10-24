@@ -152,9 +152,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addService = () => {
+    const lastService = services[services.length - 1];
     setServices([
       ...services,
-      { name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined },
+      { 
+        name: "", 
+        pax: "", 
+        qty: "", 
+        dateFrom: lastService?.dateFrom, 
+        dateTo: lastService?.dateTo 
+      },
     ]);
   };
 
