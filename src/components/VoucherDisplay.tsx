@@ -247,7 +247,7 @@ export const VoucherDisplay = ({
               <ul className="space-y-2 print:space-y-1">
                 {teeTimes.map((teeTime, index) => (
                   <li key={index} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers})
+                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
                   </li>
                 ))}
               </ul>
