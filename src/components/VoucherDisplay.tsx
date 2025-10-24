@@ -23,6 +23,7 @@ interface VoucherDisplayProps {
   supplierEmail?: string | null;
   supplierPhone?: string | null;
   supplierAddress?: string | null;
+  supplierNotes?: string | null;
 }
 
 export const VoucherDisplay = ({
@@ -37,6 +38,7 @@ export const VoucherDisplay = ({
   supplierEmail,
   supplierPhone,
   supplierAddress,
+  supplierNotes,
 }: VoucherDisplayProps) => {
   
   const handleDownloadPDF = () => {
@@ -93,12 +95,15 @@ export const VoucherDisplay = ({
           {supplierName && (
             <div className="bg-muted p-4 rounded-lg border-l-4 border-primary">
               <h3 className="text-sm font-bold text-foreground mb-3">Service Provider:</h3>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground space-y-1">
                 <p>
                   {supplierName}
                   {supplierAddress && ` • ${supplierAddress}`}
                   {supplierEmail && ` • ${supplierEmail}`}
                 </p>
+                {supplierNotes && (
+                  <p className="pt-1 border-t border-border/50">{supplierNotes}</p>
+                )}
               </div>
             </div>
           )}
