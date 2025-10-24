@@ -52,6 +52,8 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
     }
   };
 
+  const selectedSupplier = suppliers.find((supplier) => supplier.id === value);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -61,7 +63,7 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {value || "Vyberte dodavatele..."}
+          {selectedSupplier ? selectedSupplier.name : "Vyberte dodavatele..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -77,8 +79,8 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
                 <CommandItem
                   key={supplier.id}
                   value={supplier.name}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue);
+                  onSelect={() => {
+                    onChange(supplier.id);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
@@ -86,7 +88,7 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === supplier.name ? "opacity-100" : "opacity-0"
+                      value === supplier.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {supplier.name}

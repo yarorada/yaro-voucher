@@ -549,7 +549,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       <Button 
         type="submit" 
         size="lg" 
-        className="w-full bg-[var(--gradient-primary)] hover:opacity-90"
+        className="w-full"
         disabled={loading}
       >
         {loading 
