@@ -3,12 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, ArrowLeft, LogOut, Edit, Copy, Search } from "lucide-react";
+import { Plus, FileText, ArrowLeft, LogOut, Edit, Copy, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Voucher {
   id: string;
@@ -33,6 +43,8 @@ const VouchersList = () => {
   const [filteredVouchers, setFilteredVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVouchers();
@@ -86,6 +98,43 @@ const VouchersList = () => {
     });
 
     setFilteredVouchers(filtered);
+  };
+
+  const handleDeleteClick = (voucherId: string) => {
+    setVoucherToDelete(voucherId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!voucherToDelete) return;
+
+    try {
+      setLoading(true);
+      
+      // Delete voucher_travelers first (foreign key constraint)
+      await supabase
+        .from('voucher_travelers')
+        .delete()
+        .eq('voucher_id', voucherToDelete);
+
+      // Delete voucher
+      const { error } = await supabase
+        .from('vouchers')
+        .delete()
+        .eq('id', voucherToDelete);
+
+      if (error) throw error;
+
+      toast.success("Voucher úspěšně smazán!");
+      setDeleteDialogOpen(false);
+      setVoucherToDelete(null);
+      fetchVouchers();
+    } catch (error) {
+      console.error('Error deleting voucher:', error);
+      toast.error("Nepodařilo se smazat voucher");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDuplicate = async (voucherId: string) => {
@@ -311,6 +360,17 @@ const VouchersList = () => {
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
+                        <Button 
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(voucher.id);
+                          }}
+                          className="hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -320,6 +380,26 @@ const VouchersList = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu chcete smazat tento voucher?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Voucher bude trvale odstraněn z databáze.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

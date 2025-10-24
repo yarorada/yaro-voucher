@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Edit } from "lucide-react";
+import { ArrowLeft, LogOut, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Voucher {
   id: string;
@@ -50,12 +60,37 @@ const VoucherDetail = () => {
     address: string | null;
     notes: string | null;
   } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchVoucher();
     }
   }, [id]);
+
+  const handleDelete = async () => {
+    try {
+      // Delete voucher_travelers first (foreign key constraint)
+      await supabase
+        .from('voucher_travelers')
+        .delete()
+        .eq('voucher_id', id);
+
+      // Delete voucher
+      const { error } = await supabase
+        .from('vouchers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Voucher úspěšně smazán!");
+      navigate('/vouchers');
+    } catch (error) {
+      console.error('Error deleting voucher:', error);
+      toast.error("Nepodařilo se smazat voucher");
+    }
+  };
 
   const fetchVoucher = async () => {
     try {
@@ -135,6 +170,14 @@ const VoucherDetail = () => {
                 <Edit className="h-4 w-4" />
                 Upravit
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+                Smazat
+              </Button>
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
               <Button
                 variant="outline"
@@ -173,6 +216,26 @@ const VoucherDetail = () => {
           voucherId={voucher.id}
         />
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu chcete smazat tento voucher?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Voucher bude trvale odstraněn z databáze.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
