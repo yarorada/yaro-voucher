@@ -76,33 +76,33 @@ export const VoucherDisplay = ({
 
       <Card 
         id="voucher-content" 
-        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none"
+        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-4 print:text-sm"
       >
         {/* Header */}
-        <div className="border-b-4 border-primary pb-6 mb-6">
-          <div className="flex justify-between items-start mb-6">
+        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
+          <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
-              <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2" />
-              <p className="text-sm text-muted-foreground">Your Journey, Our Passion</p>
+              <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2 print:h-10 print:mb-1" />
+              <p className="text-sm text-muted-foreground print:text-xs">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{voucherCode}</div>
-              <p className="text-sm text-muted-foreground mt-1">Travel Voucher</p>
+              <div className="text-3xl font-bold text-primary print:text-2xl">{voucherCode}</div>
+              <p className="text-sm text-muted-foreground mt-1 print:text-xs print:mt-0">Travel Voucher</p>
             </div>
           </div>
           
           {/* Service Provider Contact */}
           {supplierName && (
-            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary">
-              <h3 className="text-sm font-bold text-foreground mb-3">Service Provider:</h3>
-              <div className="text-sm text-muted-foreground space-y-1">
+            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary print:p-2 print:text-xs">
+              <h3 className="text-sm font-bold text-foreground mb-3 print:text-xs print:mb-1">Service Provider:</h3>
+              <div className="text-sm text-muted-foreground space-y-1 print:text-xs print:space-y-0">
                 <p>
                   {supplierName}
                   {supplierAddress && ` • ${supplierAddress}`}
                   {supplierEmail && ` • ${supplierEmail}`}
                 </p>
                 {supplierNotes && (
-                  <p className="pt-1 border-t border-border/50">{supplierNotes}</p>
+                  <p className="pt-1 border-t border-border/50 print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>
                 )}
               </div>
             </div>
@@ -110,12 +110,12 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Client Information */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3">
+        <div className="mb-6 print:mb-3">
+          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-base print:mb-2 print:pl-2">
             Client Information
           </h2>
-          <div className="bg-muted p-4 rounded-lg">
-            <div className="mb-2">
+          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
+            <div className="mb-2 print:mb-1">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
             </div>
@@ -129,19 +129,19 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Services Table */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3">
+        <div className="mb-6 print:mb-3">
+          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-base print:mb-2 print:pl-2">
             Service Overview
           </h2>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse print:text-xs">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-3 text-left">PAX</th>
-                  <th className="p-3 text-left">Qtd.</th>
-                  <th className="p-3 text-left">Service</th>
-                  <th className="p-3 text-left">Date From</th>
-                  <th className="p-3 text-left">Date To</th>
+                  <th className="p-3 text-left print:p-1.5">PAX</th>
+                  <th className="p-3 text-left print:p-1.5">Qtd.</th>
+                  <th className="p-3 text-left print:p-1.5">Service</th>
+                  <th className="p-3 text-left print:p-1.5">Date From</th>
+                  <th className="p-3 text-left print:p-1.5">Date To</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,17 +150,17 @@ export const VoucherDisplay = ({
                     key={index} 
                     className={index % 2 === 0 ? "bg-muted" : "bg-card"}
                   >
-                    <td className="p-3 text-muted-foreground">
+                    <td className="p-3 text-muted-foreground print:p-1.5">
                       {service.pax || "—"}
                     </td>
-                    <td className="p-3 text-muted-foreground">
+                    <td className="p-3 text-muted-foreground print:p-1.5">
                       {service.qty || "—"}
                     </td>
-                    <td className="p-3 font-medium text-foreground">{service.name}</td>
-                    <td className="p-3 text-muted-foreground">
+                    <td className="p-3 font-medium text-foreground print:p-1.5">{service.name}</td>
+                    <td className="p-3 text-muted-foreground print:p-1.5">
                       {formatServiceDate(service.dateFrom)}
                     </td>
-                    <td className="p-3 text-muted-foreground">
+                    <td className="p-3 text-muted-foreground print:p-1.5">
                       {formatServiceDate(service.dateTo)}
                     </td>
                   </tr>
@@ -171,13 +171,13 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Voucher Details */}
-        <div className="mb-6 grid grid-cols-2 gap-4">
-          <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Issue Date</p>
+        <div className="mb-6 grid grid-cols-2 gap-4 print:mb-3 print:gap-2">
+          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
+            <p className="text-sm text-muted-foreground mb-1 print:text-xs print:mb-0">Issue Date</p>
             <p className="font-semibold text-foreground">{formatDate(issueDate)}</p>
           </div>
-          <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Expiration Date</p>
+          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
+            <p className="text-sm text-muted-foreground mb-1 print:text-xs print:mb-0">Expiration Date</p>
             <p className="font-semibold text-foreground">
               {expirationDate ? formatDate(expirationDate) : "No Expiration"}
             </p>
@@ -185,31 +185,16 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Company Information Footer */}
-        <div className="border-t-2 border-border pt-6">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg">
-            <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-              <div>
-                <p className="font-semibold text-foreground">Address:</p>
-                <p>Bratrancu Veverkowych 680</p>
-                <p>Pardubice, 530 02</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Contact:</p>
-                <p>Tel.: +420 602 102 108</p>
-                <p>Email: zajezdy@yarotravel.cz</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Website:</p>
-                <p>www.yarotravel.cz</p>
-                <p className="mt-2 text-xs">Available 24/7 for your travel needs</p>
-              </div>
+        <div className="border-t-2 border-border pt-6 print:pt-2 print:text-xs">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg print:p-2 print:bg-transparent">
+            <div className="text-sm text-muted-foreground print:text-xs">
+              <span className="font-bold text-foreground">YARO Travel</span> • Bratrancu Veverkowych 680, Pardubice, 530 02 • Tel.: +420 602 102 108 • Email: zajezdy@yarotravel.cz • www.yarotravel.cz
             </div>
           </div>
         </div>
 
         {/* Terms & Conditions */}
-        <div className="mt-6 text-xs text-muted-foreground">
+        <div className="mt-6 text-xs text-muted-foreground print:mt-2">
           <p className="font-semibold text-foreground mb-1">Terms & Conditions:</p>
           <p>
             This voucher is valid for the services listed above. Please present this voucher
