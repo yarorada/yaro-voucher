@@ -48,6 +48,7 @@ const EditVoucher = () => {
         otherTravelerIds: otherTravelers.map(t => t.client_id),
         expirationDate: voucherData.expiration_date || "",
         services: voucherData.services || [],
+        hotelName: voucherData.hotel_name || "",
       });
     } catch (error) {
       console.error('Error fetching voucher:', error);

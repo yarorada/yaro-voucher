@@ -34,6 +34,7 @@ interface VoucherFormProps {
     otherTravelerIds: string[];
     expirationDate: string;
     services: Service[];
+    hotelName: string;
   };
 }
 
@@ -41,6 +42,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [clientId, setClientId] = useState(initialData?.clientId || "");
+  const [hotelName, setHotelName] = useState(initialData?.hotelName || "");
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
@@ -154,6 +156,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       return;
     }
 
+    if (!hotelName.trim()) {
+      toast.error("Prosím zadejte název hotelu");
+      return;
+    }
+
     if (services.some(s => !s.name.trim())) {
       toast.error("Prosím vyplňte všechny názvy služeb");
       return;
@@ -169,6 +176,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           .from('vouchers')
           .update({
             client_id: clientId,
+            hotel_name: hotelName.trim(),
             services: services as any,
             expiration_date: expirationDate || null,
           })
@@ -222,6 +230,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             voucher_number: voucherNumber,
             client_id: clientId,
             client_name: "", // Keep for backwards compatibility, but will be derived from client_id
+            hotel_name: hotelName.trim(),
             services: services as any,
             expiration_date: expirationDate || null,
           })
@@ -271,6 +280,17 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             <ClientCombobox
               value={clientId}
               onChange={setClientId}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="hotelName">Název hotelu *</Label>
+            <Input
+              id="hotelName"
+              value={hotelName}
+              onChange={(e) => setHotelName(e.target.value)}
+              placeholder="např. Hotel Paradise, Resort Sunshine"
+              required
             />
           </div>
 

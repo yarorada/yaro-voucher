@@ -131,6 +131,7 @@ export type Database = {
           client_name: string
           created_at: string
           expiration_date: string | null
+          hotel_name: string | null
           id: string
           issue_date: string
           other_travelers: string[] | null
@@ -144,6 +145,7 @@ export type Database = {
           client_name: string
           created_at?: string
           expiration_date?: string | null
+          hotel_name?: string | null
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
@@ -157,6 +159,7 @@ export type Database = {
           client_name?: string
           created_at?: string
           expiration_date?: string | null
+          hotel_name?: string | null
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
