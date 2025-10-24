@@ -187,11 +187,35 @@ export const VoucherDisplay = ({
         {/* Company Information Footer */}
         <div className="border-t-2 border-border pt-6 print:pt-3">
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg print:p-3 print:bg-muted/30">
-            <h3 className="font-bold text-foreground mb-2 print:mb-1.5">YARO Travel</h3>
-            <div className="text-sm text-muted-foreground print:text-xs print:leading-relaxed">
-              <p>Bratrancu Veverkowych 680, Pardubice, 530 02</p>
-              <p>Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz</p>
-              <p>www.yarotravel.cz</p>
+            {/* Web version - 3 columns */}
+            <div className="print:hidden">
+              <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                <div>
+                  <p className="font-semibold text-foreground">Address:</p>
+                  <p>Bratrancu Veverkowych 680</p>
+                  <p>Pardubice, 530 02</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Contact:</p>
+                  <p>Tel.: +420 602 102 108</p>
+                  <p>Email: zajezdy@yarotravel.cz</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Website:</p>
+                  <p>www.yarotravel.cz</p>
+                  <p className="mt-2 text-xs">Available 24/7 for your travel needs</p>
+                </div>
+              </div>
+            </div>
+            {/* Print version - compact */}
+            <div className="hidden print:block">
+              <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                <p>Bratrancu Veverkowych 680, Pardubice, 530 02</p>
+                <p>Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz</p>
+                <p>www.yarotravel.cz</p>
+              </div>
             </div>
           </div>
         </div>
