@@ -22,6 +22,7 @@ interface VoucherDisplayProps {
   supplierContact?: string | null;
   supplierEmail?: string | null;
   supplierPhone?: string | null;
+  supplierAddress?: string | null;
 }
 
 export const VoucherDisplay = ({
@@ -35,6 +36,7 @@ export const VoucherDisplay = ({
   supplierContact,
   supplierEmail,
   supplierPhone,
+  supplierAddress,
 }: VoucherDisplayProps) => {
   
   const handleDownloadPDF = () => {
@@ -76,7 +78,7 @@ export const VoucherDisplay = ({
       >
         {/* Header */}
         <div className="border-b-4 border-primary pb-6 mb-6">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2" />
               <p className="text-sm text-muted-foreground">Your Journey, Our Passion</p>
@@ -89,17 +91,25 @@ export const VoucherDisplay = ({
           
           {/* Provider Contact */}
           {supplierName && (
-            <div className="mt-6 bg-muted/50 p-4 rounded-lg">
-              <h3 className="text-sm font-semibold text-foreground mb-2">Provider Contact:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+            <div className="bg-accent/10 border-l-4 border-accent p-4 rounded">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Dodavatel služeb:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 <div>
-                  <span className="font-medium text-foreground">{supplierName}</span>
-                  {supplierContact && <p>Contact: {supplierContact}</p>}
+                  <p className="font-medium text-foreground mb-1">Název:</p>
+                  <p className="text-muted-foreground">{supplierName}</p>
                 </div>
-                <div className="text-left md:text-right">
-                  {supplierPhone && <p>Tel.: {supplierPhone}</p>}
-                  {supplierEmail && <p>Email: {supplierEmail}</p>}
-                </div>
+                {supplierAddress && (
+                  <div>
+                    <p className="font-medium text-foreground mb-1">Adresa:</p>
+                    <p className="text-muted-foreground">{supplierAddress}</p>
+                  </div>
+                )}
+                {supplierEmail && (
+                  <div>
+                    <p className="font-medium text-foreground mb-1">Email:</p>
+                    <p className="text-muted-foreground">{supplierEmail}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

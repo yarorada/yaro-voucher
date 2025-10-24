@@ -46,6 +46,7 @@ const VoucherDetail = () => {
     contact_person: string | null;
     email: string | null;
     phone: string | null;
+    address: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ const VoucherDetail = () => {
       if (voucherData?.supplier_id) {
         const { data: supplierData, error: supplierError } = await supabase
           .from('suppliers')
-          .select('name, contact_person, email, phone')
+          .select('name, contact_person, email, phone, address')
           .eq('id', voucherData.supplier_id)
           .single();
 
@@ -164,6 +165,7 @@ const VoucherDetail = () => {
           supplierContact={supplier?.contact_person}
           supplierEmail={supplier?.email}
           supplierPhone={supplier?.phone}
+          supplierAddress={supplier?.address}
         />
       </div>
     </div>
