@@ -59,19 +59,12 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         
         setInputValue(formatted);
         
-        // Try to parse the formatted input
-        const patterns = [
-          { format: "dd.MM.yyyy", regex: /^\d{2}\.\d{2}\.\d{4}$/ },
-          { format: "dd.MM.yy", regex: /^\d{2}\.\d{2}\.\d{2}$/ },
-        ];
-
-        for (const pattern of patterns) {
-          if (pattern.regex.test(formatted)) {
-            const parsedDate = parse(formatted, pattern.format, new Date());
-            if (isValid(parsedDate)) {
-              onChange(parsedDate);
-              return;
-            }
+        // Try to parse the formatted input (only full 4-digit year)
+        if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
+          const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
+          if (isValid(parsedDate)) {
+            onChange(parsedDate);
+            return;
           }
         }
       } else {
