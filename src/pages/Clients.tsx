@@ -69,6 +69,12 @@ const Clients = () => {
     }
   };
 
+  const removeDiacritics = (text: string): string => {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -82,8 +88,8 @@ const Clients = () => {
         const { error } = await supabase
           .from("clients")
           .update({
-            first_name: formData.first_name.trim(),
-            last_name: formData.last_name.trim(),
+            first_name: removeDiacritics(formData.first_name.trim()),
+            last_name: removeDiacritics(formData.last_name.trim()),
             email: formData.email.trim() || null,
             phone: formData.phone.trim() || null,
             address: formData.address.trim() || null,
@@ -98,8 +104,8 @@ const Clients = () => {
         const { data: existingClient } = await supabase
           .from("clients")
           .select("id")
-          .eq("first_name", formData.first_name.trim())
-          .eq("last_name", formData.last_name.trim())
+          .eq("first_name", removeDiacritics(formData.first_name.trim()))
+          .eq("last_name", removeDiacritics(formData.last_name.trim()))
           .maybeSingle();
 
         if (existingClient) {
@@ -108,8 +114,8 @@ const Clients = () => {
         }
 
         const { error } = await supabase.from("clients").insert({
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
+          first_name: removeDiacritics(formData.first_name.trim()),
+          last_name: removeDiacritics(formData.last_name.trim()),
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
           address: formData.address.trim() || null,
@@ -207,8 +213,8 @@ const Clients = () => {
         const { data: existingClient } = await supabase
           .from("clients")
           .select("id")
-          .eq("first_name", first_name.trim())
-          .eq("last_name", last_name.trim())
+          .eq("first_name", removeDiacritics(first_name.trim()))
+          .eq("last_name", removeDiacritics(last_name.trim()))
           .maybeSingle();
 
         if (existingClient) {
@@ -217,8 +223,8 @@ const Clients = () => {
         }
 
         const { error } = await supabase.from("clients").insert({
-          first_name: first_name.trim(),
-          last_name: last_name.trim(),
+          first_name: removeDiacritics(first_name.trim()),
+          last_name: removeDiacritics(last_name.trim()),
           email: email ? email.trim() : null,
         });
 
