@@ -36,19 +36,21 @@ const EditVoucher = () => {
       const { data: travelersData, error: travelersError } = await supabase
         .from('voucher_travelers')
         .select('client_id, is_main_client')
-        .eq('voucher_id', id);
+        .eq('voucher_id', id)
+        .order('is_main_client', { ascending: false });
 
       if (travelersError) throw travelersError;
 
-      const mainClient = travelersData.find(t => t.is_main_client);
-      const otherTravelers = travelersData.filter(t => !t.is_main_client);
+      const mainClient = travelersData?.find(t => t.is_main_client);
+      const otherTravelers = travelersData?.filter(t => !t.is_main_client).map(t => t.client_id) || [];
 
       setInitialData({
-        clientId: mainClient?.client_id || "",
-        otherTravelerIds: otherTravelers.map(t => t.client_id),
-        expirationDate: voucherData.expiration_date || "",
+        clientId: mainClient?.client_id || '',
+        otherTravelerIds: otherTravelers,
+        expirationDate: voucherData.expiration_date || '',
         services: voucherData.services || [],
-        hotelName: voucherData.hotel_name || "",
+        hotelName: voucherData.hotel_name || '',
+        supplierId: voucherData.supplier_id || '',
       });
     } catch (error) {
       console.error('Error fetching voucher:', error);
