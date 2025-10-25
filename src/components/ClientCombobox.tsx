@@ -129,6 +129,12 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                setOpen(true);
+                setSearchValue(e.key);
+              }
+            }}
           >
             {selectedClient
               ? `${selectedClient.first_name} ${selectedClient.last_name}`

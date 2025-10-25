@@ -115,6 +115,11 @@ export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce.
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                setOpen(true);
+              }
+            }}
           >
             {selectedAirline
               ? `${selectedAirline.code} - ${selectedAirline.name}`

@@ -128,6 +128,12 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                setOpen(true);
+                setSearchValue(e.key);
+              }
+            }}
           >
             {selectedSupplier ? selectedSupplier.name : "Vyberte dodavatele..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

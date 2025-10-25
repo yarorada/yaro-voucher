@@ -123,6 +123,11 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                setOpen(true);
+              }
+            }}
           >
             {selectedAirport
               ? `${selectedAirport.iata} - ${selectedAirport.city}`
