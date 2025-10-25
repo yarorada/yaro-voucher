@@ -42,13 +42,6 @@ interface TeeTime {
   isTextMode?: boolean;
 }
 
-interface FlightVariant {
-  date: Date | undefined;
-  departureTime: string;
-  arrivalTime: string;
-  pax: string;
-}
-
 interface Flight {
   date: Date | undefined;
   airlineCode: string;
@@ -60,7 +53,8 @@ interface Flight {
   toCity?: string;
   departureTime: string;
   arrivalTime: string;
-  variants?: FlightVariant[];
+  isVariant?: boolean;
+  pax: string;
 }
 
 interface VoucherFormProps {
@@ -106,10 +100,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       date: f.date ? new Date(f.date) : undefined,
       airlineCode: f.airlineCode || "",
       airlineName: f.airlineName || "",
-      variants: f.variants?.map(v => ({
-        ...v,
-        date: v.date ? new Date(v.date) : undefined,
-      })) || [],
+      pax: f.pax || "",
       flightNumber: f.flightNumber || "",
       departureTime: f.departureTime || "",
       arrivalTime: f.arrivalTime || "",
@@ -259,7 +250,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setTeeTimes(updated);
   };
 
-  const addFlight = () => {
+  const addFlight = (isVariant = false) => {
     // Find latest date from services
     const latestServiceDate = services
       .map(s => s.dateTo)
@@ -280,60 +271,25 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       toCity: previousFlight ? previousFlight.fromCity : "",
       departureTime: "",
       arrivalTime: "",
-      variants: []
-    }]);
-  };
-
-  const addFlightVariant = (flightIndex: number) => {
-    const updated = [...flights];
-    const flight = updated[flightIndex];
-    
-    if (!flight.variants) {
-      flight.variants = [];
-    }
-    
-    flight.variants.push({
-      date: flight.date || undefined,
-      departureTime: flight.departureTime || "",
-      arrivalTime: flight.arrivalTime || "",
+      isVariant,
       pax: ""
-    });
-    
-    setFlights(updated);
-  };
-
-  const removeFlightVariant = (flightIndex: number, variantIndex: number) => {
-    const updated = [...flights];
-    if (updated[flightIndex].variants) {
-      updated[flightIndex].variants = updated[flightIndex].variants!.filter((_, i) => i !== variantIndex);
-    }
-    setFlights(updated);
-  };
-
-  const updateFlightVariant = (flightIndex: number, variantIndex: number, field: keyof FlightVariant, value: string | Date | undefined) => {
-    const updated = [...flights];
-    if (updated[flightIndex].variants && updated[flightIndex].variants![variantIndex]) {
-      if (field === 'date') {
-        updated[flightIndex].variants![variantIndex][field] = value as Date | undefined;
-      } else {
-        (updated[flightIndex].variants![variantIndex] as any)[field] = value as string;
-      }
-    }
-    setFlights(updated);
+    }]);
   };
 
   const removeFlight = (index: number) => {
     setFlights(flights.filter((_, i) => i !== index));
   };
 
-  const updateFlight = (index: number, field: keyof Flight, value: string | Date | undefined) => {
+  const updateFlight = (index: number, field: keyof Flight, value: string | Date | undefined | boolean) => {
     const updated = [...flights];
     if (field === 'fromIata' || field === 'fromCity' || field === 'toIata' || field === 'toCity' || 
         field === 'airlineCode' || field === 'airlineName' || field === 'flightNumber' || 
-        field === 'departureTime' || field === 'arrivalTime') {
+        field === 'departureTime' || field === 'arrivalTime' || field === 'pax') {
       (updated[index] as any)[field] = value as string;
     } else if (field === 'date') {
       (updated[index] as any)[field] = value as Date | undefined;
+    } else if (field === 'isVariant') {
+      (updated[index] as any)[field] = value as boolean;
     }
     setFlights(updated);
   };
@@ -802,184 +758,139 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-foreground">Detaily letů</h2>
-          <Button type="button" onClick={addFlight} size="sm" variant="outline">
-            <Plus className="h-4 w-4 mr-1" />
-            Přidat let
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" onClick={() => addFlight(false)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat let
+            </Button>
+            <Button type="button" onClick={() => addFlight(true)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Varianta letu
+            </Button>
+          </div>
         </div>
 
         {flights.length === 0 ? (
           <p className="text-sm text-muted-foreground">Žádné lety nebyly přidány</p>
         ) : (
           <div className="space-y-4">
-            {flights.map((flight, index) => (
-              <Card key={index} className="p-4 bg-muted">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-foreground">Let {index + 1}</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      onClick={() => removeFlight(index)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label>Datum *</Label>
-                    <DateInput
-                      value={flight.date}
-                      onChange={(date) => updateFlight(index, "date", date)}
-                      placeholder="DD.MM.RR"
-                    />
-                  </div>
-                  <div>
-                    <Label>Kód dopravce *</Label>
-                    <AirlineCombobox
-                      value={flight.airlineCode}
-                      onSelect={(code, name) => handleAirlineSelect(index, code, name)}
-                      placeholder="Vyberte dopravce"
-                    />
-                  </div>
-                  <div>
-                    <Label>Letecká společnost</Label>
-                    <Input
-                      value={flight.airlineName}
-                      onChange={(e) => updateFlight(index, "airlineName", e.target.value)}
-                      placeholder="Automaticky z našeptávače"
-                      disabled
-                      className="bg-muted"
-                    />
-                  </div>
-                  <div>
-                    <Label>Číslo letu *</Label>
-                    <Input
-                      value={flight.flightNumber}
-                      onChange={(e) => updateFlight(index, "flightNumber", e.target.value)}
-                      placeholder="např. 123"
-                      maxLength={10}
-                    />
-                  </div>
-                  <div>
-                    <Label>Odkud *</Label>
-                    <AirportCombobox
-                      value={flight.fromIata}
-                      onSelect={(iata, city) => {
-                        updateFlight(index, "fromIata", iata);
-                        if (city) updateFlight(index, "fromCity", city);
-                      }}
-                      placeholder="Vyberte letiště"
-                    />
-                  </div>
-                  <div>
-                    <Label>Kam *</Label>
-                    <AirportCombobox
-                      value={flight.toIata}
-                      onSelect={(iata, city) => {
-                        updateFlight(index, "toIata", iata);
-                        if (city) updateFlight(index, "toCity", city);
-                      }}
-                      placeholder="Vyberte letiště"
-                    />
-                  </div>
-                  <div>
-                    <Label>Čas odletu *</Label>
-                    <Input
-                      value={flight.departureTime}
-                      onChange={(e) => updateFlight(index, "departureTime", e.target.value)}
-                      placeholder="např. 10:30"
-                      maxLength={10}
-                    />
-                  </div>
-                  <div>
-                    <Label>Čas příletu *</Label>
-                    <Input
-                      value={flight.arrivalTime}
-                      onChange={(e) => updateFlight(index, "arrivalTime", e.target.value)}
-                      placeholder="např. 13:45"
-                      maxLength={10}
-                    />
-                  </div>
-                </div>
-
-                {/* Flight Variants Section */}
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-foreground">Varianty letu</h4>
-                    <Button
-                      type="button"
-                      onClick={() => addFlightVariant(index)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Přidat variantu
-                    </Button>
-                  </div>
-
-                  {flight.variants && flight.variants.length > 0 && (
-                    <div className="space-y-3">
-                      {flight.variants.map((variant, variantIndex) => (
-                        <Card key={variantIndex} className="p-3 bg-card">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-medium text-muted-foreground">Varianta {variantIndex + 1}</span>
-                            <Button
-                              type="button"
-                              onClick={() => removeFlightVariant(index, variantIndex)}
-                              variant="ghost"
-                              size="sm"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">Datum *</Label>
-                              <DateInput
-                                value={variant.date}
-                                onChange={(date) => updateFlightVariant(index, variantIndex, "date", date)}
-                                placeholder="DD.MM.RR"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Počet cestujících (PAX) *</Label>
-                              <Input
-                                value={variant.pax}
-                                onChange={(e) => updateFlightVariant(index, variantIndex, "pax", e.target.value)}
-                                placeholder="např. 2"
-                                maxLength={10}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Čas odletu *</Label>
-                              <Input
-                                value={variant.departureTime}
-                                onChange={(e) => updateFlightVariant(index, variantIndex, "departureTime", e.target.value)}
-                                placeholder="např. 10:30"
-                                maxLength={10}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Čas příletu *</Label>
-                              <Input
-                                value={variant.arrivalTime}
-                                onChange={(e) => updateFlightVariant(index, variantIndex, "arrivalTime", e.target.value)}
-                                placeholder="např. 13:45"
-                                maxLength={10}
-                              />
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
+            {flights.map((flight, index) => {
+              const mainFlights = flights.filter(f => !f.isVariant);
+              const flightNumber = flight.isVariant ? 
+                mainFlights.length + 1 : 
+                mainFlights.findIndex(f => f === flight) + 1;
+              const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
+              
+              return (
+                <Card key={index} className={`p-4 ${flight.isVariant ? 'bg-card border-2 border-accent/50' : 'bg-muted'}`}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-semibold text-foreground">
+                        {flightLabel}
+                        {flight.isVariant && <span className="ml-2 text-xs text-accent">(Varianta)</span>}
+                      </h3>
                     </div>
-                  )}
-                </div>
-              </Card>
-            ))}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => removeFlight(index)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Datum *</Label>
+                      <DateInput
+                        value={flight.date}
+                        onChange={(date) => updateFlight(index, "date", date)}
+                        placeholder="DD.MM.RR"
+                      />
+                    </div>
+                    <div>
+                      <Label>Počet cestujících (PAX) *</Label>
+                      <Input
+                        value={flight.pax}
+                        onChange={(e) => updateFlight(index, "pax", e.target.value)}
+                        placeholder="např. 2"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <Label>Kód dopravce *</Label>
+                      <AirlineCombobox
+                        value={flight.airlineCode}
+                        onSelect={(code, name) => handleAirlineSelect(index, code, name)}
+                        placeholder="Vyberte dopravce"
+                      />
+                    </div>
+                    <div>
+                      <Label>Letecká společnost</Label>
+                      <Input
+                        value={flight.airlineName}
+                        onChange={(e) => updateFlight(index, "airlineName", e.target.value)}
+                        placeholder="Automaticky z našeptávače"
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div>
+                      <Label>Číslo letu *</Label>
+                      <Input
+                        value={flight.flightNumber}
+                        onChange={(e) => updateFlight(index, "flightNumber", e.target.value)}
+                        placeholder="např. 123"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <Label>Odkud *</Label>
+                      <AirportCombobox
+                        value={flight.fromIata}
+                        onSelect={(iata, city) => {
+                          updateFlight(index, "fromIata", iata);
+                          if (city) updateFlight(index, "fromCity", city);
+                        }}
+                        placeholder="Vyberte letiště"
+                      />
+                    </div>
+                    <div>
+                      <Label>Kam *</Label>
+                      <AirportCombobox
+                        value={flight.toIata}
+                        onSelect={(iata, city) => {
+                          updateFlight(index, "toIata", iata);
+                          if (city) updateFlight(index, "toCity", city);
+                        }}
+                        placeholder="Vyberte letiště"
+                      />
+                    </div>
+                    <div>
+                      <Label>Čas odletu *</Label>
+                      <Input
+                        value={flight.departureTime}
+                        onChange={(e) => updateFlight(index, "departureTime", e.target.value)}
+                        placeholder="např. 10:30"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <Label>Čas příletu *</Label>
+                      <Input
+                        value={flight.arrivalTime}
+                        onChange={(e) => updateFlight(index, "arrivalTime", e.target.value)}
+                        placeholder="např. 13:45"
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </Card>
