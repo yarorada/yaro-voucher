@@ -185,7 +185,7 @@ export const VoucherDisplay = ({
 
       <Card 
         id="voucher-content" 
-        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-4 print:text-sm"
+        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm"
       >
         {/* Header */}
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
@@ -220,7 +220,7 @@ export const VoucherDisplay = ({
 
         {/* Client Information */}
         <div className="mb-6 print:mb-3">
-          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
             Client Information
           </h2>
           <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
@@ -240,7 +240,7 @@ export const VoucherDisplay = ({
         {/* Hotel Accommodation */}
         {hotelName && (
           <div className="mb-6 print:mb-3">
-            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Hotel Accommodation
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
@@ -254,7 +254,7 @@ export const VoucherDisplay = ({
 
         {/* Services Table */}
         <div className="mb-6 print:mb-3">
-          <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
             Service Overview
           </h2>
           <div className="overflow-x-auto">
@@ -297,7 +297,7 @@ export const VoucherDisplay = ({
         {/* Flight Details Section */}
         {flights && flights.length > 0 && (
           <div className="mb-6 print:mb-3">
-            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Flight Details
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
@@ -339,7 +339,7 @@ export const VoucherDisplay = ({
         {/* Tee Time Section */}
         {teeTimes && teeTimes.length > 0 && (
           <div className="mb-6 print:mb-3">
-            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Confirmed Tee Times
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
@@ -374,7 +374,7 @@ export const VoucherDisplay = ({
             {/* Web version - 3 columns */}
             <div className="print:hidden">
               <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
                 <div>
                   <p className="font-semibold text-foreground">Address:</p>
                   <p>Bratrancu Veverkovych 680</p>
@@ -388,14 +388,14 @@ export const VoucherDisplay = ({
                 <div>
                   <p className="font-semibold text-foreground">Website:</p>
                   <p>www.yarotravel.cz</p>
-                  <p className="mt-2 text-xs">Available 24/7 for your travel needs</p>
+                  <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
                 </div>
               </div>
             </div>
             {/* Print version - compact */}
             <div className="hidden print:block">
               <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="text-[8px] text-muted-foreground">
                 <p>Bratrancu Veverkovych 680, Pardubice, 530 02 | Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz | www.yarotravel.cz</p>
               </div>
             </div>
