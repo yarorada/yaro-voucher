@@ -299,9 +299,9 @@ export const VoucherDisplay = ({
                   return (
                     <li key={index}>
                       {showSeparator && (
-                        <div className="border-t border-border/50 my-3 print:my-2" />
+                        <div className="border-t-2 border-primary my-3 print:my-2" />
                       )}
-                      <div className={`${flight.isVariant ? 'ml-4 pl-3 border-l-2 border-accent/50' : ''}`}>
+                      <div>
                         <div className="text-muted-foreground">
                           <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
                           <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
