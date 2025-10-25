@@ -808,7 +808,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <Label>Odkud *</Label>
                     <AirportCombobox
                       value={flight.fromIata}
-                      onSelect={(iata) => updateFlight(index, "fromIata", iata)}
+                      onSelect={(iata, city) => {
+                        updateFlight(index, "fromIata", iata);
+                        if (city) updateFlight(index, "fromCity", city);
+                      }}
                       placeholder="Vyberte letiště"
                     />
                   </div>
@@ -816,7 +819,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <Label>Kam *</Label>
                     <AirportCombobox
                       value={flight.toIata}
-                      onSelect={(iata) => updateFlight(index, "toIata", iata)}
+                      onSelect={(iata, city) => {
+                        updateFlight(index, "toIata", iata);
+                        if (city) updateFlight(index, "toCity", city);
+                      }}
                       placeholder="Vyberte letiště"
                     />
                   </div>

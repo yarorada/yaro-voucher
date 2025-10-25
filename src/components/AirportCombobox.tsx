@@ -194,7 +194,7 @@ const airports: Airport[] = [
 
 interface AirportComboboxProps {
   value: string;
-  onSelect: (iata: string) => void;
+  onSelect: (iata: string, city?: string) => void;
   placeholder?: string;
 }
 
@@ -253,7 +253,7 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
                     key={airport.iata}
                     value={`${airport.iata} ${airport.city} ${airport.name} ${airport.country}`}
                     onSelect={() => {
-                      onSelect(airport.iata);
+                      onSelect(airport.iata, airport.city);
                       setOpen(false);
                     }}
                   >

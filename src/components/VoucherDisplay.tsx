@@ -245,9 +245,8 @@ export const VoucherDisplay = ({
                 {flights.map((flight, index) => (
                   <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
-                    <span className="font-semibold text-foreground">{flight.airlineCode}</span> {flight.airlineName} • 
-                    {flight.fromCity ? ` ${flight.fromCity}` : ` ${flight.fromIata}`} → 
-                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`} • 
+                    <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
+                    {flight.fromCity || flight.fromIata} → {flight.toCity || flight.toIata} • 
                     Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
                     Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
                   </li>
