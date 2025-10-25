@@ -842,6 +842,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   />
                 </div>
               </div>
+              
+              {index === services.length - 1 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <Button type="button" onClick={addService} size="sm" variant="outline" className="w-full">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Přidat službu
+                  </Button>
+                </div>
+              )}
             </Card>
           ))}
         </div>
