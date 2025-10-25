@@ -42,9 +42,24 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AviationStack API error:', response.status, errorText);
+      
+      let errorMessage = 'Nepodařilo se načíst lety z AviationStack API';
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error?.message) {
+          if (errorJson.error.code === 'function_access_restricted') {
+            errorMessage = 'Váš AviationStack předplatitelský plán nepodporuje vyhledávání letů. Prosím upgradujte váš plán nebo zadejte údaje manuálně.';
+          } else {
+            errorMessage = errorJson.error.message;
+          }
+        }
+      } catch (e) {
+        // Keep default error message
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch flights from AviationStack API', details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: errorMessage }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

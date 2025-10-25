@@ -290,7 +290,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error searching flights:', error);
+        toast.error("Nepodařilo se vyhledat lety. Zkontrolujte své AviationStack API předplatné.");
+        return;
+      }
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
 
       if (data.flights && data.flights.length > 0) {
         setSearchResults(data.flights);
