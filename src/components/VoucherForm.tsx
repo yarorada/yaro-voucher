@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Users, RotateCcw, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -234,7 +234,61 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addTeeTime = () => {
-    setTeeTimes([...teeTimes, { date: undefined, club: "", time: "", golfers: "", isTextMode: false }]);
+    // Najít poslední tee time s datem
+    const lastTeeTimeWithDate = [...teeTimes]
+      .reverse()
+      .find(t => t.date !== undefined);
+    
+    // Pokud existuje, přidat 1 den
+    let newDate: Date | undefined = undefined;
+    if (lastTeeTimeWithDate?.date) {
+      newDate = new Date(lastTeeTimeWithDate.date);
+      newDate.setDate(newDate.getDate() + 1);
+    }
+    
+    setTeeTimes([
+      ...teeTimes, 
+      { 
+        date: newDate, 
+        club: "", 
+        time: "", 
+        golfers: "", 
+        isTextMode: false 
+      }
+    ]);
+  };
+
+  const copyTeeTime = (index: number) => {
+    const sourceTeeTime = teeTimes[index];
+    
+    // Najít nejvyšší datum ze všech tee times
+    const maxDate = teeTimes
+      .map(t => t.date)
+      .filter((date): date is Date => date !== undefined)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    
+    // Přidat 1 den k nejvyššímu datu
+    let newDate: Date | undefined = undefined;
+    if (maxDate) {
+      newDate = new Date(maxDate);
+      newDate.setDate(newDate.getDate() + 1);
+    } else if (sourceTeeTime.date) {
+      // Pokud žádné jiné datum neexistuje, použít datum zdrojového + 1
+      newDate = new Date(sourceTeeTime.date);
+      newDate.setDate(newDate.getDate() + 1);
+    }
+    
+    // Vytvořit kopii s novým datem
+    setTeeTimes([
+      ...teeTimes,
+      {
+        date: newDate,
+        club: sourceTeeTime.club,
+        time: sourceTeeTime.time,
+        golfers: sourceTeeTime.golfers,
+        isTextMode: sourceTeeTime.isTextMode
+      }
+    ]);
   };
 
   const handleGolfClubSelect = (index: number, clubName: string) => {
@@ -930,14 +984,25 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               <Card key={index} className="p-4 bg-muted">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-semibold text-foreground">Tee Time {index + 1}</h3>
-                  <Button
-                    type="button"
-                    onClick={() => removeTeeTime(index)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => copyTeeTime(index)}
+                      variant="outline"
+                      size="sm"
+                      title="Kopírovat na další den"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => removeTeeTime(index)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
