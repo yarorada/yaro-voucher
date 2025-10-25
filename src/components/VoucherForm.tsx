@@ -302,6 +302,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setOtherTravelerIds(updated);
   };
 
+  const removeDiacritics = (text: string): string => {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
   const handleBulkImport = async () => {
     if (!bulkImportText.trim()) {
       toast.error("Prosím zadejte jména");
@@ -312,6 +318,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     try {
       const lines = bulkImportText.split('\n').filter(line => line.trim());
       const newTravelerIds: string[] = [];
+      let updatedCount = 0;
 
       for (const line of lines) {
         const trimmedLine = line.trim();
@@ -323,8 +330,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           continue;
         }
 
-        const firstName = parts[0];
-        const lastName = parts.slice(1).join(' ');
+        const firstName = removeDiacritics(parts[0]);
+        const lastName = removeDiacritics(parts.slice(1).join(' '));
 
         // Check if client exists
         const { data: existingClient } = await supabase
@@ -336,6 +343,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         if (existingClient) {
           newTravelerIds.push(existingClient.id);
+          updatedCount++;
         } else {
           // Create new client
           const { data: newClient, error } = await supabase
@@ -357,7 +365,14 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       setOtherTravelerIds([...otherTravelerIds, ...newTravelerIds]);
       setBulkImportText("");
       setBulkImportOpen(false);
-      toast.success(`Přidáno ${newTravelerIds.length} cestujících`);
+      
+      const addedCount = newTravelerIds.length - updatedCount;
+      if (addedCount > 0) {
+        toast.success(`Přidáno ${addedCount} nových cestujících`);
+      }
+      if (updatedCount > 0) {
+        toast.success(`Použito ${updatedCount} existujících cestujících`);
+      }
     } catch (error) {
       console.error('Error bulk importing:', error);
       toast.error("Nepodařilo se importovat cestující");
