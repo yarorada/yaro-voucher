@@ -18,7 +18,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Get and verify JWT from Authorization header
+    // Get Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -26,8 +26,6 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const jwt = authHeader.replace('Bearer ', '');
     
     // Initialize Supabase client with user's auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -36,8 +34,8 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify JWT and get user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+    // Get user from already verified JWT (JWT is verified by Supabase automatically)
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       console.error("Authentication error:", authError);
       return new Response(
