@@ -762,10 +762,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-foreground">Detaily letů</h2>
-          <Button type="button" onClick={() => addFlight(false)} size="sm" variant="outline">
-            <Plus className="h-4 w-4 mr-1" />
-            Přidat let
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" onClick={() => addFlight(false)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat let
+            </Button>
+            <Button type="button" onClick={() => addFlight(true)} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Varianta letu
+            </Button>
+          </div>
         </div>
 
         {flights.length === 0 ? (
@@ -896,20 +902,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       </div>
                     </div>
                   </Card>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Show variant button at the end if there are any variant flights */}
-          {flights.some(f => f.isVariant) && (
-            <div className="flex justify-center mt-4">
-              <Button type="button" onClick={() => addFlight(true)} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-1" />
-                Varianta letu
-              </Button>
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Tee Time Section */}
