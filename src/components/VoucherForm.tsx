@@ -301,7 +301,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         setSearchResults(data.flights);
         toast.success(`Nalezeno ${data.flights.length} letů`);
       } else {
-        toast.info("Žádné lety nebyly nalezeny pro zadané parametry");
+        // Show message from API if available, otherwise generic message
+        const message = data.message || "Žádné lety nebyly nalezeny pro zadané parametry";
+        toast.info(message);
       }
     } catch (error) {
       console.error('Error searching flights:', error);

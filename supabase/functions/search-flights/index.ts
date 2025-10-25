@@ -21,11 +21,16 @@ serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('FLIGHTAWARE_API_KEY');
+    
+    // If API key is not configured, return empty results with info message
     if (!apiKey) {
-      console.error('FLIGHTAWARE_API_KEY not configured');
+      console.log('FLIGHTAWARE_API_KEY not configured, returning empty results');
       return new Response(
-        JSON.stringify({ error: 'API klíč není nakonfigurován' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          flights: [],
+          message: 'Vyhledávání letů není dostupné. Zadejte údaje o letu ručně.'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -103,8 +108,16 @@ serve(async (req) => {
         status: flight.status || 'scheduled',
       }));
 
+    // If no flights found, return with info message
+    const responseBody = flights.length > 0 
+      ? { flights }
+      : { 
+          flights: [], 
+          message: 'Nebyly nalezeny žádné přímé lety. Zadejte údaje o letu ručně.' 
+        };
+
     return new Response(
-      JSON.stringify({ flights }),
+      JSON.stringify(responseBody),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
