@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,7 @@ interface Service {
   qty: string;
   dateFrom: Date | undefined;
   dateTo: Date | undefined;
+  isTextMode?: boolean;
 }
 
 interface TeeTime {
@@ -63,7 +64,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       ...s,
       dateFrom: s.dateFrom ? new Date(s.dateFrom) : undefined,
       dateTo: s.dateTo ? new Date(s.dateTo) : undefined,
-    })) || [{ name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined }]
+      isTextMode: !!s.name,
+    })) || [{ name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined, isTextMode: false }]
   );
   const [teeTimes, setTeeTimes] = useState<TeeTime[]>(
     initialData?.teeTimes?.map(t => ({
@@ -161,9 +163,23 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         pax: "", 
         qty: "", 
         dateFrom: lastService?.dateFrom, 
-        dateTo: lastService?.dateTo 
+        dateTo: lastService?.dateTo,
+        isTextMode: false
       },
     ]);
+  };
+
+  const handleServiceSelect = (index: number, serviceName: string) => {
+    const updated = [...services];
+    updated[index].name = serviceName;
+    updated[index].isTextMode = true;
+    setServices(updated);
+  };
+
+  const toggleServiceInputMode = (index: number) => {
+    const updated = [...services];
+    updated[index].isTextMode = !updated[index].isTextMode;
+    setServices(updated);
   };
 
   const removeService = (index: number) => {
@@ -172,9 +188,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     }
   };
 
-  const updateService = (index: number, field: keyof Service, value: string | Date | undefined) => {
+  const updateService = (index: number, field: keyof Service, value: string | Date | undefined | boolean) => {
     const updated = [...services];
-    updated[index][field] = value as any;
+    if (field === 'name' || field === 'pax' || field === 'qty') {
+      (updated[index] as any)[field] = value as string;
+    } else if (field === 'dateFrom' || field === 'dateTo') {
+      (updated[index] as any)[field] = value as Date | undefined;
+    } else if (field === 'isTextMode') {
+      (updated[index] as any)[field] = value as boolean;
+    }
     setServices(updated);
   };
 
@@ -533,10 +555,31 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
                   <Label>Název služby *</Label>
-                  <ServiceCombobox
-                    value={service.name}
-                    onChange={(value) => updateService(index, "name", value)}
-                  />
+                  {service.isTextMode ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={service.name}
+                        onChange={(e) => updateService(index, "name", e.target.value)}
+                        placeholder="Název služby"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => toggleServiceInputMode(index)}
+                        title="Vybrat z šablony"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <ServiceCombobox
+                      value={service.name}
+                      onChange={(value) => updateService(index, "name", value)}
+                      onSelect={(value) => handleServiceSelect(index, value)}
+                    />
+                  )}
                 </div>
                 <div>
                   <Label>PAX *</Label>
