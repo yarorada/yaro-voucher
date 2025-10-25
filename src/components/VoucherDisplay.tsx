@@ -6,6 +6,47 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 
+// Airport lookup data
+const airportCities: Record<string, string> = {
+  "PRG": "Praha", "BRQ": "Brno", "OSR": "Ostrava", "PED": "Pardubice",
+  "IST": "Istanbul", "SAW": "Istanbul", "AYT": "Antalya", "DLM": "Dalaman",
+  "BJV": "Bodrum", "ESB": "Ankara", "ADB": "Izmir", "GZT": "Gaziantep",
+  "ASR": "Kayseri", "TZX": "Trabzon", "LCA": "Larnaca", "PFO": "Paphos",
+  "ECN": "Ercan", "ATH": "Athens", "HER": "Heraklion", "RHO": "Rhodes",
+  "SKG": "Thessaloniki", "CFU": "Corfu", "CHQ": "Chania", "JMK": "Mykonos",
+  "JTR": "Santorini", "KGS": "Kos", "ZTH": "Zakynthos", "DXB": "Dubai",
+  "AUH": "Abu Dhabi", "DOH": "Doha", "BEY": "Beirut", "TLV": "Tel Aviv",
+  "AMM": "Amman", "CAI": "Cairo", "SSH": "Sharm El Sheikh", "HRG": "Hurghada",
+  "RMF": "Marsa Alam", "VIE": "Vienna", "MUC": "Munich", "FRA": "Frankfurt",
+  "BER": "Berlin", "HAM": "Hamburg", "DUS": "Düsseldorf", "STR": "Stuttgart",
+  "CGN": "Cologne", "ZRH": "Zurich", "GVA": "Geneva", "BUD": "Budapest",
+  "WAW": "Warsaw", "KRK": "Krakow", "BTS": "Bratislava", "CDG": "Paris",
+  "ORY": "Paris", "LHR": "London", "LGW": "London", "STN": "London",
+  "LTN": "London", "MAN": "Manchester", "EDI": "Edinburgh", "AMS": "Amsterdam",
+  "BRU": "Brussels", "LUX": "Luxembourg", "FCO": "Rome", "MXP": "Milan",
+  "LIN": "Milan", "VCE": "Venice", "NAP": "Naples", "PSA": "Pisa",
+  "BCN": "Barcelona", "MAD": "Madrid", "AGP": "Malaga", "PMI": "Palma de Mallorca",
+  "VLC": "Valencia", "SVQ": "Seville", "LIS": "Lisbon", "OPO": "Porto",
+  "FAO": "Faro", "CPH": "Copenhagen", "OSL": "Oslo", "ARN": "Stockholm",
+  "HEL": "Helsinki", "SVO": "Moscow", "DME": "Moscow", "LED": "St. Petersburg",
+  "KBP": "Kyiv", "OTP": "Bucharest", "SOF": "Sofia", "BEG": "Belgrade",
+  "ZAG": "Zagreb", "DBV": "Dubrovnik", "SPU": "Split", "LJU": "Ljubljana",
+  "TIA": "Tirana", "SKP": "Skopje", "PRN": "Pristina", "SJJ": "Sarajevo",
+  "TGD": "Podgorica", "JFK": "New York", "EWR": "Newark", "LGA": "New York",
+  "ORD": "Chicago", "LAX": "Los Angeles", "MIA": "Miami", "SFO": "San Francisco",
+  "YYZ": "Toronto", "YUL": "Montreal", "YVR": "Vancouver", "HKG": "Hong Kong",
+  "SIN": "Singapore", "BKK": "Bangkok", "NRT": "Tokyo", "HND": "Tokyo",
+  "ICN": "Seoul", "PEK": "Beijing", "PVG": "Shanghai", "DEL": "New Delhi",
+  "BOM": "Mumbai", "JNB": "Johannesburg", "CPT": "Cape Town", "ADD": "Addis Ababa",
+  "NBO": "Nairobi", "CMN": "Casablanca", "TUN": "Tunis", "GRU": "São Paulo",
+  "GIG": "Rio de Janeiro", "EZE": "Buenos Aires", "BOG": "Bogotá", "LIM": "Lima",
+  "SYD": "Sydney", "MEL": "Melbourne", "BNE": "Brisbane", "AKL": "Auckland"
+};
+
+const getCityName = (iataCode: string): string => {
+  return airportCities[iataCode] || iataCode;
+};
+
 interface Service {
   name: string;
   pax: string;
@@ -242,15 +283,19 @@ export const VoucherDisplay = ({
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
               <ul className="space-y-2 print:space-y-1">
-                {flights.map((flight, index) => (
-                  <li key={index} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
-                    <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
-                    {flight.fromCity || flight.fromIata} → {flight.toCity || flight.toIata} • 
-                    Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
-                    Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
-                  </li>
-                ))}
+                {flights.map((flight, index) => {
+                  const fromCity = flight.fromCity || getCityName(flight.fromIata);
+                  const toCity = flight.toCity || getCityName(flight.toIata);
+                  return (
+                    <li key={index} className="text-muted-foreground">
+                      <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
+                      <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
+                      {fromCity} → {toCity} • 
+                      Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
+                      Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
