@@ -24,6 +24,7 @@ interface Voucher {
   voucher_number: number;
   client_id: string;
   client_name: string;
+  hotel_name: string;
   other_travelers: string[] | null;
   services: any;
   tee_times?: any;
@@ -205,6 +206,7 @@ const VoucherDetail = () => {
               .map(t => `${t.clients.first_name} ${t.clients.last_name}`)
           }
           services={voucher.services}
+          hotelName={voucher.hotel_name}
           teeTimes={voucher.tee_times}
           flights={voucher.flights}
           issueDate={voucher.issue_date}

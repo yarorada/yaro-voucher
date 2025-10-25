@@ -189,6 +189,16 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
           </div>
 
+          <!-- Hotel Accommodation -->
+          ${voucher.hotel_name ? `
+          <div style="background-color: white; padding: 20px; margin-top: 20px;">
+            <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Hotel Accommodation</h2>
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
+              <p style="margin: 0;"><strong>Hotel:</strong> ${voucher.hotel_name}</p>
+            </div>
+          </div>
+          ` : ''}
+
           <!-- Services -->
           <div style="background-color: white; padding: 20px; margin-top: 20px;">
             <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Service Overview</h2>

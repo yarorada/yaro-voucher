@@ -82,6 +82,7 @@ interface VoucherDisplayProps {
   clientName: string;
   otherTravelers?: string[];
   services: Service[];
+  hotelName?: string;
   teeTimes?: TeeTime[];
   flights?: Flight[];
   issueDate: string;
@@ -100,6 +101,7 @@ export const VoucherDisplay = ({
   clientName,
   otherTravelers,
   services,
+  hotelName,
   teeTimes,
   flights,
   issueDate,
@@ -234,6 +236,21 @@ export const VoucherDisplay = ({
             )}
           </div>
         </div>
+
+        {/* Hotel Accommodation */}
+        {hotelName && (
+          <div className="mb-6 print:mb-3">
+            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
+              Hotel Accommodation
+            </h2>
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
+              <div>
+                <span className="font-semibold text-foreground">Hotel:</span>{" "}
+                <span className="text-muted-foreground">{hotelName}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Services Table */}
         <div className="mb-6 print:mb-3">
