@@ -785,7 +785,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
               
               // Check if this is a "Let ZPĚT" variant (every even variant flight)
-              const isVariantZpet = flight.isVariant && flightNumber % 2 === 0;
+              const isVariantZpet = flight.isVariant && flightLabel === "Let ZPĚT";
               
               return (
                 <React.Fragment key={index}>
