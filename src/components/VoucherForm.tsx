@@ -775,10 +775,19 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         ) : (
           <div className="space-y-4">
             {flights.map((flight, index) => {
+              // For main flights (not variants), calculate position among main flights
               const mainFlights = flights.filter(f => !f.isVariant);
-              const flightNumber = flight.isVariant ? 
-                mainFlights.length + 1 : 
-                mainFlights.findIndex(f => f === flight) + 1;
+              const variantFlights = flights.filter(f => f.isVariant);
+              
+              let flightNumber: number;
+              if (flight.isVariant) {
+                // For variants, count position among variants
+                flightNumber = variantFlights.findIndex(f => f === flight) + 1;
+              } else {
+                // For main flights, count position among main flights
+                flightNumber = mainFlights.findIndex(f => f === flight) + 1;
+              }
+              
               const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
               
               return (
