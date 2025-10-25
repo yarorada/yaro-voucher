@@ -244,11 +244,11 @@ export const VoucherDisplay = ({
             <table className="w-full border-collapse print:text-[11px]">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-3 text-left print:p-1">PAX</th>
-                  <th className="p-3 text-left print:p-1">Qtd.</th>
-                  <th className="p-3 text-left print:p-1">Service</th>
-                  <th className="p-3 text-left print:p-1">Date From</th>
-                  <th className="p-3 text-left print:p-1">Date To</th>
+                  <th className="p-3 text-left print:p-0.5">PAX</th>
+                  <th className="p-3 text-left print:p-0.5">Qtd.</th>
+                  <th className="p-3 text-left print:p-0.5">Service</th>
+                  <th className="p-3 text-left print:p-0.5">Date From</th>
+                  <th className="p-3 text-left print:p-0.5">Date To</th>
                 </tr>
               </thead>
               <tbody>
@@ -257,17 +257,17 @@ export const VoucherDisplay = ({
                     key={index} 
                     className={index % 2 === 0 ? "bg-muted" : "bg-card"}
                   >
-                    <td className="p-3 text-muted-foreground print:p-1">
+                    <td className="p-3 text-muted-foreground print:p-0.5">
                       {service.pax || "—"}
                     </td>
-                    <td className="p-3 text-muted-foreground print:p-1">
+                    <td className="p-3 text-muted-foreground print:p-0.5">
                       {service.qty || "—"}
                     </td>
-                    <td className="p-3 font-medium text-foreground print:p-1">{service.name}</td>
-                    <td className="p-3 text-muted-foreground print:p-1">
+                    <td className="p-3 font-medium text-foreground print:p-0.5">{service.name}</td>
+                    <td className="p-3 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateFrom)}
                     </td>
-                    <td className="p-3 text-muted-foreground print:p-1">
+                    <td className="p-3 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateTo)}
                     </td>
                   </tr>
@@ -283,8 +283,8 @@ export const VoucherDisplay = ({
             <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
               Flight Details
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-1.5 print:text-[11px]">
-              <ul className="space-y-3 print:space-y-1">
+            <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
+              <ul className="space-y-3 print:space-y-0.5">
                 {flights.map((flight, index) => {
                   const fromCity = flight.fromCity || getCityName(flight.fromIata);
                   const toCity = flight.toCity || getCityName(flight.toIata);
@@ -325,8 +325,8 @@ export const VoucherDisplay = ({
             <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[14px] print:mb-2 print:pl-2">
               Confirmed Tee Times
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-1.5 print:text-[11px]">
-              <ul className="space-y-2 print:space-y-0.5">
+            <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
+              <ul className="space-y-2 print:space-y-0">
                 {teeTimes.map((teeTime, index) => (
                   <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
