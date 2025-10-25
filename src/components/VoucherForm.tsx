@@ -89,6 +89,146 @@ interface VoucherFormProps {
   };
 }
 
+// SortableServiceItem component outside main component to prevent losing focus
+const SortableServiceItem = React.memo(({ 
+  service, 
+  index, 
+  services,
+  updateService,
+  removeService,
+  addService,
+  handleServiceSelect,
+  toggleServiceInputMode
+}: { 
+  service: Service; 
+  index: number;
+  services: Service[];
+  updateService: (index: number, field: keyof Service, value: string | Date | undefined | boolean) => void;
+  removeService: (index: number) => void;
+  addService: () => void;
+  handleServiceSelect: (index: number, serviceName: string) => void;
+  toggleServiceInputMode: (index: number) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: service.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="p-4 bg-muted">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-accent rounded"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
+        </div>
+        {services.length > 1 && (
+          <Button
+            type="button"
+            onClick={() => removeService(index)}
+            variant="outline"
+            size="sm"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="md:col-span-2">
+          <Label>Název služby *</Label>
+          {service.isTextMode ? (
+            <div className="flex gap-2">
+              <Input
+                value={service.name}
+                onChange={(e) => updateService(index, "name", e.target.value)}
+                placeholder="Název služby"
+                required
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => toggleServiceInputMode(index)}
+                title="Vybrat z šablony"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <ServiceCombobox
+              value={service.name}
+              onChange={(value) => updateService(index, "name", value)}
+              onSelect={(value) => handleServiceSelect(index, value)}
+            />
+          )}
+        </div>
+        <div>
+          <Label>PAX *</Label>
+          <Input
+            value={service.pax}
+            onChange={(e) => updateService(index, "pax", e.target.value)}
+            placeholder="např. 2 ADT"
+            required
+            maxLength={50}
+          />
+        </div>
+        <div>
+          <Label>Qtd. *</Label>
+          <Input
+            value={service.qty}
+            onChange={(e) => updateService(index, "qty", e.target.value)}
+            placeholder="např. 1"
+            required
+            maxLength={20}
+          />
+        </div>
+        <div>
+          <Label>Datum od *</Label>
+          <DateInput
+            value={service.dateFrom}
+            onChange={(date) => updateService(index, "dateFrom", date)}
+            placeholder="DD.MM.RR"
+          />
+        </div>
+        <div>
+          <Label>Datum do *</Label>
+          <DateInput
+            value={service.dateTo}
+            onChange={(date) => updateService(index, "dateTo", date)}
+            placeholder="DD.MM.RR"
+          />
+        </div>
+      </div>
+      
+      {index === services.length - 1 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <Button type="button" onClick={addService} size="sm" variant="outline" className="w-full">
+            <Plus className="h-4 w-4 mr-1" />
+            Přidat službu
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+});
+
 export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -664,127 +804,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     }
   };
 
-  const SortableServiceItem = ({ service, index }: { service: Service; index: number }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: service.id });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
-    return (
-      <Card ref={setNodeRef} style={style} className="p-4 bg-muted">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-accent rounded"
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
-            <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
-          </div>
-          {services.length > 1 && (
-            <Button
-              type="button"
-              onClick={() => removeService(index)}
-              variant="outline"
-              size="sm"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="md:col-span-2">
-            <Label>Název služby *</Label>
-            {service.isTextMode ? (
-              <div className="flex gap-2">
-                <Input
-                  value={service.name}
-                  onChange={(e) => updateService(index, "name", e.target.value)}
-                  placeholder="Název služby"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => toggleServiceInputMode(index)}
-                  title="Vybrat z šablony"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <ServiceCombobox
-                value={service.name}
-                onChange={(value) => updateService(index, "name", value)}
-                onSelect={(value) => handleServiceSelect(index, value)}
-              />
-            )}
-          </div>
-          <div>
-            <Label>PAX *</Label>
-            <Input
-              value={service.pax}
-              onChange={(e) => updateService(index, "pax", e.target.value)}
-              placeholder="např. 2 ADT"
-              required
-              maxLength={50}
-            />
-          </div>
-          <div>
-            <Label>Qtd. *</Label>
-            <Input
-              value={service.qty}
-              onChange={(e) => updateService(index, "qty", e.target.value)}
-              placeholder="např. 1"
-              required
-              maxLength={20}
-            />
-          </div>
-          <div>
-            <Label>Datum od *</Label>
-            <DateInput
-              value={service.dateFrom}
-              onChange={(date) => updateService(index, "dateFrom", date)}
-              placeholder="DD.MM.RR"
-            />
-          </div>
-          <div>
-            <Label>Datum do *</Label>
-            <DateInput
-              value={service.dateTo}
-              onChange={(date) => updateService(index, "dateTo", date)}
-              placeholder="DD.MM.RR"
-            />
-          </div>
-        </div>
-        
-        {index === services.length - 1 && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <Button type="button" onClick={addService} size="sm" variant="outline" className="w-full">
-              <Plus className="h-4 w-4 mr-1" />
-              Přidat službu
-            </Button>
-          </div>
-        )}
-      </Card>
-    );
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-6 shadow-[var(--shadow-medium)]">
@@ -921,7 +940,17 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           >
             <div className="space-y-6">
               {services.map((service, index) => (
-                <SortableServiceItem key={service.id} service={service} index={index} />
+                <SortableServiceItem 
+                  key={service.id} 
+                  service={service} 
+                  index={index}
+                  services={services}
+                  updateService={updateService}
+                  removeService={removeService}
+                  addService={addService}
+                  handleServiceSelect={handleServiceSelect}
+                  toggleServiceInputMode={toggleServiceInputMode}
+                />
               ))}
             </div>
           </SortableContext>
