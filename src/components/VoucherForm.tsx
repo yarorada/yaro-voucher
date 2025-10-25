@@ -308,21 +308,31 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addFlight = (isVariant = false) => {
-    // Find latest date from services
-    const latestServiceDate = services
-      .map(s => s.dateTo)
+    // Find earliest and latest dates from services
+    const serviceDates = services
+      .flatMap(s => [s.dateFrom, s.dateTo])
       .filter((date): date is Date => date !== undefined)
-      .sort((a, b) => b.getTime() - a.getTime())[0];
+      .sort((a, b) => a.getTime() - b.getTime());
+    
+    const earliestServiceDate = serviceDates[0];
+    const latestServiceDate = serviceDates[serviceDates.length - 1];
 
     // Get previous flight to reverse airports and copy airline
     const previousFlight = flights[flights.length - 1];
     
-    // Find first variant flight (Let TAM) to copy PAX if adding a variant
-    const variantFlights = flights.filter(f => f.isVariant);
-    const firstVariant = isVariant && variantFlights.length > 0 ? variantFlights[0] : null;
+    // Determine if this is "Let TAM" (odd position) or "Let ZPĚT" (even position)
+    const flightCount = flights.length;
+    const isOutbound = flightCount % 2 === 0; // Even index = Let TAM, Odd index = Let ZPĚT
+    
+    // For Let TAM: use earliest date and PAX from first service
+    // For Let ZPĚT: use latest date and PAX from previous flight (which is Let TAM)
+    const flightDate = isOutbound ? earliestServiceDate : latestServiceDate;
+    const flightPax = isOutbound 
+      ? (services[0]?.pax || "") 
+      : (previousFlight?.pax || "");
     
     setFlights([...flights, { 
-      date: latestServiceDate || undefined,
+      date: flightDate || undefined,
       airlineCode: previousFlight ? previousFlight.airlineCode : "",
       airlineName: previousFlight ? previousFlight.airlineName : "",
       flightNumber: "",
@@ -333,7 +343,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       departureTime: "",
       arrivalTime: "",
       isVariant,
-      pax: firstVariant ? firstVariant.pax : ""
+      pax: flightPax
     }]);
   };
 
