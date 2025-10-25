@@ -260,9 +260,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     // Get previous flight to reverse airports and copy airline
     const previousFlight = flights[flights.length - 1];
     
-    // Find previous variant flight to copy PAX if adding a variant
+    // Find first variant flight (Let TAM) to copy PAX if adding a variant
     const variantFlights = flights.filter(f => f.isVariant);
-    const previousVariant = isVariant && variantFlights.length > 0 ? variantFlights[variantFlights.length - 1] : null;
+    const firstVariant = isVariant && variantFlights.length > 0 ? variantFlights[0] : null;
     
     setFlights([...flights, { 
       date: latestServiceDate || undefined,
@@ -276,7 +276,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       departureTime: "",
       arrivalTime: "",
       isVariant,
-      pax: previousVariant ? previousVariant.pax : ""
+      pax: firstVariant ? firstVariant.pax : ""
     }]);
   };
 
