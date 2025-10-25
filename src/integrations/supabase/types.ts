@@ -79,6 +79,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           address?: string | null
@@ -90,6 +91,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string
         }
         Update: {
           address?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -157,6 +160,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           address?: string | null
@@ -168,6 +172,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string
         }
         Update: {
           address?: string | null
@@ -179,6 +184,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -236,6 +242,7 @@ export type Database = {
           supplier_id: string | null
           tee_times: Json | null
           updated_at: string
+          user_id: string
           voucher_code: string
           voucher_number: number
         }
@@ -253,6 +260,7 @@ export type Database = {
           supplier_id?: string | null
           tee_times?: Json | null
           updated_at?: string
+          user_id?: string
           voucher_code: string
           voucher_number: number
         }
@@ -270,6 +278,7 @@ export type Database = {
           supplier_id?: string | null
           tee_times?: Json | null
           updated_at?: string
+          user_id?: string
           voucher_code?: string
           voucher_number?: number
         }
