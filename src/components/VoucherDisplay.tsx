@@ -294,11 +294,15 @@ export const VoucherDisplay = ({
                     mainFlights.filter((f, i) => i < flights.indexOf(flight)).length + 1;
                   const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
                   
+                  const showSeparator = flight.isVariant && index > 0 && !flights[index - 1].isVariant;
+                  
                   return (
                     <li key={index}>
+                      {showSeparator && (
+                        <div className="border-t border-border/50 my-3 print:my-2" />
+                      )}
                       <div className={`${flight.isVariant ? 'ml-4 pl-3 border-l-2 border-accent/50' : ''}`}>
                         <div className="text-muted-foreground">
-                          {flight.isVariant && <span className="text-xs font-semibold text-accent">Varianta: </span>}
                           <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
                           <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
                           {fromCity} → {toCity} • 
