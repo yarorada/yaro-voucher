@@ -254,13 +254,13 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       .filter((date): date is Date => date !== undefined)
       .sort((a, b) => b.getTime() - a.getTime())[0];
 
-    // Get previous flight to reverse airports
+    // Get previous flight to reverse airports and copy airline
     const previousFlight = flights[flights.length - 1];
     
     setFlights([...flights, { 
       date: latestServiceDate || undefined,
-      airlineCode: "",
-      airlineName: "",
+      airlineCode: previousFlight ? previousFlight.airlineCode : "",
+      airlineName: previousFlight ? previousFlight.airlineName : "",
       flightNumber: "",
       fromIata: previousFlight ? previousFlight.toIata : "", 
       fromCity: previousFlight ? previousFlight.toCity : "", 
