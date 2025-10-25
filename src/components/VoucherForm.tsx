@@ -471,9 +471,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               <div className="flex gap-2">
                 <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
                   <DialogTrigger asChild>
-                    <Button type="button" size="sm" variant="outline">
-                      <Users className="h-4 w-4 mr-1" />
-                      Hromadný import
+                    <Button type="button" size="sm" variant="outline" className="md:px-3">
+                      <Users className="h-4 w-4 md:mr-1" />
+                      <span className="hidden md:inline">Hromadný import</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -508,9 +508,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button type="button" onClick={addTraveler} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Přidat cestujícího
+                <Button type="button" onClick={addTraveler} size="sm" variant="outline" className="md:px-3">
+                  <Plus className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Přidat cestujícího</span>
                 </Button>
               </div>
             </div>
