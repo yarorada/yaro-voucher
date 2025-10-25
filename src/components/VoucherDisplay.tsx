@@ -360,7 +360,7 @@ export const VoucherDisplay = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
                 <div>
                   <p className="font-semibold text-foreground">Address:</p>
-                  <p>Bratrancu Veverkowych 680</p>
+                  <p>Bratrancu Veverkovych 680</p>
                   <p>Pardubice, 530 02</p>
                 </div>
                 <div>
@@ -379,7 +379,7 @@ export const VoucherDisplay = ({
             <div className="hidden print:block">
               <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
               <div className="text-xs text-muted-foreground leading-relaxed">
-                <p>Bratrancu Veverkowych 680, Pardubice, 530 02</p>
+                <p>Bratrancu Veverkovych 680, Pardubice, 530 02</p>
                 <p>Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz</p>
                 <p>www.yarotravel.cz</p>
               </div>
