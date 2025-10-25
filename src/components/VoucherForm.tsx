@@ -260,6 +260,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     // Get previous flight to reverse airports and copy airline
     const previousFlight = flights[flights.length - 1];
     
+    // Find previous variant flight to copy PAX if adding a variant
+    const variantFlights = flights.filter(f => f.isVariant);
+    const previousVariant = isVariant && variantFlights.length > 0 ? variantFlights[variantFlights.length - 1] : null;
+    
     setFlights([...flights, { 
       date: latestServiceDate || undefined,
       airlineCode: previousFlight ? previousFlight.airlineCode : "",
@@ -272,7 +276,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       departureTime: "",
       arrivalTime: "",
       isVariant,
-      pax: ""
+      pax: previousVariant ? previousVariant.pax : ""
     }]);
   };
 
@@ -784,12 +788,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
               
               const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
               
-              // Check if this is a "Let ZPĚT" variant (every even variant flight)
-              const isVariantZpet = flight.isVariant && flightLabel === "Let ZPĚT";
-              
               return (
-                <React.Fragment key={index}>
-                  <Card className={`p-4 ${flight.isVariant ? 'bg-card border-2 border-accent/50' : 'bg-muted'}`}>
+                <Card key={index} className={`p-4 ${flight.isVariant ? 'bg-card border-2 border-accent/50' : 'bg-muted'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="font-semibold text-foreground">
@@ -896,20 +896,20 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       </div>
                     </div>
                   </Card>
-                  
-                  {isVariantZpet && (
-                    <div className="flex justify-center">
-                      <Button type="button" onClick={() => addFlight(true)} size="sm" variant="outline">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Varianta letu
-                      </Button>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Show variant button at the end if there are any variant flights */}
+          {flights.some(f => f.isVariant) && (
+            <div className="flex justify-center mt-4">
+              <Button type="button" onClick={() => addFlight(true)} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Varianta letu
+              </Button>
+            </div>
+          )}
       </Card>
 
       {/* Tee Time Section */}
