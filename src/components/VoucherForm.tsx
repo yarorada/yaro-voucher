@@ -189,14 +189,32 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const addService = () => {
     const lastService = services[services.length - 1];
+    
+    // Find earliest dateFrom and latest dateTo from all services
+    let earliestDateFrom: Date | undefined = undefined;
+    let latestDateTo: Date | undefined = undefined;
+    
+    services.forEach(service => {
+      if (service.dateFrom) {
+        if (!earliestDateFrom || service.dateFrom < earliestDateFrom) {
+          earliestDateFrom = service.dateFrom;
+        }
+      }
+      if (service.dateTo) {
+        if (!latestDateTo || service.dateTo > latestDateTo) {
+          latestDateTo = service.dateTo;
+        }
+      }
+    });
+    
     setServices([
       ...services,
       { 
         name: "", 
-        pax: "", 
-        qty: "", 
-        dateFrom: lastService?.dateFrom, 
-        dateTo: lastService?.dateTo,
+        pax: lastService?.pax || "", 
+        qty: lastService?.qty || "", 
+        dateFrom: earliestDateFrom, 
+        dateTo: latestDateTo,
         isTextMode: false
       },
     ]);
