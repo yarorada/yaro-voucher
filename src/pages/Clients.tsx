@@ -195,7 +195,7 @@ const Clients = () => {
 
     let successCount = 0;
     let errorCount = 0;
-    let duplicateCount = 0;
+    let updatedCount = 0;
 
     for (const line of lines) {
       const parts = line.split(/\s+/);
@@ -218,35 +218,44 @@ const Clients = () => {
           .maybeSingle();
 
         if (existingClient) {
-          duplicateCount++;
-          continue;
+          // Update existing client
+          const { error } = await supabase
+            .from("clients")
+            .update({
+              email: email ? email.trim() : null,
+            })
+            .eq("id", existingClient.id);
+
+          if (error) throw error;
+          updatedCount++;
+        } else {
+          // Insert new client
+          const { error } = await supabase.from("clients").insert({
+            first_name: removeDiacritics(first_name.trim()),
+            last_name: removeDiacritics(last_name.trim()),
+            email: email ? email.trim() : null,
+          });
+
+          if (error) throw error;
+          successCount++;
         }
-
-        const { error } = await supabase.from("clients").insert({
-          first_name: removeDiacritics(first_name.trim()),
-          last_name: removeDiacritics(last_name.trim()),
-          email: email ? email.trim() : null,
-        });
-
-        if (error) throw error;
-        successCount++;
       } catch (error) {
-        console.error("Error creating client:", error);
+        console.error("Error processing client:", error);
         errorCount++;
       }
     }
 
     if (successCount > 0) {
-      toast.success(`Přidáno ${successCount} klientů`);
-      fetchClients();
+      toast.success(`Přidáno ${successCount} nových klientů`);
     }
-    if (duplicateCount > 0) {
-      toast.warning(`${duplicateCount} duplicitních klientů přeskočeno`);
+    if (updatedCount > 0) {
+      toast.success(`Aktualizováno ${updatedCount} existujících klientů`);
     }
     if (errorCount > 0) {
-      toast.error(`${errorCount} klientů se nepodařilo přidat`);
+      toast.error(`${errorCount} klientů se nepodařilo zpracovat`);
     }
-
+    
+    fetchClients();
     setBulkImportText("");
     setBulkImportOpen(false);
   };
