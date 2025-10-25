@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { z } from "zod";
@@ -18,11 +19,19 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if auto sign out is enabled and sign out if needed
+    const autoSignOut = sessionStorage.getItem("autoSignOut");
+    if (autoSignOut === "true") {
+      supabase.auth.signOut();
+      sessionStorage.removeItem("autoSignOut");
+    }
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -37,7 +46,20 @@ const Auth = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Add event listener for window unload if auto sign out is enabled
+    const handleBeforeUnload = () => {
+      const autoSignOut = sessionStorage.getItem("autoSignOut");
+      if (autoSignOut === "true") {
+        supabase.auth.signOut();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -77,6 +99,9 @@ const Auth = () => {
               variant: "destructive",
             });
           }
+        } else if (!rememberMe) {
+          // If "remember me" is not checked, add event listener to sign out on window close
+          sessionStorage.setItem("autoSignOut", "true");
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -162,6 +187,22 @@ const Auth = () => {
                 disabled={loading}
               />
             </div>
+            {isLogin && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  disabled={loading}
+                />
+                <Label
+                  htmlFor="remember"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Pamatovat si přihlášení
+                </Label>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Zpracovávám..." : isLogin ? "Přihlásit se" : "Registrovat"}
             </Button>
