@@ -21,12 +21,22 @@ interface TeeTime {
   golfers: string;
 }
 
+interface Flight {
+  date: string;
+  fromIata: string;
+  fromCity?: string;
+  toIata: string;
+  toCity?: string;
+  airline: string;
+}
+
 interface VoucherDisplayProps {
   voucherCode: string;
   clientName: string;
   otherTravelers?: string[];
   services: Service[];
   teeTimes?: TeeTime[];
+  flights?: Flight[];
   issueDate: string;
   expirationDate?: string;
   supplierName?: string;
@@ -44,6 +54,7 @@ export const VoucherDisplay = ({
   otherTravelers,
   services,
   teeTimes,
+  flights,
   issueDate,
   expirationDate,
   supplierName,
@@ -218,6 +229,27 @@ export const VoucherDisplay = ({
             </table>
           </div>
         </div>
+
+        {/* Flight Details Section */}
+        {flights && flights.length > 0 && (
+          <div className="mb-6 print:mb-3">
+            <h2 className="text-xl font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-base print:mb-2 print:pl-2">
+              Flight Details
+            </h2>
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
+              <ul className="space-y-2 print:space-y-1">
+                {flights.map((flight, index) => (
+                  <li key={index} className="text-muted-foreground">
+                    <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
+                    {flight.fromCity ? ` ${flight.fromCity}` : ` ${flight.fromIata}`} → 
+                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`} • 
+                    <span className="font-semibold text-foreground"> {flight.airline}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Tee Time Section */}
         {teeTimes && teeTimes.length > 0 && (
