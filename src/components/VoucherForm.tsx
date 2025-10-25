@@ -98,7 +98,8 @@ const SortableServiceItem = React.memo(({
   removeService,
   addService,
   handleServiceSelect,
-  toggleServiceInputMode
+  toggleServiceInputMode,
+  copyService
 }: { 
   service: Service; 
   index: number;
@@ -108,6 +109,7 @@ const SortableServiceItem = React.memo(({
   addService: () => void;
   handleServiceSelect: (index: number, serviceName: string) => void;
   toggleServiceInputMode: (index: number) => void;
+  copyService: (index: number) => void;
 }) => {
   const {
     attributes,
@@ -138,16 +140,27 @@ const SortableServiceItem = React.memo(({
           </button>
           <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
         </div>
-        {services.length > 1 && (
+        <div className="flex gap-2">
           <Button
             type="button"
-            onClick={() => removeService(index)}
+            onClick={() => copyService(index)}
             variant="outline"
             size="sm"
+            title="Duplikovat službu"
           >
-            <Trash2 className="h-4 w-4" />
+            <Copy className="h-4 w-4" />
           </Button>
-        )}
+          {services.length > 1 && (
+            <Button
+              type="button"
+              onClick={() => removeService(index)}
+              variant="outline"
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -416,6 +429,24 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       (updated[index] as any)[field] = value as boolean;
     }
     setServices(updated);
+  };
+
+  const copyService = (index: number) => {
+    const sourceService = services[index];
+    
+    // Vytvořit kopii služby se všemi stejnými hodnotami
+    setServices([
+      ...services,
+      {
+        id: crypto.randomUUID(),
+        name: sourceService.name,
+        pax: sourceService.pax,
+        qty: sourceService.qty,
+        dateFrom: sourceService.dateFrom,
+        dateTo: sourceService.dateTo,
+        isTextMode: sourceService.isTextMode
+      }
+    ]);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -950,6 +981,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   addService={addService}
                   handleServiceSelect={handleServiceSelect}
                   toggleServiceInputMode={toggleServiceInputMode}
+                  copyService={copyService}
                 />
               ))}
             </div>
