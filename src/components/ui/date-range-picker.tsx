@@ -58,10 +58,10 @@ export const DateRangePicker = React.forwardRef<HTMLDivElement, DateRangePickerP
               {dateFrom ? (
                 dateTo ? (
                   <>
-                    {format(dateFrom, "dd.MM.yyyy")} - {format(dateTo, "dd.MM.yyyy")}
+                    {format(dateFrom, "dd.MM.yy")} - {format(dateTo, "dd.MM.yy")}
                   </>
                 ) : (
-                  format(dateFrom, "dd.MM.yyyy")
+                  format(dateFrom, "dd.MM.yy")
                 )
               ) : (
                 <span>Vyberte datum od - do</span>
