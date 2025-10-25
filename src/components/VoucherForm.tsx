@@ -234,16 +234,19 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addTeeTime = () => {
-    // Najít poslední tee time s datem
-    const lastTeeTimeWithDate = [...teeTimes]
-      .reverse()
-      .find(t => t.date !== undefined);
+    // Najít poslední tee time
+    const lastTeeTime = teeTimes[teeTimes.length - 1];
     
-    // Pokud existuje, přidat 1 den
+    // Pokud existuje, přidat 1 den a zkopírovat počet golfistů
     let newDate: Date | undefined = undefined;
-    if (lastTeeTimeWithDate?.date) {
-      newDate = new Date(lastTeeTimeWithDate.date);
-      newDate.setDate(newDate.getDate() + 1);
+    let newGolfers = "";
+    
+    if (lastTeeTime) {
+      if (lastTeeTime.date) {
+        newDate = new Date(lastTeeTime.date);
+        newDate.setDate(newDate.getDate() + 1);
+      }
+      newGolfers = lastTeeTime.golfers;
     }
     
     setTeeTimes([
@@ -252,7 +255,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         date: newDate, 
         club: "", 
         time: "", 
-        golfers: "", 
+        golfers: newGolfers, 
         isTextMode: false 
       }
     ]);
