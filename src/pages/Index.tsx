@@ -15,28 +15,22 @@ const Index = () => {
         {/* Hero Section */}
         <header className="text-center mb-16">
           <div className="flex justify-end mb-4">
-            <Button
-              variant="outline"
-              onClick={signOut}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={signOut} className="gap-2">
               <LogOut className="h-4 w-4" />
               Odhlásit
             </Button>
           </div>
           <img src={yaroLogo} alt="YARO Travel" className="h-20 mx-auto mb-6" />
-          <h1 className="text-5xl font-bold text-foreground mb-4">
-            Generátor cestovních voucherů
-          </h1>
+          <h1 className="text-5xl font-bold text-foreground mb-4">Generátor cestovních voucherů</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Vytvářejte profesionální PDF cestovní vouchery pro své klienty s automatickým sledováním
-            a bezpečným uložením
+            Vytvářejte profesionální PDF cestovní vouchery pro své klienty s automatickým sledováním a bezpečným
+            uložením
           </p>
         </header>
 
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card 
+          <Card
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/create")}
           >
@@ -45,18 +39,15 @@ const Index = () => {
                 <Plus className="h-8 w-8 text-primary" />
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Vytvořit nový voucher
-                </h2>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Vytvořit nový voucher</h2>
                 <p className="text-muted-foreground">
-                  Vygenerujte nový cestovní voucher s údaji klienta, službami a automatickým
-                  číslováním voucherů
+                  Vygenerujte nový cestovní voucher s údaji klienta, službami a automatickým číslováním voucherů
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card 
+          <Card
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/vouchers")}
           >
@@ -65,17 +56,13 @@ const Index = () => {
                 <List className="h-8 w-8 text-accent-foreground" />
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Všechny vouchery
-                </h2>
-                <p className="text-muted-foreground">
-                  Procházet a spravovat vytvořené vouchery
-                </p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Všechny vouchery</h2>
+                <p className="text-muted-foreground">Procházet a spravovat vytvořené vouchery</p>
               </div>
             </div>
           </Card>
 
-          <Card 
+          <Card
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/suppliers")}
           >
@@ -84,17 +71,13 @@ const Index = () => {
                 <Building2 className="h-8 w-8 text-primary" />
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Dodavatelé
-                </h2>
-                <p className="text-muted-foreground">
-                  Spravovat dodavatele služeb
-                </p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Dodavatelé</h2>
+                <p className="text-muted-foreground">Spravovat dodavatele služeb</p>
               </div>
             </div>
           </Card>
 
-          <Card 
+          <Card
             className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
             onClick={() => navigate("/clients")}
           >
@@ -103,12 +86,8 @@ const Index = () => {
                 <Users className="h-8 w-8 text-accent-foreground" />
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Klienti
-                </h2>
-                <p className="text-muted-foreground">
-                  Spravovat klienty a cestující
-                </p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Klienti</h2>
+                <p className="text-muted-foreground">Spravovat klienty a cestující</p>
               </div>
             </div>
           </Card>
@@ -116,9 +95,7 @@ const Index = () => {
 
         {/* Features Section */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-foreground text-center mb-8">
-            Funkce
-          </h2>
+          <h2 className="text-3xl font-bold text-foreground text-center mb-8">Funkce</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="p-6 text-center shadow-[var(--shadow-medium)]">
               <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
@@ -126,7 +103,7 @@ const Index = () => {
               </div>
               <h3 className="font-bold text-foreground mb-2">Automaticky generované kódy</h3>
               <p className="text-sm text-muted-foreground">
-                Unikátní kódy voucherů (YARO-0001, YARO-0002...) automaticky generované a sledované
+                Unikátní kódy voucherů (YT-25001, YT-25002...) automaticky generované a sledované
               </p>
             </Card>
 
