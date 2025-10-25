@@ -62,6 +62,13 @@ interface TeeTime {
   golfers: string;
 }
 
+interface FlightVariant {
+  date: string;
+  departureTime: string;
+  arrivalTime: string;
+  pax: string;
+}
+
 interface Flight {
   date: string;
   airlineCode: string;
@@ -73,6 +80,7 @@ interface Flight {
   toCity?: string;
   departureTime: string;
   arrivalTime: string;
+  variants?: FlightVariant[];
 }
 
 interface VoucherDisplayProps {
@@ -282,17 +290,33 @@ export const VoucherDisplay = ({
               Flight Details
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-xs">
-              <ul className="space-y-2 print:space-y-1">
+              <ul className="space-y-3 print:space-y-2">
                 {flights.map((flight, index) => {
                   const fromCity = flight.fromCity || getCityName(flight.fromIata);
                   const toCity = flight.toCity || getCityName(flight.toIata);
                   return (
-                    <li key={index} className="text-muted-foreground">
-                      <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
-                      <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
-                      {fromCity} → {toCity} • 
-                      Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
-                      Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
+                    <li key={index}>
+                      <div className="text-muted-foreground">
+                        <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
+                        <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
+                        {fromCity} → {toCity} • 
+                        Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
+                        Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
+                      </div>
+                      
+                      {/* Flight Variants */}
+                      {flight.variants && flight.variants.length > 0 && (
+                        <div className="mt-2 ml-4 pl-3 border-l-2 border-accent/30 space-y-1">
+                          <div className="text-xs font-semibold text-foreground mb-1">Varianty letu:</div>
+                          {flight.variants.map((variant, variantIndex) => (
+                            <div key={variantIndex} className="text-sm text-muted-foreground">
+                              <span className="font-semibold text-foreground">{variant.pax} PAX:</span> {formatDate(variant.date)} • 
+                              Departure: <span className="font-semibold text-foreground">{variant.departureTime}</span> • 
+                              Arrival: <span className="font-semibold text-foreground">{variant.arrivalTime}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

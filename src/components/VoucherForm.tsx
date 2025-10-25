@@ -42,6 +42,13 @@ interface TeeTime {
   isTextMode?: boolean;
 }
 
+interface FlightVariant {
+  date: Date | undefined;
+  departureTime: string;
+  arrivalTime: string;
+  pax: string;
+}
+
 interface Flight {
   date: Date | undefined;
   airlineCode: string;
@@ -53,6 +60,7 @@ interface Flight {
   toCity?: string;
   departureTime: string;
   arrivalTime: string;
+  variants?: FlightVariant[];
 }
 
 interface VoucherFormProps {
@@ -98,6 +106,10 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       date: f.date ? new Date(f.date) : undefined,
       airlineCode: f.airlineCode || "",
       airlineName: f.airlineName || "",
+      variants: f.variants?.map(v => ({
+        ...v,
+        date: v.date ? new Date(v.date) : undefined,
+      })) || [],
       flightNumber: f.flightNumber || "",
       departureTime: f.departureTime || "",
       arrivalTime: f.arrivalTime || "",
@@ -267,8 +279,47 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       toIata: previousFlight ? previousFlight.fromIata : "", 
       toCity: previousFlight ? previousFlight.fromCity : "",
       departureTime: "",
-      arrivalTime: ""
+      arrivalTime: "",
+      variants: []
     }]);
+  };
+
+  const addFlightVariant = (flightIndex: number) => {
+    const updated = [...flights];
+    const flight = updated[flightIndex];
+    
+    if (!flight.variants) {
+      flight.variants = [];
+    }
+    
+    flight.variants.push({
+      date: flight.date || undefined,
+      departureTime: flight.departureTime || "",
+      arrivalTime: flight.arrivalTime || "",
+      pax: ""
+    });
+    
+    setFlights(updated);
+  };
+
+  const removeFlightVariant = (flightIndex: number, variantIndex: number) => {
+    const updated = [...flights];
+    if (updated[flightIndex].variants) {
+      updated[flightIndex].variants = updated[flightIndex].variants!.filter((_, i) => i !== variantIndex);
+    }
+    setFlights(updated);
+  };
+
+  const updateFlightVariant = (flightIndex: number, variantIndex: number, field: keyof FlightVariant, value: string | Date | undefined) => {
+    const updated = [...flights];
+    if (updated[flightIndex].variants && updated[flightIndex].variants![variantIndex]) {
+      if (field === 'date') {
+        updated[flightIndex].variants![variantIndex][field] = value as Date | undefined;
+      } else {
+        (updated[flightIndex].variants![variantIndex] as any)[field] = value as string;
+      }
+    }
+    setFlights(updated);
   };
 
   const removeFlight = (index: number) => {
@@ -853,6 +904,79 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       maxLength={10}
                     />
                   </div>
+                </div>
+
+                {/* Flight Variants Section */}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-foreground">Varianty letu</h4>
+                    <Button
+                      type="button"
+                      onClick={() => addFlightVariant(index)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Přidat variantu
+                    </Button>
+                  </div>
+
+                  {flight.variants && flight.variants.length > 0 && (
+                    <div className="space-y-3">
+                      {flight.variants.map((variant, variantIndex) => (
+                        <Card key={variantIndex} className="p-3 bg-card">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-medium text-muted-foreground">Varianta {variantIndex + 1}</span>
+                            <Button
+                              type="button"
+                              onClick={() => removeFlightVariant(index, variantIndex)}
+                              variant="ghost"
+                              size="sm"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Datum *</Label>
+                              <DateInput
+                                value={variant.date}
+                                onChange={(date) => updateFlightVariant(index, variantIndex, "date", date)}
+                                placeholder="DD.MM.RR"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Počet cestujících (PAX) *</Label>
+                              <Input
+                                value={variant.pax}
+                                onChange={(e) => updateFlightVariant(index, variantIndex, "pax", e.target.value)}
+                                placeholder="např. 2"
+                                maxLength={10}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Čas odletu *</Label>
+                              <Input
+                                value={variant.departureTime}
+                                onChange={(e) => updateFlightVariant(index, variantIndex, "departureTime", e.target.value)}
+                                placeholder="např. 10:30"
+                                maxLength={10}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Čas příletu *</Label>
+                              <Input
+                                value={variant.arrivalTime}
+                                onChange={(e) => updateFlightVariant(index, variantIndex, "arrivalTime", e.target.value)}
+                                placeholder="např. 13:45"
+                                maxLength={10}
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
