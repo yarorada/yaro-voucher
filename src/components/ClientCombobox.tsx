@@ -73,6 +73,12 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     }
   };
 
+  const removeDiacritics = (text: string): string => {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
   const handleCreateClient = async () => {
     if (!newClientFirstName.trim() || !newClientLastName.trim()) {
       toast.error("Vyplňte jméno a příjmení klienta");
@@ -84,8 +90,8 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
       const { data, error } = await supabase
         .from("clients")
         .insert({
-          first_name: newClientFirstName.trim(),
-          last_name: newClientLastName.trim(),
+          first_name: removeDiacritics(newClientFirstName.trim()),
+          last_name: removeDiacritics(newClientLastName.trim()),
           email: newClientEmail.trim() || null,
           phone: newClientPhone.trim() || null,
           address: newClientAddress.trim() || null,
