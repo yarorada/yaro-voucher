@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
+import { GolfClubCombobox } from "@/components/GolfClubCombobox";
 import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import {
@@ -36,6 +37,7 @@ interface TeeTime {
   club: string;
   time: string;
   golfers: string;
+  isTextMode?: boolean;
 }
 
 interface VoucherFormProps {
@@ -71,6 +73,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     initialData?.teeTimes?.map(t => ({
       ...t,
       date: t.date ? new Date(t.date) : undefined,
+      isTextMode: !!t.club,
     })) || []
   );
   const [bulkImportText, setBulkImportText] = useState("");
@@ -201,16 +204,35 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addTeeTime = () => {
-    setTeeTimes([...teeTimes, { date: undefined, club: "", time: "", golfers: "" }]);
+    setTeeTimes([...teeTimes, { date: undefined, club: "", time: "", golfers: "", isTextMode: false }]);
+  };
+
+  const handleGolfClubSelect = (index: number, clubName: string) => {
+    const updated = [...teeTimes];
+    updated[index].club = clubName;
+    updated[index].isTextMode = true;
+    setTeeTimes(updated);
+  };
+
+  const toggleGolfClubInputMode = (index: number) => {
+    const updated = [...teeTimes];
+    updated[index].isTextMode = !updated[index].isTextMode;
+    setTeeTimes(updated);
   };
 
   const removeTeeTime = (index: number) => {
     setTeeTimes(teeTimes.filter((_, i) => i !== index));
   };
 
-  const updateTeeTime = (index: number, field: keyof TeeTime, value: string | Date | undefined) => {
+  const updateTeeTime = (index: number, field: keyof TeeTime, value: string | Date | undefined | boolean) => {
     const updated = [...teeTimes];
-    updated[index][field] = value as any;
+    if (field === 'club' || field === 'time' || field === 'golfers') {
+      (updated[index] as any)[field] = value as string;
+    } else if (field === 'date') {
+      (updated[index] as any)[field] = value as Date | undefined;
+    } else if (field === 'isTextMode') {
+      (updated[index] as any)[field] = value as boolean;
+    }
     setTeeTimes(updated);
   };
 
@@ -662,12 +684,31 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   </div>
                   <div>
                     <Label>Golfový klub</Label>
-                    <Input
-                      value={teeTime.club}
-                      onChange={(e) => updateTeeTime(index, "club", e.target.value)}
-                      placeholder="např. Olympos GC"
-                      maxLength={100}
-                    />
+                    {teeTime.isTextMode ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={teeTime.club}
+                          onChange={(e) => updateTeeTime(index, "club", e.target.value)}
+                          placeholder="Název golfového klubu"
+                          maxLength={100}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => toggleGolfClubInputMode(index)}
+                          title="Vybrat z šablony"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <GolfClubCombobox
+                        value={teeTime.club}
+                        onChange={(value) => updateTeeTime(index, "club", value)}
+                        onSelect={(value) => handleGolfClubSelect(index, value)}
+                      />
+                    )}
                   </div>
                   <div>
                     <Label>Čas</Label>

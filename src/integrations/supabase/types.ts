@@ -50,6 +50,27 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_club_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_templates: {
         Row: {
           created_at: string
