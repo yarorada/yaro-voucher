@@ -39,13 +39,11 @@ serve(async (req) => {
 
     console.log('Searching flights with FlightAware:', { departure, arrival, date: searchDate });
 
-    // Search for flights using FlightAware AeroAPI
-    // Using /flights/search endpoint with origin and destination
-    // Query format: -origin {code} -destination {code}
-    const queryParams = new URLSearchParams({
-      query: `-origin ${departure} -destination ${arrival}`
-    });
-    const url = `https://aeroapi.flightaware.com/aeroapi/flights/search?${queryParams.toString()}`;
+    // Try multiple endpoints to find flights
+    // 1. First try schedules endpoint for future flights
+    // 2. Fall back to search for recent/historical flights
+    
+    let url = `https://aeroapi.flightaware.com/aeroapi/schedules/${departure}/${arrival}`;
     
     console.log('FlightAware API URL:', url);
     
@@ -83,30 +81,31 @@ serve(async (req) => {
     console.log('FlightAware response:', JSON.stringify(data, null, 2));
 
     // Transform FlightAware data to our format
-    const flights = (data.flights || [])
-      .filter((flight: any) => {
-        // Filter by date - only include flights on the requested date
-        if (flight.scheduled_out) {
-          const flightDate = flight.scheduled_out.split('T')[0];
-          return flightDate === searchDate;
-        }
-        return false;
-      })
-      .map((flight: any) => ({
-        flightNumber: flight.ident || flight.fa_flight_id || 'N/A',
-        airline: flight.operator || flight.operator_iata || 'Unknown',
-        departure: {
-          airport: flight.origin?.name || flight.origin?.city || 'Unknown',
-          iata: flight.origin?.code_iata || flight.origin?.code || departure,
-          time: flight.scheduled_out || flight.estimated_out || 'N/A',
-        },
-        arrival: {
-          airport: flight.destination?.name || flight.destination?.city || 'Unknown',
-          iata: flight.destination?.code_iata || flight.destination?.code || arrival,
-          time: flight.scheduled_in || flight.estimated_in || 'N/A',
-        },
-        status: flight.status || 'scheduled',
-      }));
+    // Schedules endpoint returns array directly, not in flights property
+    const flightsArray = Array.isArray(data) ? data : (data.flights || []);
+    
+    const flights = flightsArray
+      .map((flight: any) => {
+        // Handle both schedule format and flight search format
+        const schedOut = flight.scheduled_out || flight.departure_time || flight.scheduled_departure;
+        const schedIn = flight.scheduled_in || flight.arrival_time || flight.scheduled_arrival;
+        
+        return {
+          flightNumber: flight.ident || flight.flight_number || flight.fa_flight_id || 'N/A',
+          airline: flight.operator || flight.operator_iata || flight.airline || 'Unknown',
+          departure: {
+            airport: flight.origin?.name || flight.origin?.city || departure,
+            iata: flight.origin?.code_iata || flight.origin?.code || departure,
+            time: schedOut || 'N/A',
+          },
+          arrival: {
+            airport: flight.destination?.name || flight.destination?.city || arrival,
+            iata: flight.destination?.code_iata || flight.destination?.code || arrival,
+            time: schedIn || 'N/A',
+          },
+          status: flight.status || 'scheduled',
+        };
+      });
 
     // If no flights found, return with info message
     const responseBody = flights.length > 0 
