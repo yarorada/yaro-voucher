@@ -248,15 +248,24 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   };
 
   const addFlight = () => {
+    // Find latest date from services
+    const latestServiceDate = services
+      .map(s => s.dateTo)
+      .filter((date): date is Date => date !== undefined)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    // Get previous flight to reverse airports
+    const previousFlight = flights[flights.length - 1];
+    
     setFlights([...flights, { 
-      date: undefined,
+      date: latestServiceDate || undefined,
       airlineCode: "",
       airlineName: "",
       flightNumber: "",
-      fromIata: "", 
-      fromCity: "", 
-      toIata: "", 
-      toCity: "",
+      fromIata: previousFlight ? previousFlight.toIata : "", 
+      fromCity: previousFlight ? previousFlight.toCity : "", 
+      toIata: previousFlight ? previousFlight.fromIata : "", 
+      toCity: previousFlight ? previousFlight.fromCity : "",
       departureTime: "",
       arrivalTime: ""
     }]);
