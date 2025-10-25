@@ -2,6 +2,3 @@ project_id = "jwaskoeqryjdjrdwupoi"
 
 [functions.send-voucher-email]
 verify_jwt = false
-
-[functions.search-flights]
-verify_jwt = false
