@@ -43,7 +43,6 @@ interface TeeTime {
 
 interface Flight {
   date: Date | undefined;
-  airline: string;
   fromIata: string;
   fromCity?: string;
   toIata: string;
@@ -244,7 +243,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const addFlight = () => {
     setFlights([...flights, { 
       date: undefined, 
-      airline: "", 
       fromIata: "", 
       fromCity: "", 
       toIata: "", 
@@ -258,8 +256,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const updateFlight = (index: number, field: keyof Flight, value: string | Date | undefined) => {
     const updated = [...flights];
-    if (field === 'airline' || field === 'fromIata' || 
-        field === 'fromCity' || field === 'toIata' || field === 'toCity') {
+    if (field === 'fromIata' || field === 'fromCity' || field === 'toIata' || field === 'toCity') {
       (updated[index] as any)[field] = value as string;
     } else if (field === 'date') {
       (updated[index] as any)[field] = value as Date | undefined;
@@ -320,14 +317,13 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     const updated = [...flights];
     updated[flightSearchIndex] = {
       ...updated[flightSearchIndex],
-      airline: flightData.airline,
       fromCity: flightData.departure.airport || flights[flightSearchIndex].fromCity,
       toCity: flightData.arrival.airport || flights[flightSearchIndex].toCity,
     };
     setFlights(updated);
     setFlightSearchOpen(false);
     setSearchResults([]);
-    toast.success("Údaje o letu byly doplněny");
+    toast.success("Názvy měst byly doplněny");
   };
 
   const removeTeeTime = (index: number) => {
@@ -427,7 +423,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         const flightsData = flights.map(f => ({
           date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
-          airline: f.airline,
           fromIata: f.fromIata,
           fromCity: f.fromCity || '',
           toIata: f.toIata,
@@ -505,7 +500,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         const flightsData = flights.map(f => ({
           date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
-          airline: f.airline,
           fromIata: f.fromIata,
           fromCity: f.fromCity || '',
           toIata: f.toIata,
@@ -815,7 +809,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label>Datum *</Label>
                     <DateInput
@@ -838,15 +832,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       value={flight.toIata}
                       onSelect={(iata) => updateFlight(index, "toIata", iata)}
                       placeholder="Vyberte letiště"
-                    />
-                  </div>
-                  <div>
-                    <Label>Letecká společnost *</Label>
-                    <Input
-                      value={flight.airline}
-                      onChange={(e) => updateFlight(index, "airline", e.target.value)}
-                      placeholder="např. Turkish Airlines"
-                      maxLength={100}
                     />
                   </div>
                 </div>

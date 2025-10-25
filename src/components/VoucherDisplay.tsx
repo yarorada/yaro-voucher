@@ -27,7 +27,6 @@ interface Flight {
   fromCity?: string;
   toIata: string;
   toCity?: string;
-  airline: string;
 }
 
 interface VoucherDisplayProps {
@@ -242,8 +241,7 @@ export const VoucherDisplay = ({
                   <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
                     {flight.fromCity ? ` ${flight.fromCity}` : ` ${flight.fromIata}`} → 
-                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`} • 
-                    <span className="font-semibold text-foreground"> {flight.airline}</span>
+                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`}
                   </li>
                 ))}
               </ul>
