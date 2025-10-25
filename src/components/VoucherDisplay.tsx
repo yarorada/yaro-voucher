@@ -248,8 +248,8 @@ export const VoucherDisplay = ({
                     <span className="font-semibold text-foreground">{flight.airlineCode}</span> {flight.airlineName} • 
                     {flight.fromCity ? ` ${flight.fromCity}` : ` ${flight.fromIata}`} → 
                     {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`} • 
-                    Odlet: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
-                    Přílet: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
+                    Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
+                    Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
                   </li>
                 ))}
               </ul>
