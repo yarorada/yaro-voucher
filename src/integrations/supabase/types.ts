@@ -305,6 +305,7 @@ export type Database = {
     }
     Functions: {
       generate_voucher_code: { Args: never; Returns: string }
+      is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
