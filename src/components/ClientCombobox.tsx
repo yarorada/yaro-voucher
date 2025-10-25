@@ -57,12 +57,6 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     fetchClients();
   }, []);
 
-  useEffect(() => {
-    if (searchValue) {
-      setOpen(true);
-    }
-  }, [searchValue]);
-
   const fetchClients = async () => {
     try {
       const { data, error } = await supabase
@@ -130,22 +124,25 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <div className="relative">
-            <Input
-              value={searchValue || (selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : "")}
-              onChange={(e) => {
-                setSearchValue(e.target.value);
-                setOpen(true);
-              }}
-              onFocus={() => setOpen(true)}
-              placeholder="Vyberte klienta..."
-              className="w-full pr-8"
-            />
-            <ChevronsUpDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
-          </div>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {selectedClient
+              ? `${selectedClient.first_name} ${selectedClient.last_name}`
+              : "Vyberte klienta..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 bg-background z-50" align="start">
           <Command className="bg-background" shouldFilter={false}>
+            <CommandInput 
+              placeholder="Hledat klienta..." 
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
             <CommandList>
               <CommandEmpty>
                 {loading ? "Načítám..." : "Žádný klient nenalezen."}
