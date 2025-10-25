@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -16,63 +17,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Airline {
   code: string;
   name: string;
 }
-
-const airlines: Airline[] = [
-  { code: "OK", name: "Czech Airlines" },
-  { code: "QS", name: "Smartwings" },
-  { code: "FR", name: "Ryanair" },
-  { code: "W6", name: "Wizz Air" },
-  { code: "U2", name: "easyJet" },
-  { code: "LH", name: "Lufthansa" },
-  { code: "OS", name: "Austrian Airlines" },
-  { code: "BA", name: "British Airways" },
-  { code: "AF", name: "Air France" },
-  { code: "KL", name: "KLM" },
-  { code: "LX", name: "Swiss International Air Lines" },
-  { code: "SN", name: "Brussels Airlines" },
-  { code: "AZ", name: "ITA Airways" },
-  { code: "IB", name: "Iberia" },
-  { code: "TP", name: "TAP Air Portugal" },
-  { code: "SK", name: "SAS" },
-  { code: "AY", name: "Finnair" },
-  { code: "LO", name: "LOT Polish Airlines" },
-  { code: "TK", name: "Turkish Airlines" },
-  { code: "PC", name: "Pegasus Airlines" },
-  { code: "XQ", name: "SunExpress" },
-  { code: "A3", name: "Aegean Airlines" },
-  { code: "EK", name: "Emirates" },
-  { code: "QR", name: "Qatar Airways" },
-  { code: "EY", name: "Etihad Airways" },
-  { code: "MS", name: "EgyptAir" },
-  { code: "SU", name: "Aeroflot" },
-  { code: "PS", name: "Ukraine International Airlines" },
-  { code: "RO", name: "Tarom" },
-  { code: "FB", name: "Bulgaria Air" },
-  { code: "JU", name: "Air Serbia" },
-  { code: "OU", name: "Croatia Airlines" },
-  { code: "JP", name: "Adria Airways" },
-  { code: "AA", name: "American Airlines" },
-  { code: "DL", name: "Delta Air Lines" },
-  { code: "UA", name: "United Airlines" },
-  { code: "AC", name: "Air Canada" },
-  { code: "SQ", name: "Singapore Airlines" },
-  { code: "CX", name: "Cathay Pacific" },
-  { code: "TG", name: "Thai Airways" },
-  { code: "NH", name: "All Nippon Airways" },
-  { code: "JL", name: "Japan Airlines" },
-  { code: "KE", name: "Korean Air" },
-  { code: "CA", name: "Air China" },
-  { code: "MU", name: "China Eastern Airlines" },
-  { code: "AI", name: "Air India" },
-  { code: "SA", name: "South African Airways" },
-  { code: "LA", name: "LATAM Airlines" },
-  { code: "QF", name: "Qantas" },
-];
 
 interface AirlineComboboxProps {
   value: string;
@@ -82,34 +41,73 @@ interface AirlineComboboxProps {
 
 export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce..." }: AirlineComboboxProps) {
   const [open, setOpen] = useState(false);
-  const [manualInput, setManualInput] = useState(false);
+  const [airlines, setAirlines] = useState<Airline[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    fetchAirlines();
+  }, []);
+
+  const fetchAirlines = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('airline_templates')
+        .select('code, name')
+        .order('code');
+
+      if (error) throw error;
+      setAirlines(data || []);
+    } catch (error) {
+      console.error('Error fetching airlines:', error);
+      toast.error("Nepodařilo se načíst letecké společnosti");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddNew = async () => {
+    if (!newCode.trim() || !newName.trim()) {
+      toast.error("Vyplňte kód a název letecké společnosti");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('airline_templates')
+        .insert({
+          code: newCode.toUpperCase().trim(),
+          name: newName.trim(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Letecká společnost přidána");
+      setAirlines([...airlines, { code: data.code, name: data.name }]);
+      onSelect(data.code, data.name);
+      setDialogOpen(false);
+      setNewCode("");
+      setNewName("");
+      setOpen(false);
+    } catch (error: any) {
+      console.error('Error adding airline:', error);
+      if (error.code === '23505') {
+        toast.error("Letecká společnost s tímto kódem již existuje");
+      } else {
+        toast.error("Nepodařilo se přidat leteckou společnost");
+      }
+    }
+  };
 
   const selectedAirline = airlines.find((airline) => airline.code === value);
 
-  if (manualInput) {
-    return (
-      <div className="flex gap-2">
-        <Input
-          value={value}
-          onChange={(e) => onSelect(e.target.value.toUpperCase(), "")}
-          placeholder="IATA kód (např. OK)"
-          maxLength={2}
-          className="uppercase"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setManualInput(false)}
-          size="sm"
-        >
-          Seznam
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex gap-2">
+    <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -128,7 +126,25 @@ export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce.
           <Command>
             <CommandInput placeholder="Hledat leteckou společnost..." />
             <CommandList>
-              <CommandEmpty>Žádná letecká společnost nenalezena.</CommandEmpty>
+              <CommandEmpty>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Žádná letecká společnost nenalezena.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDialogOpen(true);
+                      setOpen(false);
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Přidat novou
+                  </Button>
+                </div>
+              </CommandEmpty>
               <CommandGroup>
                 {airlines.map((airline) => (
                   <CommandItem
@@ -151,19 +167,68 @@ export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce.
                   </CommandItem>
                 ))}
               </CommandGroup>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    setDialogOpen(true);
+                    setOpen(false);
+                  }}
+                  className="justify-center text-primary"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Přidat novou leteckou společnost
+                </CommandItem>
+              </CommandGroup>
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setManualInput(true)}
-        size="sm"
-        title="Zadat IATA kód ručně"
-      >
-        Ručně
-      </Button>
-    </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Přidat leteckou společnost</DialogTitle>
+            <DialogDescription>
+              Přidejte novou leteckou společnost do databáze
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="code">IATA kód (2 znaky) *</Label>
+              <Input
+                id="code"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                placeholder="např. OK"
+                maxLength={2}
+                className="uppercase"
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Název letecké společnosti *</Label>
+              <Input
+                id="name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="např. Czech Airlines"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDialogOpen(false);
+                setNewCode("");
+                setNewName("");
+              }}
+            >
+              Zrušit
+            </Button>
+            <Button onClick={handleAddNew}>Přidat</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
