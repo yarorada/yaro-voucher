@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users, RotateCcw, Copy } from "lucide-react";
+import { Plus, Trash2, Users, RotateCcw, Copy, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -24,8 +24,26 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Service {
+  id: string;
   name: string;
   pax: string;
   qty: string;
@@ -81,11 +99,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
     initialData?.services?.map(s => ({
+      id: crypto.randomUUID(),
       ...s,
       dateFrom: s.dateFrom ? new Date(s.dateFrom) : undefined,
       dateTo: s.dateTo ? new Date(s.dateTo) : undefined,
       isTextMode: !!s.name,
-    })) || [{ name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined, isTextMode: false }]
+    })) || [{ id: crypto.randomUUID(), name: "", pax: "", qty: "", dateFrom: undefined, dateTo: undefined, isTextMode: false }]
   );
   const [teeTimes, setTeeTimes] = useState<TeeTime[]>(
     initialData?.teeTimes?.map(t => ({
@@ -108,6 +127,13 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const addTraveler = () => {
     setOtherTravelerIds([...otherTravelerIds, ""]);
@@ -210,6 +236,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setServices([
       ...services,
       { 
+        id: crypto.randomUUID(),
         name: "", 
         pax: lastService?.pax || "", 
         qty: lastService?.qty || "", 
@@ -241,7 +268,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const updateService = (index: number, field: keyof Service, value: string | Date | undefined | boolean) => {
     const updated = [...services];
-    if (field === 'name' || field === 'pax' || field === 'qty') {
+    if (field === 'name' || field === 'pax' || field === 'qty' || field === 'id') {
       (updated[index] as any)[field] = value as string;
     } else if (field === 'dateFrom' || field === 'dateTo') {
       (updated[index] as any)[field] = value as Date | undefined;
@@ -249,6 +276,19 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       (updated[index] as any)[field] = value as boolean;
     }
     setServices(updated);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setServices((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const addTeeTime = () => {
@@ -634,6 +674,127 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     }
   };
 
+  const SortableServiceItem = ({ service, index }: { service: Service; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: service.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <Card ref={setNodeRef} style={style} className="p-4 bg-muted">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-accent rounded"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
+          </div>
+          {services.length > 1 && (
+            <Button
+              type="button"
+              onClick={() => removeService(index)}
+              variant="outline"
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="md:col-span-2">
+            <Label>Název služby *</Label>
+            {service.isTextMode ? (
+              <div className="flex gap-2">
+                <Input
+                  value={service.name}
+                  onChange={(e) => updateService(index, "name", e.target.value)}
+                  placeholder="Název služby"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => toggleServiceInputMode(index)}
+                  title="Vybrat z šablony"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <ServiceCombobox
+                value={service.name}
+                onChange={(value) => updateService(index, "name", value)}
+                onSelect={(value) => handleServiceSelect(index, value)}
+              />
+            )}
+          </div>
+          <div>
+            <Label>PAX *</Label>
+            <Input
+              value={service.pax}
+              onChange={(e) => updateService(index, "pax", e.target.value)}
+              placeholder="např. 2 ADT"
+              required
+              maxLength={50}
+            />
+          </div>
+          <div>
+            <Label>Qtd. *</Label>
+            <Input
+              value={service.qty}
+              onChange={(e) => updateService(index, "qty", e.target.value)}
+              placeholder="např. 1"
+              required
+              maxLength={20}
+            />
+          </div>
+          <div>
+            <Label>Datum od *</Label>
+            <DateInput
+              value={service.dateFrom}
+              onChange={(date) => updateService(index, "dateFrom", date)}
+              placeholder="DD.MM.RR"
+            />
+          </div>
+          <div>
+            <Label>Datum do *</Label>
+            <DateInput
+              value={service.dateTo}
+              onChange={(date) => updateService(index, "dateTo", date)}
+              placeholder="DD.MM.RR"
+            />
+          </div>
+        </div>
+        
+        {index === services.length - 1 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button type="button" onClick={addService} size="sm" variant="outline" className="w-full">
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat službu
+            </Button>
+          </div>
+        )}
+      </Card>
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-6 shadow-[var(--shadow-medium)]">
@@ -759,101 +920,22 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           </Button>
         </div>
 
-        <div className="space-y-6">
-          {services.map((service, index) => (
-            <Card key={index} className="p-4 bg-muted">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-foreground">Služba {index + 1}</h3>
-                {services.length > 1 && (
-                  <Button
-                    type="button"
-                    onClick={() => removeService(index)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="md:col-span-2">
-                  <Label>Název služby *</Label>
-                  {service.isTextMode ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={service.name}
-                        onChange={(e) => updateService(index, "name", e.target.value)}
-                        placeholder="Název služby"
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => toggleServiceInputMode(index)}
-                        title="Vybrat z šablony"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <ServiceCombobox
-                      value={service.name}
-                      onChange={(value) => updateService(index, "name", value)}
-                      onSelect={(value) => handleServiceSelect(index, value)}
-                    />
-                  )}
-                </div>
-                <div>
-                  <Label>PAX *</Label>
-                  <Input
-                    value={service.pax}
-                    onChange={(e) => updateService(index, "pax", e.target.value)}
-                    placeholder="např. 2 ADT"
-                    required
-                    maxLength={50}
-                  />
-                </div>
-                <div>
-                  <Label>Qtd. *</Label>
-                  <Input
-                    value={service.qty}
-                    onChange={(e) => updateService(index, "qty", e.target.value)}
-                    placeholder="např. 1"
-                    required
-                    maxLength={20}
-                  />
-                </div>
-                <div>
-                  <Label>Datum od *</Label>
-                  <DateInput
-                    value={service.dateFrom}
-                    onChange={(date) => updateService(index, "dateFrom", date)}
-                    placeholder="DD.MM.RR"
-                  />
-                </div>
-                <div>
-                  <Label>Datum do *</Label>
-                  <DateInput
-                    value={service.dateTo}
-                    onChange={(date) => updateService(index, "dateTo", date)}
-                    placeholder="DD.MM.RR"
-                  />
-                </div>
-              </div>
-              
-              {index === services.length - 1 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Button type="button" onClick={addService} size="sm" variant="outline" className="w-full">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Přidat službu
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={services.map(s => s.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-6">
+              {services.map((service, index) => (
+                <SortableServiceItem key={service.id} service={service} index={index} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </Card>
 
       {/* Flight Details Section */}
