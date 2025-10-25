@@ -18,7 +18,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Get Authorization header
+    // Get Authorization header and extract JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -26,27 +26,24 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    // Initialize Supabase client with user's auth
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
 
-    // Get user from already verified JWT (JWT is verified by Supabase automatically)
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
+    const jwt = authHeader.replace('Bearer ', '');
+    
+    // Decode JWT to get user ID (JWT is already verified by Supabase via verify_jwt = true)
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    const userId = payload.sub;
+    
+    if (!userId) {
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Invalid JWT token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log("Starting diacritics cleanup for user:", user.id);
+    console.log("Starting diacritics cleanup for user:", userId);
 
     // Use SERVICE_ROLE_KEY for operations
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -54,7 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: clients, error: fetchError } = await supabase
       .from("clients")
       .select("*")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     if (fetchError) {
       throw new Error(`Failed to fetch clients: ${fetchError.message}`);
