@@ -981,16 +981,18 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
       {/* Tee Time Section */}
       <Card className="p-6 shadow-[var(--shadow-medium)]">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-2xl font-bold text-foreground">Tee Time</h2>
-          <Button type="button" onClick={addTeeTime} size="sm" variant="outline">
-            <Plus className="h-4 w-4 mr-1" />
-            Přidat Tee Time
-          </Button>
         </div>
 
         {teeTimes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Žádné tee time nebyly přidány</p>
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground mb-4">Žádné tee time nebyly přidány</p>
+            <Button type="button" onClick={addTeeTime} size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat Tee Time
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
             {teeTimes.map((teeTime, index) => (
@@ -1074,6 +1076,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     />
                   </div>
                 </div>
+                
+                {index === teeTimes.length - 1 && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <Button type="button" onClick={addTeeTime} size="sm" variant="outline" className="w-full">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Přidat Tee Time
+                    </Button>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
