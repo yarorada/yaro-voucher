@@ -754,7 +754,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   <DateInput
                     value={service.dateFrom}
                     onChange={(date) => updateService(index, "dateFrom", date)}
-                    placeholder="DD.MM.YYYY"
+                    placeholder="DD.MM.RR"
                   />
                 </div>
                 <div>
@@ -762,7 +762,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   <DateInput
                     value={service.dateTo}
                     onChange={(date) => updateService(index, "dateTo", date)}
-                    placeholder="DD.MM.YYYY"
+                    placeholder="DD.MM.RR"
                   />
                 </div>
               </div>
@@ -817,7 +817,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <DateInput
                       value={flight.date}
                       onChange={(date) => updateFlight(index, "date", date)}
-                      placeholder="DD.MM.YYYY"
+                      placeholder="DD.MM.RR"
                     />
                   </div>
                   <div>
@@ -942,7 +942,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <DateInput
                       value={teeTime.date}
                       onChange={(date) => updateTeeTime(index, "date", date)}
-                      placeholder="DD.MM.YYYY"
+                      placeholder="DD.MM.RR"
                     />
                   </div>
                   <div>
