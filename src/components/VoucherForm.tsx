@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, Users, RotateCcw, Search } from "lucide-react";
+import { Plus, Trash2, Users, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -94,10 +94,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
-  const [flightSearchOpen, setFlightSearchOpen] = useState(false);
-  const [searchingFlights, setSearchingFlights] = useState(false);
-  const [flightSearchIndex, setFlightSearchIndex] = useState<number | null>(null);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const addTraveler = () => {
     setOtherTravelerIds([...otherTravelerIds, ""]);
@@ -262,70 +258,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       (updated[index] as any)[field] = value as Date | undefined;
     }
     setFlights(updated);
-  };
-
-  const handleSearchFlights = async (index: number) => {
-    const flight = flights[index];
-    
-    if (!flight.fromIata || !flight.toIata || !flight.date) {
-      toast.error("Vyplňte odkud, kam a datum pro vyhledání letů");
-      return;
-    }
-
-    setFlightSearchIndex(index);
-    setSearchingFlights(true);
-    setSearchResults([]);
-    setFlightSearchOpen(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('search-flights', {
-        body: {
-          departure: flight.fromIata,
-          arrival: flight.toIata,
-          date: format(flight.date, 'yyyy-MM-dd'),
-        }
-      });
-
-      if (error) {
-        console.error('Error searching flights:', error);
-        toast.error("Nepodařilo se vyhledat lety. Zkuste to prosím znovu.");
-        return;
-      }
-
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      if (data.flights && data.flights.length > 0) {
-        setSearchResults(data.flights);
-        toast.success(`Nalezeno ${data.flights.length} letů`);
-      } else {
-        // Show message from API if available, otherwise generic message
-        const message = data.message || "Žádné lety nebyly nalezeny pro zadané parametry";
-        toast.info(message);
-      }
-    } catch (error) {
-      console.error('Error searching flights:', error);
-      toast.error("Nepodařilo se vyhledat lety");
-    } finally {
-      setSearchingFlights(false);
-    }
-  };
-
-  const handleSelectFlight = (flightData: any) => {
-    if (flightSearchIndex === null) return;
-
-    const updated = [...flights];
-    updated[flightSearchIndex] = {
-      ...updated[flightSearchIndex],
-      fromCity: flightData.departure.airport || flights[flightSearchIndex].fromCity,
-      toCity: flightData.arrival.airport || flights[flightSearchIndex].toCity,
-    };
-    setFlights(updated);
-    setFlightSearchOpen(false);
-    setSearchResults([]);
-    toast.success("Názvy měst byly doplněny");
   };
 
   const removeTeeTime = (index: number) => {
@@ -792,16 +724,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      onClick={() => handleSearchFlights(index)}
-                      variant="outline"
-                      size="sm"
-                      disabled={!flight.fromIata || !flight.toIata || !flight.date}
-                      title="Vyhledat lety"
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
                       onClick={() => removeFlight(index)}
                       variant="outline"
                       size="sm"
@@ -849,64 +771,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           </div>
         )}
       </Card>
-
-      {/* Flight Search Dialog */}
-      <Dialog open={flightSearchOpen} onOpenChange={setFlightSearchOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Výsledky vyhledávání letů</DialogTitle>
-            <DialogDescription>
-              Vyberte let ze seznamu nalezených letů
-            </DialogDescription>
-          </DialogHeader>
-          
-          {searchingFlights ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">Vyhledávám lety...</p>
-            </div>
-          ) : searchResults.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">Žádné lety nebyly nalezeny</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {searchResults.map((flightData, idx) => (
-                <Card 
-                  key={idx} 
-                  className="p-4 cursor-pointer hover:bg-muted transition-colors"
-                  onClick={() => handleSelectFlight(flightData)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-lg">{flightData.flightNumber}</span>
-                        <span className="text-muted-foreground">{flightData.airline}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Odlet</p>
-                          <p className="font-semibold">{flightData.departure.iata}</p>
-                          <p className="text-xs text-muted-foreground">{flightData.departure.airport}</p>
-                          <p className="text-xs">{new Date(flightData.departure.time).toLocaleString('cs-CZ')}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Přílet</p>
-                          <p className="font-semibold">{flightData.arrival.iata}</p>
-                          <p className="text-xs text-muted-foreground">{flightData.arrival.airport}</p>
-                          <p className="text-xs">{new Date(flightData.arrival.time).toLocaleString('cs-CZ')}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <Button type="button" size="sm" variant="outline">
-                      Vybrat
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Tee Time Section */}
       <Card className="p-6 shadow-[var(--shadow-medium)]">
