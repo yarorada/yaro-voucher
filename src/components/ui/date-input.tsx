@@ -103,6 +103,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
               mode="single"
               selected={value}
               onSelect={handleCalendarSelect}
+              defaultMonth={value}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
