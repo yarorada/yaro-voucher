@@ -168,6 +168,15 @@ export const VoucherDisplay = ({
 
   return (
     <div className="space-y-4">
+      <style>
+        {`
+          @media print {
+            @page {
+              margin-top: 1cm;
+            }
+          }
+        `}
+      </style>
       <div className="flex gap-2 print:hidden">
         <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
           <Download className="h-5 w-5" />
@@ -183,7 +192,7 @@ export const VoucherDisplay = ({
         </Button>
       </div>
 
-      <Card 
+      <Card
         id="voucher-content" 
         className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm"
       >
