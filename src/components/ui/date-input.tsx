@@ -19,14 +19,14 @@ interface DateInputProps {
 }
 
 export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
-  ({ value, onChange, placeholder = "DD.MM.YYYY", className }, ref) => {
+  ({ value, onChange, placeholder = "DD.MM.RR", className }, ref) => {
     const [inputValue, setInputValue] = React.useState("");
     const [open, setOpen] = React.useState(false);
 
     // Update input value when date prop changes
     React.useEffect(() => {
       if (value) {
-        setInputValue(format(value, "dd.MM.yyyy"));
+        setInputValue(format(value, "dd.MM.yy"));
       } else {
         setInputValue("");
       }
@@ -52,16 +52,16 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2, 4) + '.' + digitsOnly.slice(4);
         }
         
-        // Limit to 10 characters (DD.MM.YYYY)
-        if (formatted.length > 10) {
-          formatted = formatted.slice(0, 10);
+        // Limit to 8 characters (DD.MM.RR)
+        if (formatted.length > 8) {
+          formatted = formatted.slice(0, 8);
         }
         
         setInputValue(formatted);
         
-        // Try to parse the formatted input (only full 4-digit year)
-        if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
-          const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
+        // Try to parse the formatted input (only 2-digit year)
+        if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted)) {
+          const parsedDate = parse(formatted, "dd.MM.yy", new Date());
           if (isValid(parsedDate)) {
             onChange(parsedDate);
             return;
