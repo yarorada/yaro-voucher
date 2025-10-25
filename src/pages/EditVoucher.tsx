@@ -53,6 +53,7 @@ const EditVoucher = () => {
         services: voucherDataAny.services || [],
         hotelName: voucherDataAny.hotel_name || "",
         teeTimes: voucherDataAny.tee_times || [],
+        flights: voucherDataAny.flights || [],
       });
     } catch (error) {
       console.error('Error fetching voucher:', error);

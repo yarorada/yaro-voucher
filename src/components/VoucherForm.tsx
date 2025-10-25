@@ -40,6 +40,16 @@ interface TeeTime {
   isTextMode?: boolean;
 }
 
+interface Flight {
+  date: Date | undefined;
+  flightNumber: string;
+  airline: string;
+  fromIata: string;
+  fromCity: string;
+  toIata: string;
+  toCity: string;
+}
+
 interface VoucherFormProps {
   voucherId?: string;
   initialData?: {
@@ -50,6 +60,7 @@ interface VoucherFormProps {
     services: Service[];
     hotelName: string;
     teeTimes?: TeeTime[];
+    flights?: Flight[];
   };
 }
 
@@ -74,6 +85,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       ...t,
       date: t.date ? new Date(t.date) : undefined,
       isTextMode: !!t.club,
+    })) || []
+  );
+  const [flights, setFlights] = useState<Flight[]>(
+    initialData?.flights?.map(f => ({
+      ...f,
+      date: f.date ? new Date(f.date) : undefined,
     })) || []
   );
   const [bulkImportText, setBulkImportText] = useState("");
@@ -220,6 +237,33 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setTeeTimes(updated);
   };
 
+  const addFlight = () => {
+    setFlights([...flights, { 
+      date: undefined, 
+      flightNumber: "", 
+      airline: "", 
+      fromIata: "", 
+      fromCity: "", 
+      toIata: "", 
+      toCity: "" 
+    }]);
+  };
+
+  const removeFlight = (index: number) => {
+    setFlights(flights.filter((_, i) => i !== index));
+  };
+
+  const updateFlight = (index: number, field: keyof Flight, value: string | Date | undefined) => {
+    const updated = [...flights];
+    if (field === 'flightNumber' || field === 'airline' || field === 'fromIata' || 
+        field === 'fromCity' || field === 'toIata' || field === 'toCity') {
+      (updated[index] as any)[field] = value as string;
+    } else if (field === 'date') {
+      (updated[index] as any)[field] = value as Date | undefined;
+    }
+    setFlights(updated);
+  };
+
   const removeTeeTime = (index: number) => {
     setTeeTimes(teeTimes.filter((_, i) => i !== index));
   };
@@ -315,6 +359,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           golfers: t.golfers,
         }));
 
+        const flightsData = flights.map(f => ({
+          date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
+          flightNumber: f.flightNumber,
+          airline: f.airline,
+          fromIata: f.fromIata,
+          fromCity: f.fromCity,
+          toIata: f.toIata,
+          toCity: f.toCity,
+        }));
+
         const { error: updateError } = await supabase
           .from('vouchers')
           .update({
@@ -323,6 +377,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             hotel_name: hotelName.trim(),
             services: servicesData as any,
             tee_times: teeTimesData as any,
+            flights: flightsData as any,
             expiration_date: expirationDateString,
           })
           .eq('id', voucherId);
@@ -383,6 +438,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           golfers: t.golfers,
         }));
 
+        const flightsData = flights.map(f => ({
+          date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
+          flightNumber: f.flightNumber,
+          airline: f.airline,
+          fromIata: f.fromIata,
+          fromCity: f.fromCity,
+          toIata: f.toIata,
+          toCity: f.toCity,
+        }));
+
         // Insert voucher
         const { data: voucherData, error: insertError } = await supabase
           .from('vouchers')
@@ -395,6 +460,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             hotel_name: hotelName.trim(),
             services: servicesData as any,
             tee_times: teeTimesData as any,
+            flights: flightsData as any,
             expiration_date: expirationDateString,
           })
           .select()
@@ -643,6 +709,104 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
             </Card>
           ))}
         </div>
+      </Card>
+
+      {/* Flight Details Section */}
+      <Card className="p-6 shadow-[var(--shadow-medium)]">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-foreground">Detaily letů</h2>
+          <Button type="button" onClick={addFlight} size="sm" variant="outline">
+            <Plus className="h-4 w-4 mr-1" />
+            Přidat let
+          </Button>
+        </div>
+
+        {flights.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Žádné lety nebyly přidány</p>
+        ) : (
+          <div className="space-y-4">
+            {flights.map((flight, index) => (
+              <Card key={index} className="p-4 bg-muted">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-semibold text-foreground">Let {index + 1}</h3>
+                  <Button
+                    type="button"
+                    onClick={() => removeFlight(index)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <Label>Datum</Label>
+                    <DateInput
+                      value={flight.date}
+                      onChange={(date) => updateFlight(index, "date", date)}
+                      placeholder="DD.MM.YYYY"
+                    />
+                  </div>
+                  <div>
+                    <Label>Číslo letu</Label>
+                    <Input
+                      value={flight.flightNumber}
+                      onChange={(e) => updateFlight(index, "flightNumber", e.target.value)}
+                      placeholder="např. TK1234"
+                      maxLength={20}
+                    />
+                  </div>
+                  <div>
+                    <Label>Letecká společnost</Label>
+                    <Input
+                      value={flight.airline}
+                      onChange={(e) => updateFlight(index, "airline", e.target.value)}
+                      placeholder="např. Turkish Airlines"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div>
+                    <Label>Odkud - IATA</Label>
+                    <Input
+                      value={flight.fromIata}
+                      onChange={(e) => updateFlight(index, "fromIata", e.target.value.toUpperCase())}
+                      placeholder="např. PRG"
+                      maxLength={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Odkud - Město</Label>
+                    <Input
+                      value={flight.fromCity}
+                      onChange={(e) => updateFlight(index, "fromCity", e.target.value)}
+                      placeholder="např. Praha"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div>
+                    <Label>Kam - IATA</Label>
+                    <Input
+                      value={flight.toIata}
+                      onChange={(e) => updateFlight(index, "toIata", e.target.value.toUpperCase())}
+                      placeholder="např. IST"
+                      maxLength={3}
+                    />
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-1">
+                    <Label>Kam - Město</Label>
+                    <Input
+                      value={flight.toCity}
+                      onChange={(e) => updateFlight(index, "toCity", e.target.value)}
+                      placeholder="např. Istanbul"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Tee Time Section */}
