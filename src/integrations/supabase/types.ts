@@ -188,6 +188,21 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_counters: {
+        Row: {
+          last_number: number
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          year: number
+        }
+        Update: {
+          last_number?: number
+          year?: number
+        }
+        Relationships: []
+      }
       voucher_travelers: {
         Row: {
           client_id: string
@@ -304,7 +319,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_voucher_code: { Args: never; Returns: string }
+      generate_voucher_code_for_year: {
+        Args: { p_issue_date: string }
+        Returns: string
+      }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
     }
     Enums: {
