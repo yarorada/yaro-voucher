@@ -23,10 +23,15 @@ interface TeeTime {
 
 interface Flight {
   date: string;
+  airlineCode: string;
+  airlineName: string;
+  flightNumber: string;
   fromIata: string;
   fromCity?: string;
   toIata: string;
   toCity?: string;
+  departureTime: string;
+  arrivalTime: string;
 }
 
 interface VoucherDisplayProps {
@@ -240,8 +245,11 @@ export const VoucherDisplay = ({
                 {flights.map((flight, index) => (
                   <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
+                    <span className="font-semibold text-foreground">{flight.airlineCode}</span> {flight.airlineName} • 
                     {flight.fromCity ? ` ${flight.fromCity}` : ` ${flight.fromIata}`} → 
-                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`}
+                    {flight.toCity ? ` ${flight.toCity}` : ` ${flight.toIata}`} • 
+                    Odlet: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
+                    Přílet: <span className="font-semibold text-foreground">{flight.arrivalTime}</span>
                   </li>
                 ))}
               </ul>

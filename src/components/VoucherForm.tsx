@@ -12,6 +12,7 @@ import { ClientCombobox } from "@/components/ClientCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { GolfClubCombobox } from "@/components/GolfClubCombobox";
 import { AirportCombobox } from "@/components/AirportCombobox";
+import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import {
@@ -43,10 +44,15 @@ interface TeeTime {
 
 interface Flight {
   date: Date | undefined;
+  airlineCode: string;
+  airlineName: string;
+  flightNumber: string;
   fromIata: string;
   fromCity?: string;
   toIata: string;
   toCity?: string;
+  departureTime: string;
+  arrivalTime: string;
 }
 
 interface VoucherFormProps {
@@ -90,6 +96,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     initialData?.flights?.map(f => ({
       ...f,
       date: f.date ? new Date(f.date) : undefined,
+      airlineCode: f.airlineCode || "",
+      airlineName: f.airlineName || "",
+      flightNumber: f.flightNumber || "",
+      departureTime: f.departureTime || "",
+      arrivalTime: f.arrivalTime || "",
     })) || []
   );
   const [bulkImportText, setBulkImportText] = useState("");
@@ -238,11 +249,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const addFlight = () => {
     setFlights([...flights, { 
-      date: undefined, 
+      date: undefined,
+      airlineCode: "",
+      airlineName: "",
+      flightNumber: "",
       fromIata: "", 
       fromCity: "", 
       toIata: "", 
-      toCity: "" 
+      toCity: "",
+      departureTime: "",
+      arrivalTime: ""
     }]);
   };
 
@@ -252,11 +268,20 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const updateFlight = (index: number, field: keyof Flight, value: string | Date | undefined) => {
     const updated = [...flights];
-    if (field === 'fromIata' || field === 'fromCity' || field === 'toIata' || field === 'toCity') {
+    if (field === 'fromIata' || field === 'fromCity' || field === 'toIata' || field === 'toCity' || 
+        field === 'airlineCode' || field === 'airlineName' || field === 'flightNumber' || 
+        field === 'departureTime' || field === 'arrivalTime') {
       (updated[index] as any)[field] = value as string;
     } else if (field === 'date') {
       (updated[index] as any)[field] = value as Date | undefined;
     }
+    setFlights(updated);
+  };
+
+  const handleAirlineSelect = (index: number, code: string, name: string) => {
+    const updated = [...flights];
+    updated[index].airlineCode = code;
+    updated[index].airlineName = name;
     setFlights(updated);
   };
 
@@ -357,10 +382,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         const flightsData = flights.map(f => ({
           date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
+          airlineCode: f.airlineCode,
+          airlineName: f.airlineName,
+          flightNumber: f.flightNumber,
           fromIata: f.fromIata,
           fromCity: f.fromCity || '',
           toIata: f.toIata,
           toCity: f.toCity || '',
+          departureTime: f.departureTime,
+          arrivalTime: f.arrivalTime,
         }));
 
         const { error: updateError } = await supabase
@@ -434,10 +464,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         const flightsData = flights.map(f => ({
           date: f.date ? format(f.date, 'yyyy-MM-dd') : '',
+          airlineCode: f.airlineCode,
+          airlineName: f.airlineName,
+          flightNumber: f.flightNumber,
           fromIata: f.fromIata,
           fromCity: f.fromCity || '',
           toIata: f.toIata,
           toCity: f.toCity || '',
+          departureTime: f.departureTime,
+          arrivalTime: f.arrivalTime,
         }));
 
         // Insert voucher
@@ -733,13 +768,40 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label>Datum *</Label>
                     <DateInput
                       value={flight.date}
                       onChange={(date) => updateFlight(index, "date", date)}
                       placeholder="DD.MM.RR"
+                    />
+                  </div>
+                  <div>
+                    <Label>Kód dopravce *</Label>
+                    <AirlineCombobox
+                      value={flight.airlineCode}
+                      onSelect={(code, name) => handleAirlineSelect(index, code, name)}
+                      placeholder="Vyberte dopravce"
+                    />
+                  </div>
+                  <div>
+                    <Label>Letecká společnost</Label>
+                    <Input
+                      value={flight.airlineName}
+                      onChange={(e) => updateFlight(index, "airlineName", e.target.value)}
+                      placeholder="Automaticky z našeptávače"
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                  <div>
+                    <Label>Číslo letu *</Label>
+                    <Input
+                      value={flight.flightNumber}
+                      onChange={(e) => updateFlight(index, "flightNumber", e.target.value)}
+                      placeholder="např. 123"
+                      maxLength={10}
                     />
                   </div>
                   <div>
@@ -758,14 +820,25 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       placeholder="Vyberte letiště"
                     />
                   </div>
-                </div>
-                {(flight.fromCity || flight.toCity) && (
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    {flight.fromCity && flight.toCity && (
-                      <p>Trasa: {flight.fromCity} → {flight.toCity}</p>
-                    )}
+                  <div>
+                    <Label>Čas odletu *</Label>
+                    <Input
+                      value={flight.departureTime}
+                      onChange={(e) => updateFlight(index, "departureTime", e.target.value)}
+                      placeholder="např. 10:30"
+                      maxLength={10}
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label>Čas příletu *</Label>
+                    <Input
+                      value={flight.arrivalTime}
+                      onChange={(e) => updateFlight(index, "arrivalTime", e.target.value)}
+                      placeholder="např. 13:45"
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
