@@ -16,24 +16,66 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { voucherId }: SendEmailRequest = await req.json();
-    console.log("Sending email for voucher:", voucherId);
+    // Get and verify JWT from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Initialize Supabase client
+    const jwt = authHeader.replace('Bearer ', '');
+    
+    // Initialize Supabase client with user's auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
 
-    // Fetch voucher details
-    const { data: voucher, error: voucherError } = await supabase
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { voucherId }: SendEmailRequest = await req.json();
+    
+    // Validate voucherId format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!voucherId || !uuidRegex.test(voucherId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid voucher ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log("Sending email for voucher:", voucherId, "by user:", user.id);
+
+    // Fetch voucher and verify ownership
+    const { data: voucher, error: voucherError } = await supabaseClient
       .from("vouchers")
       .select("*")
       .eq("id", voucherId)
+      .eq("user_id", user.id)
       .single();
 
     if (voucherError || !voucher) {
-      throw new Error("Voucher not found");
+      console.error("Voucher access error:", voucherError);
+      return new Response(
+        JSON.stringify({ error: 'Voucher not found or access denied' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Use SERVICE_ROLE_KEY for fetching related data only
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch travelers
     const { data: travelers, error: travelersError } = await supabase
