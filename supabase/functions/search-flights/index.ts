@@ -20,11 +20,11 @@ serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get('FLIGHTAWARE_API_KEY');
+    const apiKey = Deno.env.get('AVIATIONSTACK_API_KEY');
     
     // If API key is not configured, return empty results with info message
     if (!apiKey) {
-      console.log('FLIGHTAWARE_API_KEY not configured, returning empty results');
+      console.log('AVIATIONSTACK_API_KEY not configured, returning empty results');
       return new Response(
         JSON.stringify({ 
           flights: [],
@@ -37,34 +37,28 @@ serve(async (req) => {
     // Format date for API (YYYY-MM-DD)
     const searchDate = new Date(date).toISOString().split('T')[0];
 
-    console.log('Searching flights with FlightAware:', { departure, arrival, date: searchDate });
+    console.log('Searching flights with AviationStack:', { departure, arrival, date: searchDate });
 
-    // Try multiple endpoints to find flights
-    // 1. First try schedules endpoint for future flights
-    // 2. Fall back to search for recent/historical flights
+    // Use AviationStack routes endpoint to find flights
+    const url = `http://api.aviationstack.com/v1/routes?access_key=${apiKey}&dep_iata=${departure}&arr_iata=${arrival}`;
     
-    let url = `https://aeroapi.flightaware.com/aeroapi/schedules/${departure}/${arrival}`;
-    
-    console.log('FlightAware API URL:', url);
+    console.log('AviationStack API URL (key hidden):', url.replace(apiKey, '***'));
     
     const response = await fetch(url, {
       headers: {
-        'x-apikey': apiKey,
         'Accept': 'application/json'
       }
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('FlightAware API error:', response.status, errorText);
+      console.error('AviationStack API error:', response.status, errorText);
       
-      let errorMessage = 'Nepodařilo se načíst lety z FlightAware API';
+      let errorMessage = 'Nepodařilo se načíst lety z AviationStack API';
       try {
         const errorJson = JSON.parse(errorText);
-        if (errorJson.title || errorJson.detail) {
-          errorMessage = `${errorJson.title || 'Chyba'}: ${errorJson.detail || 'Neznámá chyba'}`;
-        } else if (errorJson.error) {
-          errorMessage = errorJson.error;
+        if (errorJson.error) {
+          errorMessage = `Chyba: ${errorJson.error.message || errorJson.error.info || 'Neznámá chyba'}`;
         }
       } catch (e) {
         // Keep default error message
@@ -78,34 +72,28 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    console.log('FlightAware response:', JSON.stringify(data, null, 2));
+    console.log('AviationStack response:', JSON.stringify(data, null, 2));
 
-    // Transform FlightAware data to our format
-    // Schedules endpoint returns array directly, not in flights property
-    const flightsArray = Array.isArray(data) ? data : (data.flights || []);
+    // Transform AviationStack data to our format
+    const routes = data.data || [];
     
-    const flights = flightsArray
-      .map((flight: any) => {
-        // Handle both schedule format and flight search format
-        const schedOut = flight.scheduled_out || flight.departure_time || flight.scheduled_departure;
-        const schedIn = flight.scheduled_in || flight.arrival_time || flight.scheduled_arrival;
-        
-        return {
-          flightNumber: flight.ident || flight.flight_number || flight.fa_flight_id || 'N/A',
-          airline: flight.operator || flight.operator_iata || flight.airline || 'Unknown',
-          departure: {
-            airport: flight.origin?.name || flight.origin?.city || departure,
-            iata: flight.origin?.code_iata || flight.origin?.code || departure,
-            time: schedOut || 'N/A',
-          },
-          arrival: {
-            airport: flight.destination?.name || flight.destination?.city || arrival,
-            iata: flight.destination?.code_iata || flight.destination?.code || arrival,
-            time: schedIn || 'N/A',
-          },
-          status: flight.status || 'scheduled',
-        };
-      });
+    const flights = routes
+      .slice(0, 10) // Limit to first 10 routes
+      .map((route: any, index: number) => ({
+        flightNumber: route.flight_number || route.airline?.iata_code + (index + 1) || 'N/A',
+        airline: route.airline?.name || route.airline?.iata_code || 'Unknown',
+        departure: {
+          airport: route.departure?.airport || departure,
+          iata: route.departure?.iata || departure,
+          time: 'Varies', // Routes don't have specific times
+        },
+        arrival: {
+          airport: route.arrival?.airport || arrival,
+          iata: route.arrival?.iata || arrival,
+          time: 'Varies',
+        },
+        status: 'route',
+      }));
 
     // If no flights found, return with info message
     const responseBody = flights.length > 0 
