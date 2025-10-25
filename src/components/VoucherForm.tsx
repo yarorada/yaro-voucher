@@ -411,6 +411,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           toCity: f.toCity || '',
           departureTime: f.departureTime,
           arrivalTime: f.arrivalTime,
+          pax: f.pax,
+          isVariant: f.isVariant || false,
         }));
 
         const { error: updateError } = await supabase
@@ -493,6 +495,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           toCity: f.toCity || '',
           departureTime: f.departureTime,
           arrivalTime: f.arrivalTime,
+          pax: f.pax,
+          isVariant: f.isVariant || false,
         }));
 
         // Insert voucher
