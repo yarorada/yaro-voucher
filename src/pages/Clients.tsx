@@ -159,12 +159,39 @@ const Clients = () => {
     if (!confirm("Opravdu chcete smazat tohoto klienta?")) return;
 
     try {
+      // Check if client is used in vouchers
+      const { data: voucherCheck } = await supabase
+        .from("vouchers")
+        .select("id")
+        .eq("client_id", id)
+        .limit(1)
+        .maybeSingle();
+
+      if (voucherCheck) {
+        toast.error("Nelze smazat klienta, který je použit ve voucherech");
+        return;
+      }
+
+      // Check if client is used in voucher_travelers
+      const { data: travelerCheck } = await supabase
+        .from("voucher_travelers")
+        .select("id")
+        .eq("client_id", id)
+        .limit(1)
+        .maybeSingle();
+
+      if (travelerCheck) {
+        toast.error("Nelze smazat klienta, který je použit jako cestující");
+        return;
+      }
+
       const { error } = await supabase.from("clients").delete().eq("id", id);
 
       if (error) throw error;
       toast.success("Klient byl smazán");
       fetchClients();
     } catch (error) {
+      console.error("Error deleting client:", error);
       toast.error("Chyba při mazání klienta");
     }
   };
