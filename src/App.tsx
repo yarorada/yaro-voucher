@@ -12,6 +12,7 @@ import Suppliers from "./pages/Suppliers";
 import Clients from "./pages/Clients";
 import Deals from "./pages/Deals";
 import CreateDeal from "./pages/CreateDeal";
+import DealDetail from "./pages/DealDetail";
 import Destinations from "./pages/Destinations";
 import Contracts from "./pages/Contracts";
 import ContractDetail from "./pages/ContractDetail";
@@ -101,6 +102,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreateDeal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deals/:id"
+            element={
+              <ProtectedRoute>
+                <DealDetail />
               </ProtectedRoute>
             }
           />
