@@ -19,9 +19,9 @@ const ContractDetail = () => {
         .from("travel_contracts")
         .select(`
           *,
-          deal:deals!inner(
+          client:clients(*),
+          deal:deals(
             *,
-            client:clients!inner(*),
             destination:destinations(
               name,
               country:countries(name, iso_code)
@@ -36,7 +36,7 @@ const ContractDetail = () => {
           )
         `)
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -144,41 +144,25 @@ const ContractDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Jméno a příjmení</p>
                 <p className="font-medium text-foreground">
-                  {(() => {
-                    const client = contract.deal?.client as any;
-                    if (!client || Array.isArray(client)) return '-';
-                    return `${client.first_name} ${client.last_name}`;
-                  })()}
+                  {contract.client?.first_name} {contract.client?.last_name}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Email</p>
                 <p className="font-medium text-foreground">
-                  {(() => {
-                    const client = contract.deal?.client as any;
-                    if (!client || Array.isArray(client)) return '-';
-                    return client.email;
-                  })()}
+                  {contract.client?.email || '-'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Telefon</p>
                 <p className="font-medium text-foreground">
-                  {(() => {
-                    const client = contract.deal?.client as any;
-                    if (!client || Array.isArray(client)) return '-';
-                    return client.phone || '-';
-                  })()}
+                  {contract.client?.phone || '-'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Adresa</p>
                 <p className="font-medium text-foreground">
-                  {(() => {
-                    const client = contract.deal?.client as any;
-                    if (!client || Array.isArray(client)) return '-';
-                    return client.address || '-';
-                  })()}
+                  {contract.client?.address || '-'}
                 </p>
               </div>
             </div>
