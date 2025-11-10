@@ -42,7 +42,8 @@ const Auth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      // Don't redirect if this is a password recovery flow
+      if (session && event !== 'PASSWORD_RECOVERY') {
         navigate("/");
       }
     });

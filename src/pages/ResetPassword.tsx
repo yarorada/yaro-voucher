@@ -26,20 +26,27 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have a valid session (user clicked the reset link)
+    // Listen for password recovery event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidToken(true);
+      } else if (event === 'SIGNED_OUT') {
+        // After password reset, user is signed out
+        navigate("/auth");
+      }
+    });
+
+    // Also check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsValidToken(true);
-      } else {
-        toast({
-          title: "Neplatný odkaz",
-          description: "Odkaz pro reset hesla je neplatný nebo vypršel.",
-          variant: "destructive",
-        });
-        setTimeout(() => navigate("/auth"), 2000);
       }
     });
-  }, [navigate, toast]);
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
