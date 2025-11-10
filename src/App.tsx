@@ -13,6 +13,8 @@ import Clients from "./pages/Clients";
 import Deals from "./pages/Deals";
 import CreateDeal from "./pages/CreateDeal";
 import Destinations from "./pages/Destinations";
+import Contracts from "./pages/Contracts";
+import ContractDetail from "./pages/ContractDetail";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -106,6 +108,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Destinations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts"
+            element={
+              <ProtectedRoute>
+                <Contracts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:id"
+            element={
+              <ProtectedRoute>
+                <ContractDetail />
               </ProtectedRoute>
             }
           />

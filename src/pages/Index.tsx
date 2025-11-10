@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Plus, List, Plane, LogOut, Building2, Users, Briefcase, MapPin } from "lucide-react";
+import { FileText, Plus, List, Plane, LogOut, Building2, Users, Briefcase, MapPin, FileSignature } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -118,6 +118,21 @@ const Index = () => {
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Destinace</h2>
                 <p className="text-muted-foreground">Správa zemí a destinací</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            className="p-8 hover:shadow-[var(--shadow-strong)] transition-shadow cursor-pointer group"
+            onClick={() => navigate("/contracts")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <FileSignature className="h-8 w-8 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Cestovní smlouvy</h2>
+                <p className="text-muted-foreground">Smlouvy podle §2521 OZ</p>
               </div>
             </div>
           </Card>
