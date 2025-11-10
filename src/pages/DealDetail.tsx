@@ -7,10 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText } from "lucide-react";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,6 +27,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+interface DealTraveler {
+  id: string;
+  client_id: string;
+  is_lead_traveler: boolean;
+  clients: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+}
+
+interface DealService {
+  id: string;
+  service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
+  service_name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  price: number | null;
+  supplier_id: string | null;
+  suppliers?: {
+    name: string;
+  };
+}
 
 interface Deal {
   id: string;
@@ -34,15 +68,7 @@ interface Deal {
     id: string;
     name: string;
   };
-  deal_travelers: Array<{
-    client_id: string;
-    is_lead_traveler: boolean;
-    clients: {
-      id: string;
-      first_name: string;
-      last_name: string;
-    };
-  }>;
+  deal_travelers: DealTraveler[];
 }
 
 const DealDetail = () => {
@@ -52,6 +78,25 @@ const DealDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deal, setDeal] = useState<Deal | null>(null);
+  const [services, setServices] = useState<DealService[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+
+  // Dialog states
+  const [travelerDialogOpen, setTravelerDialogOpen] = useState(false);
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [newTravelerId, setNewTravelerId] = useState("");
+  
+  // Service form state
+  const [serviceForm, setServiceForm] = useState({
+    id: "",
+    service_type: "hotel" as DealService["service_type"],
+    service_name: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    price: "",
+    supplier_id: "",
+  });
 
   // Form state
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed">("inquiry");
@@ -66,6 +111,7 @@ const DealDetail = () => {
 
   useEffect(() => {
     fetchDeal();
+    fetchServices();
   }, [id]);
 
   const fetchDeal = async () => {
@@ -76,6 +122,7 @@ const DealDetail = () => {
           *,
           destination:destinations(id, name),
           deal_travelers(
+            id,
             client_id,
             is_lead_traveler,
             clients(id, first_name, last_name)
@@ -109,6 +156,234 @@ const DealDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("deal_services")
+        .select(`
+          *,
+          suppliers(name)
+        `)
+        .eq("deal_id", id);
+
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const handleAddTraveler = async () => {
+    if (!newTravelerId || !deal) return;
+
+    // Check if already exists
+    const exists = deal.deal_travelers.some(t => t.client_id === newTravelerId);
+    if (exists) {
+      toast({
+        title: "Chyba",
+        description: "Tento cestující už je v obchodním případu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("deal_travelers")
+        .insert({
+          deal_id: deal.id,
+          client_id: newTravelerId,
+          is_lead_traveler: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Úspěch",
+        description: "Cestující byl přidán",
+      });
+
+      setTravelerDialogOpen(false);
+      setNewTravelerId("");
+      fetchDeal();
+    } catch (error) {
+      console.error("Error adding traveler:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se přidat cestujícího",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveTraveler = async (travelerId: string, isLead: boolean) => {
+    if (isLead) {
+      toast({
+        title: "Chyba",
+        description: "Nelze odstranit hlavního cestujícího",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("deal_travelers")
+        .delete()
+        .eq("id", travelerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Úspěch",
+        description: "Cestující byl odebrán",
+      });
+
+      fetchDeal();
+    } catch (error) {
+      console.error("Error removing traveler:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se odebrat cestujícího",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveService = async () => {
+    if (!serviceForm.service_name || !deal) return;
+
+    try {
+      if (serviceForm.id) {
+        // Update existing service
+        const { error } = await supabase
+          .from("deal_services")
+          .update({
+            service_type: serviceForm.service_type,
+            service_name: serviceForm.service_name,
+            description: serviceForm.description || null,
+            start_date: serviceForm.start_date || null,
+            end_date: serviceForm.end_date || null,
+            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            supplier_id: serviceForm.supplier_id || null,
+          })
+          .eq("id", serviceForm.id);
+
+        if (error) throw error;
+      } else {
+        // Create new service
+        const { error } = await supabase
+          .from("deal_services")
+          .insert({
+            deal_id: deal.id,
+            service_type: serviceForm.service_type,
+            service_name: serviceForm.service_name,
+            description: serviceForm.description || null,
+            start_date: serviceForm.start_date || null,
+            end_date: serviceForm.end_date || null,
+            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            supplier_id: serviceForm.supplier_id || null,
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Úspěch",
+        description: serviceForm.id ? "Služba byla aktualizována" : "Služba byla přidána",
+      });
+
+      setServiceDialogOpen(false);
+      resetServiceForm();
+      fetchServices();
+    } catch (error) {
+      console.error("Error saving service:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se uložit službu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    if (!confirm("Opravdu chcete smazat tuto službu?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("deal_services")
+        .delete()
+        .eq("id", serviceId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Úspěch",
+        description: "Služba byla smazána",
+      });
+
+      fetchServices();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se smazat službu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetServiceForm = () => {
+    setServiceForm({
+      id: "",
+      service_type: "hotel",
+      service_name: "",
+      description: "",
+      start_date: "",
+      end_date: "",
+      price: "",
+      supplier_id: "",
+    });
+  };
+
+  const openEditService = (service: DealService) => {
+    setServiceForm({
+      id: service.id,
+      service_type: service.service_type,
+      service_name: service.service_name,
+      description: service.description || "",
+      start_date: service.start_date || "",
+      end_date: service.end_date || "",
+      price: service.price?.toString() || "",
+      supplier_id: service.supplier_id || "",
+    });
+    setServiceDialogOpen(true);
+  };
+
+  const getServiceIcon = (type: DealService["service_type"]) => {
+    switch (type) {
+      case "flight": return <Plane className="h-4 w-4" />;
+      case "hotel": return <Hotel className="h-4 w-4" />;
+      case "golf": return <Navigation className="h-4 w-4" />;
+      case "transfer": return <Car className="h-4 w-4" />;
+      case "insurance": return <Shield className="h-4 w-4" />;
+      case "other": return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const getServiceTypeLabel = (type: DealService["service_type"]) => {
+    switch (type) {
+      case "flight": return "Letenka";
+      case "hotel": return "Ubytování";
+      case "golf": return "Green Fee";
+      case "transfer": return "Doprava";
+      case "insurance": return "Pojištění";
+      case "other": return "Ostatní";
     }
   };
 
@@ -363,14 +638,51 @@ const DealDetail = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Cestující</CardTitle>
-            <CardDescription>Seznam všech cestujících</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Cestující</CardTitle>
+                <CardDescription>Správa cestujících v obchodním případu</CardDescription>
+              </div>
+              <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" onClick={() => setNewTravelerId("")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat cestujícího
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-background">
+                  <DialogHeader>
+                    <DialogTitle>Přidat cestujícího</DialogTitle>
+                    <DialogDescription>
+                      Vyberte klienta ze seznamu
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Klient</Label>
+                      <ClientCombobox
+                        value={newTravelerId}
+                        onChange={setNewTravelerId}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setTravelerDialogOpen(false)}>
+                        Zrušit
+                      </Button>
+                      <Button onClick={handleAddTraveler} disabled={!newTravelerId}>
+                        Přidat
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {deal.deal_travelers.map((traveler) => (
                 <div
-                  key={traveler.client_id}
+                  key={traveler.id}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>
@@ -381,9 +693,187 @@ const DealDetail = () => {
                       <p className="text-sm text-muted-foreground">Hlavní cestující</p>
                     )}
                   </div>
+                  {!traveler.is_lead_traveler && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Služby</CardTitle>
+                <CardDescription>Správa služeb v obchodním případu</CardDescription>
+              </div>
+              <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
+                setServiceDialogOpen(open);
+                if (!open) resetServiceForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat službu
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-background max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>{serviceForm.id ? "Upravit službu" : "Přidat službu"}</DialogTitle>
+                    <DialogDescription>
+                      Zadejte informace o službě
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Typ služby</Label>
+                      <Select
+                        value={serviceForm.service_type}
+                        onValueChange={(value: any) => setServiceForm({ ...serviceForm, service_type: value })}
+                      >
+                        <SelectTrigger className="bg-background z-50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="hotel">Ubytování</SelectItem>
+                          <SelectItem value="flight">Letenka</SelectItem>
+                          <SelectItem value="golf">Green Fee</SelectItem>
+                          <SelectItem value="transfer">Doprava</SelectItem>
+                          <SelectItem value="insurance">Pojištění</SelectItem>
+                          <SelectItem value="other">Ostatní</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Název služby *</Label>
+                      <Input
+                        value={serviceForm.service_name}
+                        onChange={(e) => setServiceForm({ ...serviceForm, service_name: e.target.value })}
+                        placeholder="např. Hotel Royal"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Popis</Label>
+                      <Textarea
+                        value={serviceForm.description}
+                        onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                        placeholder="Detaily služby..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Datum od</Label>
+                        <Input
+                          type="date"
+                          value={serviceForm.start_date}
+                          onChange={(e) => setServiceForm({ ...serviceForm, start_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Datum do</Label>
+                        <Input
+                          type="date"
+                          value={serviceForm.end_date}
+                          onChange={(e) => setServiceForm({ ...serviceForm, end_date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Cena (Kč)</Label>
+                        <Input
+                          type="number"
+                          value={serviceForm.price}
+                          onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Dodavatel</Label>
+                        <SupplierCombobox
+                          value={serviceForm.supplier_id}
+                          onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>
+                        Zrušit
+                      </Button>
+                      <Button onClick={handleSaveService} disabled={!serviceForm.service_name}>
+                        {serviceForm.id ? "Uložit" : "Přidat"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingServices ? (
+              <p className="text-muted-foreground text-center py-4">Načítání...</p>
+            ) : services.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Zatím nejsou přidány žádné služby</p>
+            ) : (
+              <div className="space-y-2">
+                {services.map((service) => (
+                  <div
+                    key={service.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="mt-1">{getServiceIcon(service.service_type)}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{service.service_name}</p>
+                          <span className="text-xs text-muted-foreground">
+                            ({getServiceTypeLabel(service.service_type)})
+                          </span>
+                        </div>
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
+                        )}
+                        <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                          {service.start_date && (
+                            <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
+                          )}
+                          {service.suppliers && (
+                            <span>🏢 {service.suppliers.name}</span>
+                          )}
+                          {service.price && (
+                            <span className="font-medium text-foreground">
+                              {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => openEditService(service)}>
+                        Upravit
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteService(service.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
