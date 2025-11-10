@@ -15,6 +15,7 @@ import CreateDeal from "./pages/CreateDeal";
 import Destinations from "./pages/Destinations";
 import Contracts from "./pages/Contracts";
 import ContractDetail from "./pages/ContractDetail";
+import CreateContract from "./pages/CreateContract";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -116,6 +117,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Contracts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/new"
+            element={
+              <ProtectedRoute>
+                <CreateContract />
               </ProtectedRoute>
             }
           />
