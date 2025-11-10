@@ -48,6 +48,7 @@ interface DealService {
   end_date: string | null;
   price: number | null;
   supplier_id: string | null;
+  person_count: number | null;
   suppliers?: {
     name: string;
   };
@@ -96,6 +97,7 @@ const DealDetail = () => {
     end_date: "",
     price: "",
     supplier_id: "",
+    person_count: "1",
   });
 
   // Form state
@@ -271,6 +273,7 @@ const DealDetail = () => {
             end_date: serviceForm.end_date || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
+            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
           })
           .eq("id", serviceForm.id);
 
@@ -288,6 +291,7 @@ const DealDetail = () => {
             end_date: serviceForm.end_date || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
+            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
           });
 
         if (error) throw error;
@@ -348,6 +352,7 @@ const DealDetail = () => {
       end_date: "",
       price: "",
       supplier_id: "",
+      person_count: "1",
     });
   };
 
@@ -361,6 +366,7 @@ const DealDetail = () => {
       end_date: service.end_date || "",
       price: service.price?.toString() || "",
       supplier_id: service.supplier_id || "",
+      person_count: service.person_count?.toString() || "1",
     });
     setServiceDialogOpen(true);
   };
@@ -850,7 +856,7 @@ const DealDetail = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Cena (Kč)</Label>
                         <Input
@@ -858,6 +864,16 @@ const DealDetail = () => {
                           value={serviceForm.price}
                           onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
                           placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Počet osob *</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={serviceForm.person_count}
+                          onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
+                          placeholder="1"
                         />
                       </div>
                       <div className="space-y-2">
@@ -907,6 +923,9 @@ const DealDetail = () => {
                           <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
                         )}
                         <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                          {service.person_count && (
+                            <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
+                          )}
                           {service.start_date && (
                             <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
                           )}

@@ -192,6 +192,7 @@ export type Database = {
           details: Json | null
           end_date: string | null
           id: string
+          person_count: number | null
           price: number | null
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -206,6 +207,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          person_count?: number | null
           price?: number | null
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -220,6 +222,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          person_count?: number | null
           price?: number | null
           service_name?: string
           service_type?: Database["public"]["Enums"]["service_type"]

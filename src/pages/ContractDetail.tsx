@@ -240,11 +240,14 @@ const ContractDetail = () => {
                 {contract.deal.services.map((service: any) => (
                   <div key={service.id} className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-start mb-2">
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-foreground">{service.service_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Dodavatel: {service.supplier?.name || "-"}
-                        </p>
+                        <div className="flex gap-3 mt-1 text-sm text-muted-foreground">
+                          {service.person_count && (
+                            <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
+                          )}
+                          <span>Dodavatel: {service.supplier?.name || "-"}</span>
+                        </div>
                       </div>
                       <p className="font-bold text-foreground">
                         {service.price?.toLocaleString("cs-CZ")} Kč
