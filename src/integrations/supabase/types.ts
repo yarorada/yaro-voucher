@@ -68,12 +68,53 @@ export type Database = {
         }
         Relationships: []
       }
+      attractions: {
+        Row: {
+          created_at: string
+          description: string | null
+          destination_id: string
+          id: string
+          name: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          destination_id: string
+          id?: string
+          name: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          destination_id?: string
+          id?: string
+          name?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attractions_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
+          company_name: string | null
           created_at: string
+          dic: string | null
           email: string | null
           first_name: string
+          ico: string | null
           id: string
           last_name: string
           notes: string | null
@@ -83,9 +124,12 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          company_name?: string | null
           created_at?: string
+          dic?: string | null
           email?: string | null
           first_name: string
+          ico?: string | null
           id?: string
           last_name: string
           notes?: string | null
@@ -95,9 +139,12 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          company_name?: string | null
           created_at?: string
+          dic?: string | null
           email?: string | null
           first_name?: string
+          ico?: string | null
           id?: string
           last_name?: string
           notes?: string | null
@@ -106,6 +153,229 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      countries: {
+        Row: {
+          created_at: string
+          currency: string | null
+          id: string
+          iso_code: string
+          name: string
+          phone_prefix: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          iso_code: string
+          name: string
+          phone_prefix?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          id?: string
+          iso_code?: string
+          name?: string
+          phone_prefix?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      deal_services: {
+        Row: {
+          created_at: string
+          deal_id: string
+          description: string | null
+          details: Json | null
+          end_date: string | null
+          id: string
+          price: number | null
+          service_name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          start_date: string | null
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          description?: string | null
+          details?: Json | null
+          end_date?: string | null
+          id?: string
+          price?: number | null
+          service_name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          start_date?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          description?: string | null
+          details?: Json | null
+          end_date?: string | null
+          id?: string
+          price?: number | null
+          service_name?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          start_date?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_services_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_services_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_travelers: {
+        Row: {
+          client_id: string
+          created_at: string
+          deal_id: string
+          id: string
+          is_lead_traveler: boolean
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          deal_id: string
+          id?: string
+          is_lead_traveler?: boolean
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          deal_id?: string
+          id?: string
+          is_lead_traveler?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_travelers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_travelers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          created_at: string
+          deal_number: string
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          destination_id: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["deal_status"]
+          total_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_number: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          destination_id?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          deal_number?: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          destination_id?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      destinations: {
+        Row: {
+          country_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          country_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          country_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "destinations_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_club_templates: {
         Row: {
@@ -209,6 +479,75 @@ export type Database = {
         }
         Relationships: []
       }
+      travel_contracts: {
+        Row: {
+          client_id: string
+          contract_date: string
+          contract_number: string
+          created_at: string
+          deal_id: string | null
+          deposit_amount: number | null
+          id: string
+          payment_schedule: Json | null
+          sent_at: string | null
+          signed_at: string | null
+          status: Database["public"]["Enums"]["contract_status"]
+          terms: string | null
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          contract_date?: string
+          contract_number: string
+          created_at?: string
+          deal_id?: string | null
+          deposit_amount?: number | null
+          id?: string
+          payment_schedule?: Json | null
+          sent_at?: string | null
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          terms?: string | null
+          total_price: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          client_id?: string
+          contract_date?: string
+          contract_number?: string
+          created_at?: string
+          deal_id?: string | null
+          deposit_amount?: number | null
+          id?: string
+          payment_schedule?: Json | null
+          sent_at?: string | null
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          terms?: string | null
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_contracts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voucher_counters: {
         Row: {
           last_number: number
@@ -268,6 +607,7 @@ export type Database = {
           client_id: string | null
           client_name: string
           created_at: string
+          deal_id: string | null
           expiration_date: string | null
           flights: Json | null
           hotel_name: string | null
@@ -286,6 +626,7 @@ export type Database = {
           client_id?: string | null
           client_name: string
           created_at?: string
+          deal_id?: string | null
           expiration_date?: string | null
           flights?: Json | null
           hotel_name?: string | null
@@ -304,6 +645,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string
           created_at?: string
+          deal_id?: string | null
           expiration_date?: string | null
           flights?: Json | null
           hotel_name?: string | null
@@ -327,6 +669,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vouchers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vouchers_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -340,6 +689,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_contract_number: { Args: never; Returns: string }
+      generate_deal_number: { Args: never; Returns: string }
       generate_voucher_code_for_year: {
         Args: { p_issue_date: string }
         Returns: string
@@ -347,7 +698,15 @@ export type Database = {
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      contract_status: "draft" | "sent" | "signed" | "cancelled"
+      deal_status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled"
+      service_type:
+        | "flight"
+        | "hotel"
+        | "golf"
+        | "transfer"
+        | "insurance"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -474,6 +833,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      contract_status: ["draft", "sent", "signed", "cancelled"],
+      deal_status: ["inquiry", "quote", "confirmed", "completed", "cancelled"],
+      service_type: [
+        "flight",
+        "hotel",
+        "golf",
+        "transfer",
+        "insurance",
+        "other",
+      ],
+    },
   },
 } as const

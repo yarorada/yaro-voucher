@@ -10,6 +10,9 @@ import VouchersList from "./pages/VouchersList";
 import VoucherDetail from "./pages/VoucherDetail";
 import Suppliers from "./pages/Suppliers";
 import Clients from "./pages/Clients";
+import Deals from "./pages/Deals";
+import CreateDeal from "./pages/CreateDeal";
+import Destinations from "./pages/Destinations";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -79,6 +82,30 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Clients />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deals"
+            element={
+              <ProtectedRoute>
+                <Deals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deals/new"
+            element={
+              <ProtectedRoute>
+                <CreateDeal />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/destinations"
+            element={
+              <ProtectedRoute>
+                <Destinations />
               </ProtectedRoute>
             }
           />
