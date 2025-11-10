@@ -32,8 +32,12 @@ const CreateContract = () => {
         .select(`
           id,
           deal_number,
-          client:clients!inner(first_name, last_name)
+          deal_travelers!inner(
+            client:clients(first_name, last_name),
+            is_lead_traveler
+          )
         `)
+        .eq("deal_travelers.is_lead_traveler", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -135,8 +139,10 @@ const CreateContract = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {deals?.map((deal) => {
-                      const client = deal.client as any;
-                      const clientName = client && !Array.isArray(client)
+                      const travelers = deal.deal_travelers as any[];
+                      const leadTraveler = travelers?.[0];
+                      const client = leadTraveler?.client;
+                      const clientName = client
                         ? `${client.first_name} ${client.last_name}`
                         : '-';
                       return (
