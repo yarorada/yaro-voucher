@@ -66,7 +66,7 @@ const VouchersList = () => {
             first_name,
             last_name
           ),
-          profiles!vouchers_user_id_fkey (
+          profiles (
             email
           )
         `,
