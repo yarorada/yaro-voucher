@@ -57,7 +57,8 @@ const VouchersList = () => {
 
   const fetchVouchers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch vouchers
+      const { data: vouchersData, error: vouchersError } = await supabase
         .from("vouchers")
         .select(
           `
@@ -65,22 +66,29 @@ const VouchersList = () => {
           clients:client_id (
             first_name,
             last_name
-          ),
-          profiles (
-            email
           )
         `,
         )
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      
-      // Transform data to include creator_email at top level
-      const transformedData = (data as any)?.map((voucher: any) => ({
+      if (vouchersError) throw vouchersError;
+
+      // Fetch profiles to get creator emails
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email");
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to email
+      const emailMap = new Map(profilesData?.map(p => [p.id, p.email]) || []);
+
+      // Combine data
+      const transformedData = vouchersData?.map((voucher: any) => ({
         ...voucher,
-        creator_email: voucher.profiles?.email
+        creator_email: emailMap.get(voucher.user_id)
       }));
-      
+
       setVouchers(transformedData || []);
       setFilteredVouchers(transformedData || []);
     } catch (error) {
