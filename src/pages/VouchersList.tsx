@@ -30,6 +30,7 @@ interface Voucher {
   issue_date: string;
   created_at: string;
   client_id: string;
+  creator_email?: string;
   clients?: {
     first_name: string;
     last_name: string;
@@ -64,14 +65,24 @@ const VouchersList = () => {
           clients:client_id (
             first_name,
             last_name
+          ),
+          profiles!vouchers_user_id_fkey (
+            email
           )
         `,
         )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setVouchers(data || []);
-      setFilteredVouchers(data || []);
+      
+      // Transform data to include creator_email at top level
+      const transformedData = (data as any)?.map((voucher: any) => ({
+        ...voucher,
+        creator_email: voucher.profiles?.email
+      }));
+      
+      setVouchers(transformedData || []);
+      setFilteredVouchers(transformedData || []);
     } catch (error) {
       console.error("Error fetching vouchers:", error);
       toast.error("Nepodařilo se načíst vouchery");
@@ -288,6 +299,12 @@ const VouchersList = () => {
                             <span className="font-semibold text-foreground">Vytvořeno:</span>{" "}
                             {formatDate(voucher.created_at)}
                           </span>
+                          {voucher.creator_email && (
+                            <span>
+                              <span className="font-semibold text-foreground">Autor:</span>{" "}
+                              {voucher.creator_email}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
