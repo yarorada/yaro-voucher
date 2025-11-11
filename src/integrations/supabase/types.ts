@@ -286,6 +286,129 @@ export type Database = {
           },
         ]
       }
+      deal_variant_services: {
+        Row: {
+          created_at: string
+          description: string | null
+          details: Json | null
+          end_date: string | null
+          id: string
+          person_count: number | null
+          price: number | null
+          service_name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          start_date: string | null
+          supplier_id: string | null
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          details?: Json | null
+          end_date?: string | null
+          id?: string
+          person_count?: number | null
+          price?: number | null
+          service_name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          start_date?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          details?: Json | null
+          end_date?: string | null
+          id?: string
+          person_count?: number | null
+          price?: number | null
+          service_name?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          start_date?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_variant_services_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_variant_services_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "deal_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_variants: {
+        Row: {
+          created_at: string
+          deal_id: string
+          destination_id: string | null
+          end_date: string | null
+          id: string
+          is_selected: boolean
+          notes: string | null
+          start_date: string | null
+          total_price: number | null
+          updated_at: string
+          user_id: string
+          variant_name: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          destination_id?: string | null
+          end_date?: string | null
+          id?: string
+          is_selected?: boolean
+          notes?: string | null
+          start_date?: string | null
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string
+          variant_name: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          destination_id?: string | null
+          end_date?: string | null
+          id?: string
+          is_selected?: boolean
+          notes?: string | null
+          start_date?: string | null
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string
+          variant_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_variants_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_variants_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           adjustment_amount: number | null
@@ -711,6 +834,7 @@ export type Database = {
         Returns: string
       }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
+      select_deal_variant: { Args: { p_variant_id: string }; Returns: boolean }
       update_deal_display_number: {
         Args: { p_deal_id: string }
         Returns: string
