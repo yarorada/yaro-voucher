@@ -832,7 +832,21 @@ const DealDetail = () => {
                 if (!open) resetServiceForm();
               }}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => {
+                    // Pre-fill form with default values from deal
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "hotel",
+                      service_name: "",
+                      description: "",
+                      start_date: startDate || "",
+                      end_date: endDate || "",
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                  }}>
                     <Plus className="h-4 w-4 mr-2" />
                     Přidat službu
                   </Button>
