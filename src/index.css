@@ -11,10 +11,10 @@ All colors MUST be HSL.
     --background: 210 100% 96%;
     --foreground: 210 40% 15%;
 
-    --card: 0 0% 100%;
+    --card: 210 100% 96%;
     --card-foreground: 210 40% 15%;
 
-    --popover: 0 0% 100%;
+    --popover: 210 100% 96%;
     --popover-foreground: 210 40% 15%;
 
     /* Professional ocean blue for travel industry */
@@ -37,7 +37,7 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 30% 90%;
-    --input: 210 30% 90%;
+    --input: 0 0% 100%;
     --ring: 210 90% 35%;
 
     --radius: 0.75rem;
@@ -73,10 +73,10 @@ All colors MUST be HSL.
     --background: 210 50% 6%;
     --foreground: 0 0% 98%;
 
-    --card: 210 45% 12%;
+    --card: 210 50% 8%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 210 45% 12%;
+    --popover: 210 50% 8%;
     --popover-foreground: 0 0% 98%;
 
     --primary: 210 90% 45%;
@@ -97,7 +97,7 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 40% 25%;
-    --input: 210 40% 25%;
+    --input: 210 45% 15%;
     --ring: 210 90% 45%;
     
     --gradient-primary: linear-gradient(135deg, hsl(210 90% 45%), hsl(210 95% 35%));
