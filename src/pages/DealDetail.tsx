@@ -175,7 +175,8 @@ const DealDetail = () => {
 
   const calculateTotalPrice = (servicesList: DealService[], discount: number, adjustment: number) => {
     const servicesTotal = servicesList.reduce((sum, service) => {
-      return sum + (service.price || 0);
+      const servicePrice = (service.price || 0) * (service.person_count || 1);
+      return sum + servicePrice;
     }, 0);
     
     const finalTotal = servicesTotal - discount + adjustment;
@@ -758,7 +759,7 @@ const DealDetail = () => {
                 <span className="text-muted-foreground">Součet služeb:</span>
                 <span className="font-medium">
                   {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(
-                    services.reduce((sum, s) => sum + (s.price || 0), 0)
+                    services.reduce((sum, s) => sum + ((s.price || 0) * (s.person_count || 1)), 0)
                   )}
                 </span>
               </div>
@@ -1063,25 +1064,28 @@ const DealDetail = () => {
                             ({getServiceTypeLabel(service.service_type)})
                           </span>
                         </div>
-                        {service.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                        )}
-                        <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                          {service.person_count && (
-                            <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
-                          )}
-                          {service.start_date && (
-                            <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
-                          )}
-                          {service.suppliers && (
-                            <span>🏢 {service.suppliers.name}</span>
-                          )}
-                          {service.price && (
-                            <span className="font-medium text-foreground">
-                              {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)}
-                            </span>
-                          )}
-                        </div>
+                         {service.description && (
+                           <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
+                         )}
+                         <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                           {service.person_count && (
+                             <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
+                           )}
+                           {service.start_date && (
+                             <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
+                           )}
+                           {service.suppliers && (
+                             <span>🏢 {service.suppliers.name}</span>
+                           )}
+                           {service.price && (
+                             <span className="font-medium text-foreground">
+                               {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1))}
+                               {service.person_count && service.person_count > 1 && (
+                                 <span className="text-xs ml-1">({new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count})</span>
+                               )}
+                             </span>
+                           )}
+                         </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
