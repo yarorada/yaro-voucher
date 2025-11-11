@@ -161,6 +161,23 @@ const DealDetail = () => {
     }
   };
 
+  const calculateTotalPrice = async (servicesList: DealService[]) => {
+    const total = servicesList.reduce((sum, service) => {
+      return sum + (service.price || 0);
+    }, 0);
+    
+    const totalStr = total.toString();
+    setTotalPrice(totalStr);
+    
+    // Update deal in database
+    if (deal?.id) {
+      await supabase
+        .from("deals")
+        .update({ total_price: total })
+        .eq("id", deal.id);
+    }
+  };
+
   const fetchServices = async () => {
     try {
       const { data, error } = await supabase
@@ -173,6 +190,7 @@ const DealDetail = () => {
 
       if (error) throw error;
       setServices(data || []);
+      await calculateTotalPrice(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
     } finally {
@@ -304,7 +322,7 @@ const DealDetail = () => {
 
       setServiceDialogOpen(false);
       resetServiceForm();
-      fetchServices();
+      await fetchServices();
     } catch (error) {
       console.error("Error saving service:", error);
       toast({
@@ -331,7 +349,7 @@ const DealDetail = () => {
         description: "Služba byla smazána",
       });
 
-      fetchServices();
+      await fetchServices();
     } catch (error) {
       console.error("Error deleting service:", error);
       toast({
