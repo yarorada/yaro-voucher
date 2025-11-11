@@ -711,6 +711,10 @@ export type Database = {
         Returns: string
       }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
+      update_deal_display_number: {
+        Args: { p_deal_id: string }
+        Returns: string
+      }
     }
     Enums: {
       contract_status: "draft" | "sent" | "signed" | "cancelled"
