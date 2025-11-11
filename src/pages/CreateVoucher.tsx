@@ -14,30 +14,20 @@ const CreateVoucher = () => {
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Zpět
             </Button>
             <div className="flex items-center gap-4">
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
-              <Button
-                variant="outline"
-                onClick={signOut}
-                className="gap-2"
-              >
+              <Button variant="outline" onClick={signOut} className="gap-2">
                 <LogOut className="h-4 w-4" />
                 Odhlásit
               </Button>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-foreground">Vytvořit nový voucher</h1>
-          <p className="text-muted-foreground mt-2">
-            Vygenerujte profesionální cestovní voucher pro svého klienta
-          </p>
+          <h1 className="text-4xl font-bold text-foreground">Nový voucher</h1>
+          <p className="text-muted-foreground mt-2">Vygenerujte profesionální cestovní voucher pro svého klienta</p>
         </header>
 
         <VoucherForm />
