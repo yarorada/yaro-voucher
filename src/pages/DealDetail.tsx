@@ -12,6 +12,7 @@ import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
+import { DealVariants } from "@/components/DealVariants";
 import {
   Dialog,
   DialogContent,
@@ -841,6 +842,16 @@ const DealDetail = () => {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Nabídkové varianty</CardTitle>
+            <CardDescription>Vytvořte a porovnejte různé varianty nabídky</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); }} />
           </CardContent>
         </Card>
 
