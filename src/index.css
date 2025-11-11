@@ -11,11 +11,11 @@ All colors MUST be HSL.
     --background: 0 0% 100%;
     --foreground: 210 40% 15%;
 
-    --card: 210 100% 96%;
-    --card-foreground: 210 40% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 40% 15%;
+    --popover-foreground: 0 0% 9%;
 
     /* Professional ocean blue for travel industry */
     --primary: 210 90% 35%;
@@ -27,8 +27,8 @@ All colors MUST be HSL.
     --secondary: 45 95% 60%;
     --secondary-foreground: 210 40% 15%;
 
-    --muted: 210 30% 96%;
-    --muted-foreground: 210 20% 50%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
     --accent: 45 95% 60%;
     --accent-foreground: 210 40% 15%;
@@ -36,7 +36,7 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 30% 90%;
+    --border: 0 0% 90%;
     --input: 0 0% 100%;
     --ring: 210 90% 35%;
 
@@ -45,7 +45,7 @@ All colors MUST be HSL.
     /* Professional gradients */
     --gradient-primary: linear-gradient(135deg, hsl(210 90% 35%), hsl(210 95% 25%));
     --gradient-accent: linear-gradient(135deg, hsl(45 95% 60%), hsl(35 95% 55%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 30% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
     
     /* Professional shadows */
     --shadow-soft: 0 2px 8px -2px hsl(210 90% 35% / 0.1);
@@ -64,7 +64,7 @@ All colors MUST be HSL.
 
     --sidebar-accent-foreground: 240 5.9% 10%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 0 0% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
