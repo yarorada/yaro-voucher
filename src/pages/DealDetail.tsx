@@ -657,40 +657,40 @@ const DealDetail = () => {
             <CardTitle>Základní informace</CardTitle>
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Stav</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inquiry">Poptávka</SelectItem>
-                  <SelectItem value="quote">Nabídka odeslána</SelectItem>
-                  <SelectItem value="confirmed">Potvrzeno</SelectItem>
-                  <SelectItem value="cancelled">Zrušeno</SelectItem>
-                  <SelectItem value="completed">Dokončeno</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Stav</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inquiry">Poptávka</SelectItem>
+                    <SelectItem value="quote">Nabídka odeslána</SelectItem>
+                    <SelectItem value="confirmed">Potvrzeno</SelectItem>
+                    <SelectItem value="cancelled">Zrušeno</SelectItem>
+                    <SelectItem value="completed">Dokončeno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="leadTraveler">Hlavní cestující</Label>
-              <ClientCombobox
-                value={leadTravelerId}
-                onChange={setLeadTravelerId}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="leadTraveler">Hlavní cestující</Label>
+                <ClientCombobox
+                  value={leadTravelerId}
+                  onChange={setLeadTravelerId}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="destination">Destinace</Label>
-              <DestinationCombobox
-                value={destinationId}
-                onValueChange={setDestinationId}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination">Destinace</Label>
+                <DestinationCombobox
+                  value={destinationId}
+                  onValueChange={setDestinationId}
+                />
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Datum zahájení</Label>
                 <Input
@@ -700,6 +700,7 @@ const DealDetail = () => {
                   onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="endDate">Datum ukončení</Label>
                 <Input
@@ -709,41 +710,41 @@ const DealDetail = () => {
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="depositAmount">Záloha (Kč)</Label>
-              <Input
-                id="depositAmount"
-                type="number"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                placeholder="0"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="depositAmount">Záloha (Kč)</Label>
+                <Input
+                  id="depositAmount"
+                  type="number"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="depositPaid"
-                checked={depositPaid}
-                onChange={(e) => setDepositPaid(e.target.checked)}
-                className="h-4 w-4 rounded border-input"
-              />
-              <Label htmlFor="depositPaid" className="cursor-pointer">
-                Záloha zaplacena
-              </Label>
-            </div>
+              <div className="flex items-center space-x-2 pt-7">
+                <input
+                  type="checkbox"
+                  id="depositPaid"
+                  checked={depositPaid}
+                  onChange={(e) => setDepositPaid(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="depositPaid" className="cursor-pointer">
+                  Záloha zaplacena
+                </Label>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Poznámky</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Interní poznámky..."
-                rows={4}
-              />
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="notes">Poznámky</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Interní poznámky..."
+                  rows={4}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
