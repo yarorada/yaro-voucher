@@ -65,6 +65,10 @@ interface Deal {
   deposit_paid: boolean;
   notes: string | null;
   destination_id: string | null;
+  discount_amount: number | null;
+  adjustment_amount: number | null;
+  discount_note: string | null;
+  adjustment_note: string | null;
   destination?: {
     id: string;
     name: string;
@@ -110,6 +114,10 @@ const DealDetail = () => {
   const [depositPaid, setDepositPaid] = useState(false);
   const [notes, setNotes] = useState("");
   const [leadTravelerId, setLeadTravelerId] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [discountNote, setDiscountNote] = useState("");
+  const [adjustmentNote, setAdjustmentNote] = useState("");
 
   useEffect(() => {
     fetchDeal();
@@ -144,6 +152,10 @@ const DealDetail = () => {
       setDepositAmount(data.deposit_amount?.toString() || "");
       setDepositPaid(data.deposit_paid || false);
       setNotes(data.notes || "");
+      setDiscountAmount(data.discount_amount?.toString() || "");
+      setAdjustmentAmount(data.adjustment_amount?.toString() || "");
+      setDiscountNote(data.discount_note || "");
+      setAdjustmentNote(data.adjustment_note || "");
       
       const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
       if (leadTraveler) {
@@ -161,21 +173,14 @@ const DealDetail = () => {
     }
   };
 
-  const calculateTotalPrice = async (servicesList: DealService[]) => {
-    const total = servicesList.reduce((sum, service) => {
+  const calculateTotalPrice = (servicesList: DealService[], discount: number, adjustment: number) => {
+    const servicesTotal = servicesList.reduce((sum, service) => {
       return sum + (service.price || 0);
     }, 0);
     
-    const totalStr = total.toString();
-    setTotalPrice(totalStr);
-    
-    // Update deal in database
-    if (deal?.id) {
-      await supabase
-        .from("deals")
-        .update({ total_price: total })
-        .eq("id", deal.id);
-    }
+    const finalTotal = servicesTotal - discount + adjustment;
+    setTotalPrice(finalTotal.toString());
+    return finalTotal;
   };
 
   const fetchServices = async () => {
@@ -190,7 +195,6 @@ const DealDetail = () => {
 
       if (error) throw error;
       setServices(data || []);
-      await calculateTotalPrice(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
     } finally {
@@ -323,6 +327,24 @@ const DealDetail = () => {
       setServiceDialogOpen(false);
       resetServiceForm();
       await fetchServices();
+      
+      // Recalculate total price
+      const discount = parseFloat(discountAmount) || 0;
+      const adjustment = parseFloat(adjustmentAmount) || 0;
+      const newTotal = calculateTotalPrice(serviceForm.id 
+        ? services.map(s => s.id === serviceForm.id ? { ...s, price: parseFloat(serviceForm.price) || null } : s)
+        : [...services, { price: parseFloat(serviceForm.price) || 0 } as any], 
+        discount, 
+        adjustment
+      );
+      
+      // Update in database
+      if (deal?.id) {
+        await supabase
+          .from("deals")
+          .update({ total_price: newTotal })
+          .eq("id", deal.id);
+      }
     } catch (error) {
       console.error("Error saving service:", error);
       toast({
@@ -350,6 +372,20 @@ const DealDetail = () => {
       });
 
       await fetchServices();
+      
+      // Recalculate total price
+      const discount = parseFloat(discountAmount) || 0;
+      const adjustment = parseFloat(adjustmentAmount) || 0;
+      const remainingServices = services.filter(s => s.id !== serviceId);
+      const newTotal = calculateTotalPrice(remainingServices, discount, adjustment);
+      
+      // Update in database
+      if (deal?.id) {
+        await supabase
+          .from("deals")
+          .update({ total_price: newTotal })
+          .eq("id", deal.id);
+      }
     } catch (error) {
       console.error("Error deleting service:", error);
       toast({
@@ -428,6 +464,10 @@ const DealDetail = () => {
           deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
           deposit_paid: depositPaid,
           notes: notes || null,
+          discount_amount: discountAmount ? parseFloat(discountAmount) : 0,
+          adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
+          discount_note: discountNote || null,
+          adjustment_note: adjustmentNote || null,
         })
         .eq("id", deal.id);
 
@@ -670,27 +710,15 @@ const DealDetail = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="totalPrice">Celková cena (Kč)</Label>
-                <Input
-                  id="totalPrice"
-                  type="number"
-                  value={totalPrice}
-                  onChange={(e) => setTotalPrice(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="depositAmount">Záloha (Kč)</Label>
-                <Input
-                  id="depositAmount"
-                  type="number"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="depositAmount">Záloha (Kč)</Label>
+              <Input
+                id="depositAmount"
+                type="number"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                placeholder="0"
+              />
             </div>
 
             <div className="flex items-center space-x-2">
@@ -715,6 +743,104 @@ const DealDetail = () => {
                 placeholder="Interní poznámky..."
                 rows={4}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rozpis ceny</CardTitle>
+            <CardDescription>Součet služeb, slevy a přirážky</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Součet služeb:</span>
+                <span className="font-medium">
+                  {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(
+                    services.reduce((sum, s) => sum + (s.price || 0), 0)
+                  )}
+                </span>
+              </div>
+              
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="discountAmount" className="text-sm">Sleva (Kč)</Label>
+                    <Input
+                      id="discountAmount"
+                      type="number"
+                      value={discountAmount}
+                      onChange={(e) => {
+                        setDiscountAmount(e.target.value);
+                        const discount = parseFloat(e.target.value) || 0;
+                        const adjustment = parseFloat(adjustmentAmount) || 0;
+                        calculateTotalPrice(services, discount, adjustment);
+                      }}
+                      placeholder="0"
+                      className="mt-1"
+                    />
+                  </div>
+                  <span className="font-medium text-destructive mt-6">
+                    {discountAmount ? `- ${new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(parseFloat(discountAmount))}` : "0 Kč"}
+                  </span>
+                </div>
+                {discountAmount && parseFloat(discountAmount) > 0 && (
+                  <div className="space-y-1">
+                    <Label htmlFor="discountNote" className="text-sm text-muted-foreground">Poznámka ke slevě</Label>
+                    <Input
+                      id="discountNote"
+                      value={discountNote}
+                      onChange={(e) => setDiscountNote(e.target.value)}
+                      placeholder="Důvod slevy..."
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="adjustmentAmount" className="text-sm">Přirážka (Kč)</Label>
+                    <Input
+                      id="adjustmentAmount"
+                      type="number"
+                      value={adjustmentAmount}
+                      onChange={(e) => {
+                        setAdjustmentAmount(e.target.value);
+                        const discount = parseFloat(discountAmount) || 0;
+                        const adjustment = parseFloat(e.target.value) || 0;
+                        calculateTotalPrice(services, discount, adjustment);
+                      }}
+                      placeholder="0"
+                      className="mt-1"
+                    />
+                  </div>
+                  <span className="font-medium text-green-600 mt-6">
+                    {adjustmentAmount ? `+ ${new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(parseFloat(adjustmentAmount))}` : "0 Kč"}
+                  </span>
+                </div>
+                {adjustmentAmount && parseFloat(adjustmentAmount) > 0 && (
+                  <div className="space-y-1">
+                    <Label htmlFor="adjustmentNote" className="text-sm text-muted-foreground">Poznámka k přirážce</Label>
+                    <Input
+                      id="adjustmentNote"
+                      value={adjustmentNote}
+                      onChange={(e) => setAdjustmentNote(e.target.value)}
+                      placeholder="Důvod přirážky..."
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t-2 border-border">
+                <span className="font-semibold text-lg">Celková cena:</span>
+                <span className="font-bold text-xl text-primary">
+                  {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(
+                    parseFloat(totalPrice) || 0
+                  )}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

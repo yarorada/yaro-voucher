@@ -288,11 +288,15 @@ export type Database = {
       }
       deals: {
         Row: {
+          adjustment_amount: number | null
+          adjustment_note: string | null
           created_at: string
           deal_number: string
           deposit_amount: number | null
           deposit_paid: boolean | null
           destination_id: string | null
+          discount_amount: number | null
+          discount_note: string | null
           end_date: string | null
           id: string
           notes: string | null
@@ -303,11 +307,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          adjustment_amount?: number | null
+          adjustment_note?: string | null
           created_at?: string
           deal_number: string
           deposit_amount?: number | null
           deposit_paid?: boolean | null
           destination_id?: string | null
+          discount_amount?: number | null
+          discount_note?: string | null
           end_date?: string | null
           id?: string
           notes?: string | null
@@ -318,11 +326,15 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          adjustment_amount?: number | null
+          adjustment_note?: string | null
           created_at?: string
           deal_number?: string
           deposit_amount?: number | null
           deposit_paid?: boolean | null
           destination_id?: string | null
+          discount_amount?: number | null
+          discount_note?: string | null
           end_date?: string | null
           id?: string
           notes?: string | null
