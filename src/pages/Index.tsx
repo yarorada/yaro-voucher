@@ -21,7 +21,7 @@ const Index = () => {
             </Button>
           </div>
           <img src={yaroLogo} alt="YARO Travel" className="h-20 mx-auto mb-6" />
-          <h1 className="text-5xl font-bold text-foreground mb-4">Generátor cestovních voucherů</h1>
+          <h1 className="text-5xl font-bold text-foreground mb-4">Evidence obchodních případů YARO</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Vytvářejte profesionální PDF cestovní vouchery pro své klienty s automatickým sledováním a bezpečným
             uložením
