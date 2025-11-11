@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit } from "lucide-react";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
@@ -27,6 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface DealTraveler {
   id: string;
@@ -791,33 +799,44 @@ const DealDetail = () => {
               </Dialog>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {deal.deal_travelers.map((traveler) => (
-                <div
-                  key={traveler.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%]">Jméno</TableHead>
+                  <TableHead className="w-[35%]">Role</TableHead>
+                  <TableHead className="w-[15%] text-right">Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deal.deal_travelers.map((traveler) => (
+                  <TableRow key={traveler.id}>
+                    <TableCell className="font-medium text-sm">
                       {traveler.clients.first_name} {traveler.clients.last_name}
-                    </p>
-                    {traveler.is_lead_traveler && (
-                      <p className="text-sm text-muted-foreground">Hlavní cestující</p>
-                    )}
-                  </div>
-                  {!traveler.is_lead_traveler && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {traveler.is_lead_traveler && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                          Hlavní cestující
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!traveler.is_lead_traveler && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
@@ -960,67 +979,85 @@ const DealDetail = () => {
               </Dialog>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loadingServices ? (
-              <p className="text-muted-foreground text-center py-4">Načítání...</p>
+              <p className="text-muted-foreground text-center py-8 text-sm">Načítání...</p>
             ) : services.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Zatím nejsou přidány žádné služby</p>
+              <p className="text-muted-foreground text-center py-8 text-sm">Zatím nejsou přidány žádné služby</p>
             ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="mt-1">{getServiceIcon(service.service_type)}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{service.service_name}</p>
-                            <span className="text-xs text-muted-foreground">
-                              ({getServiceTypeLabel(service.service_type)})
-                            </span>
-                          </div>
-                          {service.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                          )}
-                          <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                            {service.person_count && (
-                              <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
+              <div className="space-y-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[25%]">Služba</TableHead>
+                        <TableHead className="w-[15%] hidden sm:table-cell">Datum</TableHead>
+                        <TableHead className="w-[10%] hidden md:table-cell text-center">Osoby</TableHead>
+                        <TableHead className="w-[20%] hidden lg:table-cell">Dodavatel</TableHead>
+                        <TableHead className="w-[15%] text-right">Cena</TableHead>
+                        <TableHead className="w-[15%] text-right">Akce</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services.map((service) => (
+                        <TableRow key={service.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{service.service_name}</p>
+                                <p className="text-xs text-muted-foreground">{getServiceTypeLabel(service.service_type)}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs">
+                            {service.start_date && new Date(service.start_date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-center text-sm">
+                            {service.person_count}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-xs truncate">
+                            {service.suppliers?.name || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="text-sm font-medium">
+                              {service.price ? new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1)) : '-'}
+                            </div>
+                            {service.price && service.person_count && service.person_count > 1 && (
+                              <div className="text-xs text-muted-foreground">
+                                {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count}
+                              </div>
                             )}
-                            {service.start_date && (
-                              <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
-                            )}
-                            {service.suppliers && (
-                              <span>🏢 {service.suppliers.name}</span>
-                            )}
-                            {service.price && (
-                              <span className="font-medium text-foreground">
-                                {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1))}
-                                {service.person_count && service.person_count > 1 && (
-                                  <span className="text-xs ml-1">({new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count})</span>
-                                )}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => openEditService(service)}>
-                          Upravit
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDeleteService(service.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 w-7 p-0" 
+                                onClick={() => openEditService(service)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive" 
+                                onClick={() => handleDeleteService(service.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
                 
-                <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30 rounded-lg">
-                  <span className="font-semibold text-lg">Celková cena služeb:</span>
-                  <span className="font-bold text-xl text-primary">
+                <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30">
+                  <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
+                  <span className="font-bold text-base sm:text-lg text-primary">
                     {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(
                       services.reduce((sum, s) => sum + ((s.price || 0) * (s.person_count || 1)), 0)
                     )}
