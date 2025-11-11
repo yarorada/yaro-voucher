@@ -691,7 +691,7 @@ const DealDetail = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="destination">Destinace</Label>
                 <DestinationCombobox
                   value={destinationId}
@@ -699,24 +699,28 @@ const DealDetail = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Datum zahájení</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
+              <div className="space-y-2 md:col-span-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Datum zahájení</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="endDate">Datum ukončení</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">Datum ukončení</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
