@@ -40,9 +40,7 @@ const Index = () => {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Vytvořit nový voucher</h2>
-                <p className="text-muted-foreground">
-                  Vygenerujte nový cestovní voucher s údaji klienta, službami a automatickým číslováním voucherů
-                </p>
+                <p className="text-muted-foreground">Vygeneruje nový cestovní voucher</p>
               </div>
             </div>
           </Card>
