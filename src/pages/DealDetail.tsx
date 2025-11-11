@@ -951,55 +951,66 @@ const DealDetail = () => {
             ) : services.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">Zatím nejsou přidány žádné služby</p>
             ) : (
-              <div className="space-y-2">
-                {services.map((service) => (
-                  <div
-                    key={service.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="mt-1">{getServiceIcon(service.service_type)}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{service.service_name}</p>
-                          <span className="text-xs text-muted-foreground">
-                            ({getServiceTypeLabel(service.service_type)})
-                          </span>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  {services.map((service) => (
+                    <div
+                      key={service.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="mt-1">{getServiceIcon(service.service_type)}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{service.service_name}</p>
+                            <span className="text-xs text-muted-foreground">
+                              ({getServiceTypeLabel(service.service_type)})
+                            </span>
+                          </div>
+                          {service.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
+                          )}
+                          <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                            {service.person_count && (
+                              <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
+                            )}
+                            {service.start_date && (
+                              <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
+                            )}
+                            {service.suppliers && (
+                              <span>🏢 {service.suppliers.name}</span>
+                            )}
+                            {service.price && (
+                              <span className="font-medium text-foreground">
+                                {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1))}
+                                {service.person_count && service.person_count > 1 && (
+                                  <span className="text-xs ml-1">({new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count})</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                         {service.description && (
-                           <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                         )}
-                         <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                           {service.person_count && (
-                             <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
-                           )}
-                           {service.start_date && (
-                             <span>📅 {new Date(service.start_date).toLocaleDateString('cs-CZ')}</span>
-                           )}
-                           {service.suppliers && (
-                             <span>🏢 {service.suppliers.name}</span>
-                           )}
-                           {service.price && (
-                             <span className="font-medium text-foreground">
-                               {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1))}
-                               {service.person_count && service.person_count > 1 && (
-                                 <span className="text-xs ml-1">({new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count})</span>
-                               )}
-                             </span>
-                           )}
-                         </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => openEditService(service)}>
+                          Upravit
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDeleteService(service.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => openEditService(service)}>
-                        Upravit
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDeleteService(service.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                
+                <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30 rounded-lg">
+                  <span className="font-semibold text-lg">Celková cena služeb:</span>
+                  <span className="font-bold text-xl text-primary">
+                    {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(
+                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.person_count || 1)), 0)
+                    )}
+                  </span>
+                </div>
               </div>
             )}
           </CardContent>
