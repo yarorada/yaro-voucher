@@ -106,16 +106,12 @@ const Deals = () => {
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-7xl mx-auto py-8 px-4">
+      <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Zpět
+              Domů
             </Button>
             <div className="flex items-center gap-4">
               <img src={yaroLogo} alt="YARO Travel" className="h-12" />
@@ -125,16 +121,13 @@ const Deals = () => {
               </Button>
             </div>
           </div>
-          <div className="flex items-center justify-between">
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">
-                Obchodní případy
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Správa všech obchodních příležitostí
-              </p>
+              <h1 className="text-4xl font-bold text-foreground">Obchodní případy</h1>
+              <p className="text-muted-foreground mt-2">Správa všech obchodních příležitostí</p>
             </div>
-            <Button onClick={() => navigate("/deals/new")} className="gap-2">
+            <Button onClick={() => navigate("/deals/new")} className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2">
               <Plus className="h-4 w-4" />
               Nový případ
             </Button>
@@ -143,15 +136,33 @@ const Deals = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Načítání...</p>
+            <p className="text-muted-foreground">Načítám obchodní případy...</p>
           </div>
+        ) : deals.length === 0 ? (
+          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+            <Plus className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">Zatím žádné obchodní případy</h2>
+            <p className="text-muted-foreground mb-6">Vytvořte svůj první obchodní případ</p>
+            <Button onClick={() => navigate("/deals/new")} className="bg-[var(--gradient-primary)] hover:opacity-90">
+              <Plus className="h-4 w-4 mr-2" />
+              Vytvořit první případ
+            </Button>
+          </Card>
         ) : (
-          <>
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Celkem případů: <span className="font-semibold text-foreground">{deals.length}</span>
+                {searchQuery && filteredDeals.length !== deals.length && (
+                  <span className="ml-2">
+                    (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
+                  </span>
+                )}
+              </p>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Hledat podle čísla případu, destinace nebo klienta..."
+                  placeholder="Hledat podle čísla, destinace nebo klienta..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -160,71 +171,54 @@ const Deals = () => {
             </div>
 
             {filteredDeals.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    {searchQuery
-                      ? "Žádné případy nenalezeny."
-                      : "Zatím nemáte žádné obchodní případy."}
-                  </p>
-                </CardContent>
+              <Card className="p-12 text-center">
+                <p className="text-muted-foreground">Nenalezeny žádné případy odpovídající vašemu hledání</p>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {filteredDeals.map((deal) => (
-                  <Card
-                    key={deal.id}
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => navigate(`/deals/${deal.id}`)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-xl mb-2">
-                            {deal.deal_number}
-                          </CardTitle>
-                          <div className="flex gap-2 text-sm text-muted-foreground">
-                            {deal.destinations && (
-                              <span>📍 {deal.destinations.name}</span>
-                            )}
-                            {deal.start_date && (
-                              <span>
-                                🗓️ {formatDate(deal.start_date)}
-                                {deal.end_date && ` - ${formatDate(deal.end_date)}`}
-                              </span>
-                            )}
-                          </div>
+              filteredDeals.map((deal) => {
+                const mainTravelers = deal.deal_travelers
+                  .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
+                  .join(", ");
+                const title = deal.destinations?.name
+                  ? `${deal.deal_number} - ${deal.destinations.name}`
+                  : deal.deal_number;
+
+                return (
+                  <Card key={deal.id} className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <DealStatusBadge status={deal.status} />
+                          <h3 className="text-xl font-bold text-foreground">{title}</h3>
                         </div>
-                        <DealStatusBadge status={deal.status} />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          {deal.deal_travelers.length > 0 && (
-                            <p className="text-sm">
-                              <strong>Cestující:</strong>{" "}
-                              {deal.deal_travelers
-                                .map(
-                                  (dt: any) =>
-                                    `${dt.clients.first_name} ${dt.clients.last_name}`
-                                )
-                                .join(", ")}
-                            </p>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          {mainTravelers && (
+                            <span>
+                              <span className="font-semibold text-foreground">Cestující:</span> {mainTravelers}
+                            </span>
                           )}
+                          {deal.start_date && (
+                            <span>
+                              <span className="font-semibold text-foreground">Datum:</span> {formatDate(deal.start_date)}
+                              {deal.end_date && ` - ${formatDate(deal.end_date)}`}
+                            </span>
+                          )}
+                          {deal.total_price && (
+                            <span>
+                              <span className="font-semibold text-foreground">Cena:</span> {formatPrice(deal.total_price)}
+                            </span>
+                          )}
+                          <span>
+                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(deal.created_at)}
+                          </span>
                         </div>
-                        {deal.total_price && (
-                          <p className="text-lg font-bold">
-                            {formatPrice(deal.total_price)}
-                          </p>
-                        )}
                       </div>
-                    </CardContent>
+                    </div>
                   </Card>
-                ))}
-              </div>
+                );
+              })
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
