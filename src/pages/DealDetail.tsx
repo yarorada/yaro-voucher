@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, LogOut } from "lucide-react";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { useAuth } from "@/hooks/useAuth";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
@@ -89,6 +91,7 @@ const DealDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deal, setDeal] = useState<Deal | null>(null);
@@ -618,7 +621,7 @@ const DealDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
         <p className="text-muted-foreground">Načítání...</p>
       </div>
     );
@@ -626,41 +629,56 @@ const DealDetail = () => {
 
   if (!deal) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
         <p className="text-muted-foreground">Obchodní případ nenalezen</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/deals")}>
+    <div className="min-h-screen bg-[var(--gradient-subtle)]">
+      <div className="container max-w-5xl mx-auto py-8 px-4">
+        <header className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" onClick={() => navigate("/deals")} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
+              Zpět na případy
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold">{deal.deal_number}</h1>
-              <p className="text-muted-foreground">Detail obchodního případu</p>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={handleSave} disabled={saving} className="gap-2">
+                <Save className="h-4 w-4" />
+                {saving ? "Ukládám..." : "Uložit"}
+              </Button>
+              <Button variant="outline" onClick={handleCreateContract} className="gap-2">
+                <FileSignature className="h-4 w-4" />
+                Vytvořit smlouvu
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+                Smazat
+              </Button>
+              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
+              <Button variant="outline" onClick={signOut} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Odhlásit
+              </Button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Smazat
-            </Button>
-            <Button variant="outline" onClick={handleCreateContract}>
-              <FileSignature className="h-4 w-4 mr-2" />
-              Vytvořit smlouvu
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "Ukládám..." : "Uložit"}
-            </Button>
+          
+          <div className="flex items-center gap-3">
+            <DealStatusBadge status={deal.status} />
+            <h1 className="text-4xl font-bold text-foreground">{deal.deal_number}</h1>
+            {deal.destination?.name && (
+              <span className="text-2xl text-muted-foreground">- {deal.destination.name}</span>
+            )}
           </div>
-        </div>
+        </header>
 
+        <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
@@ -1082,6 +1100,7 @@ const DealDetail = () => {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
