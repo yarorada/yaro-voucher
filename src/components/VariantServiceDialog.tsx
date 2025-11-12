@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +40,8 @@ export const VariantServiceDialog = ({
   const [serviceType, setServiceType] = useState<"flight" | "hotel" | "golf" | "transfer" | "insurance" | "other">("hotel");
   const [serviceName, setServiceName] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [price, setPrice] = useState("");
   const [personCount, setPersonCount] = useState("1");
   const [supplierId, setSupplierId] = useState("");
@@ -50,8 +51,8 @@ export const VariantServiceDialog = ({
       setServiceType(service.service_type);
       setServiceName(service.service_name);
       setDescription(service.description || "");
-      setStartDate(service.start_date || "");
-      setEndDate(service.end_date || "");
+      setStartDate(service.start_date ? new Date(service.start_date) : undefined);
+      setEndDate(service.end_date ? new Date(service.end_date) : undefined);
       setPrice(service.price?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
       setSupplierId(service.supplier_id || "");
@@ -64,8 +65,8 @@ export const VariantServiceDialog = ({
     setServiceType("hotel");
     setServiceName("");
     setDescription("");
-    setStartDate("");
-    setEndDate("");
+    setStartDate(undefined);
+    setEndDate(undefined);
     setPrice("");
     setPersonCount("1");
     setSupplierId("");
@@ -91,8 +92,8 @@ export const VariantServiceDialog = ({
             service_type: serviceType,
             service_name: serviceName,
             description: description || null,
-            start_date: startDate || null,
-            end_date: endDate || null,
+            start_date: startDate?.toISOString() || null,
+            end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
@@ -109,8 +110,8 @@ export const VariantServiceDialog = ({
             service_type: serviceType,
             service_name: serviceName,
             description: description || null,
-            start_date: startDate || null,
-            end_date: endDate || null,
+            start_date: startDate?.toISOString() || null,
+            end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
@@ -200,20 +201,18 @@ export const VariantServiceDialog = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="start-date">Datum od</Label>
-              <Input
-                id="start-date"
-                type="date"
+              <DateInput
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
+                placeholder="DD.MM.RR"
               />
             </div>
             <div>
               <Label htmlFor="end-date">Datum do</Label>
-              <Input
-                id="end-date"
-                type="date"
+              <DateInput
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={setEndDate}
+                placeholder="DD.MM.RR"
               />
             </div>
           </div>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -56,8 +57,8 @@ export const VariantDetailDialog = ({
   const [saving, setSaving] = useState(false);
   const [variantName, setVariantName] = useState("");
   const [destinationId, setDestinationId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
   const [services, setServices] = useState<VariantService[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
@@ -67,8 +68,8 @@ export const VariantDetailDialog = ({
     if (variant) {
       setVariantName(variant.variant_name || "");
       setDestinationId(variant.destination_id || "");
-      setStartDate(variant.start_date || "");
-      setEndDate(variant.end_date || "");
+      setStartDate(variant.start_date ? new Date(variant.start_date) : undefined);
+      setEndDate(variant.end_date ? new Date(variant.end_date) : undefined);
       setNotes(variant.notes || "");
       fetchServices(variant.id);
     } else {
@@ -79,8 +80,8 @@ export const VariantDetailDialog = ({
   const resetForm = () => {
     setVariantName("");
     setDestinationId("");
-    setStartDate("");
-    setEndDate("");
+    setStartDate(undefined);
+    setEndDate(undefined);
     setNotes("");
     setServices([]);
   };
@@ -130,8 +131,8 @@ export const VariantDetailDialog = ({
           .update({
             variant_name: variantName,
             destination_id: destinationId || null,
-            start_date: startDate || null,
-            end_date: endDate || null,
+            start_date: startDate?.toISOString() || null,
+            end_date: endDate?.toISOString() || null,
             total_price: totalPrice,
             notes: notes || null,
           })
@@ -146,8 +147,8 @@ export const VariantDetailDialog = ({
             deal_id: dealId,
             variant_name: variantName,
             destination_id: destinationId || null,
-            start_date: startDate || null,
-            end_date: endDate || null,
+            start_date: startDate?.toISOString() || null,
+            end_date: endDate?.toISOString() || null,
             total_price: totalPrice,
             notes: notes || null,
             is_selected: false,
@@ -288,20 +289,18 @@ export const VariantDetailDialog = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="start-date">Datum od</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
+                  <DateInput
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={setStartDate}
+                    placeholder="DD.MM.RR"
                   />
                 </div>
                 <div>
                   <Label htmlFor="end-date">Datum do</Label>
-                  <Input
-                    id="end-date"
-                    type="date"
+                  <DateInput
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={setEndDate}
+                    placeholder="DD.MM.RR"
                   />
                 </div>
               </div>

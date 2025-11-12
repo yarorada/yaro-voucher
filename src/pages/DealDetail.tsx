@@ -15,6 +15,7 @@ import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { DealVariants } from "@/components/DealVariants";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -109,8 +110,8 @@ const DealDetail = () => {
     service_type: "hotel" as DealService["service_type"],
     service_name: "",
     description: "",
-    start_date: "",
-    end_date: "",
+    start_date: undefined as Date | undefined,
+    end_date: undefined as Date | undefined,
     price: "",
     supplier_id: "",
     person_count: "1",
@@ -119,8 +120,8 @@ const DealDetail = () => {
   // Form state
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed">("inquiry");
   const [destinationId, setDestinationId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [totalPrice, setTotalPrice] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [depositPaid, setDepositPaid] = useState(false);
@@ -158,8 +159,8 @@ const DealDetail = () => {
       setDeal(data);
       setStatus(data.status);
       setDestinationId(data.destination_id || "");
-      setStartDate(data.start_date || "");
-      setEndDate(data.end_date || "");
+      setStartDate(data.start_date ? new Date(data.start_date) : undefined);
+      setEndDate(data.end_date ? new Date(data.end_date) : undefined);
       setTotalPrice(data.total_price?.toString() || "");
       setDepositAmount(data.deposit_amount?.toString() || "");
       setDepositPaid(data.deposit_paid || false);
@@ -304,8 +305,8 @@ const DealDetail = () => {
             service_type: serviceForm.service_type,
             service_name: serviceForm.service_name,
             description: serviceForm.description || null,
-            start_date: serviceForm.start_date || null,
-            end_date: serviceForm.end_date || null,
+            start_date: serviceForm.start_date?.toISOString() || null,
+            end_date: serviceForm.end_date?.toISOString() || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
@@ -322,8 +323,8 @@ const DealDetail = () => {
             service_type: serviceForm.service_type,
             service_name: serviceForm.service_name,
             description: serviceForm.description || null,
-            start_date: serviceForm.start_date || null,
-            end_date: serviceForm.end_date || null,
+            start_date: serviceForm.start_date?.toISOString() || null,
+            end_date: serviceForm.end_date?.toISOString() || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
@@ -415,8 +416,8 @@ const DealDetail = () => {
       service_type: "hotel",
       service_name: "",
       description: "",
-      start_date: "",
-      end_date: "",
+      start_date: undefined,
+      end_date: undefined,
       price: "",
       supplier_id: "",
       person_count: "1",
@@ -429,8 +430,8 @@ const DealDetail = () => {
       service_type: service.service_type,
       service_name: service.service_name,
       description: service.description || "",
-      start_date: service.start_date || "",
-      end_date: service.end_date || "",
+      start_date: service.start_date ? new Date(service.start_date) : undefined,
+      end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
@@ -471,8 +472,8 @@ const DealDetail = () => {
         .update({
           status,
           destination_id: destinationId || null,
-          start_date: startDate || null,
-          end_date: endDate || null,
+          start_date: startDate?.toISOString() || null,
+          end_date: endDate?.toISOString() || null,
           total_price: totalPrice ? parseFloat(totalPrice) : null,
           deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
           deposit_paid: depositPaid,
@@ -722,21 +723,19 @@ const DealDetail = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Datum zahájení</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
+                    <DateInput
                       value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      onChange={setStartDate}
+                      placeholder="DD.MM.RR"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="endDate">Datum ukončení</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
+                    <DateInput
                       value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                      onChange={setEndDate}
+                      placeholder="DD.MM.RR"
                     />
                   </div>
                 </div>
@@ -893,8 +892,8 @@ const DealDetail = () => {
                       service_type: "hotel",
                       service_name: "",
                       description: "",
-                      start_date: startDate || "",
-                      end_date: endDate || "",
+                      start_date: startDate,
+                      end_date: endDate,
                       price: "",
                       supplier_id: "",
                       person_count: travelerCount.toString(),
@@ -954,18 +953,18 @@ const DealDetail = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Datum od</Label>
-                        <Input
-                          type="date"
+                        <DateInput
                           value={serviceForm.start_date}
-                          onChange={(e) => setServiceForm({ ...serviceForm, start_date: e.target.value })}
+                          onChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
+                          placeholder="DD.MM.RR"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Datum do</Label>
-                        <Input
-                          type="date"
+                        <DateInput
                           value={serviceForm.end_date}
-                          onChange={(e) => setServiceForm({ ...serviceForm, end_date: e.target.value })}
+                          onChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
+                          placeholder="DD.MM.RR"
                         />
                       </div>
                     </div>
