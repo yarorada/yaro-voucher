@@ -57,25 +57,35 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     let extractedData: ExtractedData | null = null;
     let documentType: 'passport' | 'id_card' = 'passport';
 
+    console.log('Trying passport OCR...');
     // First try passport
     const { data: passportData } = await supabase.functions.invoke('ocr-document', {
       body: { imageBase64: base64, documentType: 'passport' }
     });
 
+    console.log('Passport OCR response:', passportData);
+
     if (passportData?.success && passportData.data?.passport_number) {
+      console.log('Found passport number:', passportData.data.passport_number);
       extractedData = { ...passportData.data, documentType: 'passport' };
     } else {
+      console.log('Trying ID card OCR...');
       // Try ID card
       const { data: idCardData } = await supabase.functions.invoke('ocr-document', {
         body: { imageBase64: base64, documentType: 'id_card' }
       });
       
+      console.log('ID card OCR response:', idCardData);
+      
       if (idCardData?.success && idCardData.data?.id_card_number) {
+        console.log('Found ID card number:', idCardData.data.id_card_number);
         extractedData = { ...idCardData.data, documentType: 'id_card' };
       } else if (passportData?.success) {
+        console.log('Using passport data without number');
         // Use passport data even if no number found
         extractedData = { ...passportData.data, documentType: 'passport' };
       } else if (idCardData?.success) {
+        console.log('Using ID card data without number');
         extractedData = { ...idCardData.data, documentType: 'id_card' };
       }
     }
@@ -83,6 +93,8 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     if (!extractedData) {
       throw new Error('OCR selhalo - nepodařilo se extrahovat data');
     }
+
+    console.log('OCR extracted data:', extractedData);
 
     return { extractedData, compressedBlob: blob };
   };
@@ -120,15 +132,21 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       title: extractedData.title || null,
     };
 
+    console.log('Creating client with data:', clientData);
+
     if (extractedData.passport_number) {
+      console.log('Adding passport data:', extractedData.passport_number, extractedData.passport_expiry);
       clientData.passport_number = extractedData.passport_number;
       clientData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
     }
 
     if (extractedData.id_card_number) {
+      console.log('Adding ID card data:', extractedData.id_card_number, extractedData.id_card_expiry);
       clientData.id_card_number = extractedData.id_card_number;
       clientData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
     }
+
+    console.log('Final client data before insert:', clientData);
 
     // Insert client first
     const { data: newClient, error: insertError } = await supabase
