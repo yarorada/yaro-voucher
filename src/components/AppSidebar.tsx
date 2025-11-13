@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const menuItems = [
@@ -95,6 +96,11 @@ export function AppSidebar() {
       
       <SidebarFooter className="border-t border-border/50 mt-auto">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="px-2 py-1">
+              <ThemeToggle />
+            </div>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={signOut} 
