@@ -5,6 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to capitalize first letter of each word
+function capitalizeWords(text: string | null | undefined): string | null {
+  if (!text || typeof text !== 'string') return null;
+  
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -120,12 +131,20 @@ Important:
     }
 
     // Try to parse JSON from the response
-    let extractedData = {};
+    let extractedData: any = {};
     try {
       // Remove markdown code blocks if present
       const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || content.match(/(\{[\s\S]*?\})/);
       if (jsonMatch) {
         extractedData = JSON.parse(jsonMatch[1]);
+        
+        // Capitalize names
+        if (extractedData.first_name) {
+          extractedData.first_name = capitalizeWords(extractedData.first_name);
+        }
+        if (extractedData.last_name) {
+          extractedData.last_name = capitalizeWords(extractedData.last_name);
+        }
       }
     } catch (e) {
       console.error("Failed to parse JSON:", e);
