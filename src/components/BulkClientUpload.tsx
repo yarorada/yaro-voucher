@@ -372,6 +372,11 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           status: 'success',
           extractedData: editedData
         };
+        
+        // Check if all uploads are completed after this update
+        const allCompleted = updated.every(u => u.status === 'success' || u.status === 'error');
+        const successCount = updated.filter(u => u.status === 'success').length;
+        
         return updated;
       });
 
@@ -387,17 +392,24 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           setEditedData({ ...nextData, title: autoTitle });
         }
       } else {
+        // No more previews - check completion and close
         setPreviewIndex(null);
         setEditedData(null);
         
-        // Check if all uploads are completed (success or error)
-        const allCompleted = uploads.every(u => u.status === 'success' || u.status === 'error');
-        if (allCompleted) {
-          const successCount = uploads.filter(u => u.status === 'success').length;
-          if (successCount > 0) {
-            onComplete();
+        // Get updated uploads state to check completion
+        setUploads(prev => {
+          const allCompleted = prev.every(u => u.status === 'success' || u.status === 'error');
+          const successCount = prev.filter(u => u.status === 'success').length;
+          
+          if (allCompleted && successCount > 0) {
+            // Small delay to ensure state updates are complete
+            setTimeout(() => {
+              onComplete();
+            }, 100);
           }
-        }
+          
+          return prev;
+        });
       }
     } catch (error: any) {
       console.error('Error creating client:', error);
@@ -437,17 +449,24 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
         setEditedData({ ...nextData, title: autoTitle });
       }
     } else {
+      // No more previews - check completion and close
       setPreviewIndex(null);
       setEditedData(null);
       
-      // Check if all uploads are completed
-      const allCompleted = uploads.every(u => u.status === 'success' || u.status === 'error');
-      if (allCompleted) {
-        const successCount = uploads.filter(u => u.status === 'success').length;
-        if (successCount > 0) {
-          onComplete();
+      // Get updated uploads state to check completion
+      setUploads(prev => {
+        const allCompleted = prev.every(u => u.status === 'success' || u.status === 'error');
+        const successCount = prev.filter(u => u.status === 'success').length;
+        
+        if (allCompleted && successCount > 0) {
+          // Small delay to ensure state updates are complete
+          setTimeout(() => {
+            onComplete();
+          }, 100);
         }
-      }
+        
+        return prev;
+      });
     }
   };
 
@@ -516,8 +535,11 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       toast.error(`${errorCount} klientů se nepodařilo vytvořit`);
     }
 
+    // Close dialog and refresh if any succeeded
     if (successCount > 0) {
-      onComplete();
+      setTimeout(() => {
+        onComplete();
+      }, 100);
     }
   };
 
