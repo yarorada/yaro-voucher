@@ -45,12 +45,12 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
         .single();
 
       if (!clientError && clientData) {
-        const currentUrls = Array.isArray(clientData.document_urls) ? clientData.document_urls : [];
+        const currentUrls = Array.isArray((clientData as any).document_urls) ? (clientData as any).document_urls : [];
         const newUrls = (currentUrls as unknown as Document[]).filter((doc) => doc.url !== documentUrl);
         
         await supabase
           .from("clients")
-          .update({ document_urls: newUrls as any })
+          .update({ document_urls: newUrls } as any)
           .eq("id", clientId);
       }
 
