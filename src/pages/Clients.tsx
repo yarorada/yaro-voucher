@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search } from "lucide-react";
+import { BulkClientUpload } from "@/components/BulkClientUpload";
+import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ interface Client {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  date_of_birth: string | null;
   passport_number: string | null;
   passport_expiry: string | null;
   id_card_number: string | null;
@@ -46,6 +48,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
+  const [bulkDocumentUploadOpen, setBulkDocumentUploadOpen] = useState(false);
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [searchText, setSearchText] = useState("");
 
@@ -56,6 +59,7 @@ const Clients = () => {
     phone: "",
     address: "",
     notes: "",
+    date_of_birth: undefined as Date | undefined,
     passport_number: "",
     passport_expiry: undefined as Date | undefined,
     id_card_number: "",
@@ -140,6 +144,7 @@ const Clients = () => {
             phone: formData.phone.trim() || null,
             address: formData.address.trim() || null,
             notes: formData.notes.trim() || null,
+            date_of_birth: formData.date_of_birth?.toISOString().split('T')[0] || null,
             passport_number: formData.passport_number.trim() || null,
             passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
             id_card_number: formData.id_card_number.trim() || null,
@@ -171,6 +176,7 @@ const Clients = () => {
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
           address: formData.address.trim() || null,
+          date_of_birth: formData.date_of_birth?.toISOString().split('T')[0] || null,
           passport_number: formData.passport_number.trim() || null,
           passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
           id_card_number: formData.id_card_number.trim() || null,
@@ -189,6 +195,7 @@ const Clients = () => {
         phone: "",
         address: "",
         notes: "",
+        date_of_birth: undefined,
         passport_number: "",
         passport_expiry: undefined,
         id_card_number: "",
@@ -211,6 +218,7 @@ const Clients = () => {
       phone: client.phone || "",
       address: client.address || "",
       notes: client.notes || "",
+      date_of_birth: client.date_of_birth ? new Date(client.date_of_birth) : undefined,
       passport_number: client.passport_number || "",
       passport_expiry: client.passport_expiry ? new Date(client.passport_expiry) : undefined,
       id_card_number: client.id_card_number || "",
@@ -271,6 +279,7 @@ const Clients = () => {
       phone: "",
       address: "",
       notes: "",
+      date_of_birth: undefined,
       passport_number: "",
       passport_expiry: undefined,
       id_card_number: "",
@@ -422,6 +431,29 @@ const Clients = () => {
                 >
                   Odstranit diakritiku
                 </Button>
+                <Dialog open={bulkDocumentUploadOpen} onOpenChange={setBulkDocumentUploadOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="gap-2 shrink-0">
+                      <FileUp className="h-4 w-4" />
+                      Nahrát dokumenty
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl bg-background">
+                    <DialogHeader>
+                      <DialogTitle>Hromadné nahrání dokumentů</DialogTitle>
+                      <DialogDescription>
+                        Nahrajte cestovní pasy nebo občanské průkazy. Z každého dokumentu
+                        automaticky extrahujeme údaje a vytvoříme nového klienta.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <BulkClientUpload 
+                      onComplete={() => {
+                        setBulkDocumentUploadOpen(false);
+                        fetchClients();
+                      }} 
+                    />
+                  </DialogContent>
+                </Dialog>
                 <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2 shrink-0">
@@ -552,6 +584,16 @@ const Clients = () => {
                           setFormData({ ...formData, notes: e.target.value })
                         }
                         rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="date_of_birth">Datum narození</Label>
+                      <DateInput
+                        value={formData.date_of_birth}
+                        onChange={(date) =>
+                          setFormData({ ...formData, date_of_birth: date })
+                        }
                       />
                     </div>
 

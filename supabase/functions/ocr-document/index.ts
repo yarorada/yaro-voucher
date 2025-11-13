@@ -33,11 +33,12 @@ serve(async (req) => {
   "passport_number": "passport number (string)",
   "expiry_date": "expiry date in DD.MM.YY format (string)",
   "first_name": "first name (string)",
-  "last_name": "last name (string)"
+  "last_name": "last name (string)",
+  "date_of_birth": "date of birth in DD.MM.YY format (string)"
 }
 
 Important:
-- For expiry_date, format it as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- For expiry_date and date_of_birth, format them as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
     } else if (documentType === "id_card") {
@@ -46,15 +47,16 @@ Important:
   "id_card_number": "ID card number (string)",
   "expiry_date": "expiry date in DD.MM.YY format (string)",
   "first_name": "first name (string)",
-  "last_name": "last name (string)"
+  "last_name": "last name (string)",
+  "date_of_birth": "date of birth in DD.MM.YY format (string)"
 }
 
 Important:
-- For expiry_date, format it as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- For expiry_date and date_of_birth, format them as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
     } else {
-      prompt = `Analyze this document image and extract any relevant personal information (name, document number, expiry date) in JSON format.`;
+      prompt = `Analyze this document image and extract any relevant personal information (name, document number, expiry date, date of birth) in JSON format.`;
     }
 
     // Call Lovable AI with vision capability
@@ -135,7 +137,7 @@ Important:
     }
 
     return new Response(
-      JSON.stringify({ data: extractedData }),
+      JSON.stringify({ success: true, data: extractedData }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
