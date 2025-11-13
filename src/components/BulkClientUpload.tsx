@@ -40,6 +40,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   const [isDragging, setIsDragging] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [editedData, setEditedData] = useState<ExtractedData | null>(null);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
   const processFile = async (file: File): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
     // Compress image first to reduce size for AI gateway
@@ -330,6 +331,76 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     }
   };
 
+  const handleConfirmAll = async () => {
+    setIsBatchProcessing(true);
+    setPreviewIndex(null);
+    setEditedData(null);
+
+    // Get all preview items
+    const previewItems = uploads
+      .map((upload, index) => ({ upload, index }))
+      .filter(({ upload }) => upload.status === 'preview');
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const { upload, index } of previewItems) {
+      if (!upload.extractedData || !upload.compressedBlob) continue;
+
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], status: 'processing' };
+        return updated;
+      });
+
+      try {
+        // Auto-assign title
+        const autoTitle = upload.extractedData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+        const dataWithTitle = { ...upload.extractedData, title: autoTitle };
+
+        await createClient(dataWithTitle, upload.file, upload.compressedBlob);
+        
+        setUploads(prev => {
+          const updated = [...prev];
+          updated[index] = { 
+            ...updated[index], 
+            status: 'success',
+            extractedData: dataWithTitle
+          };
+          return updated;
+        });
+        
+        successCount++;
+      } catch (error: any) {
+        console.error('Error creating client:', error);
+        setUploads(prev => {
+          const updated = [...prev];
+          updated[index] = { 
+            ...updated[index], 
+            status: 'error',
+            error: error.message 
+          };
+          return updated;
+        });
+        errorCount++;
+      }
+    }
+
+    setIsBatchProcessing(false);
+
+    // Show summary
+    if (successCount > 0) {
+      toast.success(`Úspěšně vytvořeno ${successCount} klientů`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} klientů se nepodařilo vytvořit`);
+    }
+
+    if (successCount > 0) {
+      onComplete();
+    }
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -438,7 +509,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           <DialogHeader>
             <DialogTitle>Zkontrolujte extrahovaná data</DialogTitle>
             <DialogDescription>
-              Upravte data dle potřeby před uložením do databáze
+              Upravte data dle potřeby před uložením nebo použijte "Potvrdit všechny" pro automatické uložení všech dokumentů s navrhnutými daty
             </DialogDescription>
           </DialogHeader>
 
@@ -622,13 +693,29 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleSkipPreview}>
-              Přeskočit
+          <DialogFooter className="flex justify-between items-center">
+            <Button 
+              variant="secondary" 
+              onClick={handleConfirmAll}
+              disabled={isBatchProcessing}
+            >
+              {isBatchProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Zpracovávám všechny...
+                </>
+              ) : (
+                'Potvrdit všechny'
+              )}
             </Button>
-            <Button onClick={handleConfirmPreview}>
-              Potvrdit a uložit
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleSkipPreview} disabled={isBatchProcessing}>
+                Přeskočit tento
+              </Button>
+              <Button onClick={handleConfirmPreview} disabled={isBatchProcessing}>
+                Potvrdit a pokračovat
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
