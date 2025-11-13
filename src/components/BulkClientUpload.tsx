@@ -134,16 +134,26 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
     console.log('Creating client with data:', clientData);
 
-    if (extractedData.passport_number) {
+    // Add passport data if either number or expiry exists
+    if (extractedData.passport_number || extractedData.passport_expiry) {
       console.log('Adding passport data:', extractedData.passport_number, extractedData.passport_expiry);
-      clientData.passport_number = extractedData.passport_number;
-      clientData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
+      if (extractedData.passport_number) {
+        clientData.passport_number = extractedData.passport_number;
+      }
+      if (extractedData.passport_expiry) {
+        clientData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
+      }
     }
 
-    if (extractedData.id_card_number) {
+    // Add ID card data if either number or expiry exists
+    if (extractedData.id_card_number || extractedData.id_card_expiry) {
       console.log('Adding ID card data:', extractedData.id_card_number, extractedData.id_card_expiry);
-      clientData.id_card_number = extractedData.id_card_number;
-      clientData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
+      if (extractedData.id_card_number) {
+        clientData.id_card_number = extractedData.id_card_number;
+      }
+      if (extractedData.id_card_expiry) {
+        clientData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
+      }
     }
 
     console.log('Final client data before insert:', clientData);
