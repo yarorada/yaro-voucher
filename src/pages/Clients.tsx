@@ -905,7 +905,7 @@ const Clients = () => {
               >
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-foreground">
-                    {client.title && `${client.title} `}{client.first_name} {client.last_name}
+                    {client.first_name} {client.last_name}
                   </h3>
                   <div className="flex gap-2">
                     <Button
