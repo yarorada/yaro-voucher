@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users } from "lucide-react";
+import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
+  const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -227,6 +228,7 @@ const Clients = () => {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingClient(null);
+    setOcrFilledFields(new Set());
     setFormData({
       first_name: "",
       last_name: "",
@@ -514,46 +516,82 @@ const Clients = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="passport_number">Číslo cestovního pasu</Label>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="passport_number">Číslo cestovního pasu</Label>
+                          {ocrFilledFields.has("passport_number") && (
+                            <div className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Z OCR</span>
+                            </div>
+                          )}
+                        </div>
                         <Input
                           id="passport_number"
                           value={formData.passport_number}
                           onChange={(e) =>
                             setFormData({ ...formData, passport_number: e.target.value })
                           }
+                          className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="passport_expiry">Platnost cestovního pasu</Label>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="passport_expiry">Platnost cestovního pasu</Label>
+                          {ocrFilledFields.has("passport_expiry") && (
+                            <div className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Z OCR</span>
+                            </div>
+                          )}
+                        </div>
                         <DateInput
                           value={formData.passport_expiry}
                           onChange={(date) =>
                             setFormData({ ...formData, passport_expiry: date })
                           }
                           placeholder="DD.MM.RR"
+                          className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50" : ""}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                          {ocrFilledFields.has("id_card_number") && (
+                            <div className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Z OCR</span>
+                            </div>
+                          )}
+                        </div>
                         <Input
                           id="id_card_number"
                           value={formData.id_card_number}
                           onChange={(e) =>
                             setFormData({ ...formData, id_card_number: e.target.value })
                           }
+                          className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="id_card_expiry">Platnost občanského průkazu</Label>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="id_card_expiry">Platnost občanského průkazu</Label>
+                          {ocrFilledFields.has("id_card_expiry") && (
+                            <div className="flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Z OCR</span>
+                            </div>
+                          )}
+                        </div>
                         <DateInput
                           value={formData.id_card_expiry}
                           onChange={(date) =>
                             setFormData({ ...formData, id_card_expiry: date })
                           }
                           placeholder="DD.MM.RR"
+                          className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50" : ""}
                         />
                       </div>
                     </div>
@@ -577,25 +615,35 @@ const Clients = () => {
                           documentType="passport"
                           autoSaveToClient={true}
                           onDataExtracted={(data) => {
+                            const newFilledFields = new Set(ocrFilledFields);
+                            
                             if (data.passport_number) {
-                              setFormData({ ...formData, passport_number: data.passport_number });
+                              setFormData(prev => ({ ...prev, passport_number: data.passport_number }));
+                              newFilledFields.add("passport_number");
                             }
                             if (data.expiry_date) {
-                              // Parse DD.MM.YY format
                               const parts = data.expiry_date.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData({ ...formData, passport_expiry: new Date(Date.UTC(year, month - 1, day)) });
+                                setFormData(prev => ({ ...prev, passport_expiry: new Date(Date.UTC(year, month - 1, day)) }));
+                                newFilledFields.add("passport_expiry");
                               }
                             }
                             if (data.first_name && !formData.first_name) {
-                              setFormData({ ...formData, first_name: data.first_name });
+                              setFormData(prev => ({ ...prev, first_name: data.first_name }));
                             }
                             if (data.last_name && !formData.last_name) {
-                              setFormData({ ...formData, last_name: data.last_name });
+                              setFormData(prev => ({ ...prev, last_name: data.last_name }));
                             }
+                            
+                            setOcrFilledFields(newFilledFields);
+                            
+                            // Auto-clear the highlight after 5 seconds
+                            setTimeout(() => {
+                              setOcrFilledFields(new Set());
+                            }, 5000);
                           }}
                           onUploadComplete={() => fetchClients()}
                         />
@@ -604,25 +652,35 @@ const Clients = () => {
                           documentType="id_card"
                           autoSaveToClient={true}
                           onDataExtracted={(data) => {
+                            const newFilledFields = new Set(ocrFilledFields);
+                            
                             if (data.id_card_number) {
-                              setFormData({ ...formData, id_card_number: data.id_card_number });
+                              setFormData(prev => ({ ...prev, id_card_number: data.id_card_number }));
+                              newFilledFields.add("id_card_number");
                             }
                             if (data.expiry_date) {
-                              // Parse DD.MM.YY format
                               const parts = data.expiry_date.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData({ ...formData, id_card_expiry: new Date(Date.UTC(year, month - 1, day)) });
+                                setFormData(prev => ({ ...prev, id_card_expiry: new Date(Date.UTC(year, month - 1, day)) }));
+                                newFilledFields.add("id_card_expiry");
                               }
                             }
                             if (data.first_name && !formData.first_name) {
-                              setFormData({ ...formData, first_name: data.first_name });
+                              setFormData(prev => ({ ...prev, first_name: data.first_name }));
                             }
                             if (data.last_name && !formData.last_name) {
-                              setFormData({ ...formData, last_name: data.last_name });
+                              setFormData(prev => ({ ...prev, last_name: data.last_name }));
                             }
+                            
+                            setOcrFilledFields(newFilledFields);
+                            
+                            // Auto-clear the highlight after 5 seconds
+                            setTimeout(() => {
+                              setOcrFilledFields(new Set());
+                            }, 5000);
                           }}
                           onUploadComplete={() => fetchClients()}
                         />
