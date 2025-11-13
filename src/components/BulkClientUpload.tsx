@@ -45,6 +45,43 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   const [editedData, setEditedData] = useState<ExtractedData | null>(null);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
+  // Helper function to parse DD.MM.YY dates safely
+  const parseDateDDMMYY = (dateStr: string | null | undefined): Date | null => {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    try {
+      const parts = dateStr.trim().split('.');
+      if (parts.length !== 3) return null;
+      
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      let year = parseInt(parts[2], 10);
+      
+      // Validate basic ranges
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+      if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+      
+      // Convert 2-digit year to 4-digit year
+      // Assume 00-29 is 2000-2029, 30-99 is 1930-1999
+      if (year < 100) {
+        year += year < 30 ? 2000 : 1900;
+      }
+      
+      const date = new Date(year, month - 1, day);
+      
+      // Validate the date is valid
+      if (isNaN(date.getTime())) return null;
+      if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+        return null;
+      }
+      
+      return date;
+    } catch (error) {
+      console.error("Error parsing date:", error);
+      return null;
+    }
+  };
+
+
   const processFile = async (file: File, index: number): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
     // Update status to compressing
     setUploads(prev => {
@@ -675,7 +712,10 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {editedData.date_of_birth ? (
-                        format(new Date(editedData.date_of_birth.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                        (() => {
+                          const date = parseDateDDMMYY(editedData.date_of_birth);
+                          return date ? format(date, "d. MMMM yyyy", { locale: cs }) : editedData.date_of_birth;
+                        })()
                       ) : (
                         <span>Vyberte datum</span>
                       )}
@@ -684,7 +724,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={editedData.date_of_birth ? new Date(editedData.date_of_birth.split('.').reverse().join('-')) : undefined}
+                      selected={editedData.date_of_birth ? parseDateDDMMYY(editedData.date_of_birth) || undefined : undefined}
                       onSelect={(date) => {
                         if (date) {
                           const formatted = format(date, "dd.MM.yy");
@@ -741,7 +781,10 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {editedData.passport_expiry ? (
-                              format(new Date(editedData.passport_expiry.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                              (() => {
+                                const date = parseDateDDMMYY(editedData.passport_expiry);
+                                return date ? format(date, "d. MMMM yyyy", { locale: cs }) : editedData.passport_expiry;
+                              })()
                             ) : (
                               <span>Vyberte datum</span>
                             )}
@@ -750,7 +793,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={editedData.passport_expiry ? new Date(editedData.passport_expiry.split('.').reverse().join('-')) : undefined}
+                            selected={editedData.passport_expiry ? parseDateDDMMYY(editedData.passport_expiry) || undefined : undefined}
                             onSelect={(date) => {
                               if (date) {
                                 const formatted = format(date, "dd.MM.yy");
@@ -810,7 +853,10 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {editedData.id_card_expiry ? (
-                              format(new Date(editedData.id_card_expiry.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                              (() => {
+                                const date = parseDateDDMMYY(editedData.id_card_expiry);
+                                return date ? format(date, "d. MMMM yyyy", { locale: cs }) : editedData.id_card_expiry;
+                              })()
                             ) : (
                               <span>Vyberte datum</span>
                             )}
@@ -819,7 +865,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={editedData.id_card_expiry ? new Date(editedData.id_card_expiry.split('.').reverse().join('-')) : undefined}
+                            selected={editedData.id_card_expiry ? parseDateDDMMYY(editedData.id_card_expiry) || undefined : undefined}
                             onSelect={(date) => {
                               if (date) {
                                 const formatted = format(date, "dd.MM.yy");
