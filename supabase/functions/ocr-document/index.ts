@@ -133,10 +133,12 @@ Important:
     // Try to parse JSON from the response
     let extractedData: any = {};
     try {
-      // Remove markdown code blocks if present
+      // Extract only the JSON content
       const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || content.match(/(\{[\s\S]*?\})/);
       if (jsonMatch) {
         extractedData = JSON.parse(jsonMatch[1]);
+        
+        console.log('Parsed OCR data:', extractedData);
         
         // Capitalize names
         if (extractedData.first_name) {
@@ -145,6 +147,8 @@ Important:
         if (extractedData.last_name) {
           extractedData.last_name = capitalizeWords(extractedData.last_name);
         }
+        
+        console.log('After capitalization:', extractedData);
       }
     } catch (e) {
       console.error("Failed to parse JSON:", e);
