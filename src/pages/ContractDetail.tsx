@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Send, FileSignature } from "lucide-react";
+import { Download, Send, FileSignature } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -78,33 +78,28 @@ const ContractDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-5xl mx-auto py-8 px-4">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate("/contracts")}>
-            <ArrowLeft className="h-4 w-4" />
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-4xl font-bold text-foreground">{contract.contract_number}</h1>
+            {getStatusBadge(contract.status)}
+          </div>
+          <p className="text-muted-foreground">
+            Obchodní případ: {contract.deal?.deal_number}
+          </p>
+        </div>
+        <div className="flex gap-2 mb-8">
+          <Button variant="outline">
+            <Send className="h-4 w-4 mr-2" />
+            Odeslat
           </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-4xl font-bold text-foreground">{contract.contract_number}</h1>
-              {getStatusBadge(contract.status)}
-            </div>
-            <p className="text-muted-foreground">
-              Obchodní případ: {contract.deal?.deal_number}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Send className="h-4 w-4 mr-2" />
-              Odeslat
-            </Button>
-            <Button variant="outline">
-              <FileSignature className="h-4 w-4 mr-2" />
-              Podepsat
-            </Button>
-            <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Stáhnout PDF
-            </Button>
-          </div>
+          <Button variant="outline">
+            <FileSignature className="h-4 w-4 mr-2" />
+            Podepsat
+          </Button>
+          <Button>
+            <Download className="h-4 w-4 mr-2" />
+            Stáhnout PDF
+          </Button>
         </div>
 
         <div className="grid gap-6">

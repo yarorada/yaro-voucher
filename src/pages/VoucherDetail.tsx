@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
-import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +49,6 @@ interface VoucherTraveler {
 const VoucherDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [travelers, setTravelers] = useState<VoucherTraveler[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,42 +152,23 @@ const VoucherDetail = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <header className="mb-8 print:hidden">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-end gap-4 mb-4">
             <Button
               variant="outline"
-              onClick={() => navigate("/vouchers")}
+              onClick={() => navigate(`/edit/${id}`)}
               className="gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Zpět na vouchery
+              <Edit className="h-4 w-4" />
+              Upravit
             </Button>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/edit/${id}`)}
-                className="gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Upravit
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
-              >
-                <Trash2 className="h-4 w-4" />
-                Smazat
-              </Button>
-              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
-              <Button
-                variant="outline"
-                onClick={signOut}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Odhlásit
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+              Smazat
+            </Button>
           </div>
         </header>
 
