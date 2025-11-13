@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { DocumentsList } from "@/components/DocumentsList";
 import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +34,7 @@ interface Client {
   passport_expiry: string | null;
   id_card_number: string | null;
   id_card_expiry: string | null;
+  document_urls: Array<{ url: string; type: string; uploadedAt: string }> | null;
 }
 
 const Clients = () => {
@@ -69,7 +72,7 @@ const Clients = () => {
         .order("last_name", { ascending: true });
 
       if (error) throw error;
-      setClients(data || []);
+      setClients((data as unknown as Client[]) || []);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast.error("Chyba při načítání klientů");
@@ -554,6 +557,81 @@ const Clients = () => {
                         />
                       </div>
                     </div>
+
+                    {editingClient && (
+                      <div className="space-y-4 border-t pt-4">
+                        <h4 className="font-semibold">Dokumenty</h4>
+                        
+                        {editingClient.document_urls && editingClient.document_urls.length > 0 && (
+                          <DocumentsList
+                            clientId={editingClient.id}
+                            documents={editingClient.document_urls}
+                            onDelete={() => fetchClients()}
+                          />
+                        )}
+
+                        <div className="space-y-4">
+                          <h5 className="text-sm font-medium">Nahrát nové dokumenty</h5>
+                          <DocumentUpload
+                            clientId={editingClient.id}
+                            documentType="passport"
+                            onDataExtracted={(data) => {
+                            if (data.passport_number) {
+                              setFormData({ ...formData, passport_number: data.passport_number });
+                            }
+                            if (data.expiry_date) {
+                              // Parse DD.MM.YY format
+                              const parts = data.expiry_date.split('.');
+                              if (parts.length === 3) {
+                                const day = parseInt(parts[0]);
+                                const month = parseInt(parts[1]) - 1;
+                                const year = 2000 + parseInt(parts[2]);
+                                setFormData({ ...formData, passport_expiry: new Date(year, month, day) });
+                              }
+                            }
+                            if (data.first_name && !formData.first_name) {
+                              setFormData({ ...formData, first_name: data.first_name });
+                            }
+                            if (data.last_name && !formData.last_name) {
+                              setFormData({ ...formData, last_name: data.last_name });
+                            }
+                          }}
+                          onUploadComplete={() => fetchClients()}
+                        />
+                        <DocumentUpload
+                          clientId={editingClient.id}
+                          documentType="id_card"
+                          onDataExtracted={(data) => {
+                            if (data.id_card_number) {
+                              setFormData({ ...formData, id_card_number: data.id_card_number });
+                            }
+                            if (data.expiry_date) {
+                              // Parse DD.MM.YY format
+                              const parts = data.expiry_date.split('.');
+                              if (parts.length === 3) {
+                                const day = parseInt(parts[0]);
+                                const month = parseInt(parts[1]) - 1;
+                                const year = 2000 + parseInt(parts[2]);
+                                setFormData({ ...formData, id_card_expiry: new Date(year, month, day) });
+                              }
+                            }
+                            if (data.first_name && !formData.first_name) {
+                              setFormData({ ...formData, first_name: data.first_name });
+                            }
+                            if (data.last_name && !formData.last_name) {
+                              setFormData({ ...formData, last_name: data.last_name });
+                            }
+                          }}
+                          onUploadComplete={() => fetchClients()}
+                        />
+                        <DocumentUpload
+                          clientId={editingClient.id}
+                          documentType="other"
+                          onUploadComplete={() => fetchClients()}
+                        />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex gap-2 justify-end">
                       <Button
