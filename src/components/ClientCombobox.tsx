@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateInput } from "@/components/ui/date-input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -51,6 +52,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
   const [newClientNotes, setNewClientNotes] = useState("");
+  const [newClientPassportNumber, setNewClientPassportNumber] = useState("");
+  const [newClientPassportExpiry, setNewClientPassportExpiry] = useState<Date | undefined>(undefined);
+  const [newClientIdCardNumber, setNewClientIdCardNumber] = useState("");
+  const [newClientIdCardExpiry, setNewClientIdCardExpiry] = useState<Date | undefined>(undefined);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -96,6 +101,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
           phone: newClientPhone.trim() || null,
           address: newClientAddress.trim() || null,
           notes: newClientNotes.trim() || null,
+          passport_number: newClientPassportNumber.trim() || null,
+          passport_expiry: newClientPassportExpiry?.toISOString().split('T')[0] || null,
+          id_card_number: newClientIdCardNumber.trim() || null,
+          id_card_expiry: newClientIdCardExpiry?.toISOString().split('T')[0] || null,
         })
         .select()
         .single();
@@ -111,6 +120,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
       setNewClientPhone("");
       setNewClientAddress("");
       setNewClientNotes("");
+      setNewClientPassportNumber("");
+      setNewClientPassportExpiry(undefined);
+      setNewClientIdCardNumber("");
+      setNewClientIdCardExpiry(undefined);
       toast.success("Klient vytvořen");
     } catch (error) {
       console.error("Error creating client:", error);
@@ -278,6 +291,47 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                 rows={3}
               />
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="passportNumber">Číslo cestovního pasu</Label>
+                <Input
+                  id="passportNumber"
+                  value={newClientPassportNumber}
+                  onChange={(e) => setNewClientPassportNumber(e.target.value)}
+                  placeholder="např. 12345678"
+                />
+              </div>
+              <div>
+                <Label htmlFor="passportExpiry">Platnost cestovního pasu</Label>
+                <DateInput
+                  value={newClientPassportExpiry}
+                  onChange={(date) => setNewClientPassportExpiry(date)}
+                  placeholder="DD.MM.RR"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="idCardNumber">Číslo občanského průkazu</Label>
+                <Input
+                  id="idCardNumber"
+                  value={newClientIdCardNumber}
+                  onChange={(e) => setNewClientIdCardNumber(e.target.value)}
+                  placeholder="např. 123456789"
+                />
+              </div>
+              <div>
+                <Label htmlFor="idCardExpiry">Platnost občanského průkazu</Label>
+                <DateInput
+                  value={newClientIdCardExpiry}
+                  onChange={(date) => setNewClientIdCardExpiry(date)}
+                  placeholder="DD.MM.RR"
+                />
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
