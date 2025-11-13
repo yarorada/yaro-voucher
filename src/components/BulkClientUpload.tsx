@@ -7,13 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, CalendarIcon, Eye } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, CalendarIcon, Eye, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface ExtractedData {
   first_name?: string;
@@ -29,10 +30,12 @@ interface ExtractedData {
 
 interface UploadStatus {
   file: File;
-  status: 'pending' | 'processing' | 'preview' | 'success' | 'error';
+  status: 'pending' | 'compressing' | 'uploading' | 'processing' | 'preview' | 'success' | 'error';
   extractedData?: ExtractedData;
   compressedBlob?: Blob;
   error?: string;
+  progress?: number;
+  ocrFilledFields?: Set<string>;
 }
 
 export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => {
@@ -42,15 +45,36 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   const [editedData, setEditedData] = useState<ExtractedData | null>(null);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
-  const processFile = async (file: File): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
+  const processFile = async (file: File, index: number): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
+    // Update status to compressing
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], status: 'compressing', progress: 10 };
+      return updated;
+    });
+
     // Compress image first to reduce size for AI gateway
     const { blob } = await compressImage(file, 1920, 1920, 0.8);
     
+    // Update status to uploading (converting to base64)
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], status: 'uploading', progress: 30 };
+      return updated;
+    });
+
     // Convert compressed blob to base64
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(blob);
+    });
+
+    // Update status to processing (OCR)
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], status: 'processing', progress: 50 };
+      return updated;
     });
 
     // Try both document types to find which one has data
@@ -95,6 +119,30 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     }
 
     console.log('OCR extracted data:', extractedData);
+
+    // Determine which fields were filled by OCR
+    const ocrFilledFields = new Set<string>();
+    if (extractedData.first_name) ocrFilledFields.add('first_name');
+    if (extractedData.last_name) ocrFilledFields.add('last_name');
+    if (extractedData.date_of_birth) ocrFilledFields.add('date_of_birth');
+    if (extractedData.passport_number) ocrFilledFields.add('passport_number');
+    if (extractedData.passport_expiry) ocrFilledFields.add('passport_expiry');
+    if (extractedData.id_card_number) ocrFilledFields.add('id_card_number');
+    if (extractedData.id_card_expiry) ocrFilledFields.add('id_card_expiry');
+
+    // Update to preview with OCR filled fields
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[index] = { 
+        ...updated[index], 
+        status: 'preview', 
+        progress: 100,
+        extractedData,
+        compressedBlob: blob,
+        ocrFilledFields
+      };
+      return updated;
+    });
 
     return { extractedData, compressedBlob: blob };
   };
@@ -216,9 +264,11 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
   const handleFiles = async (files: FileList) => {
     const fileArray = Array.from(files);
+    const baseIndex = uploads.length;
     const newUploads: UploadStatus[] = fileArray.map(file => ({
       file,
-      status: 'pending' as const
+      status: 'pending' as const,
+      progress: 0
     }));
 
     setUploads(prev => [...prev, ...newUploads]);
@@ -226,41 +276,10 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     // Process each file
     for (let i = 0; i < fileArray.length; i++) {
       const file = fileArray[i];
-      const uploadIndex = uploads.length + i;
-
-      setUploads(prev => {
-        const updated = [...prev];
-        updated[uploadIndex] = { ...updated[uploadIndex], status: 'processing' };
-        return updated;
-      });
+      const uploadIndex = baseIndex + i;
 
       try {
-        const { extractedData, compressedBlob } = await processFile(file);
-        
-        // Check for required fields
-        if (!extractedData.first_name || !extractedData.last_name) {
-          throw new Error('Nepodařilo se extrahovat jméno a příjmení');
-        }
-
-        // Set status to preview and wait for user confirmation
-        setUploads(prev => {
-          const updated = [...prev];
-          updated[uploadIndex] = { 
-            ...updated[uploadIndex], 
-            status: 'preview',
-            extractedData,
-            compressedBlob
-          };
-          return updated;
-        });
-
-        // Show preview for first pending item
-        if (previewIndex === null) {
-          setPreviewIndex(uploadIndex);
-          // Automatically set title based on first name
-          const autoTitle = extractedData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
-          setEditedData({ ...extractedData, title: autoTitle });
-        }
+        await processFile(file, uploadIndex);
       } catch (error: any) {
         console.error('Error processing file:', error);
         setUploads(prev => {
@@ -268,12 +287,30 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           updated[uploadIndex] = { 
             ...updated[uploadIndex], 
             status: 'error',
-            error: error.message 
+            error: error.message,
+            progress: 100
           };
           return updated;
         });
+        toast.error(`Chyba: ${error.message}`);
       }
     }
+
+    // After all files are processed, open preview for first one
+    setTimeout(() => {
+      setUploads(prev => {
+        const firstPreviewIndex = prev.findIndex(u => u.status === 'preview');
+        if (firstPreviewIndex !== -1) {
+          setPreviewIndex(firstPreviewIndex);
+          const firstData = prev[firstPreviewIndex].extractedData;
+          if (firstData) {
+            const autoTitle = firstData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+            setEditedData({ ...firstData, title: autoTitle });
+          }
+        }
+        return prev;
+      });
+    }, 100);
   };
 
   const handleConfirmPreview = async () => {
@@ -559,7 +596,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
             </DialogDescription>
           </DialogHeader>
 
-          {editedData && (
+          {editedData && previewIndex !== null && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -581,32 +618,59 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name">Jméno *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="first_name">Jméno *</Label>
+                    {uploads[previewIndex]?.ocrFilledFields?.has('first_name') && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Z OCR</span>
+                      </div>
+                    )}
+                  </div>
                   <Input
                     id="first_name"
                     value={editedData.first_name || ''}
                     onChange={(e) => setEditedData({ ...editedData, first_name: e.target.value })}
+                    className={uploads[previewIndex]?.ocrFilledFields?.has('first_name') ? "border-green-500 bg-green-50" : ""}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="last_name">Příjmení *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="last_name">Příjmení *</Label>
+                    {uploads[previewIndex]?.ocrFilledFields?.has('last_name') && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Z OCR</span>
+                      </div>
+                    )}
+                  </div>
                   <Input
                     id="last_name"
                     value={editedData.last_name || ''}
                     onChange={(e) => setEditedData({ ...editedData, last_name: e.target.value })}
+                    className={uploads[previewIndex]?.ocrFilledFields?.has('last_name') ? "border-green-500 bg-green-50" : ""}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Datum narození</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Datum narození</Label>
+                  {uploads[previewIndex]?.ocrFilledFields?.has('date_of_birth') && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>Z OCR</span>
+                    </div>
+                  )}
+                </div>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !editedData.date_of_birth && "text-muted-foreground"
+                        !editedData.date_of_birth && "text-muted-foreground",
+                        uploads[previewIndex]?.ocrFilledFields?.has('date_of_birth') && "border-green-500 bg-green-50"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -639,22 +703,40 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="passport_number">Číslo pasu</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="passport_number">Číslo pasu</Label>
+                        {uploads[previewIndex]?.ocrFilledFields?.has('passport_number') && (
+                          <div className="flex items-center gap-1 text-xs text-green-600">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Z OCR</span>
+                          </div>
+                        )}
+                      </div>
                       <Input
                         id="passport_number"
                         value={editedData.passport_number || ''}
                         onChange={(e) => setEditedData({ ...editedData, passport_number: e.target.value })}
+                        className={uploads[previewIndex]?.ocrFilledFields?.has('passport_number') ? "border-green-500 bg-green-50" : ""}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Platnost pasu</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Platnost pasu</Label>
+                        {uploads[previewIndex]?.ocrFilledFields?.has('passport_expiry') && (
+                          <div className="flex items-center gap-1 text-xs text-green-600">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Z OCR</span>
+                          </div>
+                        )}
+                      </div>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !editedData.passport_expiry && "text-muted-foreground"
+                              !editedData.passport_expiry && "text-muted-foreground",
+                              uploads[previewIndex]?.ocrFilledFields?.has('passport_expiry') && "border-green-500 bg-green-50"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -690,22 +772,40 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                        {uploads[previewIndex]?.ocrFilledFields?.has('id_card_number') && (
+                          <div className="flex items-center gap-1 text-xs text-green-600">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Z OCR</span>
+                          </div>
+                        )}
+                      </div>
                       <Input
                         id="id_card_number"
                         value={editedData.id_card_number || ''}
                         onChange={(e) => setEditedData({ ...editedData, id_card_number: e.target.value })}
+                        className={uploads[previewIndex]?.ocrFilledFields?.has('id_card_number') ? "border-green-500 bg-green-50" : ""}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Platnost OP</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Platnost OP</Label>
+                        {uploads[previewIndex]?.ocrFilledFields?.has('id_card_expiry') && (
+                          <div className="flex items-center gap-1 text-xs text-green-600">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Z OCR</span>
+                          </div>
+                        )}
+                      </div>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !editedData.id_card_expiry && "text-muted-foreground"
+                              !editedData.id_card_expiry && "text-muted-foreground",
+                              uploads[previewIndex]?.ocrFilledFields?.has('id_card_expiry') && "border-green-500 bg-green-50"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
