@@ -722,7 +722,7 @@ const DealDetail = () => {
               <div className="space-y-2 md:col-span-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Datum zahájení</Label>
+                    <Label htmlFor="startDate">Datum od</Label>
                     <DateInput
                       value={startDate}
                       onChange={setStartDate}
@@ -731,11 +731,12 @@ const DealDetail = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">Datum ukončení</Label>
+                    <Label htmlFor="endDate">Datum do</Label>
                     <DateInput
                       value={endDate}
                       onChange={setEndDate}
                       placeholder="DD.MM.RR"
+                      autoSetDate={() => startDate ? new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
                     />
                   </div>
                 </div>
@@ -965,6 +966,7 @@ const DealDetail = () => {
                           value={serviceForm.end_date}
                           onChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
                           placeholder="DD.MM.RR"
+                          autoSetDate={() => serviceForm.start_date ? new Date(serviceForm.start_date.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
                         />
                       </div>
                     </div>

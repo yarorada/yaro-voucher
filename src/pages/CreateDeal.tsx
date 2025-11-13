@@ -141,7 +141,7 @@ const CreateDeal = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date">Datum začátku</Label>
+                  <Label htmlFor="start_date">Datum od</Label>
                   <DateInput
                     value={startDate}
                     onChange={setStartDate}
@@ -150,11 +150,12 @@ const CreateDeal = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="end_date">Datum konce</Label>
+                  <Label htmlFor="end_date">Datum do</Label>
                   <DateInput
                     value={endDate}
                     onChange={setEndDate}
                     placeholder="DD.MM.RR"
+                    autoSetDate={() => startDate ? new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
                   />
                 </div>
               </div>

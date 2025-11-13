@@ -226,6 +226,7 @@ const SortableServiceItem = React.memo(({
             value={service.dateTo}
             onChange={(date) => updateService(index, "dateTo", date)}
             placeholder="DD.MM.RR"
+            autoSetDate={() => service.dateFrom ? new Date(service.dateFrom.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
           />
         </div>
       </div>

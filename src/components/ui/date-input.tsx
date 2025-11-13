@@ -16,10 +16,11 @@ interface DateInputProps {
   onChange: (date: Date | undefined) => void;
   placeholder?: string;
   className?: string;
+  autoSetDate?: () => Date | undefined;
 }
 
 export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
-  ({ value, onChange, placeholder = "DD.MM.RR", className }, ref) => {
+  ({ value, onChange, placeholder = "DD.MM.RR", className, autoSetDate }, ref) => {
     const [inputValue, setInputValue] = React.useState("");
     const [open, setOpen] = React.useState(false);
 
@@ -31,6 +32,15 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         setInputValue("");
       }
     }, [value]);
+
+    React.useEffect(() => {
+      if (open && !value && autoSetDate) {
+        const defaultDate = autoSetDate();
+        if (defaultDate) {
+          onChange(defaultDate);
+        }
+      }
+    }, [open]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let newValue = e.target.value;
