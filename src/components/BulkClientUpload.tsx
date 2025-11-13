@@ -1,10 +1,19 @@
 import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, CalendarIcon, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageCompression";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface ExtractedData {
   first_name?: string;
@@ -15,18 +24,22 @@ interface ExtractedData {
   id_card_number?: string;
   id_card_expiry?: string;
   documentType?: 'passport' | 'id_card';
+  title?: string;
 }
 
 interface UploadStatus {
   file: File;
-  status: 'pending' | 'processing' | 'success' | 'error';
+  status: 'pending' | 'processing' | 'preview' | 'success' | 'error';
   extractedData?: ExtractedData;
+  compressedBlob?: Blob;
   error?: string;
 }
 
 export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => {
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [editedData, setEditedData] = useState<ExtractedData | null>(null);
 
   const processFile = async (file: File): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
     // Compress image first to reduce size for AI gateway
@@ -74,19 +87,36 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   };
 
   const createClient = async (extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
-    // Parse dates
+    // Parse dates - handle both formats DD.MM.YY and DD.MM.YYYY
     const parseDateDDMMYY = (dateStr: string | undefined) => {
       if (!dateStr) return null;
-      const [day, month, year] = dateStr.split('.');
+      
+      // Remove any non-digit and non-dot characters
+      const cleaned = dateStr.replace(/[^\d.]/g, '');
+      const parts = cleaned.split('.');
+      
+      if (parts.length !== 3) return null;
+      
+      const day = parts[0];
+      const month = parts[1];
+      let year = parts[2];
+      
       if (!day || !month || !year) return null;
-      const fullYear = parseInt(year) < 50 ? `20${year}` : `19${year}`;
-      return new Date(Date.UTC(parseInt(fullYear), parseInt(month) - 1, parseInt(day))).toISOString().split('T')[0];
+      
+      // Handle 2-digit year
+      if (year.length === 2) {
+        const yearNum = parseInt(year);
+        year = yearNum < 50 ? `20${year}` : `19${year}`;
+      }
+      
+      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))).toISOString().split('T')[0];
     };
 
     const clientData: any = {
       first_name: extractedData.first_name || '',
       last_name: extractedData.last_name || '',
       date_of_birth: parseDateDDMMYY(extractedData.date_of_birth),
+      title: extractedData.title || null,
     };
 
     if (extractedData.passport_number) {
@@ -183,17 +213,25 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           throw new Error('Nepodařilo se extrahovat jméno a příjmení');
         }
 
-        await createClient(extractedData, file, compressedBlob);
-
+        // Set status to preview and wait for user confirmation
         setUploads(prev => {
           const updated = [...prev];
           updated[uploadIndex] = { 
             ...updated[uploadIndex], 
-            status: 'success',
-            extractedData 
+            status: 'preview',
+            extractedData,
+            compressedBlob
           };
           return updated;
         });
+
+        // Show preview for first pending item
+        if (previewIndex === null) {
+          setPreviewIndex(uploadIndex);
+          // Automatically set title based on first name
+          const autoTitle = extractedData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+          setEditedData({ ...extractedData, title: autoTitle });
+        }
       } catch (error: any) {
         console.error('Error processing file:', error);
         setUploads(prev => {
@@ -207,16 +245,88 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
         });
       }
     }
+  };
 
-    // Show summary
-    const successCount = fileArray.filter((_, i) => {
-      const upload = uploads[uploads.length + i];
-      return upload?.status === 'success';
-    }).length;
+  const handleConfirmPreview = async () => {
+    if (previewIndex === null || !editedData) return;
 
-    if (successCount > 0) {
-      toast.success(`Přidáno ${successCount} klientů`);
-      onComplete();
+    const upload = uploads[previewIndex];
+    if (!upload.compressedBlob) return;
+
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[previewIndex] = { ...updated[previewIndex], status: 'processing' };
+      return updated;
+    });
+
+    try {
+      await createClient(editedData, upload.file, upload.compressedBlob);
+      
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'success',
+          extractedData: editedData
+        };
+        return updated;
+      });
+
+      toast.success('Klient úspěšně vytvořen');
+
+      // Find next preview item
+      const nextPreviewIndex = uploads.findIndex((u, i) => i > previewIndex && u.status === 'preview');
+      if (nextPreviewIndex !== -1) {
+        setPreviewIndex(nextPreviewIndex);
+        const nextData = uploads[nextPreviewIndex].extractedData;
+        if (nextData) {
+          const autoTitle = nextData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+          setEditedData({ ...nextData, title: autoTitle });
+        }
+      } else {
+        setPreviewIndex(null);
+        setEditedData(null);
+      }
+    } catch (error: any) {
+      console.error('Error creating client:', error);
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'error',
+          error: error.message 
+        };
+        return updated;
+      });
+      toast.error('Chyba při vytváření klienta: ' + error.message);
+    }
+  };
+
+  const handleSkipPreview = () => {
+    if (previewIndex === null) return;
+
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[previewIndex] = { 
+        ...updated[previewIndex], 
+        status: 'error',
+        error: 'Přeskočeno uživatelem'
+      };
+      return updated;
+    });
+
+    // Find next preview item
+    const nextPreviewIndex = uploads.findIndex((u, i) => i > previewIndex && u.status === 'preview');
+    if (nextPreviewIndex !== -1) {
+      setPreviewIndex(nextPreviewIndex);
+      const nextData = uploads[nextPreviewIndex].extractedData;
+      if (nextData) {
+        const autoTitle = nextData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+        setEditedData({ ...nextData, title: autoTitle });
+      }
+    } else {
+      setPreviewIndex(null);
+      setEditedData(null);
     }
   };
 
@@ -302,6 +412,9 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                   {upload.status === 'processing' && (
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   )}
+                  {upload.status === 'preview' && (
+                    <Eye className="h-5 w-5 text-blue-500" />
+                  )}
                   {upload.status === 'success' && (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   )}
@@ -314,6 +427,211 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           ))}
         </div>
       )}
+
+      {/* Preview Dialog */}
+      <Dialog open={previewIndex !== null} onOpenChange={(open) => {
+        if (!open) {
+          handleSkipPreview();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Zkontrolujte extrahovaná data</DialogTitle>
+            <DialogDescription>
+              Upravte data dle potřeby před uložením do databáze
+            </DialogDescription>
+          </DialogHeader>
+
+          {editedData && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Titul</Label>
+                  <Select
+                    value={editedData.title || ''}
+                    onValueChange={(value) => setEditedData({ ...editedData, title: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte titul" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pan">Pan</SelectItem>
+                      <SelectItem value="Paní">Paní</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">Jméno *</Label>
+                  <Input
+                    id="first_name"
+                    value={editedData.first_name || ''}
+                    onChange={(e) => setEditedData({ ...editedData, first_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Příjmení *</Label>
+                  <Input
+                    id="last_name"
+                    value={editedData.last_name || ''}
+                    onChange={(e) => setEditedData({ ...editedData, last_name: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Datum narození</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editedData.date_of_birth && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editedData.date_of_birth ? (
+                        format(new Date(editedData.date_of_birth.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                      ) : (
+                        <span>Vyberte datum</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={editedData.date_of_birth ? new Date(editedData.date_of_birth.split('.').reverse().join('-')) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const formatted = format(date, "dd.MM.yy");
+                          setEditedData({ ...editedData, date_of_birth: formatted });
+                        }
+                      }}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {editedData.documentType === 'passport' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="passport_number">Číslo pasu</Label>
+                      <Input
+                        id="passport_number"
+                        value={editedData.passport_number || ''}
+                        onChange={(e) => setEditedData({ ...editedData, passport_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Platnost pasu</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !editedData.passport_expiry && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedData.passport_expiry ? (
+                              format(new Date(editedData.passport_expiry.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                            ) : (
+                              <span>Vyberte datum</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={editedData.passport_expiry ? new Date(editedData.passport_expiry.split('.').reverse().join('-')) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const formatted = format(date, "dd.MM.yy");
+                                setEditedData({ ...editedData, passport_expiry: formatted });
+                              }
+                            }}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {editedData.documentType === 'id_card' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                      <Input
+                        id="id_card_number"
+                        value={editedData.id_card_number || ''}
+                        onChange={(e) => setEditedData({ ...editedData, id_card_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Platnost OP</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !editedData.id_card_expiry && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedData.id_card_expiry ? (
+                              format(new Date(editedData.id_card_expiry.split('.').reverse().join('-')), "d. MMMM yyyy", { locale: cs })
+                            ) : (
+                              <span>Vyberte datum</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={editedData.id_card_expiry ? new Date(editedData.id_card_expiry.split('.').reverse().join('-')) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const formatted = format(date, "dd.MM.yy");
+                                setEditedData({ ...editedData, id_card_expiry: formatted });
+                              }
+                            }}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleSkipPreview}>
+              Přeskočit
+            </Button>
+            <Button onClick={handleConfirmPreview}>
+              Potvrdit a uložit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
