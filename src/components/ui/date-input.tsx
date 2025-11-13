@@ -42,6 +42,15 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       }
     }, [open]);
 
+    const handleFocus = () => {
+      if (!value && autoSetDate) {
+        const defaultDate = autoSetDate();
+        if (defaultDate) {
+          onChange(defaultDate);
+        }
+      }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let newValue = e.target.value;
       
@@ -95,6 +104,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           type="text"
           value={inputValue}
           onChange={handleInputChange}
+          onFocus={handleFocus}
           placeholder={placeholder}
           className="flex-1"
         />
