@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp } from "lucide-react";
+import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -29,6 +29,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Client {
   id: string;
@@ -445,81 +451,50 @@ const Clients = () => {
                 >
                   Přiřadit tituly
                 </Button>
-                <Dialog open={bulkDocumentUploadOpen} onOpenChange={setBulkDocumentUploadOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="gap-2 shrink-0">
-                      <FileUp className="h-4 w-4" />
-                      Nahrát dokumenty
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl bg-background">
-                    <DialogHeader>
-                      <DialogTitle>Hromadné nahrání dokumentů</DialogTitle>
-                      <DialogDescription>
-                        Nahrajte cestovní pasy nebo občanské průkazy. Z každého dokumentu
-                        automaticky extrahujeme údaje a vytvoříme nového klienta.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <BulkClientUpload 
-                      onComplete={() => {
-                        setBulkDocumentUploadOpen(false);
-                        fetchClients();
-                      }} 
-                    />
-                  </DialogContent>
-                </Dialog>
-                <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="gap-2 shrink-0">
-                      <Users className="h-4 w-4" />
-                      Hromadný import
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl bg-background">
-                    <DialogHeader>
-                      <DialogTitle>Hromadný import klientů</DialogTitle>
-                      <DialogDescription>
-                        Vložte jména a příjmení klientů, každý na nový řádek ve
-                        formátu "Jméno Příjmení" nebo "Jméno Příjmení Email"
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Textarea
-                        value={bulkImportText}
-                        onChange={(e) => setBulkImportText(e.target.value)}
-                        placeholder="Jan Novák jan.novak@email.cz&#10;Petr Dvořák&#10;Marie Svobodová marie@email.cz"
-                        rows={10}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setBulkImportOpen(false);
-                            setBulkImportText("");
-                          }}
-                        >
-                          Zrušit
-                        </Button>
-                        <Button onClick={handleBulkImport}>Importovat</Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog
-                  open={isDialogOpen}
-                  onOpenChange={(open) => {
-                    setIsDialogOpen(open);
-                    if (!open) handleDialogClose();
-                  }}
-                >
-                  <DialogTrigger asChild>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="default" className="gap-2 shrink-0">
                       <Plus className="h-4 w-4" />
                       Přidat klienta
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
-                  </DialogTrigger>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-background">
+                    <DropdownMenuItem 
+                      onClick={() => setIsDialogOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Přidat individuálně
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setBulkImportOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Hromadný textový import
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setBulkDocumentUploadOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <FileUp className="h-4 w-4 mr-2" />
+                      Nahrát dokumenty
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Dialogs */}
+            <Dialog
+              open={isDialogOpen}
+              onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) handleDialogClose();
+              }}
+            >
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
                   <DialogHeader>
                     <DialogTitle>
@@ -822,10 +797,61 @@ const Clients = () => {
                   </form>
                 </DialogContent>
               </Dialog>
-              </div>
+
+              {/* Hromadný import dialog */}
+              <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
+                <DialogContent className="max-w-2xl bg-background">
+                  <DialogHeader>
+                    <DialogTitle>Hromadný import klientů</DialogTitle>
+                    <DialogDescription>
+                      Vložte jména a příjmení klientů, každý na nový řádek ve
+                      formátu "Jméno Příjmení" nebo "Jméno Příjmení Email"
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Textarea
+                      value={bulkImportText}
+                      onChange={(e) => setBulkImportText(e.target.value)}
+                      placeholder="Jan Novák jan.novak@email.cz&#10;Petr Dvořák&#10;Marie Svobodová marie@email.cz"
+                      rows={10}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setBulkImportOpen(false);
+                          setBulkImportText("");
+                        }}
+                      >
+                        Zrušit
+                      </Button>
+                      <Button onClick={handleBulkImport}>Importovat</Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Hromadné nahrání dokumentů dialog */}
+              <Dialog open={bulkDocumentUploadOpen} onOpenChange={setBulkDocumentUploadOpen}>
+                <DialogContent className="max-w-2xl bg-background">
+                  <DialogHeader>
+                    <DialogTitle>Hromadné nahrání dokumentů</DialogTitle>
+                    <DialogDescription>
+                      Nahrajte cestovní pasy nebo občanské průkazy. Z každého dokumentu
+                      automaticky extrahujeme údaje a vytvoříme nového klienta.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <BulkClientUpload 
+                    onComplete={() => {
+                      setBulkDocumentUploadOpen(false);
+                      fetchClients();
+                    }} 
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
-          </div>
-        </header>
+          </header>
 
         {/* Search Bar */}
         {!loading && clients.length > 0 && (
