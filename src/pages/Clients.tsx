@@ -301,27 +301,6 @@ const Clients = () => {
     });
   };
 
-  const handleCleanupDiacritics = async () => {
-    if (!confirm("Tato operace odstraní diakritiku ze všech klientů a sloučí duplicity. Pokračovat?")) {
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('cleanup-clients-diacritics');
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success(`Úspěšně zpracováno: ${data.updated} aktualizováno, ${data.merged} sloučeno`);
-        fetchClients();
-      } else {
-        throw new Error(data?.error || 'Unknown error');
-      }
-    } catch (error: any) {
-      console.error('Error cleaning up diacritics:', error);
-      toast.error(`Chyba při čištění diakritiky: ${error.message}`);
-    }
-  };
 
   const handleBulkImport = async () => {
     const lines = bulkImportText
@@ -438,13 +417,6 @@ const Clients = () => {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="gap-2 shrink-0"
-                  onClick={handleCleanupDiacritics}
-                >
-                  Odstranit diakritiku
-                </Button>
                 <Button 
                   variant="outline" 
                   className="gap-2 shrink-0"
