@@ -287,6 +287,15 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       } else {
         setPreviewIndex(null);
         setEditedData(null);
+        
+        // Check if all uploads are completed (success or error)
+        const allCompleted = uploads.every(u => u.status === 'success' || u.status === 'error');
+        if (allCompleted) {
+          const successCount = uploads.filter(u => u.status === 'success').length;
+          if (successCount > 0) {
+            onComplete();
+          }
+        }
       }
     } catch (error: any) {
       console.error('Error creating client:', error);
@@ -328,6 +337,15 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     } else {
       setPreviewIndex(null);
       setEditedData(null);
+      
+      // Check if all uploads are completed
+      const allCompleted = uploads.every(u => u.status === 'success' || u.status === 'error');
+      if (allCompleted) {
+        const successCount = uploads.filter(u => u.status === 'success').length;
+        if (successCount > 0) {
+          onComplete();
+        }
+      }
     }
   };
 
