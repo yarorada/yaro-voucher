@@ -55,7 +55,7 @@ export function AppSidebar() {
             <img 
               src={yaroLogo} 
               alt="YARO Travel" 
-              className={`transition-all duration-300 ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
+              className={`logo-dark-mode transition-all duration-300 ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
             />
           </div>
           

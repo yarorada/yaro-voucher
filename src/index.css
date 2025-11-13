@@ -126,6 +126,11 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Logo dark mode support */
+  .dark .logo-dark-mode {
+    filter: brightness(0) invert(1);
+  }
 }
 
 @media print {
