@@ -47,43 +47,62 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
-          <div className="flex items-center justify-center py-4 px-2">
+          <div className="flex items-center justify-center py-6 px-4 border-b border-border/50">
             <img 
               src={yaroLogo} 
               alt="YARO Travel" 
-              className={`transition-all ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
+              className={`transition-all duration-300 ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
             />
           </div>
           
-          <SidebarGroupLabel>Navigace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(item.url)}
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+          <SidebarGroupLabel className="mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Navigace
+          </SidebarGroupLabel>
+          <SidebarGroupContent className="mt-2">
+            <SidebarMenu className="space-y-1">
+              {menuItems.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.url)}
+                      isActive={active}
+                      tooltip={item.title}
+                      className={`
+                        group relative transition-all duration-200
+                        ${active 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm' 
+                          : 'hover:bg-accent/50 hover:text-accent-foreground'
+                        }
+                      `}
+                    >
+                      <item.icon className={`h-4 w-4 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <span className="font-medium">{item.title}</span>
+                      {active && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground rounded-r-full" />
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-border/50 mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={signOut} tooltip="Odhlásit">
-              <LogOut className="h-4 w-4" />
-              <span>Odhlásit</span>
+            <SidebarMenuButton 
+              onClick={signOut} 
+              tooltip="Odhlásit"
+              className="group hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+            >
+              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+              <span className="font-medium">Odhlásit</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
