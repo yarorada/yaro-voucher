@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
 import EditVoucher from "./pages/EditVoucher";
@@ -31,8 +32,13 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen flex w-full">
       <AppSidebar />
       <div className="flex-1 flex flex-col">
-        <header className="h-12 border-b bg-background flex items-center px-4">
-          <SidebarTrigger />
+        <header className="border-b bg-background">
+          <div className="h-12 flex items-center px-4">
+            <SidebarTrigger />
+          </div>
+          <div className="px-4 pb-3">
+            <Breadcrumbs />
+          </div>
         </header>
         <main className="flex-1 overflow-auto">
           {children}
