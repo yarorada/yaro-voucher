@@ -8,6 +8,13 @@ import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
 import { BulkClientUpload } from "@/components/BulkClientUpload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +32,7 @@ import {
 
 interface Client {
   id: string;
+  title: string | null;
   first_name: string;
   last_name: string;
   email: string | null;
@@ -53,6 +61,7 @@ const Clients = () => {
   const [searchText, setSearchText] = useState("");
 
   const [formData, setFormData] = useState({
+    title: "",
     first_name: "",
     last_name: "",
     email: "",
@@ -138,6 +147,7 @@ const Clients = () => {
         const { error } = await supabase
           .from("clients")
           .update({
+            title: formData.title || null,
             first_name: formData.first_name.trim(),
             last_name: formData.last_name.trim(),
             email: formData.email.trim() || null,
@@ -171,6 +181,7 @@ const Clients = () => {
         }
 
         const { error } = await supabase.from("clients").insert({
+          title: formData.title || null,
           first_name: formData.first_name.trim(),
           last_name: formData.last_name.trim(),
           email: formData.email.trim() || null,
@@ -189,6 +200,7 @@ const Clients = () => {
       }
 
       setFormData({
+        title: "",
         first_name: "",
         last_name: "",
         email: "",
@@ -212,6 +224,7 @@ const Clients = () => {
   const handleEdit = (client: Client) => {
     setEditingClient(client);
     setFormData({
+      title: client.title || "",
       first_name: client.first_name,
       last_name: client.last_name,
       email: client.email || "",
@@ -273,6 +286,7 @@ const Clients = () => {
     setEditingClient(null);
     setOcrFilledFields(new Set());
     setFormData({
+      title: "",
       first_name: "",
       last_name: "",
       email: "",
@@ -516,6 +530,23 @@ const Clients = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Oslovení</Label>
+                      <Select
+                        value={formData.title}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, title: value })
+                        }
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Vyberte oslovení" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="Pan">Pan</SelectItem>
+                          <SelectItem value="Paní">Paní</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="first_name">
@@ -846,7 +877,7 @@ const Clients = () => {
               >
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-foreground">
-                    {client.first_name} {client.last_name}
+                    {client.title && `${client.title} `}{client.first_name} {client.last_name}
                   </h3>
                   <div className="flex gap-2">
                     <Button
