@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateInput } from "@/components/ui/date-input";
 import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,10 @@ interface Client {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  passport_number: string | null;
+  passport_expiry: string | null;
+  id_card_number: string | null;
+  id_card_expiry: string | null;
 }
 
 const Clients = () => {
@@ -46,6 +51,10 @@ const Clients = () => {
     phone: "",
     address: "",
     notes: "",
+    passport_number: "",
+    passport_expiry: undefined as Date | undefined,
+    id_card_number: "",
+    id_card_expiry: undefined as Date | undefined,
   });
 
   useEffect(() => {
@@ -94,6 +103,10 @@ const Clients = () => {
             phone: formData.phone.trim() || null,
             address: formData.address.trim() || null,
             notes: formData.notes.trim() || null,
+            passport_number: formData.passport_number.trim() || null,
+            passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
+            id_card_number: formData.id_card_number.trim() || null,
+            id_card_expiry: formData.id_card_expiry?.toISOString().split('T')[0] || null,
           })
           .eq("id", editingClient.id);
 
@@ -119,6 +132,10 @@ const Clients = () => {
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
           address: formData.address.trim() || null,
+          passport_number: formData.passport_number.trim() || null,
+          passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
+          id_card_number: formData.id_card_number.trim() || null,
+          id_card_expiry: formData.id_card_expiry?.toISOString().split('T')[0] || null,
           notes: formData.notes.trim() || null,
         });
 
@@ -133,6 +150,10 @@ const Clients = () => {
         phone: "",
         address: "",
         notes: "",
+        passport_number: "",
+        passport_expiry: undefined,
+        id_card_number: "",
+        id_card_expiry: undefined,
       });
       setEditingClient(null);
       setIsDialogOpen(false);
@@ -151,6 +172,10 @@ const Clients = () => {
       phone: client.phone || "",
       address: client.address || "",
       notes: client.notes || "",
+      passport_number: client.passport_number || "",
+      passport_expiry: client.passport_expiry ? new Date(client.passport_expiry) : undefined,
+      id_card_number: client.id_card_number || "",
+      id_card_expiry: client.id_card_expiry ? new Date(client.id_card_expiry) : undefined,
     });
     setIsDialogOpen(true);
   };
@@ -206,6 +231,10 @@ const Clients = () => {
       phone: "",
       address: "",
       notes: "",
+      passport_number: "",
+      passport_expiry: undefined,
+      id_card_number: "",
+      id_card_expiry: undefined,
     });
   };
 
@@ -479,6 +508,53 @@ const Clients = () => {
                         rows={3}
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="passport_number">Číslo cestovního pasu</Label>
+                        <Input
+                          id="passport_number"
+                          value={formData.passport_number}
+                          onChange={(e) =>
+                            setFormData({ ...formData, passport_number: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="passport_expiry">Platnost cestovního pasu</Label>
+                        <DateInput
+                          value={formData.passport_expiry}
+                          onChange={(date) =>
+                            setFormData({ ...formData, passport_expiry: date })
+                          }
+                          placeholder="DD.MM.RR"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
+                        <Input
+                          id="id_card_number"
+                          value={formData.id_card_number}
+                          onChange={(e) =>
+                            setFormData({ ...formData, id_card_number: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="id_card_expiry">Platnost občanského průkazu</Label>
+                        <DateInput
+                          value={formData.id_card_expiry}
+                          onChange={(date) =>
+                            setFormData({ ...formData, id_card_expiry: date })
+                          }
+                          placeholder="DD.MM.RR"
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex gap-2 justify-end">
                       <Button
                         type="button"
