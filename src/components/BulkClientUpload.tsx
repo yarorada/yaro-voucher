@@ -14,6 +14,7 @@ interface ExtractedData {
   passport_expiry?: string;
   id_card_number?: string;
   id_card_expiry?: string;
+  documentType?: 'passport' | 'id_card';
 }
 
 interface UploadStatus {
@@ -27,7 +28,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const processFile = async (file: File): Promise<ExtractedData> => {
+  const processFile = async (file: File): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
     // Compress image first to reduce size for AI gateway
     const { blob } = await compressImage(file, 1920, 1920, 0.8);
     
@@ -38,22 +39,41 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       reader.readAsDataURL(blob);
     });
 
-    // Determine document type from filename
-    const filename = file.name.toLowerCase();
-    const documentType = filename.includes('pas') ? 'passport' : 'id_card';
+    // Try both document types to find which one has data
+    let extractedData: ExtractedData | null = null;
+    let documentType: 'passport' | 'id_card' = 'passport';
 
-    // Call OCR function
-    const { data, error } = await supabase.functions.invoke('ocr-document', {
-      body: { imageBase64: base64, documentType }
+    // First try passport
+    const { data: passportData } = await supabase.functions.invoke('ocr-document', {
+      body: { imageBase64: base64, documentType: 'passport' }
     });
 
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'OCR failed');
+    if (passportData?.success && passportData.data?.passport_number) {
+      extractedData = { ...passportData.data, documentType: 'passport' };
+    } else {
+      // Try ID card
+      const { data: idCardData } = await supabase.functions.invoke('ocr-document', {
+        body: { imageBase64: base64, documentType: 'id_card' }
+      });
+      
+      if (idCardData?.success && idCardData.data?.id_card_number) {
+        extractedData = { ...idCardData.data, documentType: 'id_card' };
+      } else if (passportData?.success) {
+        // Use passport data even if no number found
+        extractedData = { ...passportData.data, documentType: 'passport' };
+      } else if (idCardData?.success) {
+        extractedData = { ...idCardData.data, documentType: 'id_card' };
+      }
+    }
 
-    return data.data;
+    if (!extractedData) {
+      throw new Error('OCR selhalo - nepodařilo se extrahovat data');
+    }
+
+    return { extractedData, compressedBlob: blob };
   };
 
-  const createClient = async (extractedData: ExtractedData) => {
+  const createClient = async (extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
     // Parse dates
     const parseDateDDMMYY = (dateStr: string | undefined) => {
       if (!dateStr) return null;
@@ -79,8 +99,60 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       clientData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
     }
 
-    const { error } = await supabase.from('clients').insert(clientData);
-    if (error) throw error;
+    // Insert client first
+    const { data: newClient, error: insertError } = await supabase
+      .from('clients')
+      .insert(clientData)
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
+
+    // Upload document to storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${newClient.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('client-documents')
+      .upload(filePath, compressedBlob, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('client-documents')
+      .getPublicUrl(filePath);
+
+    // Create document URL object
+    const documentUrl = {
+      url: publicUrl,
+      type: extractedData.documentType || 'passport',
+      fileName: file.name,
+      uploadedAt: new Date().toISOString()
+    };
+
+    // Get existing document_urls using raw query
+    const { data: existingClient }: any = await supabase
+      .from('clients')
+      .select('document_urls')
+      .eq('id', newClient.id)
+      .single();
+
+    const existingUrls = existingClient?.document_urls || [];
+
+    // Update client with document URL
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update({
+        document_urls: [...existingUrls, documentUrl]
+      } as any)
+      .eq('id', newClient.id);
+
+    if (updateError) throw updateError;
   };
 
   const handleFiles = async (files: FileList) => {
@@ -104,14 +176,14 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       });
 
       try {
-        const extractedData = await processFile(file);
+        const { extractedData, compressedBlob } = await processFile(file);
         
         // Check for required fields
         if (!extractedData.first_name || !extractedData.last_name) {
           throw new Error('Nepodařilo se extrahovat jméno a příjmení');
         }
 
-        await createClient(extractedData);
+        await createClient(extractedData, file, compressedBlob);
 
         setUploads(prev => {
           const updated = [...prev];
