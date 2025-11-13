@@ -127,7 +127,7 @@ const Deals = () => {
               <h1 className="text-4xl font-bold text-foreground">Obchodní případy</h1>
               <p className="text-muted-foreground mt-2">Správa všech obchodních příležitostí</p>
             </div>
-            <Button onClick={() => navigate("/deals/new")} className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2">
+            <Button onClick={() => navigate("/deals/new")} variant="premium" className="gap-2">
               <Plus className="h-4 w-4" />
               Nový případ
             </Button>
@@ -143,7 +143,7 @@ const Deals = () => {
             <Plus className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-2">Zatím žádné obchodní případy</h2>
             <p className="text-muted-foreground mb-6">Vytvořte svůj první obchodní případ</p>
-            <Button onClick={() => navigate("/deals/new")} className="bg-[var(--gradient-primary)] hover:opacity-90">
+            <Button onClick={() => navigate("/deals/new")} variant="premium">
               <Plus className="h-4 w-4 mr-2" />
               Vytvořit první případ
             </Button>
