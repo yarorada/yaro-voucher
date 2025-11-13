@@ -65,8 +65,8 @@ const Contracts = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-4xl font-bold text-foreground">Cestovní smlouvy</h1>
-            <p className="text-muted-foreground mt-1">Správa cestovních smluv podle §2521 OZ</p>
+            <h1 className="text-heading-1 text-foreground">Cestovní smlouvy</h1>
+            <p className="text-body text-muted-foreground mt-1">Správa cestovních smluv podle §2521 OZ</p>
           </div>
           <Button onClick={() => navigate("/contracts/new")}>
             <Plus className="h-4 w-4 mr-2" />
@@ -88,7 +88,7 @@ const Contracts = () => {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Načítání smluv...</p>
+            <p className="text-body text-muted-foreground">Načítání smluv...</p>
           </div>
         ) : filteredContracts && filteredContracts.length > 0 ? (
           <div className="grid gap-4">

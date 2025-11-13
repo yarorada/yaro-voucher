@@ -178,8 +178,8 @@ const Destinations = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Destinace</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-heading-1 text-foreground">Destinace</h1>
+          <p className="text-body text-muted-foreground mt-2">
             Správa zemí a destinací
           </p>
         </header>
@@ -279,7 +279,7 @@ const Destinations = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                     <p className="text-body text-muted-foreground">
                       {destination.countries?.name}
                     </p>
                   </CardContent>
