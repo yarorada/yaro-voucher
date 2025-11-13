@@ -445,6 +445,34 @@ const Clients = () => {
                 >
                   Odstranit diakritiku
                 </Button>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 shrink-0"
+                  onClick={async () => {
+                    if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+                    
+                    try {
+                      const { data, error } = await supabase.functions.invoke('assign-client-titles');
+                      
+                      if (error) throw error;
+                      
+                      if (data?.success) {
+                        toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+                        if (data.errors > 0) {
+                          toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+                        }
+                        fetchClients();
+                      } else {
+                        throw new Error(data?.error || 'Unknown error');
+                      }
+                    } catch (error: any) {
+                      console.error('Error assigning titles:', error);
+                      toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+                    }
+                  }}
+                >
+                  Přiřadit tituly
+                </Button>
                 <Dialog open={bulkDocumentUploadOpen} onOpenChange={setBulkDocumentUploadOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2 shrink-0">
