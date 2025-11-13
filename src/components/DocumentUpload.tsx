@@ -235,17 +235,18 @@ export function DocumentUpload({
             try {
               const updateData: any = {};
               
-              // Parse date from DD.MM.YY format
+              // Parse date from DD.MM.YY format to ISO date string
               const parseDate = (dateStr: string): string | null => {
                 if (!dateStr) return null;
                 const parts = dateStr.split('.');
                 if (parts.length !== 3) return null;
                 
                 const day = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1; // Month is 0-indexed
+                const month = parseInt(parts[1]);
                 const year = 2000 + parseInt(parts[2]);
                 
-                const date = new Date(year, month, day);
+                // Use Date.UTC to avoid timezone issues
+                const date = new Date(Date.UTC(year, month - 1, day));
                 return date.toISOString().split('T')[0];
               };
               
@@ -292,7 +293,10 @@ export function DocumentUpload({
                   console.error("Failed to update client:", updateError);
                   toast.error("Nepodařilo se uložit data z dokumentu");
                 } else {
+                  console.log("Client updated successfully");
                   toast.success("Data z dokumentu byla úspěšně uložena");
+                  // Trigger refresh to show updated data
+                  onUploadComplete?.(documentUrl);
                 }
               }
             } catch (saveError) {

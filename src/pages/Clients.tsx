@@ -585,9 +585,9 @@ const Clients = () => {
                               const parts = data.expiry_date.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]) - 1;
+                                const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData({ ...formData, passport_expiry: new Date(year, month, day) });
+                                setFormData({ ...formData, passport_expiry: new Date(Date.UTC(year, month - 1, day)) });
                               }
                             }
                             if (data.first_name && !formData.first_name) {
@@ -612,9 +612,9 @@ const Clients = () => {
                               const parts = data.expiry_date.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]) - 1;
+                                const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData({ ...formData, id_card_expiry: new Date(year, month, day) });
+                                setFormData({ ...formData, id_card_expiry: new Date(Date.UTC(year, month - 1, day)) });
                               }
                             }
                             if (data.first_name && !formData.first_name) {
