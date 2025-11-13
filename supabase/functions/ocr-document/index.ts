@@ -28,23 +28,31 @@ serve(async (req) => {
     // Prepare the prompt based on document type
     let prompt = "";
     if (documentType === "passport") {
-      prompt = `Analyze this passport image and extract the following information in JSON format:
+      prompt = `Analyze this passport image and extract the following information in JSON format. Be very precise with dates:
 {
-  "passport_number": "passport number",
-  "expiry_date": "expiry date in DD.MM.YY format",
-  "first_name": "first name",
-  "last_name": "last name"
+  "passport_number": "passport number (string)",
+  "expiry_date": "expiry date in DD.MM.YY format (string)",
+  "first_name": "first name (string)",
+  "last_name": "last name (string)"
 }
-Only return the JSON object, no additional text.`;
+
+Important:
+- For expiry_date, format it as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- Return only the JSON object, no additional text or markdown
+- If you cannot find a field, use null`;
     } else if (documentType === "id_card") {
-      prompt = `Analyze this ID card image and extract the following information in JSON format:
+      prompt = `Analyze this ID card image and extract the following information in JSON format. Be very precise with dates:
 {
-  "id_card_number": "ID card number",
-  "expiry_date": "expiry date in DD.MM.YY format",
-  "first_name": "first name",
-  "last_name": "last name"
+  "id_card_number": "ID card number (string)",
+  "expiry_date": "expiry date in DD.MM.YY format (string)",
+  "first_name": "first name (string)",
+  "last_name": "last name (string)"
 }
-Only return the JSON object, no additional text.`;
+
+Important:
+- For expiry_date, format it as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- Return only the JSON object, no additional text or markdown
+- If you cannot find a field, use null`;
     } else {
       prompt = `Analyze this document image and extract any relevant personal information (name, document number, expiry date) in JSON format.`;
     }

@@ -572,10 +572,11 @@ const Clients = () => {
 
                         <div className="space-y-4">
                           <h5 className="text-sm font-medium">Nahrát nové dokumenty</h5>
-                          <DocumentUpload
-                            clientId={editingClient.id}
-                            documentType="passport"
-                            onDataExtracted={(data) => {
+                        <DocumentUpload
+                          clientId={editingClient.id}
+                          documentType="passport"
+                          autoSaveToClient={true}
+                          onDataExtracted={(data) => {
                             if (data.passport_number) {
                               setFormData({ ...formData, passport_number: data.passport_number });
                             }
@@ -601,6 +602,7 @@ const Clients = () => {
                         <DocumentUpload
                           clientId={editingClient.id}
                           documentType="id_card"
+                          autoSaveToClient={true}
                           onDataExtracted={(data) => {
                             if (data.id_card_number) {
                               setFormData({ ...formData, id_card_number: data.id_card_number });
