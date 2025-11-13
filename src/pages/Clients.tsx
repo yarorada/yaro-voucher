@@ -97,12 +97,31 @@ const Clients = () => {
     }
 
     try {
+      const normalizedFirstName = removeDiacritics(formData.first_name.trim().toLowerCase());
+      const normalizedLastName = removeDiacritics(formData.last_name.trim().toLowerCase());
+
       if (editingClient) {
+        // Check for duplicate (excluding current client)
+        const { data: allClients } = await supabase
+          .from("clients")
+          .select("id, first_name, last_name")
+          .neq("id", editingClient.id);
+
+        const duplicate = allClients?.find(client => 
+          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
+        );
+
+        if (duplicate) {
+          toast.error("Klient s tímto jménem již existuje");
+          return;
+        }
+
         const { error } = await supabase
           .from("clients")
           .update({
-            first_name: removeDiacritics(formData.first_name.trim()),
-            last_name: removeDiacritics(formData.last_name.trim()),
+            first_name: formData.first_name.trim(),
+            last_name: formData.last_name.trim(),
             email: formData.email.trim() || null,
             phone: formData.phone.trim() || null,
             address: formData.address.trim() || null,
@@ -118,21 +137,23 @@ const Clients = () => {
         toast.success("Klient byl aktualizován");
       } else {
         // Check for duplicate
-        const { data: existingClient } = await supabase
+        const { data: allClients } = await supabase
           .from("clients")
-          .select("id")
-          .eq("first_name", removeDiacritics(formData.first_name.trim()))
-          .eq("last_name", removeDiacritics(formData.last_name.trim()))
-          .maybeSingle();
+          .select("id, first_name, last_name");
 
-        if (existingClient) {
+        const duplicate = allClients?.find(client => 
+          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
+        );
+
+        if (duplicate) {
           toast.error("Klient s tímto jménem již existuje");
           return;
         }
 
         const { error } = await supabase.from("clients").insert({
-          first_name: removeDiacritics(formData.first_name.trim()),
-          last_name: removeDiacritics(formData.last_name.trim()),
+          first_name: formData.first_name.trim(),
+          last_name: formData.last_name.trim(),
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
           address: formData.address.trim() || null,
@@ -280,6 +301,11 @@ const Clients = () => {
     let errorCount = 0;
     let updatedCount = 0;
 
+    // Fetch all clients once for comparison
+    const { data: allClients } = await supabase
+      .from("clients")
+      .select("id, first_name, last_name");
+
     for (const line of lines) {
       const parts = line.split(/\s+/);
       if (parts.length < 2) {
@@ -292,13 +318,14 @@ const Clients = () => {
       const email = parts.length >= 3 ? parts[2] : null;
 
       try {
-        // Check for duplicate
-        const { data: existingClient } = await supabase
-          .from("clients")
-          .select("id")
-          .eq("first_name", removeDiacritics(first_name.trim()))
-          .eq("last_name", removeDiacritics(last_name.trim()))
-          .maybeSingle();
+        const normalizedFirstName = removeDiacritics(first_name.trim().toLowerCase());
+        const normalizedLastName = removeDiacritics(last_name.trim().toLowerCase());
+
+        // Check for duplicate using normalized comparison
+        const existingClient = allClients?.find(client => 
+          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
+        );
 
         if (existingClient) {
           // Update existing client
@@ -312,10 +339,10 @@ const Clients = () => {
           if (error) throw error;
           updatedCount++;
         } else {
-          // Insert new client
+          // Insert new client with diacritics preserved
           const { error } = await supabase.from("clients").insert({
-            first_name: removeDiacritics(first_name.trim()),
-            last_name: removeDiacritics(last_name.trim()),
+            first_name: first_name.trim(),
+            last_name: last_name.trim(),
             email: email ? email.trim() : null,
           });
 
