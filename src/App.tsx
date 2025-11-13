@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
 import EditVoucher from "./pages/EditVoucher";
@@ -24,6 +26,22 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
+const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
+  <SidebarProvider>
+    <div className="min-h-screen flex w-full">
+      <AppSidebar />
+      <div className="flex-1 flex flex-col">
+        <header className="h-12 border-b bg-background flex items-center px-4">
+          <SidebarTrigger />
+        </header>
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  </SidebarProvider>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -37,7 +55,9 @@ const App = () => (
             path="/"
             element={
               <ProtectedRoute>
-                <Index />
+                <ProtectedLayout>
+                  <Index />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -45,7 +65,9 @@ const App = () => (
             path="/create"
             element={
               <ProtectedRoute>
-                <CreateVoucher />
+                <ProtectedLayout>
+                  <CreateVoucher />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -53,7 +75,9 @@ const App = () => (
             path="/edit/:id"
             element={
               <ProtectedRoute>
-                <EditVoucher />
+                <ProtectedLayout>
+                  <EditVoucher />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -61,7 +85,9 @@ const App = () => (
             path="/vouchers"
             element={
               <ProtectedRoute>
-                <VouchersList />
+                <ProtectedLayout>
+                  <VouchersList />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -69,7 +95,9 @@ const App = () => (
             path="/voucher/:id"
             element={
               <ProtectedRoute>
-                <VoucherDetail />
+                <ProtectedLayout>
+                  <VoucherDetail />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -77,7 +105,9 @@ const App = () => (
             path="/suppliers"
             element={
               <ProtectedRoute>
-                <Suppliers />
+                <ProtectedLayout>
+                  <Suppliers />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -85,7 +115,9 @@ const App = () => (
             path="/clients"
             element={
               <ProtectedRoute>
-                <Clients />
+                <ProtectedLayout>
+                  <Clients />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -93,7 +125,9 @@ const App = () => (
             path="/deals"
             element={
               <ProtectedRoute>
-                <Deals />
+                <ProtectedLayout>
+                  <Deals />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -101,7 +135,9 @@ const App = () => (
             path="/deals/new"
             element={
               <ProtectedRoute>
-                <CreateDeal />
+                <ProtectedLayout>
+                  <CreateDeal />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -109,7 +145,9 @@ const App = () => (
             path="/deals/:id"
             element={
               <ProtectedRoute>
-                <DealDetail />
+                <ProtectedLayout>
+                  <DealDetail />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -117,7 +155,9 @@ const App = () => (
             path="/destinations"
             element={
               <ProtectedRoute>
-                <Destinations />
+                <ProtectedLayout>
+                  <Destinations />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -125,7 +165,9 @@ const App = () => (
             path="/contracts"
             element={
               <ProtectedRoute>
-                <Contracts />
+                <ProtectedLayout>
+                  <Contracts />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -133,7 +175,9 @@ const App = () => (
             path="/contracts/new"
             element={
               <ProtectedRoute>
-                <CreateContract />
+                <ProtectedLayout>
+                  <CreateContract />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
@@ -141,11 +185,12 @@ const App = () => (
             path="/contracts/:id"
             element={
               <ProtectedRoute>
-                <ContractDetail />
+                <ProtectedLayout>
+                  <ContractDetail />
+                </ProtectedLayout>
               </ProtectedRoute>
             }
           />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
