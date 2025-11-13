@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileText, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageCompression";
 
 interface ExtractedData {
   first_name?: string;
@@ -27,11 +28,14 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
   const [isDragging, setIsDragging] = useState(false);
 
   const processFile = async (file: File): Promise<ExtractedData> => {
-    // Convert file to base64
+    // Compress image first to reduce size for AI gateway
+    const { blob } = await compressImage(file, 1920, 1920, 0.8);
+    
+    // Convert compressed blob to base64
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(blob);
     });
 
     // Determine document type from filename
