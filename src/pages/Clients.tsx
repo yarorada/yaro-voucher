@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2 } from "lucide-react";
+import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -47,6 +47,7 @@ const Clients = () => {
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
+  const [searchText, setSearchText] = useState("");
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -87,6 +88,19 @@ const Clients = () => {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
   };
+
+  const filteredClients = clients.filter((client) => {
+    if (!searchText.trim()) return true;
+    
+    const normalizedSearch = removeDiacritics(searchText.toLowerCase());
+    const normalizedFirstName = removeDiacritics(client.first_name.toLowerCase());
+    const normalizedLastName = removeDiacritics(client.last_name.toLowerCase());
+    const normalizedFullName = `${normalizedFirstName} ${normalizedLastName}`;
+    const normalizedEmail = client.email ? removeDiacritics(client.email.toLowerCase()) : '';
+    
+    return normalizedFullName.includes(normalizedSearch) || 
+           normalizedEmail.includes(normalizedSearch);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -740,6 +754,22 @@ const Clients = () => {
           </div>
         </header>
 
+        {/* Search Bar */}
+        {!loading && clients.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Hledat klienta podle jména nebo emailu..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám klienty...</p>
@@ -752,9 +782,22 @@ const Clients = () => {
             </h2>
             <p className="text-muted-foreground mb-6">Přidejte prvního klienta</p>
           </Card>
+        ) : filteredClients.length === 0 ? (
+          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+            <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              Žádné výsledky
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Pro hledaný výraz "{searchText}" nebyl nalezen žádný klient
+            </p>
+            <Button variant="outline" onClick={() => setSearchText("")}>
+              Zrušit filtr
+            </Button>
+          </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {clients.map((client) => (
+            {filteredClients.map((client) => (
               <Card
                 key={client.id}
                 className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
