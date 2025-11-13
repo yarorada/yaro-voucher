@@ -16,6 +16,7 @@ interface DocumentUploadProps {
   onDataExtracted?: (data: any) => void;
   onUploadComplete?: (url: string) => void;
   allowMultiple?: boolean;
+  autoSaveToClient?: boolean;
 }
 
 interface UploadingFile {
@@ -34,6 +35,7 @@ export function DocumentUpload({
   onDataExtracted,
   onUploadComplete,
   allowMultiple = true,
+  autoSaveToClient = false,
 }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -223,7 +225,81 @@ export function DocumentUpload({
             } : uf)
           );
         } else if (ocrData?.data) {
+          console.log("OCR data extracted:", ocrData.data);
+          
+          // Call the callback for UI updates
           onDataExtracted?.(ocrData.data);
+          
+          // Auto-save to client if enabled
+          if (autoSaveToClient) {
+            try {
+              const updateData: any = {};
+              
+              // Parse date from DD.MM.YY format
+              const parseDate = (dateStr: string): string | null => {
+                if (!dateStr) return null;
+                const parts = dateStr.split('.');
+                if (parts.length !== 3) return null;
+                
+                const day = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1; // Month is 0-indexed
+                const year = 2000 + parseInt(parts[2]);
+                
+                const date = new Date(year, month, day);
+                return date.toISOString().split('T')[0];
+              };
+              
+              if (documentType === "passport") {
+                if (ocrData.data.passport_number) {
+                  updateData.passport_number = ocrData.data.passport_number;
+                }
+                if (ocrData.data.expiry_date) {
+                  const parsed = parseDate(ocrData.data.expiry_date);
+                  if (parsed) updateData.passport_expiry = parsed;
+                }
+                if (ocrData.data.first_name) {
+                  updateData.first_name = ocrData.data.first_name;
+                }
+                if (ocrData.data.last_name) {
+                  updateData.last_name = ocrData.data.last_name;
+                }
+              } else if (documentType === "id_card") {
+                if (ocrData.data.id_card_number) {
+                  updateData.id_card_number = ocrData.data.id_card_number;
+                }
+                if (ocrData.data.expiry_date) {
+                  const parsed = parseDate(ocrData.data.expiry_date);
+                  if (parsed) updateData.id_card_expiry = parsed;
+                }
+                if (ocrData.data.first_name) {
+                  updateData.first_name = ocrData.data.first_name;
+                }
+                if (ocrData.data.last_name) {
+                  updateData.last_name = ocrData.data.last_name;
+                }
+              }
+              
+              // Update client in database if we have data
+              if (Object.keys(updateData).length > 0) {
+                console.log("Updating client with OCR data:", updateData);
+                
+                const { error: updateError } = await supabase
+                  .from("clients")
+                  .update(updateData as any)
+                  .eq("id", clientId);
+                
+                if (updateError) {
+                  console.error("Failed to update client:", updateError);
+                  toast.error("Nepodařilo se uložit data z dokumentu");
+                } else {
+                  toast.success("Data z dokumentu byla úspěšně uložena");
+                }
+              }
+            } catch (saveError) {
+              console.error("Error saving OCR data:", saveError);
+            }
+          }
+          
           setUploadingFiles(prev => 
             prev.map((uf, i) => i === index ? { ...uf, progress: 90 } : uf)
           );
