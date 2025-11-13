@@ -176,7 +176,8 @@ const Index = () => {
           <Button
             size="lg"
             onClick={() => navigate("/create")}
-            className="bg-[var(--gradient-primary)] hover:opacity-90 text-lg px-8 py-6"
+            variant="premium"
+            className="text-lg px-8 py-6"
           >
             <Plus className="h-5 w-5 mr-2" />
             Vytvořte svůj první voucher
