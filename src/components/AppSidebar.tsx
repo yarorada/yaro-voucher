@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import yaroLogo from "@/assets/yaro-logo.png";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const menuItems = [
   { title: "Domů", url: "/", icon: Home },
@@ -54,7 +54,7 @@ export function AppSidebar() {
             <img 
               src={yaroLogo} 
               alt="YARO Travel" 
-              className={`transition-all ${open ? "h-12" : "h-8"}`}
+              className={`transition-all ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
             />
           </div>
           
