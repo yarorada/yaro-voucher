@@ -231,7 +231,7 @@ const VouchersList = () => {
               <h1 className="text-4xl font-bold text-foreground">Vouchery</h1>
               <p className="text-muted-foreground mt-2">Správa a prohlížení všech cestovních voucherů</p>
             </div>
-            <Button onClick={() => navigate("/create")} className="bg-[var(--gradient-primary)] hover:opacity-90 gap-2">
+            <Button onClick={() => navigate("/create")} variant="premium" className="gap-2">
               <Plus className="h-4 w-4" />
               Vytvořit voucher
             </Button>
@@ -247,7 +247,7 @@ const VouchersList = () => {
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-2">Zatím žádné vouchery</h2>
             <p className="text-muted-foreground mb-6">Vytvořte svůj první cestovní voucher</p>
-            <Button onClick={() => navigate("/create")} className="bg-[var(--gradient-primary)] hover:opacity-90">
+            <Button onClick={() => navigate("/create")} variant="premium">
               <Plus className="h-4 w-4 mr-2" />
               Vytvořit první voucher
             </Button>
