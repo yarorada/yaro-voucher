@@ -8,6 +8,7 @@ import { Upload, FileText, Loader2, X, CheckCircle2, AlertCircle } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { compressImage, isImageFile, formatBytes } from "@/lib/imageCompression";
 
 interface DocumentUploadProps {
   clientId: string;
@@ -19,9 +20,12 @@ interface DocumentUploadProps {
 
 interface UploadingFile {
   file: File;
-  status: "uploading" | "processing" | "success" | "error";
+  status: "uploading" | "processing" | "success" | "error" | "compressing";
   progress: number;
   error?: string;
+  originalSize?: number;
+  compressedSize?: number;
+  savings?: number;
 }
 
 export function DocumentUpload({
@@ -109,9 +113,56 @@ export function DocumentUpload({
 
   const uploadFile = async (file: File, index: number) => {
     try {
+      let fileToUpload = file;
+      let originalSize = file.size;
+      let compressedSize = file.size;
+      let savings = 0;
+
+      // Compress image files before upload
+      if (isImageFile(file)) {
+        setUploadingFiles(prev => 
+          prev.map((uf, i) => i === index ? { 
+            ...uf, 
+            status: "compressing",
+            progress: 10,
+            originalSize: file.size 
+          } : uf)
+        );
+
+        try {
+          const compressed = await compressImage(file, 1920, 1920, 0.85);
+          
+          // Only use compressed version if it's actually smaller
+          if (compressed.compressedSize < file.size) {
+            fileToUpload = new File([compressed.blob], file.name, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            originalSize = compressed.originalSize;
+            compressedSize = compressed.compressedSize;
+            savings = compressed.savings;
+            
+            toast.success(`Obrázek zkomprimován o ${savings}%`);
+          } else {
+            // Original is smaller, use it
+            toast.info("Komprese nepřinesla úsporu, použit originál");
+          }
+        } catch (compressionError) {
+          console.error("Compression error:", compressionError);
+          toast.warning("Komprese selhala, nahrávám originál");
+        }
+      }
+
       // Update progress
       setUploadingFiles(prev => 
-        prev.map((uf, i) => i === index ? { ...uf, progress: 30 } : uf)
+        prev.map((uf, i) => i === index ? { 
+          ...uf, 
+          status: "uploading",
+          progress: 30,
+          originalSize,
+          compressedSize,
+          savings 
+        } : uf)
       );
 
       // Upload to Supabase Storage
@@ -120,7 +171,7 @@ export function DocumentUpload({
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("client-documents")
-        .upload(fileName, file);
+        .upload(fileName, fileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -142,12 +193,12 @@ export function DocumentUpload({
       );
 
       // If it's an image and we have a document type, process with OCR
-      if (file.type.startsWith("image/") && documentType !== "other") {
+      if (fileToUpload.type.startsWith("image/") && documentType !== "other") {
         // Convert file to base64
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(fileToUpload);
         });
 
         // Call OCR function
@@ -294,9 +345,24 @@ export function DocumentUpload({
                       <p className="text-sm font-medium truncate">
                         {uploadingFile.file.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {(uploadingFile.file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {uploadingFile.originalSize && uploadingFile.compressedSize ? (
+                          <>
+                            <span>{formatBytes(uploadingFile.originalSize)}</span>
+                            <span>→</span>
+                            <span className="text-green-600 font-medium">
+                              {formatBytes(uploadingFile.compressedSize)}
+                            </span>
+                            {uploadingFile.savings > 0 && (
+                              <span className="text-green-600 font-medium">
+                                (-{uploadingFile.savings}%)
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span>{formatBytes(uploadingFile.file.size)}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -327,6 +393,7 @@ export function DocumentUpload({
                   <Progress value={uploadingFile.progress} className="h-1" />
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">
+                      {uploadingFile.status === "compressing" && "Komprimuji obrázek..."}
                       {uploadingFile.status === "uploading" && "Nahrávám..."}
                       {uploadingFile.status === "processing" && "Zpracovávám OCR..."}
                       {uploadingFile.status === "success" && "Dokončeno"}
