@@ -38,12 +38,33 @@ interface UploadStatus {
   ocrFilledFields?: Set<string>;
 }
 
+interface DuplicateClient {
+  id: string;
+  first_name: string;
+  last_name: string;
+  passport_number?: string;
+  id_card_number?: string;
+}
+
 export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => {
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [editedData, setEditedData] = useState<ExtractedData | null>(null);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    show: boolean;
+    existingClient: DuplicateClient | null;
+    newData: ExtractedData | null;
+    file: File | null;
+    blob: Blob | null;
+  }>({
+    show: false,
+    existingClient: null,
+    newData: null,
+    file: null,
+    blob: null
+  });
 
   // Helper function to parse DD.MM.YY dates safely
   const parseDateDDMMYY = (dateStr: string | null | undefined): Date | null => {
@@ -182,6 +203,169 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     });
 
     return { extractedData, compressedBlob: blob };
+  };
+
+  const checkForDuplicate = async (extractedData: ExtractedData): Promise<DuplicateClient | null> => {
+    try {
+      const supabaseClient = supabase as any;
+      
+      // Check by passport number
+      if (extractedData.passport_number) {
+        const result = await supabaseClient
+          .from('clients')
+          .select('id, first_name, last_name, passport_number, id_card_number')
+          .eq('passport_number', extractedData.passport_number)
+          .limit(1);
+        
+        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+      }
+
+      // Check by ID card number
+      if (extractedData.id_card_number) {
+        const result = await supabaseClient
+          .from('clients')
+          .select('id, first_name, last_name, passport_number, id_card_number')
+          .eq('id_card_number', extractedData.id_card_number)
+          .limit(1);
+        
+        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+      }
+
+      // Check by name
+      if (extractedData.first_name && extractedData.last_name) {
+        const result = await supabaseClient
+          .from('clients')
+          .select('id, first_name, last_name, passport_number, id_card_number')
+          .ilike('first_name', extractedData.first_name)
+          .ilike('last_name', extractedData.last_name)
+          .limit(1);
+        
+        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+      return null;
+    }
+  };
+
+  const updateExistingClient = async (clientId: string, extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
+    // Parse dates - handle both formats DD.MM.YY and DD.MM.YYYY
+    const parseDateDDMMYY = (dateStr: string | undefined) => {
+      if (!dateStr) return null;
+      
+      const cleaned = dateStr.replace(/[^\d.]/g, '');
+      const parts = cleaned.split('.');
+      
+      if (parts.length !== 3) return null;
+      
+      const day = parts[0];
+      const month = parts[1];
+      let year = parts[2];
+      
+      if (!day || !month || !year) return null;
+      
+      if (year.length === 2) {
+        const yearNum = parseInt(year);
+        year = yearNum < 50 ? `20${year}` : `19${year}`;
+      }
+      
+      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))).toISOString().split('T')[0];
+    };
+
+    // Get existing client data
+    const { data: existingClient }: any = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', clientId)
+      .single();
+
+    if (!existingClient) throw new Error('Klient nenalezen');
+
+    // Merge data - only update fields that have new values
+    const updateData: any = {};
+    
+    if (extractedData.title && !existingClient.title) {
+      updateData.title = extractedData.title;
+    }
+    
+    if (extractedData.date_of_birth && !existingClient.date_of_birth) {
+      updateData.date_of_birth = parseDateDDMMYY(extractedData.date_of_birth);
+    }
+    
+    if (extractedData.passport_number && !existingClient.passport_number) {
+      updateData.passport_number = extractedData.passport_number;
+    }
+    
+    if (extractedData.passport_expiry && !existingClient.passport_expiry) {
+      updateData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
+    }
+    
+    if (extractedData.id_card_number && !existingClient.id_card_number) {
+      updateData.id_card_number = extractedData.id_card_number;
+    }
+    
+    if (extractedData.id_card_expiry && !existingClient.id_card_expiry) {
+      updateData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
+    }
+
+    // Update client if there are changes
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update(updateData)
+        .eq('id', clientId);
+
+      if (updateError) throw updateError;
+    }
+
+    // Upload document
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
+    const filePath = `${clientId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('client-documents')
+      .upload(filePath, compressedBlob, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('client-documents')
+      .getPublicUrl(filePath);
+
+    // Create document URL object
+    const documentUrl = {
+      url: publicUrl,
+      type: extractedData.documentType || 'passport',
+      fileName: file.name,
+      uploadedAt: new Date().toISOString()
+    };
+
+    // Get existing document_urls
+    const { data: clientWithDocs }: any = await supabase
+      .from('clients')
+      .select('document_urls')
+      .eq('id', clientId)
+      .single();
+
+    const existingUrls = clientWithDocs?.document_urls || [];
+
+    // Update client with document URL
+    const { error: docUpdateError } = await supabase
+      .from('clients')
+      .update({
+        document_urls: [...existingUrls, documentUrl]
+      } as any)
+      .eq('id', clientId);
+
+    if (docUpdateError) throw docUpdateError;
   };
 
   const createClient = async (extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
@@ -355,6 +539,27 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
     const upload = uploads[previewIndex];
     if (!upload.compressedBlob) return;
+
+    // Check for duplicates first
+    try {
+      const duplicate = await checkForDuplicate(editedData);
+      
+      if (duplicate) {
+        // Show duplicate dialog
+        setDuplicateDialog({
+          show: true,
+          existingClient: duplicate,
+          newData: editedData,
+          file: upload.file,
+          blob: upload.compressedBlob
+        });
+        return; // Don't proceed with creation
+      }
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+      toast.error('Chyba při kontrole duplicit');
+      return;
+    }
 
     setUploads(prev => {
       const updated = [...prev];
@@ -540,6 +745,146 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       setTimeout(() => {
         onComplete();
       }, 100);
+    }
+  };
+
+  const handleDuplicateUpdate = async () => {
+    if (!duplicateDialog.existingClient || !duplicateDialog.newData || !duplicateDialog.file || !duplicateDialog.blob) return;
+
+    setDuplicateDialog(prev => ({ ...prev, show: false }));
+
+    if (previewIndex === null) return;
+
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[previewIndex] = { ...updated[previewIndex], status: 'processing' };
+      return updated;
+    });
+
+    try {
+      await updateExistingClient(duplicateDialog.existingClient.id, duplicateDialog.newData, duplicateDialog.file, duplicateDialog.blob);
+      
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'success',
+          extractedData: duplicateDialog.newData || undefined
+        };
+        return updated;
+      });
+
+      toast.success('Klient byl aktualizován');
+
+      // Find next preview item
+      const nextPreviewIndex = uploads.findIndex((u, i) => i > previewIndex && u.status === 'preview');
+      if (nextPreviewIndex !== -1) {
+        setPreviewIndex(nextPreviewIndex);
+        const nextData = uploads[nextPreviewIndex].extractedData;
+        if (nextData) {
+          const autoTitle = nextData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+          setEditedData({ ...nextData, title: autoTitle });
+        }
+      } else {
+        // No more previews - check completion and close
+        setPreviewIndex(null);
+        setEditedData(null);
+        
+        setUploads(prev => {
+          const allCompleted = prev.every(u => u.status === 'success' || u.status === 'error');
+          const successCount = prev.filter(u => u.status === 'success').length;
+          
+          if (allCompleted && successCount > 0) {
+            setTimeout(() => {
+              onComplete();
+            }, 100);
+          }
+          
+          return prev;
+        });
+      }
+    } catch (error: any) {
+      console.error('Error updating client:', error);
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'error',
+          error: error.message 
+        };
+        return updated;
+      });
+      toast.error('Chyba při aktualizaci klienta: ' + error.message);
+    }
+  };
+
+  const handleDuplicateCreateNew = async () => {
+    if (!duplicateDialog.newData || !duplicateDialog.file || !duplicateDialog.blob) return;
+
+    setDuplicateDialog(prev => ({ ...prev, show: false }));
+
+    if (previewIndex === null) return;
+
+    setUploads(prev => {
+      const updated = [...prev];
+      updated[previewIndex] = { ...updated[previewIndex], status: 'processing' };
+      return updated;
+    });
+
+    try {
+      await createClient(duplicateDialog.newData, duplicateDialog.file, duplicateDialog.blob);
+      
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'success',
+          extractedData: duplicateDialog.newData || undefined
+        };
+        return updated;
+      });
+
+      toast.success('Nový klient byl vytvořen');
+
+      // Find next preview item
+      const nextPreviewIndex = uploads.findIndex((u, i) => i > previewIndex && u.status === 'preview');
+      if (nextPreviewIndex !== -1) {
+        setPreviewIndex(nextPreviewIndex);
+        const nextData = uploads[nextPreviewIndex].extractedData;
+        if (nextData) {
+          const autoTitle = nextData.first_name?.toLowerCase().endsWith('a') ? 'Paní' : 'Pan';
+          setEditedData({ ...nextData, title: autoTitle });
+        }
+      } else {
+        // No more previews - check completion and close
+        setPreviewIndex(null);
+        setEditedData(null);
+        
+        setUploads(prev => {
+          const allCompleted = prev.every(u => u.status === 'success' || u.status === 'error');
+          const successCount = prev.filter(u => u.status === 'success').length;
+          
+          if (allCompleted && successCount > 0) {
+            setTimeout(() => {
+              onComplete();
+            }, 100);
+          }
+          
+          return prev;
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating client:', error);
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[previewIndex] = { 
+          ...updated[previewIndex], 
+          status: 'error',
+          error: error.message 
+        };
+        return updated;
+      });
+      toast.error('Chyba při vytváření klienta: ' + error.message);
     }
   };
 
@@ -930,6 +1275,76 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                 Potvrdit a pokračovat
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Client Dialog */}
+      <Dialog open={duplicateDialog.show} onOpenChange={(open) => {
+        if (!open) {
+          setDuplicateDialog(prev => ({ ...prev, show: false }));
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicitní klient nalezen</DialogTitle>
+            <DialogDescription>
+              V systému již existuje klient s podobnými údaji.
+            </DialogDescription>
+          </DialogHeader>
+
+          {duplicateDialog.existingClient && (
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <h4 className="font-medium">Existující klient:</h4>
+                <p className="text-sm">
+                  <span className="font-medium">Jméno:</span> {duplicateDialog.existingClient.first_name} {duplicateDialog.existingClient.last_name}
+                </p>
+                {duplicateDialog.existingClient.passport_number && (
+                  <p className="text-sm">
+                    <span className="font-medium">Pas:</span> {duplicateDialog.existingClient.passport_number}
+                  </p>
+                )}
+                {duplicateDialog.existingClient.id_card_number && (
+                  <p className="text-sm">
+                    <span className="font-medium">OP:</span> {duplicateDialog.existingClient.id_card_number}
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-primary/5 rounded-lg space-y-2">
+                <h4 className="font-medium">Nová data z dokumentu:</h4>
+                <p className="text-sm">
+                  <span className="font-medium">Jméno:</span> {duplicateDialog.newData?.first_name} {duplicateDialog.newData?.last_name}
+                </p>
+                {duplicateDialog.newData?.passport_number && (
+                  <p className="text-sm">
+                    <span className="font-medium">Pas:</span> {duplicateDialog.newData.passport_number}
+                  </p>
+                )}
+                {duplicateDialog.newData?.id_card_number && (
+                  <p className="text-sm">
+                    <span className="font-medium">OP:</span> {duplicateDialog.newData.id_card_number}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="secondary" 
+              onClick={handleDuplicateUpdate}
+              className="flex-1"
+            >
+              Aktualizovat existujícího
+            </Button>
+            <Button 
+              onClick={handleDuplicateCreateNew}
+              className="flex-1"
+            >
+              Vytvořit nového
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
