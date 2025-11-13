@@ -6,10 +6,10 @@ const Index = () => {
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="text-center">
           <img src={yaroLogo} alt="YARO Travel" className="h-24 mx-auto mb-8" />
-          <h1 className="text-6xl font-bold text-foreground mb-6">
+          <h1 className="text-heading-1 text-foreground mb-6">
             Vítejte v systému YARO
           </h1>
-          <p className="text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-title text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Komplexní systém pro správu obchodních případů, voucherů a klientů cestovní kanceláře YARO Travel
           </p>
         </div>

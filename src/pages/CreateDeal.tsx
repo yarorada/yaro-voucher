@@ -79,10 +79,10 @@ const CreateDeal = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground">
+          <h1 className="text-heading-1 text-foreground">
             Nový obchodní případ
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-body text-muted-foreground mt-2">
             Vytvořte nový obchodní případ pro klienta
           </p>
         </header>

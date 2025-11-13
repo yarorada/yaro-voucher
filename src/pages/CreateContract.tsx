@@ -111,10 +111,10 @@ const CreateContract = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-4xl font-bold text-foreground">
+            <h1 className="text-heading-1 text-foreground">
               Nová cestovní smlouva
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-body text-muted-foreground mt-1">
               Vytvořte novou cestovní smlouvu podle §2521 OZ
             </p>
           </div>
