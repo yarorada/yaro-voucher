@@ -15,12 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, LogOut, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
-import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -55,7 +54,6 @@ interface Client {
 
 const Clients = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -396,24 +394,6 @@ const Clients = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Domů
-            </Button>
-            <div className="flex items-center gap-4">
-              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
-              <Button variant="outline" onClick={signOut} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Odhlásit
-              </Button>
-            </div>
-          </div>
-
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
