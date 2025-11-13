@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LogOut, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { format } from "date-fns";
@@ -25,7 +24,6 @@ interface Deal {
 
 const Deals = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,20 +106,6 @@ const Deals = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Domů
-            </Button>
-            <div className="flex items-center gap-4">
-              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
-              <Button variant="outline" onClick={signOut} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Odhlásit
-              </Button>
-            </div>
-          </div>
-
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold text-foreground">Obchodní případy</h1>

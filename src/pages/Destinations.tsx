@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,7 +33,6 @@ interface Destination {
 
 const Destinations = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [countries, setCountries] = useState<Country[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [newCountry, setNewCountry] = useState({ name: "", iso_code: "", currency: "" });
@@ -180,23 +178,6 @@ const Destinations = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Zpět
-            </Button>
-            <div className="flex items-center gap-4">
-              <img src={yaroLogo} alt="YARO Travel" className="h-12" />
-              <Button variant="outline" onClick={signOut} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Odhlásit
-              </Button>
-            </div>
-          </div>
           <h1 className="text-4xl font-bold text-foreground">Destinace</h1>
           <p className="text-muted-foreground mt-2">
             Správa zemí a destinací
