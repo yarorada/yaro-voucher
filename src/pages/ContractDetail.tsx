@@ -7,12 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Send, FileSignature } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
+import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
+import { ContractServiceAssignment } from "@/components/ContractServiceAssignment";
+import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
 
 const ContractDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: contract, isLoading } = useQuery({
+  const { data: contract, isLoading, refetch } = useQuery({
     queryKey: ["travel_contract", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -21,6 +25,7 @@ const ContractDetail = () => {
           *,
           client:clients(*),
           deal:deals(
+            id,
             *,
             destination:destinations(
               name,
@@ -88,6 +93,10 @@ const ContractDetail = () => {
           </p>
         </div>
         <div className="flex gap-2 mb-8">
+          <CreateVoucherFromContract 
+            contractId={contract.id} 
+            contractStatus={contract.status} 
+          />
           <Button variant="outline">
             <Send className="h-4 w-4 mr-2" />
             Odeslat
@@ -255,6 +264,27 @@ const ContractDetail = () => {
                 ))}
               </div>
             </Card>
+          )}
+
+          {/* Dodavatel služeb */}
+          <ContractAgencyInfo
+            contractId={contract.id}
+            agencyName={contract.agency_name}
+            agencyAddress={contract.agency_address}
+            agencyIco={contract.agency_ico}
+            agencyContact={contract.agency_contact}
+            onUpdate={refetch}
+          />
+
+          {/* Platební kalendář */}
+          <ContractPaymentSchedule contractId={contract.id} />
+
+          {/* Přiřazení cestujících ke službám */}
+          {contract.deal?.id && (
+            <ContractServiceAssignment
+              contractId={contract.id}
+              dealId={contract.deal.id}
+            />
           )}
 
           {/* Právní podmínky */}
