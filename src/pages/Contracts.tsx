@@ -21,10 +21,8 @@ const Contracts = () => {
         .from("travel_contracts")
         .select(`
           *,
-          deal:deals!inner(
-            deal_number,
-            client:clients!inner(first_name, last_name, email)
-          )
+          client:clients(first_name, last_name, email),
+          deal:deals(deal_number)
         `)
         .order("created_at", { ascending: false });
 
@@ -46,8 +44,8 @@ const Contracts = () => {
 
   const filteredContracts = contracts?.filter((contract) => {
     const searchLower = searchQuery.toLowerCase();
-    const client = contract.deal?.client as any;
-    const clientName = client && !Array.isArray(client) 
+    const client = contract.client as any;
+    const clientName = client 
       ? `${client.first_name || ''} ${client.last_name || ''}`.toLowerCase()
       : '';
     return (
@@ -112,8 +110,8 @@ const Contracts = () => {
                       </div>
                       <p className="text-muted-foreground mb-2">
                         Klient: {(() => {
-                          const client = contract.deal?.client as any;
-                          if (!client || Array.isArray(client)) return '-';
+                          const client = contract.client as any;
+                          if (!client) return '-';
                           return `${client.first_name} ${client.last_name}`;
                         })()}
                       </p>
