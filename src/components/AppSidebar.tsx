@@ -7,8 +7,7 @@ import {
   Briefcase, 
   MapPin, 
   FileSignature,
-  LogOut,
-  BarChart3
+  LogOut
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,7 +28,6 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const menuItems = [
   { title: "Domů", url: "/", icon: Home },
-  { title: "Statistiky", url: "/analytics", icon: BarChart3 },
   { title: "Vouchery", url: "/vouchers", icon: FileText },
   { title: "Obchodní případy", url: "/deals", icon: Briefcase },
   { title: "Smlouvy", url: "/contracts", icon: FileSignature },
