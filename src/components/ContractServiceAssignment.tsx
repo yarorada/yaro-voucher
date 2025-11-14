@@ -67,7 +67,8 @@ export function ContractServiceAssignment({
         if (travelersError) throw travelersError;
 
         // Fetch existing assignments
-        const { data: assignmentsData, error: assignmentsError } = await supabase
+        // @ts-ignore - Supabase types not updated after migration
+        const { data: assignmentsData, error: assignmentsError } = await (supabase as any)
           .from("contract_service_travelers")
           .select("service_type, service_name, client_id")
           .eq("contract_id", contractId);
@@ -78,6 +79,7 @@ export function ContractServiceAssignment({
         setTravelers(
           travelersData?.map((t: any) => t.clients).filter(Boolean) || []
         );
+        // @ts-ignore - Supabase types not updated after migration
         setAssignments(assignmentsData || []);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -129,7 +131,8 @@ export function ContractServiceAssignment({
     setSaving(true);
     try {
       // Delete all existing assignments
-      const { error: deleteError } = await supabase
+      // @ts-ignore - Supabase types not updated after migration
+      const { error: deleteError } = await (supabase as any)
         .from("contract_service_travelers")
         .delete()
         .eq("contract_id", contractId);
@@ -138,7 +141,8 @@ export function ContractServiceAssignment({
 
       // Insert new assignments
       if (assignments.length > 0) {
-        const { error: insertError } = await supabase
+        // @ts-ignore - Supabase types not updated after migration
+        const { error: insertError } = await (supabase as any)
           .from("contract_service_travelers")
           .insert(
             assignments.map((a) => ({

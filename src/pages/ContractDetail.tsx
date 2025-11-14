@@ -269,10 +269,10 @@ const ContractDetail = () => {
           {/* Dodavatel služeb */}
           <ContractAgencyInfo
             contractId={contract.id}
-            agencyName={contract.agency_name}
-            agencyAddress={contract.agency_address}
-            agencyIco={contract.agency_ico}
-            agencyContact={contract.agency_contact}
+            agencyName={(contract as any).agency_name}
+            agencyAddress={(contract as any).agency_address}
+            agencyIco={(contract as any).agency_ico}
+            agencyContact={(contract as any).agency_contact}
             onUpdate={refetch}
           />
 

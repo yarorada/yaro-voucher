@@ -37,7 +37,8 @@ export function ContractAgencyInfo({
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // @ts-ignore - Supabase types not updated after migration
+      const { error } = await (supabase as any)
         .from("travel_contracts")
         .update(formData)
         .eq("id", contractId);
