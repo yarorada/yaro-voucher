@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.ocr-document]
 verify_jwt = true
+
+[functions.translate-contract-to-voucher]
+verify_jwt = true
