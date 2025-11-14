@@ -16,10 +16,12 @@ const ContractDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: contract, isLoading, refetch } = useQuery({
+  const { data: contract, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ["travel_contract", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log("Fetching contract with ID:", id);
+      // @ts-ignore - Supabase types not updated after migration
+      const { data, error } = await (supabase as any)
         .from("travel_contracts")
         .select(`
           *,
@@ -43,7 +45,11 @@ const ContractDetail = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) throw error;
+      console.log("Query result:", { data, error });
+      if (error) {
+        console.error("Error fetching contract:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -67,11 +73,28 @@ const ContractDetail = () => {
     );
   }
 
+  if (queryError) {
+    console.error("Contract query error:", queryError);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Chyba při načítání smlouvy</h2>
+          <p className="text-muted-foreground mb-4">{(queryError as Error).message}</p>
+          <Button onClick={() => navigate("/contracts")} className="mt-4">
+            Zpět na seznam
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!contract) {
+    console.log("Contract not found for ID:", id);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">Smlouva nenalezena</h2>
+          <p className="text-muted-foreground mb-2">ID: {id}</p>
           <Button onClick={() => navigate("/contracts")} className="mt-4">
             Zpět na seznam
           </Button>
