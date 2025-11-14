@@ -1,18 +1,32 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, FileText, Search } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Contracts = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<{ id: string; number: string } | null>(null);
 
   const { data: contracts, isLoading } = useQuery({
     queryKey: ["travel_contracts"],
@@ -30,6 +44,39 @@ const Contracts = () => {
       return data;
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      const { error } = await supabase
+        .from("travel_contracts")
+        .delete()
+        .eq("id", contractId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["travel_contracts"] });
+      toast.success("Smlouva byla úspěšně smazána");
+      setDeleteDialogOpen(false);
+      setContractToDelete(null);
+    },
+    onError: (error) => {
+      console.error("Error deleting contract:", error);
+      toast.error("Nepodařilo se smazat smlouvu");
+    },
+  });
+
+  const handleDeleteClick = (e: React.MouseEvent, contractId: string, contractNumber: string) => {
+    e.stopPropagation();
+    setContractToDelete({ id: contractId, number: contractNumber });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (contractToDelete) {
+      deleteMutation.mutate(contractToDelete.id);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -126,6 +173,14 @@ const Contracts = () => {
                       </div>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleDeleteClick(e, contract.id, contract.contract_number)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -145,6 +200,26 @@ const Contracts = () => {
             )}
           </Card>
         )}
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat smlouvu?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chcete smazat smlouvu {contractToDelete?.number}? Tato akce je nevratná.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
