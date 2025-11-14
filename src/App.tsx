@@ -20,6 +20,7 @@ import Destinations from "./pages/Destinations";
 import Contracts from "./pages/Contracts";
 import ContractDetail from "./pages/ContractDetail";
 import CreateContract from "./pages/CreateContract";
+import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -193,6 +194,16 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedLayout>
                   <ContractDetail />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <Analytics />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

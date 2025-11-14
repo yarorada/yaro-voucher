@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SupplierCombobox } from "./SupplierCombobox";
+import { ServicePriceCalculator } from "./ServicePriceCalculator";
 
 interface VariantServiceDialogProps {
   variantId: string;
@@ -43,6 +44,7 @@ export const VariantServiceDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [personCount, setPersonCount] = useState("1");
   const [supplierId, setSupplierId] = useState("");
 
@@ -54,6 +56,7 @@ export const VariantServiceDialog = ({
       setStartDate(service.start_date ? new Date(service.start_date) : undefined);
       setEndDate(service.end_date ? new Date(service.end_date) : undefined);
       setPrice(service.price?.toString() || "");
+      setCostPrice(service.cost_price?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
       setSupplierId(service.supplier_id || "");
     } else {
@@ -68,6 +71,7 @@ export const VariantServiceDialog = ({
     setStartDate(undefined);
     setEndDate(undefined);
     setPrice("");
+    setCostPrice("");
     setPersonCount("1");
     setSupplierId("");
   };
@@ -95,6 +99,7 @@ export const VariantServiceDialog = ({
             start_date: startDate?.toISOString() || null,
             end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
+            cost_price: costPrice ? parseFloat(costPrice) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
           })
@@ -113,6 +118,7 @@ export const VariantServiceDialog = ({
             start_date: startDate?.toISOString() || null,
             end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
+            cost_price: costPrice ? parseFloat(costPrice) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
           });
@@ -218,7 +224,7 @@ export const VariantServiceDialog = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="person-count">Počet osob</Label>
               <Input
@@ -230,7 +236,7 @@ export const VariantServiceDialog = ({
               />
             </div>
             <div>
-              <Label htmlFor="price">Cena za osobu (Kč)</Label>
+              <Label htmlFor="price">Prodejní cena/os (Kč)</Label>
               <Input
                 id="price"
                 type="number"
@@ -240,17 +246,25 @@ export const VariantServiceDialog = ({
                 placeholder="0.00"
               />
             </div>
+            <div>
+              <Label htmlFor="cost-price">Nákupní cena/os (Kč)</Label>
+              <Input
+                id="cost-price"
+                type="number"
+                step="0.01"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
           </div>
 
-          {price && personCount && (
-            <div className="bg-muted p-3 rounded-md">
-              <p className="text-sm font-medium">
-                Celková cena: {new Intl.NumberFormat("cs-CZ", {
-                  style: "currency",
-                  currency: "CZK",
-                }).format(parseFloat(price) * parseInt(personCount))}
-              </p>
-            </div>
+          {price && costPrice && personCount && (
+            <ServicePriceCalculator
+              sellingPrice={parseFloat(price)}
+              costPrice={parseFloat(costPrice)}
+              personCount={parseInt(personCount)}
+            />
           )}
 
           <div className="flex justify-end gap-2 pt-4">

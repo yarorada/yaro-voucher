@@ -14,6 +14,7 @@ import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { DealVariants } from "@/components/DealVariants";
+import { DealProfitabilityPanel } from "@/components/DealProfitabilityPanel";
 import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
@@ -58,6 +59,7 @@ interface DealService {
   start_date: string | null;
   end_date: string | null;
   price: number | null;
+  cost_price: number | null;
   supplier_id: string | null;
   person_count: number | null;
   suppliers?: {
