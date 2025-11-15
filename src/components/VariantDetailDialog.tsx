@@ -448,6 +448,8 @@ export const VariantDetailDialog = ({
               handleServiceSaved();
             }
           }}
+          variantStartDate={variant.start_date}
+          variantEndDate={variant.end_date}
         />
       )}
     </>
