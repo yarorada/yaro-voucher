@@ -851,11 +851,7 @@ const DealDetail = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Nabídkové varianty</CardTitle>
-            <CardDescription>Vytvořte a porovnejte různé varianty nabídky</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); }} />
           </CardContent>
         </Card>
