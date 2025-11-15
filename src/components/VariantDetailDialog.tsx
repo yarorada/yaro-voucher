@@ -45,6 +45,8 @@ interface VariantDetailDialogProps {
   variant: any;
   open: boolean;
   onClose: (success?: boolean) => void;
+  dealStartDate?: string | null;
+  dealEndDate?: string | null;
 }
 
 export const VariantDetailDialog = ({
@@ -52,6 +54,8 @@ export const VariantDetailDialog = ({
   variant,
   open,
   onClose,
+  dealStartDate,
+  dealEndDate,
 }: VariantDetailDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -80,8 +84,8 @@ export const VariantDetailDialog = ({
   const resetForm = () => {
     setVariantName("");
     setDestinationId("");
-    setStartDate(undefined);
-    setEndDate(undefined);
+    setStartDate(dealStartDate ? new Date(dealStartDate) : undefined);
+    setEndDate(dealEndDate ? new Date(dealEndDate) : undefined);
     setNotes("");
     setServices([]);
   };

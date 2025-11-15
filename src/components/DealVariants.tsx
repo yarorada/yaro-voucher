@@ -32,10 +32,35 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingVariant, setEditingVariant] = useState<DealVariant | null>(null);
+  const [dealDates, setDealDates] = useState<{ start_date: string | null; end_date: string | null }>({ 
+    start_date: null, 
+    end_date: null 
+  });
 
   useEffect(() => {
     fetchVariants();
+    fetchDealDates();
   }, [dealId]);
+
+  const fetchDealDates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("start_date, end_date")
+        .eq("id", dealId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setDealDates({
+          start_date: data.start_date,
+          end_date: data.end_date,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching deal dates:", error);
+    }
+  };
 
   const fetchVariants = async () => {
     try {
@@ -286,6 +311,8 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         variant={editingVariant}
         open={dialogOpen}
         onClose={handleDialogClose}
+        dealStartDate={dealDates.start_date}
+        dealEndDate={dealDates.end_date}
       />
     </div>
   );
