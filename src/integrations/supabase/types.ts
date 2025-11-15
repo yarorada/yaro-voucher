@@ -111,14 +111,21 @@ export type Database = {
           address: string | null
           company_name: string | null
           created_at: string
+          date_of_birth: string | null
           dic: string | null
+          document_urls: Json | null
           email: string | null
           first_name: string
           ico: string | null
           id: string
+          id_card_expiry: string | null
+          id_card_number: string | null
           last_name: string
           notes: string | null
+          passport_expiry: string | null
+          passport_number: string | null
           phone: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -126,14 +133,21 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
           dic?: string | null
+          document_urls?: Json | null
           email?: string | null
           first_name: string
           ico?: string | null
           id?: string
+          id_card_expiry?: string | null
+          id_card_number?: string | null
           last_name: string
           notes?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
           phone?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -141,18 +155,111 @@ export type Database = {
           address?: string | null
           company_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
           dic?: string | null
+          document_urls?: Json | null
           email?: string | null
           first_name?: string
           ico?: string | null
           id?: string
+          id_card_expiry?: string | null
+          id_card_number?: string | null
           last_name?: string
           notes?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
           phone?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      contract_payments: {
+        Row: {
+          amount: number
+          contract_id: string
+          created_at: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          paid: boolean | null
+          payment_type: string
+        }
+        Insert: {
+          amount: number
+          contract_id: string
+          created_at?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid?: boolean | null
+          payment_type: string
+        }
+        Update: {
+          amount?: number
+          contract_id?: string
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid?: boolean | null
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_service_travelers: {
+        Row: {
+          client_id: string
+          contract_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          service_name: string
+          service_type: string
+        }
+        Insert: {
+          client_id: string
+          contract_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_name: string
+          service_type: string
+        }
+        Update: {
+          client_id?: string
+          contract_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          service_name?: string
+          service_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_service_travelers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_service_travelers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       countries: {
         Row: {
@@ -186,6 +293,7 @@ export type Database = {
       }
       deal_services: {
         Row: {
+          cost_price: number | null
           created_at: string
           deal_id: string
           description: string | null
@@ -201,6 +309,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
           deal_id: string
           description?: string | null
@@ -216,6 +325,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
           deal_id?: string
           description?: string | null
@@ -231,6 +341,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "deal_services_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
           {
             foreignKeyName: "deal_services_deal_id_fkey"
             columns: ["deal_id"]
@@ -281,6 +398,13 @@ export type Database = {
             foreignKeyName: "deal_travelers_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "deal_travelers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
             referencedRelation: "deals"
             referencedColumns: ["id"]
           },
@@ -288,6 +412,7 @@ export type Database = {
       }
       deal_variant_services: {
         Row: {
+          cost_price: number | null
           created_at: string
           description: string | null
           details: Json | null
@@ -303,6 +428,7 @@ export type Database = {
           variant_id: string
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           details?: Json | null
@@ -318,6 +444,7 @@ export type Database = {
           variant_id: string
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           details?: Json | null
@@ -393,6 +520,13 @@ export type Database = {
           variant_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "deal_variants_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
           {
             foreignKeyName: "deal_variants_deal_id_fkey"
             columns: ["deal_id"]
@@ -619,6 +753,10 @@ export type Database = {
       }
       travel_contracts: {
         Row: {
+          agency_address: string | null
+          agency_contact: string | null
+          agency_ico: string | null
+          agency_name: string | null
           client_id: string
           contract_date: string
           contract_number: string
@@ -636,6 +774,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agency_address?: string | null
+          agency_contact?: string | null
+          agency_ico?: string | null
+          agency_name?: string | null
           client_id: string
           contract_date?: string
           contract_number: string
@@ -653,6 +795,10 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          agency_address?: string | null
+          agency_contact?: string | null
+          agency_ico?: string | null
+          agency_name?: string | null
           client_id?: string
           contract_date?: string
           contract_number?: string
@@ -681,7 +827,46 @@ export type Database = {
             foreignKeyName: "travel_contracts_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "travel_contracts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_analytics_presets: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters: Json
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_analytics_presets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -744,6 +929,7 @@ export type Database = {
         Row: {
           client_id: string | null
           client_name: string
+          contract_id: string | null
           created_at: string
           deal_id: string | null
           expiration_date: string | null
@@ -763,6 +949,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           client_name: string
+          contract_id?: string | null
           created_at?: string
           deal_id?: string | null
           expiration_date?: string | null
@@ -782,6 +969,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           client_name?: string
+          contract_id?: string | null
           created_at?: string
           deal_id?: string | null
           expiration_date?: string | null
@@ -807,6 +995,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vouchers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
             foreignKeyName: "vouchers_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
@@ -824,7 +1026,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      deal_profitability: {
+        Row: {
+          created_at: string | null
+          deal_id: string | null
+          deal_number: string | null
+          lead_client_id: string | null
+          profit: number | null
+          profit_margin_percent: number | null
+          revenue: number | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["deal_status"] | null
+          total_costs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_travelers_client_id_fkey"
+            columns: ["lead_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       generate_contract_number: { Args: never; Returns: string }
