@@ -5,7 +5,7 @@ import { Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
-import { removeDiacritics } from "@/lib/utils";
+import { removeDiacritics, translateTitleToEnglish } from "@/lib/utils";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import {
   AlertDialog,
@@ -180,21 +180,21 @@ const VoucherDetail = () => {
             travelers.find(t => t.is_main_client)
               ? (() => {
                   const mainClient = travelers.find(t => t.is_main_client)!;
-                  const title = mainClient.clients.title || '';
+                  const title = translateTitleToEnglish(mainClient.clients.title);
                   const firstName = removeDiacritics(mainClient.clients.first_name);
                   const lastName = removeDiacritics(mainClient.clients.last_name);
-                  return title ? `${title} ${firstName} ${lastName}` : `${firstName} ${lastName}`;
+                  return `1. ${title ? `${title} ` : ''}${firstName} ${lastName}`;
                 })()
               : voucher.client_name
           }
           otherTravelers={
             travelers
               .filter(t => !t.is_main_client)
-              .map(t => {
-                const title = t.clients.title || '';
+              .map((t, index) => {
+                const title = translateTitleToEnglish(t.clients.title);
                 const firstName = removeDiacritics(t.clients.first_name);
                 const lastName = removeDiacritics(t.clients.last_name);
-                return title ? `${title} ${firstName} ${lastName}` : `${firstName} ${lastName}`;
+                return `${index + 2}. ${title ? `${title} ` : ''}${firstName} ${lastName}`;
               })
           }
           services={voucher.services}
