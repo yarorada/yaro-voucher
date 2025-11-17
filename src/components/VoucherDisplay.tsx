@@ -264,8 +264,8 @@ export const VoucherDisplay = ({
               size: A4;
             }
             body {
-              font-size: 7px;
-              line-height: 1.2;
+              font-size: 11px;
+              line-height: 1.3;
             }
           }
         `}
@@ -329,8 +329,8 @@ export const VoucherDisplay = ({
         id="voucher-content" 
         className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-1 print:text-[7px] print:leading-[1.2]"
         style={{
-          fontSize: '7px',
-          lineHeight: '1.2',
+          fontSize: '11px',
+          lineHeight: '1.3',
           padding: '4mm',
           maxHeight: '277mm'
         }}
@@ -343,16 +343,16 @@ export const VoucherDisplay = ({
               <p className="text-sm text-muted-foreground print:hidden">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary print:text-[10px] print:leading-tight" style={{ fontSize: '8px', lineHeight: '1.1' }}>{voucherCode}</div>
-              <p className="text-sm text-muted-foreground mt-1 print:text-[6px] print:mt-0 print:leading-tight" style={{ fontSize: '6px', marginTop: 0, lineHeight: '1.1' }}>Travel Voucher</p>
+              <div className="text-3xl font-bold text-primary print:text-[16px] print:leading-tight" style={{ fontSize: '13px', lineHeight: '1.1' }}>{voucherCode}</div>
+              <p className="text-sm text-muted-foreground mt-1 print:text-[10px] print:mt-0 print:leading-tight" style={{ fontSize: '10px', marginTop: 0, lineHeight: '1.1' }}>Travel Voucher</p>
             </div>
           </div>
           
           {/* Service Provider Contact */}
           {supplierName && (
-            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary print:p-0.5 print:text-[6px] print:border-l print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
-              <h3 className="text-sm font-bold text-foreground mb-3 print:text-[6px] print:mb-0 print:inline print:mr-1" style={{ fontSize: '5px', marginBottom: 0, display: 'inline', marginRight: '1mm' }}>Service Provider:</h3>
-              <div className="text-sm text-muted-foreground space-y-1 print:text-[6px] print:space-y-0 print:inline" style={{ fontSize: '5px', display: 'inline' }}>
+            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary print:p-0.5 print:text-[10px] print:border-l print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
+              <h3 className="text-sm font-bold text-foreground mb-3 print:text-[10px] print:mb-0 print:inline print:mr-1" style={{ fontSize: '8px', marginBottom: 0, display: 'inline', marginRight: '1.5mm' }}>Service Provider:</h3>
+              <div className="text-sm text-muted-foreground space-y-1 print:text-[10px] print:space-y-0 print:inline" style={{ fontSize: '8px', display: 'inline' }}>
                 <p className="print:inline">
                   {supplierName}
                   {supplierAddress && ` • ${supplierAddress}`}
@@ -368,10 +368,10 @@ export const VoucherDisplay = ({
 
         {/* Client Information */}
         <div className="mb-6 print:mb-0.5" style={{ marginBottom: '1mm' }}>
-          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[7px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '6px', marginBottom: 0, paddingLeft: '1mm' }}>
+          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[11px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '10px', marginBottom: 0, paddingLeft: '1.5mm' }}>
             Client Information
           </h2>
-          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[6px] print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
+          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[10px] print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
             <div className="mb-2 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
@@ -388,10 +388,10 @@ export const VoucherDisplay = ({
         {/* Hotel Accommodation */}
         {hotelName && (
           <div className="mb-6 print:mb-0.5" style={{ marginBottom: '1mm' }}>
-            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[7px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '6px', marginBottom: 0, paddingLeft: '1mm' }}>
+            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[11px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '10px', marginBottom: 0, paddingLeft: '1.5mm' }}>
               Hotel Accommodation
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[6px] print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
+            <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[10px] print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
               <div>
                 <span className="font-semibold text-foreground">Hotel:</span>{" "}
                 <span className="text-muted-foreground">{hotelName}</span>
@@ -402,18 +402,18 @@ export const VoucherDisplay = ({
 
         {/* Services Table */}
         <div className="mb-6 print:mb-0.5" style={{ marginBottom: '1mm' }}>
-          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[7px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '6px', marginBottom: 0, paddingLeft: '1mm' }}>
+          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[11px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '10px', marginBottom: 0, paddingLeft: '1.5mm' }}>
             Service Overview
           </h2>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse print:text-[6px]" style={{ fontSize: '5px', borderCollapse: 'collapse' }}>
+            <table className="w-full border-collapse print:text-[10px]" style={{ fontSize: '8px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-3 text-left print:p-0.5 print:text-[6px]" style={{ padding: '0.5mm', fontSize: '5px', textAlign: 'left' }}>PAX</th>
-                  <th className="p-3 text-left print:p-0.5 print:text-[6px]" style={{ padding: '0.5mm', fontSize: '5px', textAlign: 'left' }}>Qtd.</th>
-                  <th className="p-3 text-left print:p-0.5 print:text-[6px]" style={{ padding: '0.5mm', fontSize: '5px', textAlign: 'left' }}>Service</th>
-                  <th className="p-3 text-left print:p-0.5 print:text-[6px]" style={{ padding: '0.5mm', fontSize: '5px', textAlign: 'left' }}>Date From</th>
-                  <th className="p-3 text-left print:p-0.5 print:text-[6px]" style={{ padding: '0.5mm', fontSize: '5px', textAlign: 'left' }}>Date To</th>
+                  <th className="p-3 text-left print:p-0.5 print:text-[10px]" style={{ padding: '0.75mm', fontSize: '8px', textAlign: 'left' }}>PAX</th>
+                  <th className="p-3 text-left print:p-0.5 print:text-[10px]" style={{ padding: '0.75mm', fontSize: '8px', textAlign: 'left' }}>Qtd.</th>
+                  <th className="p-3 text-left print:p-0.5 print:text-[10px]" style={{ padding: '0.75mm', fontSize: '8px', textAlign: 'left' }}>Service</th>
+                  <th className="p-3 text-left print:p-0.5 print:text-[10px]" style={{ padding: '0.75mm', fontSize: '8px', textAlign: 'left' }}>Date From</th>
+                  <th className="p-3 text-left print:p-0.5 print:text-[10px]" style={{ padding: '0.75mm', fontSize: '8px', textAlign: 'left' }}>Date To</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,10 +445,10 @@ export const VoucherDisplay = ({
         {/* Flight Details Section */}
         {flights && flights.length > 0 && (
           <div className="mb-6 print:mb-0.5" style={{ marginBottom: '1mm' }}>
-            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[7px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '6px', marginBottom: 0, paddingLeft: '1mm' }}>
+            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[11px] print:mb-0 print:pl-0.5 print:border-l" style={{ fontSize: '10px', marginBottom: 0, paddingLeft: '1.5mm' }}>
               Flight Details
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[6px] print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
+            <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[10px] print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
               <ul className="space-y-3 print:space-y-0">
                 {flights.map((flight, index) => {
                   const fromCity = flight.fromCity || getCityName(flight.fromIata);
@@ -504,13 +504,13 @@ export const VoucherDisplay = ({
 
         {/* Voucher Details */}
         <div className="mb-6 grid grid-cols-2 gap-4 print:mb-0.5 print:gap-0.5" style={{ marginBottom: '1mm', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1mm' }}>
-          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[6px] print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
-            <p className="text-sm text-muted-foreground mb-1 print:text-[6px] print:mb-0" style={{ fontSize: '5px', marginBottom: 0 }}>Issue Date</p>
-            <p className="font-semibold text-foreground print:text-[6px]" style={{ fontSize: '5px' }}>{formatDate(issueDate)}</p>
+          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[10px] print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
+            <p className="text-sm text-muted-foreground mb-1 print:text-[10px] print:mb-0" style={{ fontSize: '8px', marginBottom: 0 }}>Issue Date</p>
+            <p className="font-semibold text-foreground print:text-[10px]" style={{ fontSize: '8px' }}>{formatDate(issueDate)}</p>
           </div>
-          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[6px] print:rounded-none" style={{ padding: '1mm', fontSize: '5px', borderRadius: 0 }}>
-            <p className="text-sm text-muted-foreground mb-1 print:text-[6px] print:mb-0" style={{ fontSize: '5px', marginBottom: 0 }}>Expiration Date</p>
-            <p className="font-semibold text-foreground print:text-[6px]" style={{ fontSize: '5px' }}>
+          <div className="bg-muted p-4 rounded-lg print:p-0.5 print:text-[10px] print:rounded-none" style={{ padding: '1.5mm', fontSize: '8px', borderRadius: 0 }}>
+            <p className="text-sm text-muted-foreground mb-1 print:text-[10px] print:mb-0" style={{ fontSize: '8px', marginBottom: 0 }}>Expiration Date</p>
+            <p className="font-semibold text-foreground print:text-[10px]" style={{ fontSize: '8px' }}>
               {expirationDate ? formatDate(expirationDate) : "No Expiration"}
             </p>
           </div>
@@ -542,7 +542,7 @@ export const VoucherDisplay = ({
             </div>
             {/* Print version - compact */}
             <div className="hidden print:block" style={{ display: 'block' }}>
-              <h3 className="font-bold text-foreground mb-0 text-[6px]" style={{ fontSize: '5px', marginBottom: 0 }}>YARO Travel</h3>
+              <h3 className="font-bold text-foreground mb-0 text-[10px]" style={{ fontSize: '8px', marginBottom: 0 }}>YARO Travel</h3>
               <div className="text-[5px] text-muted-foreground leading-tight" style={{ fontSize: '4px', lineHeight: '1.1' }}>
                 <p>Bratrancu Veverkovych 680, Pardubice, 530 02 | Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz | www.yarotravel.cz</p>
               </div>
