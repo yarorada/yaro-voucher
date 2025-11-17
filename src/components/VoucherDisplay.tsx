@@ -127,38 +127,40 @@ export const VoucherDisplay = ({
   const [showPreview, setShowPreview] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   
-  const generatePDF = async () => {
-    const element = document.getElementById('voucher-content');
-    if (!element) {
-      throw new Error("Voucher content not found");
+  const getPdfOptions = () => ({
+    margin: [10, 10, 10, 10] as [number, number, number, number],
+    filename: `${voucherCode}.pdf`,
+    image: { type: 'jpeg' as const, quality: 0.85 },
+    html2canvas: { 
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      imageTimeout: 0
+    },
+    jsPDF: { 
+      unit: 'mm' as const, 
+      format: 'a4' as const, 
+      orientation: 'portrait' as const,
+      compress: true
     }
-
-    const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
-      filename: `${voucherCode}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.85 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        imageTimeout: 0
-      },
-      jsPDF: { 
-        unit: 'mm' as const, 
-        format: 'a4' as const, 
-        orientation: 'portrait' as const,
-        compress: true
-      }
-    };
-
-    return html2pdf().set(opt).from(element);
-  };
+  });
 
   const handlePreviewPDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      const pdf = await generatePDF();
-      const blob = await pdf.output('blob');
+      const element = document.getElementById('voucher-content');
+      if (!element) {
+        toast.error("Nepodařilo se najít obsah voucheru");
+        return;
+      }
+
+      const opt = getPdfOptions();
+      
+      // Generate PDF and get blob
+      const blob = await html2pdf()
+        .set(opt)
+        .from(element)
+        .outputPdf('blob');
       
       // Clean up previous URL if exists
       if (pdfPreviewUrl) {
@@ -180,8 +182,19 @@ export const VoucherDisplay = ({
   const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      const pdf = await generatePDF();
-      await pdf.save();
+      const element = document.getElementById('voucher-content');
+      if (!element) {
+        toast.error("Nepodařilo se najít obsah voucheru");
+        return;
+      }
+
+      const opt = getPdfOptions();
+      
+      await html2pdf()
+        .set(opt)
+        .from(element)
+        .save();
+        
       toast.success("PDF úspěšně staženo");
       setShowPreview(false);
     } catch (error) {
