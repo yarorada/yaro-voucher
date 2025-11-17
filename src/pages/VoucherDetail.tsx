@@ -5,6 +5,7 @@ import { Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
+import { removeDiacritics } from "@/lib/utils";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import {
   AlertDialog,
@@ -43,6 +44,7 @@ interface VoucherTraveler {
   clients: {
     first_name: string;
     last_name: string;
+    title: string | null;
   };
 }
 
@@ -121,7 +123,7 @@ const VoucherDetail = () => {
       // Fetch travelers
       const { data: travelersData, error: travelersError } = await supabase
         .from('voucher_travelers')
-        .select('client_id, is_main_client, clients(first_name, last_name)')
+        .select('client_id, is_main_client, clients(first_name, last_name, title)')
         .eq('voucher_id', id)
         .order('is_main_client', { ascending: false });
 
@@ -176,13 +178,24 @@ const VoucherDetail = () => {
           voucherCode={voucher.voucher_code}
           clientName={
             travelers.find(t => t.is_main_client)
-              ? `${travelers.find(t => t.is_main_client)?.clients.first_name} ${travelers.find(t => t.is_main_client)?.clients.last_name}`
+              ? (() => {
+                  const mainClient = travelers.find(t => t.is_main_client)!;
+                  const title = mainClient.clients.title || '';
+                  const firstName = removeDiacritics(mainClient.clients.first_name);
+                  const lastName = removeDiacritics(mainClient.clients.last_name);
+                  return title ? `${title} ${firstName} ${lastName}` : `${firstName} ${lastName}`;
+                })()
               : voucher.client_name
           }
           otherTravelers={
             travelers
               .filter(t => !t.is_main_client)
-              .map(t => `${t.clients.first_name} ${t.clients.last_name}`)
+              .map(t => {
+                const title = t.clients.title || '';
+                const firstName = removeDiacritics(t.clients.first_name);
+                const lastName = removeDiacritics(t.clients.last_name);
+                return title ? `${title} ${firstName} ${lastName}` : `${firstName} ${lastName}`;
+              })
           }
           services={voucher.services}
           hotelName={voucher.hotel_name}
