@@ -136,7 +136,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
   const selectedClient = clients.find((client) => client.id === value);
   
   const hasNoMatch = searchValue && !clients.some(c => 
-    `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchValue.toLowerCase())
+    removeDiacritics(`${c.first_name} ${c.last_name}`).toLowerCase().includes(removeDiacritics(searchValue).toLowerCase())
   );
 
   return (
@@ -175,7 +175,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
               <CommandGroup>
                 {clients
                   .filter(client => 
-                    `${client.first_name} ${client.last_name}`.toLowerCase().includes(searchValue.toLowerCase())
+                    removeDiacritics(`${client.first_name} ${client.last_name}`).toLowerCase().includes(removeDiacritics(searchValue).toLowerCase())
                   )
                   .map((client) => (
                     <CommandItem
