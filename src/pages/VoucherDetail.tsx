@@ -151,8 +151,8 @@ const VoucherDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-[var(--gradient-subtle)] print:bg-white">
+      <div className="container max-w-5xl mx-auto py-8 px-4 print:py-0 print:px-0">
         <header className="mb-8 print:hidden">
           <div className="flex items-center justify-end gap-4 mb-4">
             <Button

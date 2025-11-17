@@ -172,7 +172,66 @@ export const VoucherDisplay = ({
         {`
           @media print {
             @page {
-              margin-top: 1cm;
+              margin: 1cm;
+            }
+            
+            /* Force light mode for print */
+            * {
+              color-scheme: light !important;
+            }
+            
+            body {
+              background: white !important;
+            }
+            
+            /* Override all dark mode colors to light mode equivalents */
+            #voucher-content,
+            #voucher-content * {
+              background-color: white !important;
+              color: black !important;
+              border-color: #e5e7eb !important;
+            }
+            
+            /* Specific overrides for styled elements */
+            .bg-muted {
+              background-color: #f3f4f6 !important;
+            }
+            
+            .text-muted-foreground {
+              color: #6b7280 !important;
+            }
+            
+            .text-foreground {
+              color: #000000 !important;
+            }
+            
+            .border-primary {
+              border-color: #3b82f6 !important;
+            }
+            
+            .border-accent {
+              border-color: #8b5cf6 !important;
+            }
+            
+            .bg-primary {
+              background-color: #3b82f6 !important;
+              color: white !important;
+            }
+            
+            .text-primary-foreground {
+              color: white !important;
+            }
+            
+            .text-primary {
+              color: #3b82f6 !important;
+            }
+            
+            /* Hide all navigation and UI elements */
+            header,
+            nav,
+            .breadcrumb,
+            button:not(#voucher-content button) {
+              display: none !important;
             }
           }
         `}
