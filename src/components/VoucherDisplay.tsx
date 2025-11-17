@@ -1,11 +1,18 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Mail } from "lucide-react";
+import { Download, Mail, Eye } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import html2pdf from "html2pdf.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -117,39 +124,69 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   
+  const generatePDF = async () => {
+    const element = document.getElementById('voucher-content');
+    if (!element) {
+      throw new Error("Voucher content not found");
+    }
+
+    const opt = {
+      margin: [10, 10, 10, 10] as [number, number, number, number],
+      filename: `${voucherCode}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.85 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        imageTimeout: 0
+      },
+      jsPDF: { 
+        unit: 'mm' as const, 
+        format: 'a4' as const, 
+        orientation: 'portrait' as const,
+        compress: true
+      }
+    };
+
+    return html2pdf().set(opt).from(element);
+  };
+
+  const handlePreviewPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      const pdf = await generatePDF();
+      const blob = await pdf.output('blob');
+      
+      // Clean up previous URL if exists
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+      }
+      
+      const url = URL.createObjectURL(blob);
+      setPdfPreviewUrl(url);
+      setShowPreview(true);
+      toast.success("Náhled PDF připraven");
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
+      toast.error("Chyba při generování náhledu PDF");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      const element = document.getElementById('voucher-content');
-      if (!element) {
-        toast.error("Nepodařilo se najít obsah voucheru");
-        return;
-      }
-
-      const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: `${voucherCode}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.85 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          imageTimeout: 0
-        },
-        jsPDF: { 
-          unit: 'mm' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const,
-          compress: true
-        }
-      };
-
-      await html2pdf().set(opt).from(element).save();
+      const pdf = await generatePDF();
+      await pdf.save();
       toast.success("PDF úspěšně staženo");
+      setShowPreview(false);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error("Chyba při generování PDF");
+      console.error('Error downloading PDF:', error);
+      toast.error("Chyba při stahování PDF");
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -214,12 +251,12 @@ export const VoucherDisplay = ({
       </style>
       <div className="flex gap-2 print:hidden">
         <Button 
-          onClick={handleDownloadPDF} 
+          onClick={handlePreviewPDF} 
           className="flex-1" 
           size="icon"
           disabled={isGeneratingPDF}
         >
-          <Download className="h-5 w-5" />
+          <Eye className="h-5 w-5" />
         </Button>
         <Button 
           variant="outline" 
@@ -231,6 +268,41 @@ export const VoucherDisplay = ({
           <Mail className="h-5 w-5" />
         </Button>
       </div>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Náhled PDF - {voucherCode}</DialogTitle>
+            <DialogDescription>
+              Zkontrolujte vzhled PDF před stažením
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            {pdfPreviewUrl && (
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border-0"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview(false)}
+            >
+              Zrušit
+            </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Stáhnout PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Card
         id="voucher-content" 
