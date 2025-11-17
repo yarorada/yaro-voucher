@@ -5,6 +5,8 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -115,9 +117,55 @@ export const VoucherDisplay = ({
   voucherId,
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
-  const handleDownloadPDF = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    toast.info("Generuji PDF...");
+    
+    try {
+      const element = document.getElementById('voucher-content');
+      if (!element) {
+        throw new Error("Voucher element not found");
+      }
+
+      // Temporarily add white background for PDF generation
+      const originalBackground = element.style.backgroundColor;
+      element.style.backgroundColor = 'white';
+      
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+      });
+
+      // Restore original background
+      element.style.backgroundColor = originalBackground;
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const pdf = new jsPDF({
+        orientation: imgHeight > imgWidth ? 'portrait' : 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      pdf.save(`voucher-${voucherCode}.pdf`);
+      toast.success("PDF bylo úspěšně staženo!");
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast.error(`Chyba při generování PDF: ${error.message}`);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleSendEmail = async () => {
@@ -237,7 +285,12 @@ export const VoucherDisplay = ({
         `}
       </style>
       <div className="flex gap-2 print:hidden">
-        <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
+        <Button 
+          onClick={handleDownloadPDF} 
+          disabled={isGeneratingPDF}
+          className="flex-1" 
+          size="icon"
+        >
           <Download className="h-5 w-5" />
         </Button>
         <Button 
