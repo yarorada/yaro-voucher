@@ -499,7 +499,7 @@ const DealDetail = () => {
           .select()
           .eq("deal_id", deal.id)
           .eq("client_id", leadTravelerId)
-          .single();
+          .maybeSingle();
 
         if (existingTraveler) {
           await supabase
