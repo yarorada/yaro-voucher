@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.translate-contract-to-voucher]
 verify_jwt = true
+
+[functions.parse-bulk-client-data]
+verify_jwt = true
