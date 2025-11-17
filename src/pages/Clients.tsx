@@ -307,87 +307,114 @@ const Clients = () => {
 
 
   const handleBulkImport = async () => {
-    const lines = bulkImportText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-
-    if (lines.length === 0) {
+    if (!bulkImportText.trim()) {
       toast.error("Vložte alespoň jednoho klienta");
       return;
     }
 
-    let successCount = 0;
-    let errorCount = 0;
-    let updatedCount = 0;
+    try {
+      // Zavolat AI edge funkci pro parsování dat
+      const { data: parseResult, error: parseError } = await supabase.functions.invoke(
+        'parse-bulk-client-data',
+        { body: { text: bulkImportText } }
+      );
 
-    // Fetch all clients once for comparison
-    const { data: allClients } = await supabase
-      .from("clients")
-      .select("id, first_name, last_name");
-
-    for (const line of lines) {
-      const parts = line.split(/\s+/);
-      if (parts.length < 2) {
-        errorCount++;
-        continue;
+      if (parseError) throw parseError;
+      if (!parseResult?.success || !parseResult?.clients) {
+        throw new Error("Nepodařilo se zpracovat data");
       }
 
-      const first_name = parts[0];
-      const last_name = parts.length >= 3 ? parts[1] : parts.slice(1).join(" ");
-      const email = parts.length >= 3 ? parts[2] : null;
+      const extractedClients = parseResult.clients;
+      
+      let successCount = 0;
+      let errorCount = 0;
+      let updatedCount = 0;
 
-      try {
-        const normalizedFirstName = removeDiacritics(first_name.trim().toLowerCase());
-        const normalizedLastName = removeDiacritics(last_name.trim().toLowerCase());
+      // Načíst existující klienty pro kontrolu duplicit
+      const { data: allClients } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name, email, passport_number, id_card_number");
 
-        // Check for duplicate using normalized comparison
-        const existingClient = allClients?.find(client => 
-          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
-          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
-        );
+      for (const clientData of extractedClients) {
+        try {
+          const normalizedFirstName = removeDiacritics(clientData.first_name.trim().toLowerCase());
+          const normalizedLastName = removeDiacritics(clientData.last_name.trim().toLowerCase());
 
-        if (existingClient) {
-          // Update existing client
-          const { error } = await supabase
-            .from("clients")
-            .update({
-              email: email ? email.trim() : null,
-            })
-            .eq("id", existingClient.id);
-
-          if (error) throw error;
-          updatedCount++;
-        } else {
-          // Insert new client with diacritics preserved
-          const { error } = await supabase.from("clients").insert({
-            first_name: first_name.trim(),
-            last_name: last_name.trim(),
-            email: email ? email.trim() : null,
+          // Kontrola duplicit (podle jména nebo čísla dokladu)
+          const existingClient = allClients?.find(client => {
+            const nameMatch = 
+              removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+              removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName;
+            
+            const passportMatch = clientData.passport_number && 
+              client.passport_number === clientData.passport_number;
+            
+            const idCardMatch = clientData.id_card_number && 
+              client.id_card_number === clientData.id_card_number;
+            
+            return nameMatch || passportMatch || idCardMatch;
           });
 
-          if (error) throw error;
-          successCount++;
+          // Připravit data pro uložení
+          const clientRecord: any = {
+            title: clientData.title,
+            first_name: clientData.first_name.trim(),
+            last_name: clientData.last_name.trim(),
+          };
+
+          if (clientData.email) clientRecord.email = clientData.email.trim();
+          if (clientData.date_of_birth) clientRecord.date_of_birth = clientData.date_of_birth;
+          if (clientData.passport_number) clientRecord.passport_number = clientData.passport_number;
+          if (clientData.id_card_number) clientRecord.id_card_number = clientData.id_card_number;
+
+          if (existingClient) {
+            // Aktualizovat existujícího klienta
+            const { error } = await supabase
+              .from("clients")
+              .update(clientRecord)
+              .eq("id", existingClient.id);
+
+            if (error) throw error;
+            updatedCount++;
+          } else {
+            // Vytvořit nového klienta
+            const { error } = await supabase
+              .from("clients")
+              .insert(clientRecord);
+
+            if (error) throw error;
+            successCount++;
+          }
+        } catch (error) {
+          console.error("Error processing client:", error);
+          errorCount++;
         }
-      } catch (error) {
-        console.error("Error processing client:", error);
-        errorCount++;
+      }
+
+      // Zobrazit výsledky
+      if (successCount > 0) {
+        toast.success(`Přidáno ${successCount} nových klientů`);
+      }
+      if (updatedCount > 0) {
+        toast.success(`Aktualizováno ${updatedCount} existujících klientů`);
+      }
+      if (errorCount > 0) {
+        toast.error(`${errorCount} klientů se nepodařilo zpracovat`);
+      }
+      
+      fetchClients();
+      setBulkImportText("");
+      setBulkImportOpen(false);
+    } catch (error: any) {
+      console.error("Bulk import error:", error);
+      if (error.message?.includes("Překročen limit") || error.message?.includes("429")) {
+        toast.error("Překročen limit požadavků na AI. Zkuste to prosím za chvíli.");
+      } else if (error.message?.includes("Nedostatek kreditů") || error.message?.includes("402")) {
+        toast.error("Nedostatek kreditů pro AI. Doplňte prosím kredity v nastavení.");
+      } else {
+        toast.error("Chyba při importu klientů: " + error.message);
       }
     }
-
-    if (successCount > 0) {
-      toast.success(`Přidáno ${successCount} nových klientů`);
-    }
-    if (updatedCount > 0) {
-      toast.success(`Aktualizováno ${updatedCount} existujících klientů`);
-    }
-    if (errorCount > 0) {
-      toast.error(`${errorCount} klientů se nepodařilo zpracovat`);
-    }
-    
-    fetchClients();
-    setBulkImportText("");
-    setBulkImportOpen(false);
   };
 
   return (
@@ -782,17 +809,21 @@ const Clients = () => {
               <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
                 <DialogContent className="max-w-2xl bg-background">
                   <DialogHeader>
-                    <DialogTitle>Hromadný import klientů</DialogTitle>
+                    <DialogTitle>Hromadný import klientů s AI</DialogTitle>
                     <DialogDescription>
-                      Vložte jména a příjmení klientů, každý na nový řádek ve
-                      formátu "Jméno Příjmení" nebo "Jméno Příjmení Email"
+                      Vložte informace o klientech v jakémkoli formátu. AI automaticky extrahuje jméno, příjmení, email, datum narození, čísla dokladů a přiřadí tituly Pan/Paní.
+                      <br /><br />
+                      <strong>Příklady formátů:</strong>
+                      <br />• Jan Novák, jan@email.cz, 15.3.1990, pas: 123456789
+                      <br />• Marie Svobodová, narozena 5.5.1985, email: marie@email.cz
+                      <br />• Petr Dvořák (1.1.1995), petr.dvorak@gmail.com, OP 987654321
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <Textarea
                       value={bulkImportText}
                       onChange={(e) => setBulkImportText(e.target.value)}
-                      placeholder="Jan Novák jan.novak@email.cz&#10;Petr Dvořák&#10;Marie Svobodová marie@email.cz"
+                      placeholder="Jan Novák, jan.novak@email.cz, narozen 15.3.1990&#10;Marie Svobodová (5.5.1985), email: marie@email.cz, pas: AB123456&#10;Petr Dvořák, 1.1.1995, petr.dvorak@gmail.com, OP: 987654321"
                       rows={10}
                     />
                     <div className="flex gap-2 justify-end">
@@ -806,7 +837,7 @@ const Clients = () => {
                       >
                         Zrušit
                       </Button>
-                      <Button onClick={handleBulkImport}>Importovat</Button>
+                      <Button onClick={handleBulkImport}>Importovat s AI</Button>
                     </div>
                   </div>
                 </DialogContent>
