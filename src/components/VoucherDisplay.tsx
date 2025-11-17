@@ -5,8 +5,6 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -117,55 +115,9 @@ export const VoucherDisplay = ({
   voucherId,
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
-  const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true);
-    toast.info("Generuji PDF...");
-    
-    try {
-      const element = document.getElementById('voucher-content');
-      if (!element) {
-        throw new Error("Voucher element not found");
-      }
-
-      // Temporarily add white background for PDF generation
-      const originalBackground = element.style.backgroundColor;
-      element.style.backgroundColor = 'white';
-      
-      // Wait for images to load
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-      });
-
-      // Restore original background
-      element.style.backgroundColor = originalBackground;
-
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      const pdf = new jsPDF({
-        orientation: imgHeight > imgWidth ? 'portrait' : 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
-      pdf.save(`voucher-${voucherCode}.pdf`);
-      toast.success("PDF bylo úspěšně staženo!");
-    } catch (error: any) {
-      console.error('Error generating PDF:', error);
-      toast.error(`Chyba při generování PDF: ${error.message}`);
-    } finally {
-      setIsGeneratingPDF(false);
-    }
+  const handleDownloadPDF = () => {
+    window.print();
   };
 
   const handleSendEmail = async () => {
@@ -220,77 +172,13 @@ export const VoucherDisplay = ({
         {`
           @media print {
             @page {
-              margin: 1cm;
-            }
-            
-            /* Force light mode for print */
-            * {
-              color-scheme: light !important;
-            }
-            
-            body {
-              background: white !important;
-            }
-            
-            /* Override all dark mode colors to light mode equivalents */
-            #voucher-content,
-            #voucher-content * {
-              background-color: white !important;
-              color: black !important;
-              border-color: #e5e7eb !important;
-            }
-            
-            /* Specific overrides for styled elements */
-            .bg-muted {
-              background-color: #f3f4f6 !important;
-            }
-            
-            .text-muted-foreground {
-              color: #6b7280 !important;
-            }
-            
-            .text-foreground {
-              color: #000000 !important;
-            }
-            
-            .border-primary {
-              border-color: #3b82f6 !important;
-            }
-            
-            .border-accent {
-              border-color: #8b5cf6 !important;
-            }
-            
-            .bg-primary {
-              background-color: #3b82f6 !important;
-              color: white !important;
-            }
-            
-            .text-primary-foreground {
-              color: white !important;
-            }
-            
-            .text-primary {
-              color: #3b82f6 !important;
-            }
-            
-            /* Hide all navigation and UI elements */
-            header,
-            nav,
-            .breadcrumb,
-            button:not(#voucher-content button) {
-              display: none !important;
+              margin-top: 1cm;
             }
           }
         `}
       </style>
       <div className="flex gap-2 print:hidden">
-        <Button 
-          onClick={handleDownloadPDF} 
-          disabled={isGeneratingPDF}
-          className="flex-1" 
-          size="icon"
-        >
+        <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
           <Download className="h-5 w-5" />
         </Button>
         <Button 
@@ -489,32 +377,42 @@ export const VoucherDisplay = ({
           </div>
         </div>
 
-        {/* Company Information Footer - Hidden in print */}
-        <div className="border-t-2 border-border pt-6 print:hidden">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg">
-            <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <div>
-                <p className="font-semibold text-foreground">Address:</p>
-                <p>Bratrancu Veverkovych 680</p>
-                <p>Pardubice, 530 02</p>
+        {/* Company Information Footer */}
+        <div className="border-t-2 border-border pt-6 print:pt-3">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg print:p-3 print:bg-muted/30">
+            {/* Web version - 3 columns */}
+            <div className="print:hidden">
+              <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-semibold text-foreground">Address:</p>
+                  <p>Bratrancu Veverkovych 680</p>
+                  <p>Pardubice, 530 02</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Contact:</p>
+                  <p>Tel.: +420 602 102 108</p>
+                  <p>Email: zajezdy@yarotravel.cz</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Website:</p>
+                  <p>www.yarotravel.cz</p>
+                  <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-foreground">Contact:</p>
-                <p>Tel.: +420 602 102 108</p>
-                <p>Email: zajezdy@yarotravel.cz</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Website:</p>
-                <p>www.yarotravel.cz</p>
-                <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
+            </div>
+            {/* Print version - compact */}
+            <div className="hidden print:block">
+              <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
+              <div className="text-[8px] text-muted-foreground">
+                <p>Bratrancu Veverkovych 680, Pardubice, 530 02 | Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz | www.yarotravel.cz</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Terms & Conditions - Hidden in print */}
-        <div className="mt-6 text-xs text-muted-foreground print:hidden">
+        {/* Terms & Conditions */}
+        <div className="mt-6 text-xs text-muted-foreground print:mt-2 print:text-[11px]">
           <p className="font-semibold text-foreground mb-1">Terms & Conditions:</p>
           <p>
             This voucher is valid for the services listed above. Please present this voucher
