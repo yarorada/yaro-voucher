@@ -377,42 +377,32 @@ export const VoucherDisplay = ({
           </div>
         </div>
 
-        {/* Company Information Footer */}
-        <div className="border-t-2 border-border pt-6 print:pt-3">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg print:p-3 print:bg-muted/30">
-            {/* Web version - 3 columns */}
-            <div className="print:hidden">
-              <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
-                <div>
-                  <p className="font-semibold text-foreground">Address:</p>
-                  <p>Bratrancu Veverkovych 680</p>
-                  <p>Pardubice, 530 02</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Contact:</p>
-                  <p>Tel.: +420 602 102 108</p>
-                  <p>Email: zajezdy@yarotravel.cz</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Website:</p>
-                  <p>www.yarotravel.cz</p>
-                  <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
-                </div>
+        {/* Company Information Footer - Hidden in print */}
+        <div className="border-t-2 border-border pt-6 print:hidden">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg">
+            <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+              <div>
+                <p className="font-semibold text-foreground">Address:</p>
+                <p>Bratrancu Veverkovych 680</p>
+                <p>Pardubice, 530 02</p>
               </div>
-            </div>
-            {/* Print version - compact */}
-            <div className="hidden print:block">
-              <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
-              <div className="text-[8px] text-muted-foreground">
-                <p>Bratrancu Veverkovych 680, Pardubice, 530 02 | Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz | www.yarotravel.cz</p>
+              <div>
+                <p className="font-semibold text-foreground">Contact:</p>
+                <p>Tel.: +420 602 102 108</p>
+                <p>Email: zajezdy@yarotravel.cz</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Website:</p>
+                <p>www.yarotravel.cz</p>
+                <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Terms & Conditions */}
-        <div className="mt-6 text-xs text-muted-foreground print:mt-2 print:text-[11px]">
+        {/* Terms & Conditions - Hidden in print */}
+        <div className="mt-6 text-xs text-muted-foreground print:hidden">
           <p className="font-semibold text-foreground mb-1">Terms & Conditions:</p>
           <p>
             This voucher is valid for the services listed above. Please present this voucher
