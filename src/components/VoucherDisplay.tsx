@@ -288,14 +288,14 @@ export const VoucherDisplay = ({
       </div>
 
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl h-[90vh]">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Náhled PDF - {voucherCode}</DialogTitle>
             <DialogDescription>
               Zkontrolujte vzhled PDF před stažením
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 min-h-0">
             {pdfPreviewUrl && (
               <iframe
                 src={pdfPreviewUrl}
