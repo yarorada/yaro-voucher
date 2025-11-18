@@ -57,11 +57,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending email for voucher:", voucherId, "by user:", user.id);
 
-    // Fetch voucher (RLS policies will handle access control)
+    // Fetch voucher and verify ownership
     const { data: voucher, error: voucherError } = await supabaseClient
       .from("vouchers")
       .select("*")
       .eq("id", voucherId)
+      .eq("user_id", user.id)
       .single();
 
     if (voucherError || !voucher) {
