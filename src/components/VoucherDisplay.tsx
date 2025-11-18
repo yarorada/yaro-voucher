@@ -358,17 +358,21 @@ export const VoucherDisplay = ({
           
           {/* Service Provider Contact */}
           {supplierName && (
-            <div className="bg-muted p-4 rounded-lg border-l-4 border-primary print:p-2 print:text-xs">
-              <h3 className="text-sm font-bold text-foreground mb-3 print:text-xs print:mb-1">Service Provider:</h3>
-              <div className="text-sm text-muted-foreground space-y-1 print:text-xs print:space-y-0">
-                <p>
-                  {supplierName}
-                  {supplierAddress && ` • ${supplierAddress}`}
-                  {supplierEmail && ` • ${supplierEmail}`}
-                </p>
-                {supplierNotes && (
-                  <p className="pt-1 border-t border-border/50 print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>
-                )}
+            <div className="mb-6 print:mb-3">
+              <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+                Service Provider
+              </h2>
+              <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">
+                    {supplierName}
+                    {supplierAddress && ` • ${supplierAddress}`}
+                    {supplierEmail && ` • ${supplierEmail}`}
+                  </p>
+                  {supplierNotes && (
+                    <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
