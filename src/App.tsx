@@ -32,7 +32,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen flex w-full">
       <AppSidebar />
       <div className="flex-1 flex flex-col">
-        <header className="border-b bg-background">
+        <header className="border-b bg-background print:hidden">
           <div className="h-12 flex items-center px-4">
             <SidebarTrigger />
           </div>
