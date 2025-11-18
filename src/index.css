@@ -136,19 +136,23 @@ All colors MUST be HSL.
 @layer components {
   /* Typography system - 3 levels */
   .text-heading-1 {
-    @apply text-3xl font-bold leading-tight;
+    @apply font-bold leading-tight;
+    font-size: 1.8125rem; /* 29px */
   }
   
   .text-heading-2 {
-    @apply text-2xl font-semibold leading-tight;
+    @apply font-semibold leading-tight;
+    font-size: 1.4375rem; /* 23px */
   }
   
   .text-title {
-    @apply text-base font-medium leading-normal;
+    @apply font-medium leading-normal;
+    font-size: 0.9375rem; /* 15px */
   }
   
   .text-body {
-    @apply text-sm leading-relaxed;
+    @apply leading-relaxed;
+    font-size: 0.8125rem; /* 13px */
   }
 }
 
