@@ -202,33 +202,68 @@ export const VoucherDisplay = ({
           }
           
           #voucher-content {
-            font-size: 0.875rem; /* Base font reduced by 2pt (14px -> 12px equivalent) */
+            font-size: 0.875rem;
+            padding: 0.875rem !important;
           }
           
           #voucher-content h1,
           #voucher-content h2,
           #voucher-content h3 {
             font-size: 0.9em;
+            margin-bottom: 0.5rem !important;
+            padding-left: 0.5rem !important;
           }
           
           #voucher-content .text-3xl {
-            font-size: 1.5rem !important; /* 30px -> 24px */
+            font-size: 1.5rem !important;
           }
           
           #voucher-content .text-2xl {
-            font-size: 1.25rem !important; /* 24px -> 20px */
+            font-size: 1.25rem !important;
           }
           
           #voucher-content .text-lg {
-            font-size: 0.9375rem !important; /* 18px -> 15px */
+            font-size: 0.9375rem !important;
           }
           
           #voucher-content .text-sm {
-            font-size: 0.75rem !important; /* 14px -> 12px */
+            font-size: 0.75rem !important;
           }
           
           #voucher-content .text-xs {
-            font-size: 0.625rem !important; /* 12px -> 10px */
+            font-size: 0.625rem !important;
+          }
+          
+          #voucher-content > div {
+            padding-bottom: 0.75rem !important;
+            margin-bottom: 0.75rem !important;
+          }
+          
+          #voucher-content .bg-muted,
+          #voucher-content .bg-gradient-to-r {
+            padding: 0.5rem !important;
+          }
+          
+          #voucher-content table th,
+          #voucher-content table td {
+            padding: 0.25rem !important;
+          }
+          
+          #voucher-content img {
+            height: 2.5rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          
+          #voucher-content .grid {
+            gap: 0.5rem !important;
+          }
+          
+          #voucher-content ul {
+            margin: 0.25rem 0 !important;
+          }
+          
+          #voucher-content ul li {
+            margin-bottom: 0.25rem !important;
           }
         `}
       </style>
