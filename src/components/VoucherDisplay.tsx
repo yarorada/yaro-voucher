@@ -200,6 +200,36 @@ export const VoucherDisplay = ({
               margin-top: 1cm;
             }
           }
+          
+          #voucher-content {
+            font-size: 0.875rem; /* Base font reduced by 2pt (14px -> 12px equivalent) */
+          }
+          
+          #voucher-content h1,
+          #voucher-content h2,
+          #voucher-content h3 {
+            font-size: 0.9em;
+          }
+          
+          #voucher-content .text-3xl {
+            font-size: 1.5rem !important; /* 30px -> 24px */
+          }
+          
+          #voucher-content .text-2xl {
+            font-size: 1.25rem !important; /* 24px -> 20px */
+          }
+          
+          #voucher-content .text-lg {
+            font-size: 0.9375rem !important; /* 18px -> 15px */
+          }
+          
+          #voucher-content .text-sm {
+            font-size: 0.75rem !important; /* 14px -> 12px */
+          }
+          
+          #voucher-content .text-xs {
+            font-size: 0.625rem !important; /* 12px -> 10px */
+          }
         `}
       </style>
       <div className="flex gap-2 print:hidden">
