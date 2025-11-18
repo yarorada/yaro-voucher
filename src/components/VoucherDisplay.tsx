@@ -126,6 +126,7 @@ export const VoucherDisplay = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
   
   const getPdfOptions = () => ({
     margin: [5, 5, 5, 5] as [number, number, number, number],
@@ -150,12 +151,22 @@ export const VoucherDisplay = ({
 
   const handlePreviewPDF = async () => {
     setIsGeneratingPDF(true);
+    setGenerationProgress(0);
+    
     try {
       const element = document.getElementById('voucher-content');
       if (!element) {
         toast.error("Nepodařilo se najít obsah voucheru");
         return;
       }
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setGenerationProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 200);
 
       const opt = getPdfOptions();
       
@@ -164,6 +175,9 @@ export const VoucherDisplay = ({
         .set(opt)
         .from(element)
         .outputPdf('blob');
+      
+      clearInterval(progressInterval);
+      setGenerationProgress(100);
       
       // Clean up previous URL if exists
       if (pdfPreviewUrl) {
@@ -179,17 +193,28 @@ export const VoucherDisplay = ({
       toast.error("Chyba při generování náhledu PDF");
     } finally {
       setIsGeneratingPDF(false);
+      setGenerationProgress(0);
     }
   };
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
+    setGenerationProgress(0);
+    
     try {
       const element = document.getElementById('voucher-content');
       if (!element) {
         toast.error("Nepodařilo se najít obsah voucheru");
         return;
       }
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setGenerationProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 200);
 
       const opt = getPdfOptions();
       
@@ -198,6 +223,9 @@ export const VoucherDisplay = ({
         .from(element)
         .save();
         
+      clearInterval(progressInterval);
+      setGenerationProgress(100);
+      
       toast.success("PDF úspěšně staženo");
       setShowPreview(false);
     } catch (error) {
@@ -205,6 +233,7 @@ export const VoucherDisplay = ({
       toast.error("Chyba při stahování PDF");
     } finally {
       setIsGeneratingPDF(false);
+      setGenerationProgress(0);
     }
   };
 
@@ -289,6 +318,25 @@ export const VoucherDisplay = ({
           <Mail className="h-5 w-5" />
         </Button>
       </div>
+
+      {isGeneratingPDF && (
+        <div className="print:hidden bg-card border rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">Generuji PDF...</span>
+                <span className="text-sm text-muted-foreground">{generationProgress}%</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-primary h-full transition-all duration-300 ease-out"
+                  style={{ width: `${generationProgress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
