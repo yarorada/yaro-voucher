@@ -5,6 +5,7 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import html2pdf from "html2pdf.js";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -115,9 +116,33 @@ export const VoucherDisplay = ({
   voucherId,
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
-  const handleDownloadPDF = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const element = document.getElementById('voucher-content');
+      if (!element) {
+        toast.error('Chyba: Voucher nebyl nalezen');
+        return;
+      }
+
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `voucher-${voucherCode}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      toast.success('PDF úspěšně stažen');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Chyba při generování PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleSendEmail = async () => {
@@ -178,7 +203,12 @@ export const VoucherDisplay = ({
         `}
       </style>
       <div className="flex gap-2 print:hidden">
-        <Button onClick={handleDownloadPDF} className="flex-1" size="icon">
+        <Button 
+          onClick={handleDownloadPDF} 
+          className="flex-1" 
+          size="icon"
+          disabled={isGeneratingPdf}
+        >
           <Download className="h-5 w-5" />
         </Button>
         <Button 
