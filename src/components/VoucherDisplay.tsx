@@ -460,7 +460,7 @@ export const VoucherDisplay = ({
             <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Flight Details
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
               <ul className="space-y-3 print:space-y-0.5">
                 {flights.map((flight, index) => {
                   const fromCity = flight.fromCity || getCityName(flight.fromIata);
@@ -502,7 +502,7 @@ export const VoucherDisplay = ({
             <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Confirmed Tee Times
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-1 print:text-[11px]">
+            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
               <ul className="space-y-2 print:space-y-0">
                 {teeTimes.map((teeTime, index) => (
                   <li key={index} className="text-muted-foreground">
