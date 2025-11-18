@@ -1,11 +1,21 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Mail } from "lucide-react";
+import { Download, Mail, Settings } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import html2pdf from "html2pdf.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -117,6 +127,8 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [fontSize, setFontSize] = useState(14); // Base font size in px
+  const [spacing, setSpacing] = useState(12); // Spacing/padding in px
   
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -191,6 +203,9 @@ export const VoucherDisplay = ({
     return `${day}.${month}.${year}`;
   };
 
+  const baseFontRem = fontSize / 16; // Convert px to rem
+  const spacingRem = spacing / 16;
+
   return (
     <div className="space-y-4">
       <style>
@@ -202,72 +217,109 @@ export const VoucherDisplay = ({
           }
           
           #voucher-content {
-            font-size: 0.875rem;
-            padding: 0.875rem !important;
+            font-size: ${baseFontRem}rem;
+            padding: ${spacingRem}rem !important;
           }
           
           #voucher-content h1,
           #voucher-content h2,
           #voucher-content h3 {
             font-size: 0.9em;
-            margin-bottom: 0.5rem !important;
-            padding-left: 0.5rem !important;
+            margin-bottom: ${spacingRem * 0.5}rem !important;
+            padding-left: ${spacingRem * 0.5}rem !important;
           }
           
           #voucher-content .text-3xl {
-            font-size: 1.5rem !important;
+            font-size: ${baseFontRem * 1.71}rem !important;
           }
           
           #voucher-content .text-2xl {
-            font-size: 1.25rem !important;
+            font-size: ${baseFontRem * 1.43}rem !important;
           }
           
           #voucher-content .text-lg {
-            font-size: 0.9375rem !important;
+            font-size: ${baseFontRem * 1.07}rem !important;
           }
           
           #voucher-content .text-sm {
-            font-size: 0.75rem !important;
+            font-size: ${baseFontRem * 0.86}rem !important;
           }
           
           #voucher-content .text-xs {
-            font-size: 0.625rem !important;
+            font-size: ${baseFontRem * 0.71}rem !important;
           }
           
           #voucher-content > div {
-            padding-bottom: 0.75rem !important;
-            margin-bottom: 0.75rem !important;
+            padding-bottom: ${spacingRem * 0.75}rem !important;
+            margin-bottom: ${spacingRem * 0.75}rem !important;
           }
           
           #voucher-content .bg-muted,
           #voucher-content .bg-gradient-to-r {
-            padding: 0.5rem !important;
+            padding: ${spacingRem * 0.5}rem !important;
           }
           
           #voucher-content table th,
           #voucher-content table td {
-            padding: 0.25rem !important;
+            padding: ${spacingRem * 0.25}rem !important;
           }
           
           #voucher-content img {
-            height: 2.5rem !important;
-            margin-bottom: 0.25rem !important;
+            height: ${spacingRem * 2.5}rem !important;
+            margin-bottom: ${spacingRem * 0.25}rem !important;
           }
           
           #voucher-content .grid {
-            gap: 0.5rem !important;
+            gap: ${spacingRem * 0.5}rem !important;
           }
           
           #voucher-content ul {
-            margin: 0.25rem 0 !important;
+            margin: ${spacingRem * 0.25}rem 0 !important;
           }
           
           #voucher-content ul li {
-            margin-bottom: 0.25rem !important;
+            margin-bottom: ${spacingRem * 0.25}rem !important;
           }
         `}
       </style>
       <div className="flex gap-2 print:hidden">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nastavení PDF</DialogTitle>
+              <DialogDescription>
+                Upravte velikost fontu a mezer před exportem PDF
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label>Velikost fontu: {fontSize}px</Label>
+                <Slider
+                  value={[fontSize]}
+                  onValueChange={([value]) => setFontSize(value)}
+                  min={10}
+                  max={20}
+                  step={1}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Mezery a padding: {spacing}px</Label>
+                <Slider
+                  value={[spacing]}
+                  onValueChange={([value]) => setSpacing(value)}
+                  min={6}
+                  max={20}
+                  step={1}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
         <Button 
           onClick={handleDownloadPDF} 
           className="flex-1" 
