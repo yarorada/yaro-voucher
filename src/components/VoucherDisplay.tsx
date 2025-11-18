@@ -255,7 +255,16 @@ export const VoucherDisplay = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {isGeneratingPDF && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card p-6 rounded-lg shadow-lg flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-lg font-semibold">Generuji PDF náhled...</p>
+            <p className="text-sm text-muted-foreground">Prosím čekejte</p>
+          </div>
+        </div>
+      )}
       <style>
         {`
           @media print {
