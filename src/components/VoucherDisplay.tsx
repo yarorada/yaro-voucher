@@ -447,11 +447,11 @@ export const VoucherDisplay = ({
           <table className="w-full border-collapse" style={{ fontSize: '10px' }}>
             <thead>
               <tr className="bg-primary text-primary-foreground">
-                <th className="text-left" style={{ padding: '4px 6px' }}>PAX</th>
-                <th className="text-left" style={{ padding: '4px 6px' }}>Qtd.</th>
+                <th className="text-center" style={{ padding: '4px 6px' }}>PAX</th>
+                <th className="text-center" style={{ padding: '4px 6px' }}>Qtd.</th>
                 <th className="text-left" style={{ padding: '4px 6px' }}>Service</th>
-                <th className="text-left" style={{ padding: '4px 6px' }}>From</th>
-                <th className="text-left" style={{ padding: '4px 6px' }}>To</th>
+                <th className="text-center" style={{ padding: '4px 6px' }}>From</th>
+                <th className="text-center" style={{ padding: '4px 6px' }}>To</th>
               </tr>
             </thead>
             <tbody>
@@ -460,11 +460,11 @@ export const VoucherDisplay = ({
                   key={index} 
                   className={index % 2 === 0 ? "bg-muted" : "bg-card"}
                 >
-                  <td style={{ padding: '3px 6px' }}>{service.pax || "—"}</td>
-                  <td style={{ padding: '3px 6px' }}>{service.qty || "—"}</td>
+                  <td className="text-center" style={{ padding: '3px 6px' }}>{service.pax || "—"}</td>
+                  <td className="text-center" style={{ padding: '3px 6px' }}>{service.qty || "—"}</td>
                   <td className="font-medium" style={{ padding: '3px 6px' }}>{service.name}</td>
-                  <td style={{ padding: '3px 6px' }}>{formatServiceDate(service.dateFrom)}</td>
-                  <td style={{ padding: '3px 6px' }}>{formatServiceDate(service.dateTo)}</td>
+                  <td className="text-center" style={{ padding: '3px 6px' }}>{formatServiceDate(service.dateFrom)}</td>
+                  <td className="text-center" style={{ padding: '3px 6px' }}>{formatServiceDate(service.dateTo)}</td>
                 </tr>
               ))}
             </tbody>
@@ -548,10 +548,13 @@ export const VoucherDisplay = ({
 
         {/* Company Information Footer */}
         <div className="border-t border-border mt-3 pt-3">
-          <div className="text-center" style={{ fontSize: '9px' }}>
-            <p className="font-bold">YARO Travel</p>
-            <p className="text-muted-foreground" style={{ lineHeight: '1.3' }}>
-              Bratrancu Veverkovych 680, Pardubice, 530 02 | Tel.: +420 602 102 108 | Email: zajezdy@yarotravel.cz | www.yarotravel.cz
+          <div className="bg-muted rounded" style={{ padding: '8px', fontSize: '9px' }}>
+            <p className="font-bold text-center">YARO Travel</p>
+            <p className="text-muted-foreground text-center" style={{ lineHeight: '1.4' }}>
+              Bratrancu Veverkovych 680, Pardubice, 530 02<br/>
+              Tel.: <span className="font-semibold">+420 602 102 108</span> | 
+              Email: <span className="font-semibold">zajezdy@yarotravel.cz</span> | 
+              Web: <span className="font-semibold">www.yarotravel.cz</span>
             </p>
           </div>
         </div>
