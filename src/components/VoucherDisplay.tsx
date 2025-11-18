@@ -143,8 +143,22 @@ export const VoucherDisplay = ({
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          allowTaint: true,
+          letterRendering: true,
+          onclone: (clonedDoc: Document) => {
+            const clonedElement = clonedDoc.getElementById('voucher-content');
+            if (clonedElement) {
+              clonedElement.style.backgroundColor = '#ffffff';
+            }
+          }
+        },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(element).save();
@@ -219,7 +233,52 @@ export const VoucherDisplay = ({
           #voucher-content {
             font-size: ${baseFontRem}rem;
             padding: ${spacingRem}rem !important;
+            background-color: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
+          
+          #voucher-content .bg-muted {
+            background-color: hsl(var(--muted)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .border-accent {
+            border-color: hsl(var(--accent)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .border-primary {
+            border-color: hsl(var(--primary)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .text-primary {
+            color: hsl(var(--primary)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .text-foreground {
+            color: hsl(var(--foreground)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .text-muted-foreground {
+            color: hsl(var(--muted-foreground)) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          #voucher-content .bg-gradient-to-r {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
           
           #voucher-content h1,
           #voucher-content h2,
@@ -252,6 +311,8 @@ export const VoucherDisplay = ({
           #voucher-content > div {
             padding-bottom: ${spacingRem * 0.75}rem !important;
             margin-bottom: ${spacingRem * 0.75}rem !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           
           #voucher-content .bg-muted,
