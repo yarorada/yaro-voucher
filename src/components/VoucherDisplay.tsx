@@ -154,8 +154,42 @@ export const VoucherDisplay = ({
           onclone: (clonedDoc: Document) => {
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
+              // Force light theme colors for PDF export
               clonedElement.style.backgroundColor = '#ffffff';
-              // Pro PDF vertikálně vycentrujeme obsah na stránce, aniž bychom ovlivnili web náhled
+              clonedElement.style.color = '#000000';
+              
+              // Apply light theme to all child elements
+              const bgMuted = clonedElement.querySelectorAll('.bg-muted');
+              bgMuted.forEach((el) => {
+                (el as HTMLElement).style.backgroundColor = '#f5f5f5';
+              });
+              
+              const textForeground = clonedElement.querySelectorAll('.text-foreground');
+              textForeground.forEach((el) => {
+                (el as HTMLElement).style.color = '#000000';
+              });
+              
+              const textMuted = clonedElement.querySelectorAll('.text-muted-foreground');
+              textMuted.forEach((el) => {
+                (el as HTMLElement).style.color = '#666666';
+              });
+              
+              const textPrimary = clonedElement.querySelectorAll('.text-primary');
+              textPrimary.forEach((el) => {
+                (el as HTMLElement).style.color = '#0066cc';
+              });
+              
+              const borderPrimary = clonedElement.querySelectorAll('.border-primary');
+              borderPrimary.forEach((el) => {
+                (el as HTMLElement).style.borderColor = '#0066cc';
+              });
+              
+              const borderAccent = clonedElement.querySelectorAll('.border-accent');
+              borderAccent.forEach((el) => {
+                (el as HTMLElement).style.borderColor = '#00aaff';
+              });
+              
+              // Vertically center content on page
               clonedElement.style.display = 'flex';
               clonedElement.style.flexDirection = 'column';
               clonedElement.style.justifyContent = 'center';
@@ -244,6 +278,40 @@ export const VoucherDisplay = ({
             padding: ${spacingRem}rem !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+
+          /* PDF Preview Mode - Force Light Theme */
+          #voucher-content.pdf-preview-mode {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .bg-muted {
+            background-color: #f5f5f5 !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .bg-card {
+            background-color: #ffffff !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .text-foreground {
+            color: #000000 !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .text-muted-foreground {
+            color: #666666 !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .text-primary {
+            color: #0066cc !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .border-primary {
+            border-color: #0066cc !important;
+          }
+          
+          #voucher-content.pdf-preview-mode .border-accent {
+            border-color: #00aaff !important;
           }
 
           #voucher-content .bg-muted {
@@ -444,11 +512,7 @@ export const VoucherDisplay = ({
 
       <Card
         id="voucher-content" 
-        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm"
-        style={previewMode === 'pdf' ? { 
-          backgroundColor: '#ffffff',
-          color: '#000000'
-        } : undefined}
+        className={`p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm ${previewMode === 'pdf' ? 'pdf-preview-mode' : ''}`}
       >
         {/* Header */}
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
