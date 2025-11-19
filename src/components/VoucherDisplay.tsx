@@ -241,11 +241,10 @@ export const VoucherDisplay = ({
           #voucher-content {
             font-size: ${baseFontRem}rem;
             padding: ${spacingRem}rem !important;
-            background-color: white !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          
+
           #voucher-content .bg-muted {
             background-color: hsl(var(--muted)) !important;
             -webkit-print-color-adjust: exact !important;
