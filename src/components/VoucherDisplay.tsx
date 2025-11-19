@@ -140,7 +140,7 @@ export const VoucherDisplay = ({
       }
 
       const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
+        margin: [20, 15, 20, 15] as [number, number, number, number],
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
@@ -154,14 +154,14 @@ export const VoucherDisplay = ({
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
               clonedElement.style.backgroundColor = '#ffffff';
-              // Pro PDF vertikálně vycentrujeme obsah na stránce, aniž bychom ovlivnili web náhled
               clonedElement.style.display = 'flex';
               clonedElement.style.flexDirection = 'column';
               clonedElement.style.justifyContent = 'center';
-              clonedElement.style.minHeight = '260mm';
+              clonedElement.style.alignItems = 'stretch';
+              clonedElement.style.minHeight = '240mm';
               clonedElement.style.margin = '0 auto';
-              clonedElement.style.paddingTop = `${spacingRem * 2}rem`;
-              clonedElement.style.paddingBottom = `${spacingRem * 2}rem`;
+              clonedElement.style.paddingTop = `${spacingRem}rem`;
+              clonedElement.style.paddingBottom = `${spacingRem}rem`;
             }
           }
         },
@@ -234,7 +234,7 @@ export const VoucherDisplay = ({
         {`
           @media print {
             @page {
-              margin-top: 1cm;
+              margin: 1cm;
             }
           }
           
@@ -316,14 +316,6 @@ export const VoucherDisplay = ({
             font-size: ${baseFontRem * 0.71}rem !important;
           }
           
-          #voucher-content {
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            padding-top: ${spacingRem * 2}rem !important;
-            padding-bottom: ${spacingRem * 2}rem !important;
-          }
           
           #voucher-content > div {
             padding-bottom: ${spacingRem * 0.75}rem !important;
