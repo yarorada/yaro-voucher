@@ -313,6 +313,18 @@ export const VoucherDisplay = ({
             margin-bottom: ${spacingRem * 0.75}rem !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+          }
+          
+          #voucher-content .grid {
+            align-items: center !important;
+          }
+          
+          #voucher-content p,
+          #voucher-content div {
+            line-height: 1.6 !important;
           }
           
           #voucher-content .bg-muted,
