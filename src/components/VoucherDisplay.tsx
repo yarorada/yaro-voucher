@@ -154,6 +154,14 @@ export const VoucherDisplay = ({
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
               clonedElement.style.backgroundColor = '#ffffff';
+              // Pro PDF vertikálně vycentrujeme obsah na stránce, aniž bychom ovlivnili web náhled
+              clonedElement.style.display = 'flex';
+              clonedElement.style.flexDirection = 'column';
+              clonedElement.style.justifyContent = 'center';
+              clonedElement.style.minHeight = '260mm';
+              clonedElement.style.margin = '0 auto';
+              clonedElement.style.paddingTop = `${spacingRem * 2}rem`;
+              clonedElement.style.paddingBottom = `${spacingRem * 2}rem`;
             }
           }
         },
