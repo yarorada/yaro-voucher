@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Mail, Settings } from "lucide-react";
+import { Download, Mail, Settings, Monitor, FileText } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -129,6 +129,7 @@ export const VoucherDisplay = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [fontSize, setFontSize] = useState(14); // Base font size in px
   const [spacing, setSpacing] = useState(12); // Spacing/padding in px
+  const [previewMode, setPreviewMode] = useState<'web' | 'pdf'>('web');
   
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -402,6 +403,26 @@ export const VoucherDisplay = ({
             </div>
           </DialogContent>
         </Dialog>
+        <div className="flex items-center rounded-md border border-border bg-background p-1">
+          <Button
+            variant={previewMode === 'web' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setPreviewMode('web')}
+            className="gap-1.5 h-8"
+          >
+            <Monitor className="h-3.5 w-3.5" />
+            <span className="text-xs">Web</span>
+          </Button>
+          <Button
+            variant={previewMode === 'pdf' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setPreviewMode('pdf')}
+            className="gap-1.5 h-8"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span className="text-xs">PDF</span>
+          </Button>
+        </div>
         <Button 
           onClick={handleDownloadPDF} 
           className="flex-1" 
@@ -424,6 +445,10 @@ export const VoucherDisplay = ({
       <Card
         id="voucher-content" 
         className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm"
+        style={previewMode === 'pdf' ? { 
+          backgroundColor: '#ffffff',
+          color: '#000000'
+        } : undefined}
       >
         {/* Header */}
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
