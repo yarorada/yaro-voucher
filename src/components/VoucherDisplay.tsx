@@ -308,18 +308,20 @@ export const VoucherDisplay = ({
             font-size: ${baseFontRem * 0.71}rem !important;
           }
           
+          #voucher-content {
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            padding-top: ${spacingRem * 2}rem !important;
+            padding-bottom: ${spacingRem * 2}rem !important;
+          }
+          
           #voucher-content > div {
             padding-bottom: ${spacingRem * 0.75}rem !important;
             margin-bottom: ${spacingRem * 0.75}rem !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-          }
-          
-          #voucher-content .grid {
-            align-items: center !important;
           }
           
           #voucher-content p,
