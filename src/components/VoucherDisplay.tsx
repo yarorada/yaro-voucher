@@ -215,6 +215,7 @@ export const VoucherDisplay = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [fontSize, setFontSize] = useState(14); // Base font size in px
   const [spacing, setSpacing] = useState(12); // Spacing/padding in px
+  const [logoSize, setLogoSize] = useState(144); // Logo size in px
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -504,6 +505,10 @@ export const VoucherDisplay = ({
                 <Label>Mezery a padding: {spacing}px</Label>
                 <Slider value={[spacing]} onValueChange={([value]) => setSpacing(value)} min={6} max={20} step={1} />
               </div>
+              <div className="space-y-2">
+                <Label>Velikost loga: {logoSize}px</Label>
+                <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -520,7 +525,12 @@ export const VoucherDisplay = ({
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3 mx-0 px-0">
           <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
-              <img src={yaroLogo} alt="YARO Travel" className="h-144 mb-2 print:h-90 print:mb-1" />
+              <img 
+                src={yaroLogo} 
+                alt="YARO Travel" 
+                style={{ height: `${logoSize}px` }}
+                className="mb-2 print:mb-1" 
+              />
               <p className="text-sm text-muted-foreground print:text-xs">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
