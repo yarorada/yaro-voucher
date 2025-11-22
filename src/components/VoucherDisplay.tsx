@@ -520,7 +520,7 @@ export const VoucherDisplay = ({
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3 mx-0 px-0">
           <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
-              <img src={yaroLogo} alt="YARO Travel" className="h-48 mb-2 print:h-30 print:mb-1" />
+              <img src={yaroLogo} alt="YARO Travel" className="h-144 mb-2 print:h-90 print:mb-1" />
               <p className="text-sm text-muted-foreground print:text-xs">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
