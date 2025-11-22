@@ -178,13 +178,13 @@ export const VoucherDisplay = ({
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
-          scale: 1.5,
+          scale: 1.4,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
           allowTaint: true,
           letterRendering: true,
-          windowHeight: 1800,
+          windowHeight: 1600,
           onclone: (clonedDoc: Document) => {
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
@@ -223,11 +223,11 @@ export const VoucherDisplay = ({
                 (el as HTMLElement).style.borderColor = '#00aaff';
               });
               
-              // Remove min-height to allow natural content flow
+              // Compact layout for single page fit
               clonedElement.style.minHeight = 'auto';
               clonedElement.style.display = 'block';
-              clonedElement.style.paddingTop = `${spacingRem}rem`;
-              clonedElement.style.paddingBottom = `${spacingRem}rem`;
+              clonedElement.style.padding = `${spacingRem * 0.8}rem`;
+              clonedElement.style.maxHeight = '260mm';
             }
           }
         },
