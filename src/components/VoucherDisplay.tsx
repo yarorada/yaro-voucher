@@ -456,7 +456,7 @@ export const VoucherDisplay = ({
           }
           
           #voucher-content img {
-            height: ${spacingRem * 2.5}rem !important;
+            height: ${spacingRem * 5}rem !important;
             margin-bottom: ${spacingRem * 0.25}rem !important;
           }
           
@@ -584,7 +584,7 @@ export const VoucherDisplay = ({
         <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
           <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
-              <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2 print:h-10 print:mb-1" />
+              <img src={yaroLogo} alt="YARO Travel" className="h-32 mb-2 print:h-20 print:mb-1" />
               <p className="text-sm text-muted-foreground print:text-xs">Your Journey, Our Passion</p>
             </div>
             <div className="text-right">
