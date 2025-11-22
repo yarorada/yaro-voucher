@@ -145,18 +145,17 @@ export const VoucherDisplay = ({
     contentScore += hotelName ? 1 : 0;
     contentScore += supplierNotes ? 2 : 0;
     
-    // Base scale: 14px font, 12px spacing
-    // Reduce as content increases
-    if (contentScore <= 15) {
-      return { fontSize: 14, spacing: 12 };
-    } else if (contentScore <= 25) {
+    // More aggressive scaling for PDF fit
+    if (contentScore <= 12) {
       return { fontSize: 13, spacing: 10 };
-    } else if (contentScore <= 35) {
-      return { fontSize: 12, spacing: 9 };
-    } else if (contentScore <= 45) {
-      return { fontSize: 11, spacing: 8 };
+    } else if (contentScore <= 20) {
+      return { fontSize: 11.5, spacing: 8 };
+    } else if (contentScore <= 30) {
+      return { fontSize: 10.5, spacing: 7 };
+    } else if (contentScore <= 40) {
+      return { fontSize: 9.5, spacing: 6 };
     } else {
-      return { fontSize: 10, spacing: 7 };
+      return { fontSize: 9, spacing: 5.5 };
     }
   };
   
@@ -178,13 +177,13 @@ export const VoucherDisplay = ({
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
-          scale: 1.4,
+          scale: 1.3,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
           allowTaint: true,
           letterRendering: true,
-          windowHeight: 1600,
+          windowHeight: 2000,
           onclone: (clonedDoc: Document) => {
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
@@ -223,11 +222,23 @@ export const VoucherDisplay = ({
                 (el as HTMLElement).style.borderColor = '#00aaff';
               });
               
-              // Compact layout for single page fit
+              // Compact single-page layout
               clonedElement.style.minHeight = 'auto';
+              clonedElement.style.height = 'auto';
               clonedElement.style.display = 'block';
-              clonedElement.style.padding = `${spacingRem * 0.8}rem`;
-              clonedElement.style.maxHeight = '260mm';
+              clonedElement.style.padding = `${spacingRem * 0.6}rem`;
+              clonedElement.style.maxHeight = 'none';
+              
+              // Reduce all spacing
+              const allDivs = clonedElement.querySelectorAll('div');
+              allDivs.forEach((div) => {
+                const el = div as HTMLElement;
+                const currentPadding = window.getComputedStyle(el).paddingBottom;
+                if (currentPadding && parseFloat(currentPadding) > 0) {
+                  el.style.paddingBottom = `${parseFloat(currentPadding) * 0.6}px`;
+                  el.style.marginBottom = `${parseFloat(currentPadding) * 0.6}px`;
+                }
+              });
             }
           }
         },
@@ -416,24 +427,22 @@ export const VoucherDisplay = ({
           }
           
           #voucher-content {
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            padding-top: ${spacingRem * 2}rem !important;
-            padding-bottom: ${spacingRem * 2}rem !important;
+            min-height: auto !important;
+            display: block !important;
+            padding-top: ${spacingRem}rem !important;
+            padding-bottom: ${spacingRem}rem !important;
           }
           
           #voucher-content > div {
-            padding-bottom: ${spacingRem * 0.75}rem !important;
-            margin-bottom: ${spacingRem * 0.75}rem !important;
+            padding-bottom: ${spacingRem * 0.5}rem !important;
+            margin-bottom: ${spacingRem * 0.5}rem !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
           
           #voucher-content p,
           #voucher-content div {
-            line-height: 1.6 !important;
+            line-height: 1.4 !important;
           }
           
           #voucher-content .bg-muted,
