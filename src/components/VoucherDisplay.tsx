@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -127,9 +128,41 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [fontSize, setFontSize] = useState(14); // Base font size in px
-  const [spacing, setSpacing] = useState(12); // Spacing/padding in px
+  const [autoScale, setAutoScale] = useState(true);
+  const [manualFontSize, setManualFontSize] = useState(14); // Base font size in px
+  const [manualSpacing, setManualSpacing] = useState(12); // Spacing/padding in px
   const [previewMode, setPreviewMode] = useState<'web' | 'pdf'>('web');
+  
+  // Calculate optimal scaling based on content
+  const calculateAutoScale = () => {
+    let contentScore = 0;
+    
+    // Count content items
+    contentScore += services.length * 3; // Services are most dense
+    contentScore += (flights?.length || 0) * 2;
+    contentScore += (teeTimes?.length || 0) * 2;
+    contentScore += (otherTravelers?.length || 0) * 0.5;
+    contentScore += hotelName ? 1 : 0;
+    contentScore += supplierNotes ? 2 : 0;
+    
+    // Base scale: 14px font, 12px spacing
+    // Reduce as content increases
+    if (contentScore <= 15) {
+      return { fontSize: 14, spacing: 12 };
+    } else if (contentScore <= 25) {
+      return { fontSize: 13, spacing: 10 };
+    } else if (contentScore <= 35) {
+      return { fontSize: 12, spacing: 9 };
+    } else if (contentScore <= 45) {
+      return { fontSize: 11, spacing: 8 };
+    } else {
+      return { fontSize: 10, spacing: 7 };
+    }
+  };
+  
+  const autoScaleValues = calculateAutoScale();
+  const fontSize = autoScale ? autoScaleValues.fontSize : manualFontSize;
+  const spacing = autoScale ? autoScaleValues.spacing : manualSpacing;
   
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -446,26 +479,52 @@ export const VoucherDisplay = ({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label>Velikost fontu: {fontSize}px</Label>
-                <Slider
-                  value={[fontSize]}
-                  onValueChange={([value]) => setFontSize(value)}
-                  min={10}
-                  max={20}
-                  step={1}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Automatické škálování</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Přizpůsobit velikost podle množství obsahu
+                  </p>
+                </div>
+                <Switch
+                  checked={autoScale}
+                  onCheckedChange={setAutoScale}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Mezery a padding: {spacing}px</Label>
-                <Slider
-                  value={[spacing]}
-                  onValueChange={([value]) => setSpacing(value)}
-                  min={6}
-                  max={20}
-                  step={1}
-                />
-              </div>
+              {!autoScale && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Velikost fontu: {manualFontSize}px</Label>
+                    <Slider
+                      value={[manualFontSize]}
+                      onValueChange={([value]) => setManualFontSize(value)}
+                      min={10}
+                      max={20}
+                      step={1}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mezery a padding: {manualSpacing}px</Label>
+                    <Slider
+                      value={[manualSpacing]}
+                      onValueChange={([value]) => setManualSpacing(value)}
+                      min={6}
+                      max={20}
+                      step={1}
+                    />
+                  </div>
+                </>
+              )}
+              {autoScale && (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    Aktuální automatické nastavení:
+                  </p>
+                  <p className="text-sm font-medium mt-1">
+                    Font: {fontSize}px, Mezery: {spacing}px
+                  </p>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
