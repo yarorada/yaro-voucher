@@ -471,7 +471,6 @@ export const VoucherDisplay = ({
               <p className="text-sm text-muted-foreground mt-1 print:text-xs print:mt-0">Travel Voucher</p>
             </div>
           </div>
-          
           {/* Service Provider Contact */}
           {supplierName && (
             <div className="mb-6 print:mb-3">
