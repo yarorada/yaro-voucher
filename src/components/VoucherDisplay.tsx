@@ -452,6 +452,11 @@ export const VoucherDisplay = ({
           #voucher-content p,
           #voucher-content div {
             line-height: 1.6 !important;
+            vertical-align: middle !important;
+          }
+          
+          #voucher-content * {
+            vertical-align: middle !important;
           }
           
           #voucher-content .bg-muted,
