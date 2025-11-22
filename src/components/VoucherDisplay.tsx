@@ -174,7 +174,7 @@ export const VoucherDisplay = ({
       }
 
       const opt = {
-        margin: [8, 8, 8, 8] as [number, number, number, number],
+        margin: [15, 8, 8, 8] as [number, number, number, number], // top: 1.5cm, others: 0.8cm
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
