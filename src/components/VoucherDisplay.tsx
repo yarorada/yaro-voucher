@@ -6,58 +6,148 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import html2pdf from "html2pdf.js";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
-  "PRG": "Praha", "BRQ": "Brno", "OSR": "Ostrava", "PED": "Pardubice",
-  "IST": "Istanbul", "SAW": "Istanbul", "AYT": "Antalya", "DLM": "Dalaman",
-  "BJV": "Bodrum", "ESB": "Ankara", "ADB": "Izmir", "GZT": "Gaziantep",
-  "ASR": "Kayseri", "TZX": "Trabzon", "LCA": "Larnaca", "PFO": "Paphos",
-  "ECN": "Ercan", "ATH": "Athens", "HER": "Heraklion", "RHO": "Rhodes",
-  "SKG": "Thessaloniki", "CFU": "Corfu", "CHQ": "Chania", "JMK": "Mykonos",
-  "JTR": "Santorini", "KGS": "Kos", "ZTH": "Zakynthos", "DXB": "Dubai",
-  "AUH": "Abu Dhabi", "DOH": "Doha", "BEY": "Beirut", "TLV": "Tel Aviv",
-  "AMM": "Amman", "CAI": "Cairo", "SSH": "Sharm El Sheikh", "HRG": "Hurghada",
-  "RMF": "Marsa Alam", "VIE": "Vienna", "MUC": "Munich", "FRA": "Frankfurt",
-  "BER": "Berlin", "HAM": "Hamburg", "DUS": "Düsseldorf", "STR": "Stuttgart",
-  "CGN": "Cologne", "ZRH": "Zurich", "GVA": "Geneva", "BUD": "Budapest",
-  "WAW": "Warsaw", "KRK": "Krakow", "BTS": "Bratislava", "CDG": "Paris",
-  "ORY": "Paris", "LHR": "London", "LGW": "London", "STN": "London",
-  "LTN": "London", "MAN": "Manchester", "EDI": "Edinburgh", "AMS": "Amsterdam",
-  "BRU": "Brussels", "LUX": "Luxembourg", "FCO": "Rome", "MXP": "Milan",
-  "LIN": "Milan", "VCE": "Venice", "NAP": "Naples", "PSA": "Pisa",
-  "BCN": "Barcelona", "MAD": "Madrid", "AGP": "Malaga", "PMI": "Palma de Mallorca",
-  "VLC": "Valencia", "SVQ": "Seville", "LIS": "Lisbon", "OPO": "Porto",
-  "FAO": "Faro", "CPH": "Copenhagen", "OSL": "Oslo", "ARN": "Stockholm",
-  "HEL": "Helsinki", "SVO": "Moscow", "DME": "Moscow", "LED": "St. Petersburg",
-  "KBP": "Kyiv", "OTP": "Bucharest", "SOF": "Sofia", "BEG": "Belgrade",
-  "ZAG": "Zagreb", "DBV": "Dubrovnik", "SPU": "Split", "LJU": "Ljubljana",
-  "TIA": "Tirana", "SKP": "Skopje", "PRN": "Pristina", "SJJ": "Sarajevo",
-  "TGD": "Podgorica", "JFK": "New York", "EWR": "Newark", "LGA": "New York",
-  "ORD": "Chicago", "LAX": "Los Angeles", "MIA": "Miami", "SFO": "San Francisco",
-  "YYZ": "Toronto", "YUL": "Montreal", "YVR": "Vancouver", "HKG": "Hong Kong",
-  "SIN": "Singapore", "BKK": "Bangkok", "NRT": "Tokyo", "HND": "Tokyo",
-  "ICN": "Seoul", "PEK": "Beijing", "PVG": "Shanghai", "DEL": "New Delhi",
-  "BOM": "Mumbai", "JNB": "Johannesburg", "CPT": "Cape Town", "ADD": "Addis Ababa",
-  "NBO": "Nairobi", "CMN": "Casablanca", "TUN": "Tunis", "GRU": "São Paulo",
-  "GIG": "Rio de Janeiro", "EZE": "Buenos Aires", "BOG": "Bogotá", "LIM": "Lima",
-  "SYD": "Sydney", "MEL": "Melbourne", "BNE": "Brisbane", "AKL": "Auckland"
+  "PRG": "Praha",
+  "BRQ": "Brno",
+  "OSR": "Ostrava",
+  "PED": "Pardubice",
+  "IST": "Istanbul",
+  "SAW": "Istanbul",
+  "AYT": "Antalya",
+  "DLM": "Dalaman",
+  "BJV": "Bodrum",
+  "ESB": "Ankara",
+  "ADB": "Izmir",
+  "GZT": "Gaziantep",
+  "ASR": "Kayseri",
+  "TZX": "Trabzon",
+  "LCA": "Larnaca",
+  "PFO": "Paphos",
+  "ECN": "Ercan",
+  "ATH": "Athens",
+  "HER": "Heraklion",
+  "RHO": "Rhodes",
+  "SKG": "Thessaloniki",
+  "CFU": "Corfu",
+  "CHQ": "Chania",
+  "JMK": "Mykonos",
+  "JTR": "Santorini",
+  "KGS": "Kos",
+  "ZTH": "Zakynthos",
+  "DXB": "Dubai",
+  "AUH": "Abu Dhabi",
+  "DOH": "Doha",
+  "BEY": "Beirut",
+  "TLV": "Tel Aviv",
+  "AMM": "Amman",
+  "CAI": "Cairo",
+  "SSH": "Sharm El Sheikh",
+  "HRG": "Hurghada",
+  "RMF": "Marsa Alam",
+  "VIE": "Vienna",
+  "MUC": "Munich",
+  "FRA": "Frankfurt",
+  "BER": "Berlin",
+  "HAM": "Hamburg",
+  "DUS": "Düsseldorf",
+  "STR": "Stuttgart",
+  "CGN": "Cologne",
+  "ZRH": "Zurich",
+  "GVA": "Geneva",
+  "BUD": "Budapest",
+  "WAW": "Warsaw",
+  "KRK": "Krakow",
+  "BTS": "Bratislava",
+  "CDG": "Paris",
+  "ORY": "Paris",
+  "LHR": "London",
+  "LGW": "London",
+  "STN": "London",
+  "LTN": "London",
+  "MAN": "Manchester",
+  "EDI": "Edinburgh",
+  "AMS": "Amsterdam",
+  "BRU": "Brussels",
+  "LUX": "Luxembourg",
+  "FCO": "Rome",
+  "MXP": "Milan",
+  "LIN": "Milan",
+  "VCE": "Venice",
+  "NAP": "Naples",
+  "PSA": "Pisa",
+  "BCN": "Barcelona",
+  "MAD": "Madrid",
+  "AGP": "Malaga",
+  "PMI": "Palma de Mallorca",
+  "VLC": "Valencia",
+  "SVQ": "Seville",
+  "LIS": "Lisbon",
+  "OPO": "Porto",
+  "FAO": "Faro",
+  "CPH": "Copenhagen",
+  "OSL": "Oslo",
+  "ARN": "Stockholm",
+  "HEL": "Helsinki",
+  "SVO": "Moscow",
+  "DME": "Moscow",
+  "LED": "St. Petersburg",
+  "KBP": "Kyiv",
+  "OTP": "Bucharest",
+  "SOF": "Sofia",
+  "BEG": "Belgrade",
+  "ZAG": "Zagreb",
+  "DBV": "Dubrovnik",
+  "SPU": "Split",
+  "LJU": "Ljubljana",
+  "TIA": "Tirana",
+  "SKP": "Skopje",
+  "PRN": "Pristina",
+  "SJJ": "Sarajevo",
+  "TGD": "Podgorica",
+  "JFK": "New York",
+  "EWR": "Newark",
+  "LGA": "New York",
+  "ORD": "Chicago",
+  "LAX": "Los Angeles",
+  "MIA": "Miami",
+  "SFO": "San Francisco",
+  "YYZ": "Toronto",
+  "YUL": "Montreal",
+  "YVR": "Vancouver",
+  "HKG": "Hong Kong",
+  "SIN": "Singapore",
+  "BKK": "Bangkok",
+  "NRT": "Tokyo",
+  "HND": "Tokyo",
+  "ICN": "Seoul",
+  "PEK": "Beijing",
+  "PVG": "Shanghai",
+  "DEL": "New Delhi",
+  "BOM": "Mumbai",
+  "JNB": "Johannesburg",
+  "CPT": "Cape Town",
+  "ADD": "Addis Ababa",
+  "NBO": "Nairobi",
+  "CMN": "Casablanca",
+  "TUN": "Tunis",
+  "GRU": "São Paulo",
+  "GIG": "Rio de Janeiro",
+  "EZE": "Buenos Aires",
+  "BOG": "Bogotá",
+  "LIM": "Lima",
+  "SYD": "Sydney",
+  "MEL": "Melbourne",
+  "BNE": "Brisbane",
+  "AKL": "Auckland"
 };
-
 const getCityName = (iataCode: string): string => {
   return airportCities[iataCode] || iataCode;
 };
-
 interface Service {
   name: string;
   pax: string;
@@ -65,14 +155,12 @@ interface Service {
   dateFrom: string;
   dateTo: string;
 }
-
 interface TeeTime {
   date: string;
   club: string;
   time: string;
   golfers: string;
 }
-
 interface Flight {
   date: string;
   airlineCode: string;
@@ -87,7 +175,6 @@ interface Flight {
   isVariant?: boolean;
   pax: string;
 }
-
 interface VoucherDisplayProps {
   voucherCode: string;
   clientName: string;
@@ -106,7 +193,6 @@ interface VoucherDisplayProps {
   supplierNotes?: string | null;
   voucherId?: string;
 }
-
 export const VoucherDisplay = ({
   voucherCode,
   clientName,
@@ -123,13 +209,13 @@ export const VoucherDisplay = ({
   supplierPhone,
   supplierAddress,
   supplierNotes,
-  voucherId,
+  voucherId
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [fontSize, setFontSize] = useState(14); // Base font size in px
   const [spacing, setSpacing] = useState(12); // Spacing/padding in px
-  
+
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
     try {
@@ -138,13 +224,15 @@ export const VoucherDisplay = ({
         toast.error('Chyba: Voucher nebyl nalezen');
         return;
       }
-
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `voucher-${voucherCode}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
+        image: {
+          type: 'jpeg' as const,
+          quality: 0.98
+        },
+        html2canvas: {
+          scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
@@ -156,38 +244,33 @@ export const VoucherDisplay = ({
               // Force light theme colors for PDF export
               clonedElement.style.backgroundColor = '#ffffff';
               clonedElement.style.color = '#000000';
-              
+
               // Apply light theme to all child elements
               const bgMuted = clonedElement.querySelectorAll('.bg-muted');
-              bgMuted.forEach((el) => {
+              bgMuted.forEach(el => {
                 (el as HTMLElement).style.backgroundColor = '#f5f5f5';
               });
-              
               const textForeground = clonedElement.querySelectorAll('.text-foreground');
-              textForeground.forEach((el) => {
+              textForeground.forEach(el => {
                 (el as HTMLElement).style.color = '#000000';
               });
-              
               const textMuted = clonedElement.querySelectorAll('.text-muted-foreground');
-              textMuted.forEach((el) => {
+              textMuted.forEach(el => {
                 (el as HTMLElement).style.color = '#666666';
               });
-              
               const textPrimary = clonedElement.querySelectorAll('.text-primary');
-              textPrimary.forEach((el) => {
+              textPrimary.forEach(el => {
                 (el as HTMLElement).style.color = '#0066cc';
               });
-              
               const borderPrimary = clonedElement.querySelectorAll('.border-primary');
-              borderPrimary.forEach((el) => {
+              borderPrimary.forEach(el => {
                 (el as HTMLElement).style.borderColor = '#0066cc';
               });
-              
               const borderAccent = clonedElement.querySelectorAll('.border-accent');
-              borderAccent.forEach((el) => {
+              borderAccent.forEach(el => {
                 (el as HTMLElement).style.borderColor = '#00aaff';
               });
-              
+
               // Vertically center content on page
               clonedElement.style.display = 'flex';
               clonedElement.style.flexDirection = 'column';
@@ -199,10 +282,15 @@ export const VoucherDisplay = ({
             }
           }
         },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        jsPDF: {
+          unit: 'mm' as const,
+          format: 'a4' as const,
+          orientation: 'portrait' as const
+        },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy']
+        }
       };
-
       await html2pdf().set(opt).from(element).save();
       toast.success('PDF úspěšně stažen');
     } catch (error) {
@@ -212,22 +300,22 @@ export const VoucherDisplay = ({
       setIsGeneratingPdf(false);
     }
   };
-
   const handleSendEmail = async () => {
     if (!voucherId) {
       toast.error("Chyba: ID voucheru nebylo nalezeno");
       return;
     }
-
     setIsSendingEmail(true);
-    
     try {
-      const { data, error } = await supabase.functions.invoke('send-voucher-email', {
-        body: { voucherId }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('send-voucher-email', {
+        body: {
+          voucherId
+        }
       });
-
       if (error) throw error;
-
       if (data?.success) {
         toast.success(`Email úspěšně odeslán na: ${data.recipients.join(', ')}`);
       } else {
@@ -240,7 +328,6 @@ export const VoucherDisplay = ({
       setIsSendingEmail(false);
     }
   };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -249,7 +336,6 @@ export const VoucherDisplay = ({
     const year = String(date.getFullYear()).slice(-2);
     return `${day}.${month}.${year}`;
   };
-
   const formatServiceDate = (dateString: string) => {
     if (!dateString) return "TBD";
     const date = new Date(dateString);
@@ -258,12 +344,9 @@ export const VoucherDisplay = ({
     const year = String(date.getFullYear()).slice(-2);
     return `${day}.${month}.${year}`;
   };
-
   const baseFontRem = fontSize / 16; // Convert px to rem
   const spacingRem = spacing / 16;
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <style>
         {`
           @media print {
@@ -415,52 +498,26 @@ export const VoucherDisplay = ({
             <div className="space-y-6 py-4">
               <div className="space-y-2">
                 <Label>Velikost fontu: {fontSize}px</Label>
-                <Slider
-                  value={[fontSize]}
-                  onValueChange={([value]) => setFontSize(value)}
-                  min={10}
-                  max={20}
-                  step={1}
-                />
+                <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
               </div>
               <div className="space-y-2">
                 <Label>Mezery a padding: {spacing}px</Label>
-                <Slider
-                  value={[spacing]}
-                  onValueChange={([value]) => setSpacing(value)}
-                  min={6}
-                  max={20}
-                  step={1}
-                />
+                <Slider value={[spacing]} onValueChange={([value]) => setSpacing(value)} min={6} max={20} step={1} />
               </div>
             </div>
           </DialogContent>
         </Dialog>
-        <Button
-          onClick={handleDownloadPDF} 
-          className="flex-1" 
-          size="icon"
-          disabled={isGeneratingPdf}
-        >
+        <Button onClick={handleDownloadPDF} className="flex-1" size="icon" disabled={isGeneratingPdf}>
           <Download className="h-5 w-5" />
         </Button>
-        <Button 
-          variant="outline" 
-          className="flex-1" 
-          size="icon"
-          onClick={handleSendEmail}
-          disabled={isSendingEmail || !voucherId}
-        >
+        <Button variant="outline" className="flex-1" size="icon" onClick={handleSendEmail} disabled={isSendingEmail || !voucherId}>
           <Mail className="h-5 w-5" />
         </Button>
       </div>
 
-      <Card
-        id="voucher-content" 
-        className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm"
-      >
+      <Card id="voucher-content" className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm">
         {/* Header */}
-        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
+        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3 mx-0 px-0">
           <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
               <img src={yaroLogo} alt="YARO Travel" className="h-16 mb-2 print:h-10 print:mb-1" />
@@ -472,8 +529,7 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && (
-            <div className="mb-6 print:mb-3">
+          {supplierName && <div className="mb-6 print:mb-3">
               <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
                 Service Provider
               </h2>
@@ -484,13 +540,10 @@ export const VoucherDisplay = ({
                     {supplierAddress && ` • ${supplierAddress}`}
                     {supplierEmail && ` • ${supplierEmail}`}
                   </p>
-                  {supplierNotes && (
-                    <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>
-                  )}
+                  {supplierNotes && <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>}
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Client Information */}
@@ -503,18 +556,15 @@ export const VoucherDisplay = ({
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
             </div>
-            {otherTravelers && otherTravelers.length > 0 && (
-              <div>
+            {otherTravelers && otherTravelers.length > 0 && <div>
                 <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
                 <span className="text-muted-foreground">{otherTravelers.join(", ")}</span>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
 
         {/* Hotel Accommodation */}
-        {hotelName && (
-          <div className="mb-6 print:mb-3">
+        {hotelName && <div className="mb-6 print:mb-3">
             <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Hotel Accommodation
             </h2>
@@ -524,8 +574,7 @@ export const VoucherDisplay = ({
                 <span className="text-muted-foreground">{hotelName}</span>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Services Table */}
         <div className="mb-6 print:mb-3">
@@ -544,11 +593,7 @@ export const VoucherDisplay = ({
                 </tr>
               </thead>
               <tbody>
-                {services.map((service, index) => (
-                  <tr 
-                    key={index} 
-                    className={index % 2 === 0 ? "bg-muted" : "bg-card"}
-                  >
+                {services.map((service, index) => <tr key={index} className={index % 2 === 0 ? "bg-muted" : "bg-card"}>
                     <td className="p-3 text-muted-foreground print:p-0.5">
                       {service.pax || "—"}
                     </td>
@@ -562,37 +607,28 @@ export const VoucherDisplay = ({
                     <td className="p-3 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateTo)}
                     </td>
-                  </tr>
-                ))}
+                  </tr>)}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Flight Details Section */}
-        {flights && flights.length > 0 && (
-          <div className="mb-6 print:mb-3">
+        {flights && flights.length > 0 && <div className="mb-6 print:mb-3">
             <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Flight Details
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
               <ul className="space-y-3 print:space-y-0.5">
                 {flights.map((flight, index) => {
-                  const fromCity = flight.fromCity || getCityName(flight.fromIata);
-                  const toCity = flight.toCity || getCityName(flight.toIata);
-                  const mainFlights = flights.filter(f => !f.isVariant);
-                  const flightNumber = flight.isVariant ? 
-                    mainFlights.length + 1 : 
-                    mainFlights.filter((f, i) => i < flights.indexOf(flight)).length + 1;
-                  const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
-                  
-                  const showSeparator = flight.isVariant && index > 0 && !flights[index - 1].isVariant;
-                  
-                  return (
-                    <li key={index}>
-                      {showSeparator && (
-                        <div className="border-t-2 border-primary my-3 print:my-2" />
-                      )}
+              const fromCity = flight.fromCity || getCityName(flight.fromIata);
+              const toCity = flight.toCity || getCityName(flight.toIata);
+              const mainFlights = flights.filter(f => !f.isVariant);
+              const flightNumber = flight.isVariant ? mainFlights.length + 1 : mainFlights.filter((f, i) => i < flights.indexOf(flight)).length + 1;
+              const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
+              const showSeparator = flight.isVariant && index > 0 && !flights[index - 1].isVariant;
+              return <li key={index}>
+                      {showSeparator && <div className="border-t-2 border-primary my-3 print:my-2" />}
                       <div>
                         <div className="text-muted-foreground">
                           <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
@@ -603,31 +639,25 @@ export const VoucherDisplay = ({
                           PAX: <span className="font-semibold text-foreground">{flight.pax}</span>
                         </div>
                       </div>
-                    </li>
-                  );
-                })}
+                    </li>;
+            })}
               </ul>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Tee Time Section */}
-        {teeTimes && teeTimes.length > 0 && (
-          <div className="mb-6 print:mb-3">
+        {teeTimes && teeTimes.length > 0 && <div className="mb-6 print:mb-3">
             <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
               Confirmed Tee Times
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
               <ul className="space-y-2 print:space-y-0">
-                {teeTimes.map((teeTime, index) => (
-                  <li key={index} className="text-muted-foreground">
+                {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
-                  </li>
-                ))}
+                  </li>)}
               </ul>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Voucher Details */}
         <div className="mb-6 grid grid-cols-2 gap-4 print:mb-3 print:gap-2">
@@ -687,6 +717,5 @@ export const VoucherDisplay = ({
           </p>
         </div>
       </Card>
-    </div>
-  );
+    </div>;
 };
