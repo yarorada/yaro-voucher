@@ -141,16 +141,17 @@ export const VoucherDisplay = ({
       }
 
       const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
+        margin: [8, 8, 8, 8] as [number, number, number, number],
         filename: `voucher-${voucherCode}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
-          scale: 2, 
+          scale: 1.5,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
           allowTaint: true,
           letterRendering: true,
+          windowHeight: 1800,
           onclone: (clonedDoc: Document) => {
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
@@ -189,19 +190,16 @@ export const VoucherDisplay = ({
                 (el as HTMLElement).style.borderColor = '#00aaff';
               });
               
-              // Vertically center content on page
-              clonedElement.style.display = 'flex';
-              clonedElement.style.flexDirection = 'column';
-              clonedElement.style.justifyContent = 'center';
-              clonedElement.style.minHeight = '260mm';
-              clonedElement.style.margin = '0 auto';
-              clonedElement.style.paddingTop = `${spacingRem * 2}rem`;
-              clonedElement.style.paddingBottom = `${spacingRem * 2}rem`;
+              // Remove min-height to allow natural content flow
+              clonedElement.style.minHeight = 'auto';
+              clonedElement.style.display = 'block';
+              clonedElement.style.paddingTop = `${spacingRem}rem`;
+              clonedElement.style.paddingBottom = `${spacingRem}rem`;
             }
           }
         },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: 'avoid-all' }
       };
 
       await html2pdf().set(opt).from(element).save();
