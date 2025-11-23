@@ -17,42 +17,45 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Get and verify JWT from Authorization header
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const jwt = authHeader.replace('Bearer ', '');
-    
+    const jwt = authHeader.replace("Bearer ", "");
+
     // Initialize Supabase client with user's auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
 
     // Verify JWT and get user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
       console.error("Authentication error:", authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { voucherId }: SendEmailRequest = await req.json();
-    
+
     // Validate voucherId format (UUID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!voucherId || !uuidRegex.test(voucherId)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid voucher ID format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid voucher ID format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log("Sending email for voucher:", voucherId, "by user:", user.id);
@@ -67,10 +70,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (voucherError || !voucher) {
       console.error("Voucher access error:", voucherError);
-      return new Response(
-        JSON.stringify({ error: 'Voucher not found or access denied' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Voucher not found or access denied" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Use SERVICE_ROLE_KEY for fetching related data only
@@ -124,22 +127,26 @@ const handler = async (req: Request): Promise<Response> => {
     const formatDate = (dateString: string) => {
       if (!dateString) return "N/A";
       const date = new Date(dateString);
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
       const year = String(date.getFullYear()).slice(-2);
       return `${day}.${month}.${year}`;
     };
 
     // Build services HTML
-    const servicesHtml = voucher.services.map((service: any, index: number) => `
-      <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.pax || '—'}</td>
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.qty || '—'}</td>
+    const servicesHtml = voucher.services
+      .map(
+        (service: any, index: number) => `
+      <tr style="background-color: ${index % 2 === 0 ? "#f9fafb" : "#ffffff"};">
+        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.pax || "—"}</td>
+        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.qty || "—"}</td>
         <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600;">${service.name}</td>
         <td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(service.dateFrom)}</td>
         <td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(service.dateTo)}</td>
       </tr>
-    `).join("");
+    `,
+      )
+      .join("");
 
     // Build HTML email
     const html = `
@@ -167,37 +174,45 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
 
           <!-- Service Provider -->
-          ${supplier ? `
+          ${
+            supplier
+              ? `
           <div style="background-color: white; padding: 20px; border-left: 4px solid #667eea; margin-top: 20px;">
             <h3 style="margin-top: 0; color: #1f2937; font-size: 16px;">Service Provider:</h3>
             <p style="margin: 5px 0; color: #4b5563;">
               <strong>${supplier.name}</strong>
-              ${supplier.address ? `<br>${supplier.address}` : ''}
-              ${supplier.email ? `<br>Email: ${supplier.email}` : ''}
-              ${supplier.phone ? `<br>Tel: ${supplier.phone}` : ''}
+              ${supplier.address ? `<br>${supplier.address}` : ""}
+              ${supplier.email ? `<br>Email: ${supplier.email}` : ""}
+              ${supplier.phone ? `<br>Tel: ${supplier.phone}` : ""}
             </p>
-            ${supplier.notes ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">${supplier.notes}</p>` : ''}
+            ${supplier.notes ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">${supplier.notes}</p>` : ""}
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <!-- Client Information -->
           <div style="background-color: white; padding: 20px; margin-top: 20px;">
             <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Client Information</h2>
             <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
               <p style="margin: 0 0 10px 0;"><strong>Main Client:</strong> ${clientName}</p>
-              ${otherTravelers ? `<p style="margin: 0;"><strong>Other Travelers:</strong> ${otherTravelers}</p>` : ''}
+              ${otherTravelers ? `<p style="margin: 0;"><strong>Other Travelers:</strong> ${otherTravelers}</p>` : ""}
             </div>
           </div>
 
           <!-- Hotel Accommodation -->
-          ${voucher.hotel_name ? `
+          ${
+            voucher.hotel_name
+              ? `
           <div style="background-color: white; padding: 20px; margin-top: 20px;">
             <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Hotel Accommodation</h2>
             <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
               <p style="margin: 0;"><strong>Hotel:</strong> ${voucher.hotel_name}</p>
             </div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <!-- Services -->
           <div style="background-color: white; padding: 20px; margin-top: 20px;">
@@ -226,7 +241,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
               <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px;">Expiration Date</p>
-              <p style="margin: 0; font-weight: 600; color: #1f2937;">${voucher.expiration_date ? formatDate(voucher.expiration_date) : 'No Expiration'}</p>
+              <p style="margin: 0; font-weight: 600; color: #1f2937;">${voucher.expiration_date ? formatDate(voucher.expiration_date) : "No Expiration"}</p>
             </div>
           </div>
 
@@ -248,7 +263,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <div>
                   <p style="margin: 0 0 5px; font-weight: 600; color: #1f2937;">Website:</p>
                   <p style="margin: 0;">www.yarotravel.cz</p>
-                  <p style="margin: 8px 0 0; font-size: 12px;">Available 24/7 for your travel needs</p>
+                  <p style="margin: 8px 0 0; font-size: 8px;">Available 24/7 for your travel needs</p>
                 </div>
               </div>
             </div>
@@ -275,7 +290,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -295,27 +310,27 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Email sent successfully",
-        recipients: recipients 
+        recipients: recipients,
       }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   } catch (error: any) {
     console.error("Error sending email:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message,
       }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   }
 };
