@@ -504,8 +504,8 @@ export const VoucherDisplay = ({
 
       <Card id="voucher-content" className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm">
         {/* Header */}
-        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
-          <div className="flex justify-between items-start mb-6 print:mb-3">
+        <div className="border-b-4 border-primary pb-4 mb-4 print:pb-2 print:mb-2">
+          <div className="flex justify-between items-start mb-4 print:mb-2">
             <div>
               <img 
                 src={yaroLogo} 
@@ -521,12 +521,12 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && <div className="mt-6 print:mt-3">
-              <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+          {supplierName && <div className="mt-4 print:mt-2">
+              <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
                 Service Provider
               </h2>
-              <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-                <div className="space-y-1 print:space-y-0">
+              <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+                <div className="space-y-0.5 print:space-y-0">
                   <p className="text-muted-foreground">
                     {supplierName}
                     {supplierAddress && ` • ${supplierAddress}`}
@@ -539,16 +539,16 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Client Information */}
-        <div className="mb-6 print:mb-3">
-          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+        <div className="mb-4 print:mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
             Client Information
           </h2>
-          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-            <div className="mb-2 print:mb-0">
+          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+            <div className="mb-1 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
             </div>
-            {otherTravelers && otherTravelers.length > 0 && <div className="mt-2 print:mt-0.5">
+            {otherTravelers && otherTravelers.length > 0 && <div className="mt-1 print:mt-0.5">
                 <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
                 <span className="text-muted-foreground">{otherTravelers.join(", ")}</span>
               </div>}
@@ -556,11 +556,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Hotel Accommodation */}
-        {hotelName && <div className="mb-6 print:mb-3">
-            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+        {hotelName && <div className="mb-4 print:mb-2">
+            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
               Hotel Accommodation
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
+            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
               <div>
                 <span className="font-semibold text-foreground">Hotel:</span>{" "}
                 <span className="text-muted-foreground">{hotelName}</span>
@@ -569,34 +569,34 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Services Table */}
-        <div className="mb-6 print:mb-3">
-          <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+        <div className="mb-4 print:mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
             Service Overview
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse print:text-[11px]">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-3 text-left print:p-0.5">PAX</th>
-                  <th className="p-3 text-left print:p-0.5">Qtd.</th>
-                  <th className="p-3 text-left print:p-0.5">Service</th>
-                  <th className="p-3 text-left print:p-0.5">Date From</th>
-                  <th className="p-3 text-left print:p-0.5">Date To</th>
+                  <th className="p-2 text-left print:p-0.5">PAX</th>
+                  <th className="p-2 text-left print:p-0.5">Qtd.</th>
+                  <th className="p-2 text-left print:p-0.5">Service</th>
+                  <th className="p-2 text-left print:p-0.5">Date From</th>
+                  <th className="p-2 text-left print:p-0.5">Date To</th>
                 </tr>
               </thead>
               <tbody>
                 {services.map((service, index) => <tr key={index} className={index % 2 === 0 ? "bg-muted" : "bg-card"}>
-                    <td className="p-3 text-muted-foreground print:p-0.5">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {service.pax || "—"}
                     </td>
-                    <td className="p-3 text-muted-foreground print:p-0.5">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {service.qty || "—"}
                     </td>
-                    <td className="p-3 font-medium text-foreground print:p-0.5">{service.name}</td>
-                    <td className="p-3 text-muted-foreground print:p-0.5">
+                    <td className="p-2 font-medium text-foreground print:p-0.5">{service.name}</td>
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateFrom)}
                     </td>
-                    <td className="p-3 text-muted-foreground print:p-0.5">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateTo)}
                     </td>
                   </tr>)}
@@ -606,12 +606,12 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Flight Details Section */}
-        {flights && flights.length > 0 && <div className="mb-6 print:mb-3">
-            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+        {flights && flights.length > 0 && <div className="mb-4 print:mb-2">
+            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
               Flight Details
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-              <ul className="space-y-2 print:space-y-0.5">
+            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+              <ul className="space-y-1 print:space-y-0.5">
                 {flights.map((flight, index) => {
               const fromCity = flight.fromCity || getCityName(flight.fromIata);
               const toCity = flight.toCity || getCityName(flight.toIata);
@@ -638,12 +638,12 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Tee Time Section */}
-        {teeTimes && teeTimes.length > 0 && <div className="mb-6 print:mb-3">
-            <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
+        {teeTimes && teeTimes.length > 0 && <div className="mb-4 print:mb-2">
+            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
               Confirmed Tee Times
             </h2>
-            <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-              <ul className="space-y-2 print:space-y-0.5">
+            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+              <ul className="space-y-1 print:space-y-0.5">
                 {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
                   </li>)}
@@ -652,13 +652,13 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Voucher Details */}
-        <div className="mb-6 grid grid-cols-2 gap-4 print:mb-3 print:gap-2">
-          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-            <p className="text-sm text-muted-foreground mb-1 print:text-[11px] print:mb-0">Issue Date</p>
+        <div className="mb-4 grid grid-cols-2 gap-3 print:mb-2 print:gap-1.5">
+          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+            <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Issue Date</p>
             <p className="font-semibold text-foreground">{formatDate(issueDate)}</p>
           </div>
-          <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-            <p className="text-sm text-muted-foreground mb-1 print:text-[11px] print:mb-0">Expiration Date</p>
+          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+            <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Expiration Date</p>
             <p className="font-semibold text-foreground">
               {expirationDate ? formatDate(expirationDate) : "No Expiration"}
             </p>
@@ -666,12 +666,12 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Company Information Footer */}
-        <div className="border-t-2 border-border pt-6 print:pt-3">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg print:p-3 print:bg-muted/30">
+        <div className="border-t-2 border-border pt-4 print:pt-2">
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-3 rounded-lg print:p-2 print:bg-muted/30">
             {/* Web version - 3 columns */}
             <div className="print:hidden">
-              <h3 className="font-bold text-foreground mb-2">YARO Travel</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+              <h3 className="font-bold text-foreground mb-1.5">YARO Travel</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 text-xs text-muted-foreground">
                 <div>
                   <p className="font-semibold text-foreground">Address:</p>
                   <p>Bratrancu Veverkovych 680</p>
@@ -700,9 +700,9 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Terms & Conditions */}
-        <div className="mt-6 text-xs text-muted-foreground print:mt-3 print:text-[11px]">
-          <p className="font-semibold text-foreground mb-1 print:mb-0">Terms & Conditions:</p>
-          <p className="mt-1 print:mt-0.5">
+        <div className="mt-4 text-xs text-muted-foreground print:mt-2 print:text-[11px]">
+          <p className="font-semibold text-foreground mb-0.5 print:mb-0">Terms & Conditions:</p>
+          <p className="mt-0.5 print:mt-0.5">
             This voucher is valid for the services listed above. Please present this voucher
             to service providers. Changes or cancellations must be made 48 hours in advance.
             For assistance, contact YARO Travel support.
