@@ -521,7 +521,7 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && <div className="mb-6 print:mb-3">
+          {supplierName && <div>
               <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
                 Service Provider
               </h2>
