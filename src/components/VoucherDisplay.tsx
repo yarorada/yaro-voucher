@@ -383,6 +383,12 @@ export const VoucherDisplay = ({
             print-color-adjust: exact !important;
           }
 
+          /* Vertically center text in table rows for PDF */
+          #voucher-content table th,
+          #voucher-content table td {
+            vertical-align: middle !important;
+          }
+
           #voucher-content .bg-muted {
             background-color: hsl(var(--muted)) !important;
             -webkit-print-color-adjust: exact !important;
