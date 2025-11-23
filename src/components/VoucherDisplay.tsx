@@ -223,7 +223,7 @@ export const VoucherDisplay = ({
   });
   const [lineHeight, setLineHeight] = useState(() => {
     const saved = localStorage.getItem('voucherPdfLineHeight');
-    return saved ? parseFloat(saved) : 1.6;
+    return saved ? parseFloat(saved) : 1.28;
   });
   const [headingSize, setHeadingSize] = useState(() => {
     const saved = localStorage.getItem('voucherPdfHeadingSize');
