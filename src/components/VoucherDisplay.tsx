@@ -504,7 +504,7 @@ export const VoucherDisplay = ({
 
       <Card id="voucher-content" className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm">
         {/* Header */}
-        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3 mx-0 px-0">
+        <div className="border-b-4 border-primary pb-6 mb-6 print:pb-3 print:mb-3">
           <div className="flex justify-between items-start mb-6 print:mb-3">
             <div>
               <img 
@@ -521,12 +521,12 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && <div>
+          {supplierName && <div className="mt-6 print:mt-3">
               <h2 className="text-lg font-bold text-foreground mb-3 border-l-4 border-accent pl-3 print:text-[13px] print:mb-2 print:pl-2">
                 Service Provider
               </h2>
               <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-                <div className="space-y-1">
+                <div className="space-y-1 print:space-y-0">
                   <p className="text-muted-foreground">
                     {supplierName}
                     {supplierAddress && ` • ${supplierAddress}`}
@@ -544,11 +544,11 @@ export const VoucherDisplay = ({
             Client Information
           </h2>
           <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-            <div className="mb-2 print:mb-1">
+            <div className="mb-2 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
             </div>
-            {otherTravelers && otherTravelers.length > 0 && <div>
+            {otherTravelers && otherTravelers.length > 0 && <div className="mt-2 print:mt-0.5">
                 <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
                 <span className="text-muted-foreground">{otherTravelers.join(", ")}</span>
               </div>}
@@ -611,7 +611,7 @@ export const VoucherDisplay = ({
               Flight Details
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-              <ul className="space-y-3 print:space-y-0.5">
+              <ul className="space-y-2 print:space-y-0.5">
                 {flights.map((flight, index) => {
               const fromCity = flight.fromCity || getCityName(flight.fromIata);
               const toCity = flight.toCity || getCityName(flight.toIata);
@@ -643,7 +643,7 @@ export const VoucherDisplay = ({
               Confirmed Tee Times
             </h2>
             <div className="bg-muted p-4 rounded-lg print:p-2 print:text-[11px]">
-              <ul className="space-y-2 print:space-y-0">
+              <ul className="space-y-2 print:space-y-0.5">
                 {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
                   </li>)}
@@ -700,9 +700,9 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Terms & Conditions */}
-        <div className="mt-6 text-xs text-muted-foreground print:mt-2 print:text-[11px]">
-          <p className="font-semibold text-foreground mb-1">Terms & Conditions:</p>
-          <p>
+        <div className="mt-6 text-xs text-muted-foreground print:mt-3 print:text-[11px]">
+          <p className="font-semibold text-foreground mb-1 print:mb-0">Terms & Conditions:</p>
+          <p className="mt-1 print:mt-0.5">
             This voucher is valid for the services listed above. Please present this voucher
             to service providers. Changes or cancellations must be made 48 hours in advance.
             For assistance, contact YARO Travel support.
