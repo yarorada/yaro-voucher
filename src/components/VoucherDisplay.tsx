@@ -560,7 +560,7 @@ export const VoucherDisplay = ({
                     {supplierAddress && ` • ${supplierAddress}`}
                     {supplierEmail && ` • ${supplierEmail}`}
                   </p>
-                  {supplierNotes && <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>}
+                   {supplierNotes && <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>}
                 </div>
               </div>
             </div>}
