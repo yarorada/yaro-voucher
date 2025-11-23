@@ -439,10 +439,6 @@ export const VoucherDisplay = ({
           #voucher-content h2,
           #voucher-content h3 {
             font-size: 0.9em;
-            margin-bottom: ${spacingRem * 0.5}rem !important;
-            padding-left: ${spacingRem * 0.5}rem !important;
-            display: flex !important;
-            align-items: center !important;
           }
           
           #voucher-content .text-3xl {
