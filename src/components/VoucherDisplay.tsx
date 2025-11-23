@@ -229,6 +229,14 @@ export const VoucherDisplay = ({
     const saved = localStorage.getItem('voucherPdfLineHeight');
     return saved ? parseFloat(saved) : 1.6;
   });
+  const [headingSize, setHeadingSize] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfHeadingSize');
+    return saved ? parseFloat(saved) : 16;
+  });
+  const [sectionSpacing, setSectionSpacing] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfSectionSpacing');
+    return saved ? parseFloat(saved) : 24;
+  });
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -246,6 +254,14 @@ export const VoucherDisplay = ({
   useEffect(() => {
     localStorage.setItem('voucherPdfLineHeight', lineHeight.toString());
   }, [lineHeight]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfHeadingSize', headingSize.toString());
+  }, [headingSize]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfSectionSpacing', sectionSpacing.toString());
+  }, [sectionSpacing]);
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -377,6 +393,8 @@ export const VoucherDisplay = ({
   };
   const baseFontRem = fontSize / 16; // Convert px to rem
   const spacingRem = spacing / 16;
+  const headingSizeRem = headingSize / 16;
+  const sectionSpacingRem = sectionSpacing / 16;
   return <div className="space-y-4">
       <style>
         {`
@@ -438,7 +456,13 @@ export const VoucherDisplay = ({
           #voucher-content h1,
           #voucher-content h2,
           #voucher-content h3 {
-            font-size: 0.9em;
+            font-size: ${headingSizeRem}rem !important;
+            margin-bottom: ${sectionSpacingRem * 0.5}rem !important;
+            padding-left: ${spacingRem * 0.5}rem !important;
+          }
+          
+          #voucher-content > div {
+            margin-bottom: ${sectionSpacingRem}rem !important;
           }
           
           #voucher-content .text-3xl {
@@ -541,8 +565,16 @@ export const VoucherDisplay = ({
                 <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
               </div>
               <div className="space-y-2">
+                <Label>Velikost nadpisů: {headingSize}px</Label>
+                <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
+              </div>
+              <div className="space-y-2">
                 <Label>Mezery a padding: {spacing}px</Label>
                 <Slider value={[spacing]} onValueChange={([value]) => setSpacing(value)} min={6} max={20} step={1} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mezery mezi sekcemi: {sectionSpacing}px</Label>
+                <Slider value={[sectionSpacing]} onValueChange={([value]) => setSectionSpacing(value)} min={12} max={48} step={2} />
               </div>
               <div className="space-y-2">
                 <Label>Velikost loga: {logoSize}px</Label>
