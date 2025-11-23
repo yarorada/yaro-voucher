@@ -482,13 +482,8 @@ export const VoucherDisplay = ({
           #voucher-content p,
           #voucher-content div {
             line-height: ${lineHeight} !important;
-            vertical-align: middle !important;
           }
-          
-          #voucher-content * {
-            vertical-align: middle !important;
-          }
-          
+
           #voucher-content .bg-muted,
           #voucher-content .bg-gradient-to-r {
             padding: ${spacingRem * 0.5}rem !important;
@@ -497,8 +492,8 @@ export const VoucherDisplay = ({
           #voucher-content table th,
           #voucher-content table td {
             padding: ${spacingRem * 0.25}rem !important;
-            display: flex !important;
-            align-items: center !important;
+            vertical-align: middle !important;
+            line-height: 1.4 !important;
           }
           
           #voucher-content img {
