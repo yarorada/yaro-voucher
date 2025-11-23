@@ -9,7 +9,6 @@ import html2pdf from "html2pdf.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -230,21 +229,6 @@ export const VoucherDisplay = ({
     const saved = localStorage.getItem('voucherPdfHeadingSize');
     return saved ? parseFloat(saved) : 16;
   });
-
-  // PDF Profiles
-  const pdfProfiles = {
-    compact: { fontSize: 12, logoSize: 120, lineHeight: 1.2, headingSize: 14 },
-    standard: { fontSize: 14, logoSize: 144, lineHeight: 1.28, headingSize: 16 },
-    spacious: { fontSize: 16, logoSize: 168, lineHeight: 1.5, headingSize: 18 }
-  };
-
-  const applyProfile = (profile: 'compact' | 'standard' | 'spacious') => {
-    const settings = pdfProfiles[profile];
-    setFontSize(settings.fontSize);
-    setLogoSize(settings.logoSize);
-    setLineHeight(settings.lineHeight);
-    setHeadingSize(settings.headingSize);
-  };
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -487,52 +471,25 @@ export const VoucherDisplay = ({
             <DialogHeader>
               <DialogTitle>Nastavení PDF</DialogTitle>
               <DialogDescription>
-                Vyberte profil nebo upravte jednotlivá nastavení
+                Upravte velikost fontu a mezer před exportem PDF
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <div className="space-y-3">
-                <Label>Přednastavené profily</Label>
-                <RadioGroup defaultValue="standard" onValueChange={(value) => applyProfile(value as 'compact' | 'standard' | 'spacious')}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="compact" id="compact" />
-                    <Label htmlFor="compact" className="font-normal cursor-pointer">
-                      Kompaktní (menší písmo, úsporné mezery)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="standard" id="standard" />
-                    <Label htmlFor="standard" className="font-normal cursor-pointer">
-                      Standardní (vyvážené nastavení)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="spacious" id="spacious" />
-                    <Label htmlFor="spacious" className="font-normal cursor-pointer">
-                      Prostorný (větší písmo, velkorysé mezery)
-                    </Label>
-                  </div>
-                </RadioGroup>
+              <div className="space-y-2">
+                <Label>Velikost fontu: {fontSize}px</Label>
+                <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
               </div>
-              
-              <div className="border-t pt-4 space-y-4">
-                <Label className="text-sm text-muted-foreground">Vlastní nastavení</Label>
-                <div className="space-y-2">
-                  <Label>Velikost fontu: {fontSize}px</Label>
-                  <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Velikost nadpisů: {headingSize}px</Label>
-                  <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Velikost loga: {logoSize}px</Label>
-                  <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
-                  <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
-                </div>
+              <div className="space-y-2">
+                <Label>Velikost nadpisů: {headingSize}px</Label>
+                <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
+              </div>
+              <div className="space-y-2">
+                <Label>Velikost loga: {logoSize}px</Label>
+                <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
+              </div>
+              <div className="space-y-2">
+                <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
+                <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
               </div>
             </div>
           </DialogContent>
