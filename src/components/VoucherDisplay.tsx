@@ -498,6 +498,7 @@ export const VoucherDisplay = ({
           #voucher-content table td {
             padding: ${spacingRem * 0.25}rem !important;
             vertical-align: middle !important;
+            line-height: 1.2 !important;
           }
           
           #voucher-content img {
