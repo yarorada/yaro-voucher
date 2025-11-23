@@ -216,6 +216,7 @@ export const VoucherDisplay = ({
   const [fontSize, setFontSize] = useState(14); // Base font size in px
   const [spacing, setSpacing] = useState(12); // Spacing/padding in px
   const [logoSize, setLogoSize] = useState(144); // Logo size in px
+  const [lineHeight, setLineHeight] = useState(1.6); // Line height multiplier
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -451,7 +452,7 @@ export const VoucherDisplay = ({
           
           #voucher-content p,
           #voucher-content div {
-            line-height: 1.6 !important;
+            line-height: ${lineHeight} !important;
             vertical-align: middle !important;
           }
           
@@ -513,6 +514,10 @@ export const VoucherDisplay = ({
               <div className="space-y-2">
                 <Label>Velikost loga: {logoSize}px</Label>
                 <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
+              </div>
+              <div className="space-y-2">
+                <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
+                <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
               </div>
             </div>
           </DialogContent>
