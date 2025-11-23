@@ -713,7 +713,7 @@ export const VoucherDisplay = ({
                 <div>
                   <p className="font-semibold text-foreground">Website:</p>
                   <p>www.yarotravel.cz</p>
-                  <p className="mt-2 text-[10px]">Available 24/7 for your travel needs</p>
+                  <p>Available 24/7 for your travel needs</p>
                 </div>
               </div>
             </div>
