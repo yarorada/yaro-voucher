@@ -489,11 +489,20 @@ export const VoucherDisplay = ({
             padding: ${spacingRem * 0.5}rem !important;
           }
           
+          #voucher-content table {
+            border-collapse: collapse !important;
+          }
+          
           #voucher-content table th,
           #voucher-content table td {
-            padding: ${spacingRem * 0.25}rem !important;
+            padding: ${spacingRem * 0.5}rem ${spacingRem * 0.25}rem !important;
             vertical-align: middle !important;
-            line-height: 1.4 !important;
+            line-height: 1.2 !important;
+            height: auto !important;
+          }
+          
+          #voucher-content table tbody tr {
+            height: auto !important;
           }
           
           #voucher-content img {
