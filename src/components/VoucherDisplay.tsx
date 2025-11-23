@@ -4,7 +4,7 @@ import { Download, Mail, Settings } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import html2pdf from "html2pdf.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -213,10 +213,39 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [fontSize, setFontSize] = useState(14); // Base font size in px
-  const [spacing, setSpacing] = useState(12); // Spacing/padding in px
-  const [logoSize, setLogoSize] = useState(144); // Logo size in px
-  const [lineHeight, setLineHeight] = useState(1.6); // Line height multiplier
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfFontSize');
+    return saved ? parseFloat(saved) : 14;
+  });
+  const [spacing, setSpacing] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfSpacing');
+    return saved ? parseFloat(saved) : 12;
+  });
+  const [logoSize, setLogoSize] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfLogoSize');
+    return saved ? parseFloat(saved) : 144;
+  });
+  const [lineHeight, setLineHeight] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfLineHeight');
+    return saved ? parseFloat(saved) : 1.6;
+  });
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('voucherPdfFontSize', fontSize.toString());
+  }, [fontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfSpacing', spacing.toString());
+  }, [spacing]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfLogoSize', logoSize.toString());
+  }, [logoSize]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfLineHeight', lineHeight.toString());
+  }, [lineHeight]);
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
