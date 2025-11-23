@@ -458,7 +458,6 @@ export const VoucherDisplay = ({
           #voucher-content h3 {
             font-size: ${headingSizeRem}rem !important;
             margin-bottom: ${sectionSpacingRem * 0.5}rem !important;
-            padding-left: ${spacingRem * 0.5}rem !important;
           }
           
           #voucher-content > div {
@@ -506,11 +505,6 @@ export const VoucherDisplay = ({
             line-height: ${lineHeight} !important;
           }
 
-          #voucher-content .bg-muted,
-          #voucher-content .bg-gradient-to-r {
-            padding: ${spacingRem * 0.5}rem !important;
-          }
-          
           #voucher-content table {
             border-collapse: collapse !important;
           }
