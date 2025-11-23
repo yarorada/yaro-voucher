@@ -217,10 +217,6 @@ export const VoucherDisplay = ({
     const saved = localStorage.getItem('voucherPdfFontSize');
     return saved ? parseFloat(saved) : 14;
   });
-  const [spacing, setSpacing] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfSpacing');
-    return saved ? parseFloat(saved) : 12;
-  });
   const [logoSize, setLogoSize] = useState(() => {
     const saved = localStorage.getItem('voucherPdfLogoSize');
     return saved ? parseFloat(saved) : 144;
@@ -233,19 +229,11 @@ export const VoucherDisplay = ({
     const saved = localStorage.getItem('voucherPdfHeadingSize');
     return saved ? parseFloat(saved) : 16;
   });
-  const [sectionSpacing, setSectionSpacing] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfSectionSpacing');
-    return saved ? parseFloat(saved) : 24;
-  });
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('voucherPdfFontSize', fontSize.toString());
   }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('voucherPdfSpacing', spacing.toString());
-  }, [spacing]);
 
   useEffect(() => {
     localStorage.setItem('voucherPdfLogoSize', logoSize.toString());
@@ -258,10 +246,6 @@ export const VoucherDisplay = ({
   useEffect(() => {
     localStorage.setItem('voucherPdfHeadingSize', headingSize.toString());
   }, [headingSize]);
-
-  useEffect(() => {
-    localStorage.setItem('voucherPdfSectionSpacing', sectionSpacing.toString());
-  }, [sectionSpacing]);
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -317,15 +301,6 @@ export const VoucherDisplay = ({
               borderAccent.forEach(el => {
                 (el as HTMLElement).style.borderColor = '#00aaff';
               });
-
-              // Vertically center content on page
-              clonedElement.style.display = 'flex';
-              clonedElement.style.flexDirection = 'column';
-              clonedElement.style.justifyContent = 'center';
-              clonedElement.style.minHeight = '260mm';
-              clonedElement.style.margin = '0 auto';
-              clonedElement.style.paddingTop = `${spacingRem * 2}rem`;
-              clonedElement.style.paddingBottom = `${spacingRem * 2}rem`;
             }
           }
         },
@@ -392,9 +367,7 @@ export const VoucherDisplay = ({
     return `${day}.${month}.${year}`;
   };
   const baseFontRem = fontSize / 16; // Convert px to rem
-  const spacingRem = spacing / 16;
   const headingSizeRem = headingSize / 16;
-  const sectionSpacingRem = sectionSpacing / 16;
   return <div className="space-y-4">
       <style>
         {`
@@ -406,7 +379,6 @@ export const VoucherDisplay = ({
           
           #voucher-content {
             font-size: ${baseFontRem}rem;
-            padding: ${spacingRem}rem !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -452,16 +424,10 @@ export const VoucherDisplay = ({
             print-color-adjust: exact !important;
           }
           
-          
           #voucher-content h1,
           #voucher-content h2,
           #voucher-content h3 {
             font-size: ${headingSizeRem}rem !important;
-            margin-bottom: ${sectionSpacingRem * 0.5}rem !important;
-          }
-          
-          #voucher-content > div {
-            margin-bottom: ${sectionSpacingRem}rem !important;
           }
           
           #voucher-content .text-3xl {
@@ -484,58 +450,13 @@ export const VoucherDisplay = ({
             font-size: ${baseFontRem * 0.71}rem !important;
           }
           
-          #voucher-content {
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            padding-top: ${spacingRem * 2}rem !important;
-            padding-bottom: ${spacingRem * 2}rem !important;
-          }
-          
-          #voucher-content > div {
-            padding-bottom: ${spacingRem * 0.75}rem !important;
-            margin-bottom: ${spacingRem * 0.75}rem !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          
           #voucher-content p,
           #voucher-content div {
             line-height: ${lineHeight} !important;
           }
 
-          #voucher-content table {
-            border-collapse: collapse !important;
-          }
-          
-          #voucher-content table th,
-          #voucher-content table td {
-            padding: ${spacingRem * 0.5}rem ${spacingRem * 0.25}rem !important;
-            vertical-align: middle !important;
-            line-height: 1.2 !important;
-            height: auto !important;
-          }
-          
-          #voucher-content table tbody tr {
-            height: auto !important;
-          }
-          
           #voucher-content img {
-            height: ${spacingRem * 2.5}rem !important;
-            margin-bottom: ${spacingRem * 0.25}rem !important;
-          }
-          
-          #voucher-content .grid {
-            gap: ${spacingRem * 0.5}rem !important;
-          }
-          
-          #voucher-content ul {
-            margin: ${spacingRem * 0.25}rem 0 !important;
-          }
-          
-          #voucher-content ul li {
-            margin-bottom: ${spacingRem * 0.25}rem !important;
+            height: ${logoSize}px !important;
           }
         `}
       </style>
@@ -561,14 +482,6 @@ export const VoucherDisplay = ({
               <div className="space-y-2">
                 <Label>Velikost nadpisů: {headingSize}px</Label>
                 <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mezery a padding: {spacing}px</Label>
-                <Slider value={[spacing]} onValueChange={([value]) => setSpacing(value)} min={6} max={20} step={1} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mezery mezi sekcemi: {sectionSpacing}px</Label>
-                <Slider value={[sectionSpacing]} onValueChange={([value]) => setSectionSpacing(value)} min={12} max={48} step={2} />
               </div>
               <div className="space-y-2">
                 <Label>Velikost loga: {logoSize}px</Label>
