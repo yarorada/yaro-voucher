@@ -215,27 +215,27 @@ export const VoucherDisplay = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [fontSize, setFontSize] = useState(() => {
     const saved = localStorage.getItem('voucherPdfFontSize');
-    return saved ? parseFloat(saved) : 14;
+    return saved ? parseFloat(saved) : 10;
   });
   const [logoSize, setLogoSize] = useState(() => {
     const saved = localStorage.getItem('voucherPdfLogoSize');
-    return saved ? parseFloat(saved) : 144;
+    return saved ? parseFloat(saved) : 60;
   });
   const [lineHeight, setLineHeight] = useState(() => {
     const saved = localStorage.getItem('voucherPdfLineHeight');
-    return saved ? parseFloat(saved) : 1.28;
+    return saved ? parseFloat(saved) : 1.1;
   });
   const [headingSize, setHeadingSize] = useState(() => {
     const saved = localStorage.getItem('voucherPdfHeadingSize');
-    return saved ? parseFloat(saved) : 16;
+    return saved ? parseFloat(saved) : 17;
   });
   const [sectionSpacing, setSectionSpacing] = useState(() => {
     const saved = localStorage.getItem('voucherPdfSectionSpacing');
-    return saved ? parseFloat(saved) : 12;
+    return saved ? parseFloat(saved) : 4;
   });
   const [contentPadding, setContentPadding] = useState(() => {
     const saved = localStorage.getItem('voucherPdfContentPadding');
-    return saved ? parseFloat(saved) : 8;
+    return saved ? parseFloat(saved) : 6;
   });
 
   // Save settings to localStorage whenever they change
