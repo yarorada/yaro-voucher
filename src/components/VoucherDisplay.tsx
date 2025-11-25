@@ -389,32 +389,6 @@ export const VoucherDisplay = ({
             vertical-align: middle !important;
           }
 
-          /* Optimize services table column widths for PDF */
-          #voucher-content table th:nth-child(1),
-          #voucher-content table td:nth-child(1) {
-            width: 10% !important;
-          }
-          
-          #voucher-content table th:nth-child(2),
-          #voucher-content table td:nth-child(2) {
-            width: 10% !important;
-          }
-          
-          #voucher-content table th:nth-child(3),
-          #voucher-content table td:nth-child(3) {
-            width: 40% !important;
-          }
-          
-          #voucher-content table th:nth-child(4),
-          #voucher-content table td:nth-child(4) {
-            width: 20% !important;
-          }
-          
-          #voucher-content table th:nth-child(5),
-          #voucher-content table td:nth-child(5) {
-            width: 20% !important;
-          }
-
           #voucher-content .bg-muted {
             background-color: hsl(var(--muted)) !important;
             -webkit-print-color-adjust: exact !important;
@@ -609,26 +583,26 @@ export const VoucherDisplay = ({
             <table className="w-full border-collapse print:text-[11px]">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="p-2 text-left print:p-0.5 w-[10%]">PAX</th>
-                  <th className="p-2 text-left print:p-0.5 w-[10%]">Qtd.</th>
-                  <th className="p-2 text-left print:p-0.5 w-[40%]">Service</th>
-                  <th className="p-2 text-left print:p-0.5 w-[20%]">Date From</th>
-                  <th className="p-2 text-left print:p-0.5 w-[20%]">Date To</th>
+                  <th className="p-2 text-left print:p-0.5">PAX</th>
+                  <th className="p-2 text-left print:p-0.5">Qtd.</th>
+                  <th className="p-2 text-left print:p-0.5">Service</th>
+                  <th className="p-2 text-left print:p-0.5">Date From</th>
+                  <th className="p-2 text-left print:p-0.5">Date To</th>
                 </tr>
               </thead>
               <tbody>
                 {services.map((service, index) => <tr key={index} className={index % 2 === 0 ? "bg-muted" : "bg-card"}>
-                    <td className="p-2 text-muted-foreground print:p-0.5 align-middle">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {service.pax || "—"}
                     </td>
-                    <td className="p-2 text-muted-foreground print:p-0.5 align-middle">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {service.qty || "—"}
                     </td>
-                    <td className="p-2 font-medium text-foreground print:p-0.5 align-middle">{service.name}</td>
-                    <td className="p-2 text-muted-foreground print:p-0.5 align-middle">
+                    <td className="p-2 font-medium text-foreground print:p-0.5">{service.name}</td>
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateFrom)}
                     </td>
-                    <td className="p-2 text-muted-foreground print:p-0.5 align-middle">
+                    <td className="p-2 text-muted-foreground print:p-0.5">
                       {formatServiceDate(service.dateTo)}
                     </td>
                   </tr>)}
