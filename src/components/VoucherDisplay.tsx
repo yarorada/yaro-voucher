@@ -229,6 +229,14 @@ export const VoucherDisplay = ({
     const saved = localStorage.getItem('voucherPdfHeadingSize');
     return saved ? parseFloat(saved) : 16;
   });
+  const [sectionSpacing, setSectionSpacing] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfSectionSpacing');
+    return saved ? parseFloat(saved) : 12;
+  });
+  const [contentPadding, setContentPadding] = useState(() => {
+    const saved = localStorage.getItem('voucherPdfContentPadding');
+    return saved ? parseFloat(saved) : 8;
+  });
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -246,6 +254,14 @@ export const VoucherDisplay = ({
   useEffect(() => {
     localStorage.setItem('voucherPdfHeadingSize', headingSize.toString());
   }, [headingSize]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfSectionSpacing', sectionSpacing.toString());
+  }, [sectionSpacing]);
+
+  useEffect(() => {
+    localStorage.setItem('voucherPdfContentPadding', contentPadding.toString());
+  }, [contentPadding]);
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -464,6 +480,14 @@ export const VoucherDisplay = ({
           #voucher-content img {
             height: ${logoSize}px !important;
           }
+
+          #voucher-content .section-spacing {
+            margin-bottom: ${sectionSpacing}px !important;
+          }
+
+          #voucher-content .content-padding {
+            padding: ${contentPadding}px !important;
+          }
         `}
       </style>
       <div className="flex gap-2 print:hidden">
@@ -497,6 +521,14 @@ export const VoucherDisplay = ({
                 <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
                 <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
               </div>
+              <div className="space-y-2">
+                <Label>Mezery mezi sekcemi: {sectionSpacing}px</Label>
+                <Slider value={[sectionSpacing]} onValueChange={([value]) => setSectionSpacing(value)} min={4} max={32} step={2} />
+              </div>
+              <div className="space-y-2">
+                <Label>Padding obsahu: {contentPadding}px</Label>
+                <Slider value={[contentPadding]} onValueChange={([value]) => setContentPadding(value)} min={4} max={24} step={2} />
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -527,11 +559,11 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && <div className="mt-3 print:mt-1.5">
+          {supplierName && <div className="section-spacing">
               <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
                 Service Provider
               </h2>
-              <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+              <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
                 <div className="space-y-0 print:space-y-0">
                   <p className="text-muted-foreground">
                     {supplierName}
@@ -545,11 +577,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Client Information */}
-        <div className="mb-3 print:mb-1.5">
+        <div className="section-spacing">
           <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
             Client Information
           </h2>
-          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+          <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
             <div className="mb-1 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
@@ -562,11 +594,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Hotel Accommodation */}
-        {hotelName && <div className="mb-3 print:mb-1.5">
+        {hotelName && <div className="section-spacing">
             <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Hotel Accommodation
             </h2>
-            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+            <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
               <div>
                 <span className="font-semibold text-foreground">Hotel:</span>{" "}
                 <span className="text-muted-foreground">{hotelName}</span>
@@ -575,7 +607,7 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Services Table */}
-        <div className="mb-3 print:mb-1.5">
+        <div className="section-spacing">
           <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
             Service Overview
           </h2>
@@ -612,11 +644,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Flight Details Section */}
-        {flights && flights.length > 0 && <div className="mb-3 print:mb-1.5">
+        {flights && flights.length > 0 && <div className="section-spacing">
             <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Flight Details
             </h2>
-            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+            <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
               <ul className="space-y-0.5 print:space-y-0">
                 {flights.map((flight, index) => {
               const fromCity = flight.fromCity || getCityName(flight.fromIata);
@@ -644,11 +676,11 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Tee Time Section */}
-        {teeTimes && teeTimes.length > 0 && <div className="mb-3 print:mb-1.5">
+        {teeTimes && teeTimes.length > 0 && <div className="section-spacing">
             <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Confirmed Tee Times
             </h2>
-            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+            <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
               <ul className="space-y-0.5 print:space-y-0">
                 {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
@@ -658,12 +690,12 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Voucher Details */}
-        <div className="mb-3 grid grid-cols-2 gap-3 print:mb-1.5 print:gap-1.5">
-          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+        <div className="section-spacing grid grid-cols-2 gap-3 print:gap-1.5">
+          <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
             <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Issue Date</p>
             <p className="font-semibold text-foreground">{formatDate(issueDate)}</p>
           </div>
-          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+          <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
             <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Expiration Date</p>
             <p className="font-semibold text-foreground">
               {expirationDate ? formatDate(expirationDate) : "No Expiration"}
