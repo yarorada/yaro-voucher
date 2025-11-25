@@ -488,6 +488,20 @@ export const VoucherDisplay = ({
           #voucher-content .content-padding {
             padding: ${contentPadding}px !important;
           }
+
+          #voucher-content .section-heading::before {
+            content: '●';
+            color: hsl(var(--accent));
+            font-size: ${baseFontRem * 1.2}rem;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+          }
+
+          @media print {
+            #voucher-content .section-heading::before {
+              font-size: ${baseFontRem * 1.1}rem;
+            }
+          }
         `}
       </style>
       <div className="flex gap-2 print:hidden">
@@ -560,7 +574,7 @@ export const VoucherDisplay = ({
           </div>
           {/* Service Provider Contact */}
           {supplierName && <div className="section-spacing">
-              <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+              <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
                 Service Provider
               </h2>
               <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
@@ -578,7 +592,7 @@ export const VoucherDisplay = ({
 
         {/* Client Information */}
         <div className="section-spacing">
-          <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+          <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
             Client Information
           </h2>
           <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
@@ -595,7 +609,7 @@ export const VoucherDisplay = ({
 
         {/* Hotel Accommodation */}
         {hotelName && <div className="section-spacing">
-            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+            <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
               Hotel Accommodation
             </h2>
             <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
@@ -608,7 +622,7 @@ export const VoucherDisplay = ({
 
         {/* Services Table */}
         <div className="section-spacing">
-          <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+          <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
             Service Overview
           </h2>
           <div className="overflow-x-auto">
@@ -645,7 +659,7 @@ export const VoucherDisplay = ({
 
         {/* Flight Details Section */}
         {flights && flights.length > 0 && <div className="section-spacing">
-            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+            <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
               Flight Details
             </h2>
             <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
@@ -677,7 +691,7 @@ export const VoucherDisplay = ({
 
         {/* Tee Time Section */}
         {teeTimes && teeTimes.length > 0 && <div className="section-spacing">
-            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
+            <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
               Confirmed Tee Times
             </h2>
             <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
