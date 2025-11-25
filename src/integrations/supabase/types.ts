@@ -649,6 +649,42 @@ export type Database = {
           },
         ]
       }
+      global_pdf_settings: {
+        Row: {
+          content_padding: number
+          font_size: number
+          heading_size: number
+          id: string
+          line_height: number
+          logo_size: number
+          section_spacing: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          content_padding?: number
+          font_size?: number
+          heading_size?: number
+          id?: string
+          line_height?: number
+          logo_size?: number
+          section_spacing?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          content_padding?: number
+          font_size?: number
+          heading_size?: number
+          id?: string
+          line_height?: number
+          logo_size?: number
+          section_spacing?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       golf_club_templates: {
         Row: {
           created_at: string

@@ -9,6 +9,7 @@ import html2pdf from "html2pdf.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -213,55 +214,85 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfFontSize');
-    return saved ? parseFloat(saved) : 10;
-  });
-  const [logoSize, setLogoSize] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfLogoSize');
-    return saved ? parseFloat(saved) : 60;
-  });
-  const [lineHeight, setLineHeight] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfLineHeight');
-    return saved ? parseFloat(saved) : 1.1;
-  });
-  const [headingSize, setHeadingSize] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfHeadingSize');
-    return saved ? parseFloat(saved) : 17;
-  });
-  const [sectionSpacing, setSectionSpacing] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfSectionSpacing');
-    return saved ? parseFloat(saved) : 4;
-  });
-  const [contentPadding, setContentPadding] = useState(() => {
-    const saved = localStorage.getItem('voucherPdfContentPadding');
-    return saved ? parseFloat(saved) : 6;
+  const queryClient = useQueryClient();
+
+  // Fetch global PDF settings from database
+  const { data: settings } = useQuery({
+    queryKey: ['global-pdf-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('global_pdf_settings')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
   });
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('voucherPdfFontSize', fontSize.toString());
-  }, [fontSize]);
+  // Use settings from database or defaults
+  const fontSize = settings?.font_size ?? 10;
+  const logoSize = settings?.logo_size ?? 60;
+  const lineHeight = settings?.line_height ?? 1.1;
+  const headingSize = settings?.heading_size ?? 17;
+  const sectionSpacing = settings?.section_spacing ?? 4;
+  const contentPadding = settings?.content_padding ?? 6;
 
-  useEffect(() => {
-    localStorage.setItem('voucherPdfLogoSize', logoSize.toString());
-  }, [logoSize]);
+  // Mutation to update global PDF settings
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (newSettings: {
+      font_size?: number;
+      logo_size?: number;
+      line_height?: number;
+      heading_size?: number;
+      section_spacing?: number;
+      content_padding?: number;
+    }) => {
+      const { data: existing } = await supabase
+        .from('global_pdf_settings')
+        .select('id')
+        .limit(1)
+        .single();
 
-  useEffect(() => {
-    localStorage.setItem('voucherPdfLineHeight', lineHeight.toString());
-  }, [lineHeight]);
+      if (!existing) throw new Error('Settings not found');
 
-  useEffect(() => {
-    localStorage.setItem('voucherPdfHeadingSize', headingSize.toString());
-  }, [headingSize]);
+      const { error } = await supabase
+        .from('global_pdf_settings')
+        .update(newSettings)
+        .eq('id', existing.id);
 
-  useEffect(() => {
-    localStorage.setItem('voucherPdfSectionSpacing', sectionSpacing.toString());
-  }, [sectionSpacing]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['global-pdf-settings'] });
+    },
+  });
 
-  useEffect(() => {
-    localStorage.setItem('voucherPdfContentPadding', contentPadding.toString());
-  }, [contentPadding]);
+  // Helper functions to update individual settings
+  const setFontSize = (value: number) => {
+    updateSettingsMutation.mutate({ font_size: value });
+  };
+
+  const setLogoSize = (value: number) => {
+    updateSettingsMutation.mutate({ logo_size: value });
+  };
+
+  const setLineHeight = (value: number) => {
+    updateSettingsMutation.mutate({ line_height: value });
+  };
+
+  const setHeadingSize = (value: number) => {
+    updateSettingsMutation.mutate({ heading_size: value });
+  };
+
+  const setSectionSpacing = (value: number) => {
+    updateSettingsMutation.mutate({ section_spacing: value });
+  };
+
+  const setContentPadding = (value: number) => {
+    updateSettingsMutation.mutate({ content_padding: value });
+  };
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
