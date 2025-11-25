@@ -527,12 +527,12 @@ export const VoucherDisplay = ({
             </div>
           </div>
           {/* Service Provider Contact */}
-          {supplierName && <div className="mt-4 print:mt-2">
-              <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+          {supplierName && <div className="mt-3 print:mt-1.5">
+              <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
                 Service Provider
               </h2>
-              <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
-                <div className="space-y-0.5 print:space-y-0">
+              <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+                <div className="space-y-0 print:space-y-0">
                   <p className="text-muted-foreground">
                     {supplierName}
                     {supplierAddress && ` • ${supplierAddress}`}
@@ -545,11 +545,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Client Information */}
-        <div className="mb-4 print:mb-2">
-          <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+        <div className="mb-3 print:mb-1.5">
+          <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
             Client Information
           </h2>
-          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
             <div className="mb-1 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
               <span className="text-muted-foreground">{clientName}</span>
@@ -562,11 +562,11 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Hotel Accommodation */}
-        {hotelName && <div className="mb-4 print:mb-2">
-            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+        {hotelName && <div className="mb-3 print:mb-1.5">
+            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Hotel Accommodation
             </h2>
-            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
               <div>
                 <span className="font-semibold text-foreground">Hotel:</span>{" "}
                 <span className="text-muted-foreground">{hotelName}</span>
@@ -575,8 +575,8 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Services Table */}
-        <div className="mb-4 print:mb-2">
-          <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+        <div className="mb-3 print:mb-1.5">
+          <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
             Service Overview
           </h2>
           <div className="overflow-x-auto">
@@ -612,12 +612,12 @@ export const VoucherDisplay = ({
         </div>
 
         {/* Flight Details Section */}
-        {flights && flights.length > 0 && <div className="mb-4 print:mb-2">
-            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+        {flights && flights.length > 0 && <div className="mb-3 print:mb-1.5">
+            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Flight Details
             </h2>
-            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
-              <ul className="space-y-1 print:space-y-0.5">
+            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+              <ul className="space-y-0.5 print:space-y-0">
                 {flights.map((flight, index) => {
               const fromCity = flight.fromCity || getCityName(flight.fromIata);
               const toCity = flight.toCity || getCityName(flight.toIata);
@@ -644,12 +644,12 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Tee Time Section */}
-        {teeTimes && teeTimes.length > 0 && <div className="mb-4 print:mb-2">
-            <h2 className="text-lg font-bold text-foreground mb-2 border-l-4 border-accent pl-3 print:text-[13px] print:mb-1 print:pl-2">
+        {teeTimes && teeTimes.length > 0 && <div className="mb-3 print:mb-1.5">
+            <h2 className="text-lg font-bold text-foreground mb-1.5 border-l-3 border-accent pl-3 print:text-[13px] print:mb-0.5 print:pl-2">
               Confirmed Tee Times
             </h2>
-            <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
-              <ul className="space-y-1 print:space-y-0.5">
+            <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
+              <ul className="space-y-0.5 print:space-y-0">
                 {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
                   </li>)}
@@ -658,12 +658,12 @@ export const VoucherDisplay = ({
           </div>}
 
         {/* Voucher Details */}
-        <div className="mb-4 grid grid-cols-2 gap-3 print:mb-2 print:gap-1.5">
-          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+        <div className="mb-3 grid grid-cols-2 gap-3 print:mb-1.5 print:gap-1.5">
+          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
             <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Issue Date</p>
             <p className="font-semibold text-foreground">{formatDate(issueDate)}</p>
           </div>
-          <div className="bg-muted p-3 rounded-lg print:p-1.5 print:text-[11px]">
+          <div className="bg-muted p-2 rounded-lg print:p-1 print:text-[11px]">
             <p className="text-sm text-muted-foreground mb-0.5 print:text-[11px] print:mb-0">Expiration Date</p>
             <p className="font-semibold text-foreground">
               {expirationDate ? formatDate(expirationDate) : "No Expiration"}
