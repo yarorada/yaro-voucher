@@ -556,7 +556,7 @@ export const VoucherDisplay = ({
 
       <Card id="voucher-content" className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm">
         {/* Header */}
-        <div className="border-b-4 border-primary pb-4 mb-4 print:pb-2 print:mb-2">
+        <div className="border-b-4 border-primary pb-4 mb-0 print:pb-2 print:mb-0">
           <div className="flex justify-between items-start mb-4 print:mb-2">
             <div>
               <img 
