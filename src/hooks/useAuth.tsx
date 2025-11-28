@@ -31,11 +31,12 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear only local session so odhlášení funguje i když serverová session už neexistuje
+      await supabase.auth.signOut({ scope: "local" });
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
-      // Always clear local state and navigate, even if signOut fails
+      // Always clear local state and navigate, i když signOut vrátí chybu
       setSession(null);
       setUser(null);
       navigate("/auth");
