@@ -311,54 +311,74 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   const handleBulkImport = async () => {
     if (!bulkImportText.trim()) {
-      toast.error("Prosím zadejte jména");
+      toast.error("Prosím zadejte data o cestujících");
       return;
     }
 
     setLoading(true);
     try {
-      const lines = bulkImportText.split('\n').filter(line => line.trim());
-      const newTravelerIds: string[] = [];
-      let updatedCount = 0;
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
-
-        const parts = trimmedLine.split(/\s+/);
-        if (parts.length < 2) {
-          toast.error(`Neplatný formát: "${trimmedLine}". Použijte formát "Jméno Příjmení"`);
-          continue;
+      // Call AI edge function to parse bulk client data
+      const { data: parseResult, error: parseError } = await supabase.functions.invoke(
+        'parse-bulk-client-data',
+        {
+          body: { text: bulkImportText }
         }
+      );
 
-        const firstName = removeDiacritics(parts[0]);
-        const lastName = removeDiacritics(parts.slice(1).join(' '));
+      if (parseError) {
+        console.error('AI parsing error:', parseError);
+        throw new Error('Nepodařilo se zpracovat data pomocí AI');
+      }
 
-        // Check if client exists
-        const { data: existingClient } = await supabase
+      if (!parseResult?.success || !parseResult?.clients) {
+        throw new Error('AI nevrátila platná data');
+      }
+
+      const clients = parseResult.clients;
+      const newTravelerIds: string[] = [];
+      let createdCount = 0;
+      let existingCount = 0;
+
+      for (const clientData of clients) {
+        const firstName = removeDiacritics(clientData.first_name);
+        const lastName = removeDiacritics(clientData.last_name);
+
+        // Check if client exists by name
+        const { data: existingClients } = await supabase
           .from('clients')
           .select('id')
-          .eq('first_name', firstName)
-          .eq('last_name', lastName)
-          .maybeSingle();
+          .ilike('first_name', firstName)
+          .ilike('last_name', lastName);
 
-        if (existingClient) {
-          newTravelerIds.push(existingClient.id);
-          updatedCount++;
+        if (existingClients && existingClients.length > 0) {
+          // Use existing client
+          newTravelerIds.push(existingClients[0].id);
+          existingCount++;
         } else {
-          // Create new client
+          // Create new client with AI-extracted data
           const { data: newClient, error } = await supabase
             .from('clients')
             .insert({
+              title: clientData.title || null,
               first_name: firstName,
               last_name: lastName,
+              email: clientData.email || null,
+              date_of_birth: clientData.date_of_birth || null,
+              passport_number: clientData.passport_number || null,
+              id_card_number: clientData.id_card_number || null,
             })
             .select('id')
             .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error creating client:', error);
+            toast.error(`Nepodařilo se vytvořit klienta: ${firstName} ${lastName}`);
+            continue;
+          }
+          
           if (newClient) {
             newTravelerIds.push(newClient.id);
+            createdCount++;
           }
         }
       }
@@ -367,16 +387,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       setBulkImportText("");
       setBulkImportOpen(false);
       
-      const addedCount = newTravelerIds.length - updatedCount;
-      if (addedCount > 0) {
-        toast.success(`Přidáno ${addedCount} nových cestujících`);
+      if (createdCount > 0) {
+        toast.success(`Vytvořeno ${createdCount} nových cestujících`);
       }
-      if (updatedCount > 0) {
-        toast.success(`Použito ${updatedCount} existujících cestujících`);
+      if (existingCount > 0) {
+        toast.success(`Použito ${existingCount} existujících cestujících`);
       }
     } catch (error) {
       console.error('Error bulk importing:', error);
-      toast.error("Nepodařilo se importovat cestující");
+      toast.error(error instanceof Error ? error.message : "Nepodařilo se importovat cestující");
     } finally {
       setLoading(false);
     }
@@ -899,11 +918,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <DialogHeader>
                       <DialogTitle>Hromadný import cestujících</DialogTitle>
                       <DialogDescription>
-                        Zadejte jména a příjmení, každé na nový řádek ve formátu "Jméno Příjmení"
+                        Zadejte informace o cestujících v libovolném formátu. AI automaticky extrahuje jména, příjmení, tituly a další údaje (email, datum narození, číslo pasu/OP).
                       </DialogDescription>
                     </DialogHeader>
                     <Textarea
-                      placeholder="Jan Novák&#10;Marie Svobodová&#10;Petr Dvořák"
+                      placeholder="Příklad:&#10;Pan Jan Novák, narozen 15.5.1980, pas 12345678&#10;Paní Marie Svobodová, email: marie@email.cz&#10;Petr Dvořák, OP AB123456"
                       value={bulkImportText}
                       onChange={(e) => setBulkImportText(e.target.value)}
                       rows={10}
