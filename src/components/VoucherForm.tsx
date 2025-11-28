@@ -281,6 +281,16 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   );
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [extractedClients, setExtractedClients] = useState<Array<{
+    title: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    date_of_birth: string;
+    passport_number: string;
+    id_card_number: string;
+  }>>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -309,7 +319,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       .replace(/[\u0300-\u036f]/g, '');
   };
 
-  const handleBulkImport = async () => {
+  const handleExtractData = async () => {
     if (!bulkImportText.trim()) {
       toast.error("Prosím zadejte data o cestujících");
       return;
@@ -334,12 +344,35 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         throw new Error('AI nevrátila platná data');
       }
 
-      const clients = parseResult.clients;
+      setExtractedClients(parseResult.clients);
+      setShowPreview(true);
+      toast.success(`Extrahováno ${parseResult.clients.length} cestujících`);
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      toast.error(error instanceof Error ? error.message : "Nepodařilo se extrahovat data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateExtractedClient = (index: number, field: string, value: string) => {
+    const updated = [...extractedClients];
+    updated[index] = { ...updated[index], [field]: value };
+    setExtractedClients(updated);
+  };
+
+  const removeExtractedClient = (index: number) => {
+    setExtractedClients(extractedClients.filter((_, i) => i !== index));
+  };
+
+  const handleConfirmImport = async () => {
+    setLoading(true);
+    try {
       const newTravelerIds: string[] = [];
       let createdCount = 0;
       let existingCount = 0;
 
-      for (const clientData of clients) {
+      for (const clientData of extractedClients) {
         const firstName = removeDiacritics(clientData.first_name);
         const lastName = removeDiacritics(clientData.last_name);
 
@@ -385,6 +418,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
       setOtherTravelerIds([...otherTravelerIds, ...newTravelerIds]);
       setBulkImportText("");
+      setExtractedClients([]);
+      setShowPreview(false);
       setBulkImportOpen(false);
       
       if (createdCount > 0) {
@@ -399,6 +434,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+    setExtractedClients([]);
   };
 
   const addService = () => {
@@ -914,36 +954,142 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                       <span className="hidden md:inline">Hromadný import</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Hromadný import cestujících</DialogTitle>
                       <DialogDescription>
-                        Zadejte informace o cestujících v libovolném formátu. AI automaticky extrahuje jména, příjmení, tituly a další údaje (email, datum narození, číslo pasu/OP).
+                        {!showPreview ? (
+                          "Zadejte informace o cestujících v libovolném formátu. AI automaticky extrahuje jména, příjmení, tituly a další údaje (email, datum narození, číslo pasu/OP)."
+                        ) : (
+                          "Zkontrolujte a upravte extrahovaná data před vytvořením klientů."
+                        )}
                       </DialogDescription>
                     </DialogHeader>
-                    <Textarea
-                      placeholder="Příklad:&#10;Pan Jan Novák, narozen 15.5.1980, pas 12345678&#10;Paní Marie Svobodová, email: marie@email.cz&#10;Petr Dvořák, OP AB123456"
-                      value={bulkImportText}
-                      onChange={(e) => setBulkImportText(e.target.value)}
-                      rows={10}
-                      className="font-mono"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setBulkImportOpen(false)}
-                      >
-                        Zrušit
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleBulkImport}
-                        disabled={loading}
-                      >
-                        Importovat
-                      </Button>
-                    </div>
+                    
+                    {!showPreview ? (
+                      <>
+                        <Textarea
+                          placeholder="Příklad:&#10;Pan Jan Novák, narozen 15.5.1980, pas 12345678&#10;Paní Marie Svobodová, email: marie@email.cz&#10;Petr Dvořák, OP AB123456"
+                          value={bulkImportText}
+                          onChange={(e) => setBulkImportText(e.target.value)}
+                          rows={10}
+                          className="font-mono"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setBulkImportOpen(false)}
+                          >
+                            Zrušit
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleExtractData}
+                            disabled={loading}
+                          >
+                            Extrahovat data
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          {extractedClients.map((client, index) => (
+                            <Card key={index} className="p-4 bg-muted">
+                              <div className="flex justify-between items-start mb-3">
+                                <h3 className="font-semibold text-foreground">Cestující {index + 1}</h3>
+                                <Button
+                                  type="button"
+                                  onClick={() => removeExtractedClient(index)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <Label>Titul</Label>
+                                  <Input
+                                    value={client.title || ""}
+                                    onChange={(e) => updateExtractedClient(index, 'title', e.target.value)}
+                                    placeholder="např. Ing., Mgr."
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Jméno *</Label>
+                                  <Input
+                                    value={client.first_name}
+                                    onChange={(e) => updateExtractedClient(index, 'first_name', e.target.value)}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Příjmení *</Label>
+                                  <Input
+                                    value={client.last_name}
+                                    onChange={(e) => updateExtractedClient(index, 'last_name', e.target.value)}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Email</Label>
+                                  <Input
+                                    type="email"
+                                    value={client.email || ""}
+                                    onChange={(e) => updateExtractedClient(index, 'email', e.target.value)}
+                                    placeholder="email@example.com"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Datum narození</Label>
+                                  <Input
+                                    type="date"
+                                    value={client.date_of_birth || ""}
+                                    onChange={(e) => updateExtractedClient(index, 'date_of_birth', e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Číslo pasu</Label>
+                                  <Input
+                                    value={client.passport_number || ""}
+                                    onChange={(e) => updateExtractedClient(index, 'passport_number', e.target.value)}
+                                    placeholder="AB123456"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Číslo OP</Label>
+                                  <Input
+                                    value={client.id_card_number || ""}
+                                    onChange={(e) => updateExtractedClient(index, 'id_card_number', e.target.value)}
+                                    placeholder="123456789"
+                                  />
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelPreview}
+                          >
+                            Zpět
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleConfirmImport}
+                            disabled={loading || extractedClients.length === 0}
+                          >
+                            Vytvořit cestující ({extractedClients.length})
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </DialogContent>
                 </Dialog>
                 <Button type="button" onClick={addTraveler} size="sm" variant="outline" className="md:px-3">
