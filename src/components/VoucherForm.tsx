@@ -371,6 +371,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       const newTravelerIds: string[] = [];
       let createdCount = 0;
       let existingCount = 0;
+      const createdDetails: string[] = [];
 
       for (const clientData of extractedClients) {
         const firstName = removeDiacritics(clientData.first_name);
@@ -384,23 +385,24 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           .ilike('last_name', lastName);
 
         if (existingClients && existingClients.length > 0) {
-          // Use existing client
+          // Use existing client - only ID is added to voucher
           newTravelerIds.push(existingClients[0].id);
           existingCount++;
         } else {
-          // Create new client with AI-extracted data
+          // Create new client with ALL AI-extracted data in database
+          // Only client ID will be stored in voucher, full data remains in database
           const { data: newClient, error } = await supabase
             .from('clients')
             .insert({
-              title: clientData.title || null,
+              title: clientData.title?.trim() || null,
               first_name: firstName,
               last_name: lastName,
-              email: clientData.email || null,
+              email: clientData.email?.trim() || null,
               date_of_birth: clientData.date_of_birth || null,
-              passport_number: clientData.passport_number || null,
-              id_card_number: clientData.id_card_number || null,
+              passport_number: clientData.passport_number?.trim() || null,
+              id_card_number: clientData.id_card_number?.trim() || null,
             })
-            .select('id')
+            .select('id, first_name, last_name, title, email, passport_number, id_card_number')
             .single();
 
           if (error) {
@@ -412,10 +414,23 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (newClient) {
             newTravelerIds.push(newClient.id);
             createdCount++;
+            
+            // Prepare detail info for toast
+            const details = [
+              newClient.title,
+              newClient.first_name,
+              newClient.last_name,
+              newClient.email && `📧 ${newClient.email}`,
+              newClient.passport_number && `🛂 ${newClient.passport_number}`,
+              newClient.id_card_number && `🆔 ${newClient.id_card_number}`
+            ].filter(Boolean).join(' ');
+            
+            createdDetails.push(details);
           }
         }
       }
 
+      // Add only client IDs to voucher travelers list
       setOtherTravelerIds([...otherTravelerIds, ...newTravelerIds]);
       setBulkImportText("");
       setExtractedClients([]);
@@ -423,10 +438,15 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       setBulkImportOpen(false);
       
       if (createdCount > 0) {
-        toast.success(`Vytvořeno ${createdCount} nových cestujících`);
+        toast.success(
+          `✅ Vytvořeno ${createdCount} nových cestujících v databázi\n` +
+          `Do voucheru přidáno pouze jméno, ostatní data uložena v databázi klientů`,
+          { duration: 5000 }
+        );
+        console.log('Created clients with full data:', createdDetails);
       }
       if (existingCount > 0) {
-        toast.success(`Použito ${existingCount} existujících cestujících`);
+        toast.success(`Použito ${existingCount} existujících cestujících z databáze`);
       }
     } catch (error) {
       console.error('Error bulk importing:', error);
