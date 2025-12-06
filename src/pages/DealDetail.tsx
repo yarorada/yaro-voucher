@@ -1216,19 +1216,57 @@ const DealDetail = () => {
                     <div className="space-y-2">
                       <Label>Typ služby</Label>
                       <Select
-                        value={serviceForm.service_type}
-                        onValueChange={(value: any) => setServiceForm({ ...serviceForm, service_type: value })}
+                        value={
+                          serviceForm.service_type === 'other' 
+                            ? (serviceForm.service_name === 'Rent-a-car' ? 'preset-rentacar' 
+                              : serviceForm.service_name === 'Strava' ? 'preset-strava'
+                              : serviceForm.service_name === 'Asistence' ? 'preset-asistence'
+                              : 'other')
+                            : serviceForm.service_type
+                        }
+                        onValueChange={(value: string) => {
+                          if (value === 'preset-rentacar') {
+                            setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Rent-a-car' });
+                          } else if (value === 'preset-strava') {
+                            setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Strava' });
+                          } else if (value === 'preset-asistence') {
+                            setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Asistence' });
+                          } else {
+                            setServiceForm({ ...serviceForm, service_type: value as any });
+                          }
+                        }}
                       >
                         <SelectTrigger className="bg-background z-50">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background z-50">
-                          <SelectItem value="hotel">Ubytování</SelectItem>
-                          <SelectItem value="flight">Letenka</SelectItem>
-                          <SelectItem value="golf">Green Fee</SelectItem>
-                          <SelectItem value="transfer">Doprava</SelectItem>
-                          <SelectItem value="insurance">Pojištění</SelectItem>
-                          <SelectItem value="other">Ostatní</SelectItem>
+                          <SelectItem value="flight">
+                            <span className="flex items-center gap-2"><Plane className="h-4 w-4" /> Letenka</span>
+                          </SelectItem>
+                          <SelectItem value="hotel">
+                            <span className="flex items-center gap-2"><Hotel className="h-4 w-4" /> Ubytování</span>
+                          </SelectItem>
+                          <SelectItem value="golf">
+                            <span className="flex items-center gap-2"><Navigation className="h-4 w-4" /> Green Fee</span>
+                          </SelectItem>
+                          <SelectItem value="transfer">
+                            <span className="flex items-center gap-2"><Car className="h-4 w-4" /> Transfery</span>
+                          </SelectItem>
+                          <SelectItem value="preset-rentacar">
+                            <span className="flex items-center gap-2"><Car className="h-4 w-4" /> Rent-a-car</span>
+                          </SelectItem>
+                          <SelectItem value="preset-strava">
+                            <span className="flex items-center gap-2"><Utensils className="h-4 w-4" /> Strava</span>
+                          </SelectItem>
+                          <SelectItem value="preset-asistence">
+                            <span className="flex items-center gap-2"><HeadphonesIcon className="h-4 w-4" /> Asistence</span>
+                          </SelectItem>
+                          <SelectItem value="insurance">
+                            <span className="flex items-center gap-2"><Shield className="h-4 w-4" /> Pojištění</span>
+                          </SelectItem>
+                          <SelectItem value="other">
+                            <span className="flex items-center gap-2"><FileText className="h-4 w-4" /> Ostatní</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
