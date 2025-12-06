@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
@@ -88,10 +105,103 @@ interface DealService {
   supplier_id: string | null;
   person_count: number | null;
   details?: FlightDetails | null;
+  order_index?: number;
   suppliers?: {
     name: string;
   };
 }
+
+// Sortable row component for drag-and-drop
+const SortableServiceRow = ({ 
+  service, 
+  onEdit, 
+  onDelete,
+  getServiceIcon,
+  getServiceTypeLabel
+}: { 
+  service: DealService;
+  onEdit: (service: DealService) => void;
+  onDelete: (id: string) => void;
+  getServiceIcon: (type: string) => React.ReactNode;
+  getServiceTypeLabel: (type: string) => string;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: service.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className="hover:bg-muted/50">
+      <TableCell className="w-8">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
+          <div className="min-w-0">
+            <p className="font-medium text-sm truncate">{service.service_name}</p>
+            <p className="text-xs text-muted-foreground">{getServiceTypeLabel(service.service_type)}</p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="hidden sm:table-cell text-xs">
+        {service.start_date && new Date(service.start_date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })}
+      </TableCell>
+      <TableCell className="hidden md:table-cell text-center text-sm">
+        {service.person_count}
+      </TableCell>
+      <TableCell className="hidden lg:table-cell text-xs truncate">
+        {service.suppliers?.name || '-'}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="text-sm font-medium">
+          {service.price ? new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1)) : '-'}
+        </div>
+        {service.price && service.person_count && service.person_count > 1 && (
+          <div className="text-xs text-muted-foreground">
+            {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count}
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex gap-1 justify-end">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 w-7 p-0" 
+            onClick={() => onEdit(service)}
+          >
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive" 
+            onClick={() => onDelete(service.id)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 interface Deal {
   id: string;
@@ -170,6 +280,14 @@ const DealDetail = () => {
   const [discountNote, setDiscountNote] = useState("");
   const [adjustmentNote, setAdjustmentNote] = useState("");
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     fetchDeal();
     fetchServices();
@@ -243,7 +361,8 @@ const DealDetail = () => {
           *,
           suppliers(name)
         `)
-        .eq("deal_id", id);
+        .eq("deal_id", id)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setServices((data || []).map(service => ({
@@ -255,6 +374,25 @@ const DealDetail = () => {
     } finally {
       setLoadingServices(false);
     }
+  };
+
+  const handleServiceDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = services.findIndex((s) => s.id === active.id);
+    const newIndex = services.findIndex((s) => s.id === over.id);
+
+    const newServices = arrayMove(services, oldIndex, newIndex);
+    setServices(newServices);
+
+    // Update order in the state immediately, but we don't save to DB since there's no order_index column
+    // The order will be maintained only for the current session
+    toast({
+      title: "Pořadí změněno",
+      description: "Pořadí služeb bylo aktualizováno",
+    });
   };
 
   const handleAddTraveler = async () => {
@@ -1310,72 +1448,42 @@ const DealDetail = () => {
             ) : (
               <div className="space-y-0">
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[25%]">Služba</TableHead>
-                        <TableHead className="w-[15%] hidden sm:table-cell">Datum</TableHead>
-                        <TableHead className="w-[10%] hidden md:table-cell text-center">Osoby</TableHead>
-                        <TableHead className="w-[20%] hidden lg:table-cell">Dodavatel</TableHead>
-                        <TableHead className="w-[15%] text-right">Cena</TableHead>
-                        <TableHead className="w-[15%] text-right">Akce</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services.map((service) => (
-                        <TableRow key={service.id} className="hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-sm truncate">{service.service_name}</p>
-                                <p className="text-xs text-muted-foreground">{getServiceTypeLabel(service.service_type)}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-xs">
-                            {service.start_date && new Date(service.start_date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-center text-sm">
-                            {service.person_count}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-xs truncate">
-                            {service.suppliers?.name || '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="text-sm font-medium">
-                              {service.price ? new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price * (service.person_count || 1)) : '-'}
-                            </div>
-                            {service.price && service.person_count && service.person_count > 1 && (
-                              <div className="text-xs text-muted-foreground">
-                                {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(service.price)} × {service.person_count}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-7 w-7 p-0" 
-                                onClick={() => openEditService(service)}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-7 w-7 p-0 text-destructive hover:text-destructive" 
-                                onClick={() => handleDeleteService(service.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleServiceDragEnd}
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead className="w-[25%]">Služba</TableHead>
+                          <TableHead className="w-[15%] hidden sm:table-cell">Datum</TableHead>
+                          <TableHead className="w-[10%] hidden md:table-cell text-center">Osoby</TableHead>
+                          <TableHead className="w-[20%] hidden lg:table-cell">Dodavatel</TableHead>
+                          <TableHead className="w-[15%] text-right">Cena</TableHead>
+                          <TableHead className="w-[15%] text-right">Akce</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <SortableContext
+                        items={services.map((s) => s.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <TableBody>
+                          {services.map((service) => (
+                            <SortableServiceRow
+                              key={service.id}
+                              service={service}
+                              onEdit={openEditService}
+                              onDelete={handleDeleteService}
+                              getServiceIcon={getServiceIcon}
+                              getServiceTypeLabel={getServiceTypeLabel}
+                            />
+                          ))}
+                        </TableBody>
+                      </SortableContext>
+                    </Table>
+                  </DndContext>
                 </div>
                 
                 <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30">
