@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Contact } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,28 +139,89 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     removeDiacritics(`${c.first_name} ${c.last_name}`).toLowerCase().includes(removeDiacritics(searchValue).toLowerCase())
   );
 
+  // Check if Contact Picker API is available
+  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
+
+  const handlePickContact = async () => {
+    try {
+      const props = ['name', 'email', 'tel', 'address'];
+      const opts = { multiple: false };
+      
+      // @ts-ignore - Contact Picker API types not in standard lib
+      const contacts = await navigator.contacts.select(props, opts);
+      
+      if (contacts && contacts.length > 0) {
+        const contact = contacts[0];
+        
+        // Parse name
+        if (contact.name && contact.name.length > 0) {
+          const fullName = contact.name[0];
+          const parts = fullName.trim().split(/\s+/);
+          if (parts.length >= 2) {
+            setNewClientFirstName(parts[0]);
+            setNewClientLastName(parts.slice(1).join(' '));
+          } else {
+            setNewClientFirstName(fullName);
+            setNewClientLastName("");
+          }
+        }
+        
+        // Set email
+        if (contact.email && contact.email.length > 0) {
+          setNewClientEmail(contact.email[0]);
+        }
+        
+        // Set phone
+        if (contact.tel && contact.tel.length > 0) {
+          setNewClientPhone(contact.tel[0]);
+        }
+        
+        // Set address
+        if (contact.address && contact.address.length > 0) {
+          const addr = contact.address[0];
+          const addressParts = [
+            addr.streetAddress,
+            addr.locality,
+            addr.postalCode,
+            addr.country
+          ].filter(Boolean);
+          setNewClientAddress(addressParts.join(', '));
+        }
+        
+        setDialogOpen(true);
+        toast.success("Kontakt načten");
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error("Error picking contact:", error);
+        toast.error("Nepodařilo se načíst kontakt");
+      }
+    }
+  };
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            onKeyDown={(e) => {
-              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                setOpen(true);
-                setSearchValue(e.key);
-              }
-            }}
-          >
-            {selectedClient
-              ? `${selectedClient.first_name} ${selectedClient.last_name}`
-              : "Vyberte klienta..."}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+              onKeyDown={(e) => {
+                if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                  setOpen(true);
+                  setSearchValue(e.key);
+                }
+              }}
+            >
+              {selectedClient
+                ? `${selectedClient.first_name} ${selectedClient.last_name}`
+                : "Vyberte klienta..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
         <PopoverContent className="w-full p-0 bg-background z-50" align="start">
           <Command className="bg-background" shouldFilter={false}>
             <CommandInput 
@@ -223,6 +284,19 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
           </Command>
         </PopoverContent>
       </Popover>
+      
+      {isContactPickerSupported && (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={handlePickContact}
+          title="Vybrat z kontaktů"
+        >
+          <Contact className="h-4 w-4" />
+        </Button>
+      )}
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
