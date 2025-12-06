@@ -25,30 +25,29 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a flight data extraction assistant. Extract flight information from the provided text.
-Return structured data about flights including:
-- Departure airport (IATA code if possible, e.g., PRG, VIE, FRA)
-- Arrival airport (IATA code if possible)
-- Airline name and code if available
-- Flight number if available
-- Date and time if available
-- Whether it's a one-way or round-trip flight
-- For round-trip, extract both outbound and return flight details
+    const systemPrompt = `You are a flight data extraction assistant. Extract ALL flight segments from the provided text.
 
-Common Czech airport codes:
-- PRG = Prague
-- BRQ = Brno
-- OSR = Ostrava
+IMPORTANT: Extract EVERY flight segment separately, including connection flights. 
+For a multi-segment journey like PRG->DOH->BKK and back BKK->DOH->PRG, you should extract 4 segments.
 
-Common Spanish airport codes:
-- AGP = Malaga
-- ALC = Alicante
-- BCN = Barcelona
-- MAD = Madrid
-- PMI = Palma de Mallorca
+For each segment extract:
+- Departure airport (IATA code)
+- Arrival airport (IATA code)
+- Airline code and name
+- Flight number
+- Date in YYYY-MM-DD format
+- Departure time in HH:MM format
+- Arrival time in HH:MM format (if available)
+
+Separate outbound segments (going to destination) from return segments (coming back).
+
+Common airport codes:
+- PRG = Prague, DOH = Doha, BKK = Bangkok, DXB = Dubai
+- AGP = Malaga, ALC = Alicante, BCN = Barcelona, MAD = Madrid
+- IST = Istanbul, VIE = Vienna, FRA = Frankfurt, MUC = Munich
 
 If the text mentions a city without the IATA code, try to identify the most likely airport code.
-Extract as much information as possible from the text.`;
+Extract times from formats like "1455" as "14:55", "0210" as "02:10".`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -60,14 +59,14 @@ Extract as much information as possible from the text.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract flight information from this text:\n\n${text}` }
+          { role: "user", content: `Extract ALL flight segments from this text:\n\n${text}` }
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "extract_flight_data",
-              description: "Extract structured flight data from text",
+              description: "Extract structured flight data with all segments",
               parameters: {
                 type: "object",
                 properties: {
@@ -75,29 +74,39 @@ Extract as much information as possible from the text.`;
                     type: "boolean",
                     description: "True if this is a one-way flight, false for round-trip"
                   },
-                  outbound: {
-                    type: "object",
-                    properties: {
-                      departure_airport: { type: "string", description: "IATA code of departure airport (e.g., PRG)" },
-                      arrival_airport: { type: "string", description: "IATA code of arrival airport (e.g., AGP)" },
-                      airline_code: { type: "string", description: "Airline IATA code (e.g., OK, FR, W6)" },
-                      airline_name: { type: "string", description: "Full airline name" },
-                      flight_number: { type: "string", description: "Flight number (e.g., OK123)" },
-                      date: { type: "string", description: "Flight date in YYYY-MM-DD format if available" },
-                      time: { type: "string", description: "Departure time in HH:MM format if available" }
-                    },
-                    required: ["departure_airport", "arrival_airport"]
+                  outbound_segments: {
+                    type: "array",
+                    description: "All outbound flight segments (going to destination)",
+                    items: {
+                      type: "object",
+                      properties: {
+                        departure_airport: { type: "string", description: "IATA code of departure airport" },
+                        arrival_airport: { type: "string", description: "IATA code of arrival airport" },
+                        airline_code: { type: "string", description: "Airline IATA code" },
+                        airline_name: { type: "string", description: "Full airline name" },
+                        flight_number: { type: "string", description: "Flight number" },
+                        date: { type: "string", description: "Flight date in YYYY-MM-DD format" },
+                        departure_time: { type: "string", description: "Departure time in HH:MM format" },
+                        arrival_time: { type: "string", description: "Arrival time in HH:MM format" }
+                      },
+                      required: ["departure_airport", "arrival_airport"]
+                    }
                   },
-                  return_flight: {
-                    type: "object",
-                    properties: {
-                      departure_airport: { type: "string", description: "IATA code of departure airport" },
-                      arrival_airport: { type: "string", description: "IATA code of arrival airport" },
-                      airline_code: { type: "string", description: "Airline IATA code" },
-                      airline_name: { type: "string", description: "Full airline name" },
-                      flight_number: { type: "string", description: "Flight number" },
-                      date: { type: "string", description: "Flight date in YYYY-MM-DD format if available" },
-                      time: { type: "string", description: "Departure time in HH:MM format if available" }
+                  return_segments: {
+                    type: "array",
+                    description: "All return flight segments (coming back from destination)",
+                    items: {
+                      type: "object",
+                      properties: {
+                        departure_airport: { type: "string", description: "IATA code of departure airport" },
+                        arrival_airport: { type: "string", description: "IATA code of arrival airport" },
+                        airline_code: { type: "string", description: "Airline IATA code" },
+                        airline_name: { type: "string", description: "Full airline name" },
+                        flight_number: { type: "string", description: "Flight number" },
+                        date: { type: "string", description: "Flight date in YYYY-MM-DD format" },
+                        departure_time: { type: "string", description: "Departure time in HH:MM format" },
+                        arrival_time: { type: "string", description: "Arrival time in HH:MM format" }
+                      }
                     }
                   },
                   price: {
@@ -109,7 +118,7 @@ Extract as much information as possible from the text.`;
                     description: "Number of passengers if mentioned"
                   }
                 },
-                required: ["outbound"]
+                required: ["outbound_segments"]
               }
             }
           }
@@ -145,6 +154,7 @@ Extract as much information as possible from the text.`;
     }
 
     const flightData = JSON.parse(toolCall.function.arguments);
+    console.log("Parsed flight data:", JSON.stringify(flightData, null, 2));
 
     return new Response(
       JSON.stringify({ flightData }),

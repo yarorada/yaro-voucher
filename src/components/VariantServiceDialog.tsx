@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateInput } from "@/components/ui/date-input";
-import { Plane, Sparkles, Loader2 } from "lucide-react";
+import { Plane, Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,21 +28,20 @@ import { AirlineCombobox } from "./AirlineCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
+interface FlightSegment {
+  departure: string;
+  arrival: string;
+  airline: string;
+  airline_name: string;
+  flight_number: string;
+  date?: string;
+  departure_time?: string;
+  arrival_time?: string;
+}
+
 interface FlightDetails {
-  outbound?: {
-    departure: string;
-    arrival: string;
-    airline: string;
-    airline_name: string;
-    flight_number: string;
-  };
-  return?: {
-    departure: string;
-    arrival: string;
-    airline: string;
-    airline_name: string;
-    flight_number: string;
-  };
+  outbound_segments?: FlightSegment[];
+  return_segments?: FlightSegment[];
 }
 
 interface VariantServiceDialogProps {
@@ -55,6 +54,16 @@ interface VariantServiceDialogProps {
   preselectedServiceType?: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
   preselectedServiceName?: string;
 }
+
+const emptySegment = (): FlightSegment => ({
+  departure: "",
+  arrival: "",
+  airline: "",
+  airline_name: "",
+  flight_number: "",
+  departure_time: "",
+  arrival_time: "",
+});
 
 export const VariantServiceDialog = ({
   variantId,
@@ -77,17 +86,9 @@ export const VariantServiceDialog = ({
   const [personCount, setPersonCount] = useState("1");
   const [supplierId, setSupplierId] = useState("");
 
-  // Flight-specific fields
-  const [outboundDeparture, setOutboundDeparture] = useState("");
-  const [outboundArrival, setOutboundArrival] = useState("");
-  const [outboundAirline, setOutboundAirline] = useState("");
-  const [outboundAirlineName, setOutboundAirlineName] = useState("");
-  const [outboundFlightNumber, setOutboundFlightNumber] = useState("");
-  const [returnDeparture, setReturnDeparture] = useState("");
-  const [returnArrival, setReturnArrival] = useState("");
-  const [returnAirline, setReturnAirline] = useState("");
-  const [returnAirlineName, setReturnAirlineName] = useState("");
-  const [returnFlightNumber, setReturnFlightNumber] = useState("");
+  // Flight-specific fields - multi-segment support
+  const [outboundSegments, setOutboundSegments] = useState<FlightSegment[]>([emptySegment()]);
+  const [returnSegments, setReturnSegments] = useState<FlightSegment[]>([emptySegment()]);
   const [isOneWay, setIsOneWay] = useState(false);
 
   // AI import state
@@ -108,22 +109,40 @@ export const VariantServiceDialog = ({
 
       // Load flight details if exists
       const details = service.details as FlightDetails | null;
-      if (details?.outbound) {
-        setOutboundDeparture(details.outbound.departure || "");
-        setOutboundArrival(details.outbound.arrival || "");
-        setOutboundAirline(details.outbound.airline || "");
-        setOutboundAirlineName(details.outbound.airline_name || "");
-        setOutboundFlightNumber(details.outbound.flight_number || "");
+      if (details?.outbound_segments && details.outbound_segments.length > 0) {
+        setOutboundSegments(details.outbound_segments);
+      } else if ((details as any)?.outbound) {
+        // Legacy support
+        const legacy = details as any;
+        setOutboundSegments([{
+          departure: legacy.outbound.departure || "",
+          arrival: legacy.outbound.arrival || "",
+          airline: legacy.outbound.airline || "",
+          airline_name: legacy.outbound.airline_name || "",
+          flight_number: legacy.outbound.flight_number || "",
+          departure_time: "",
+          arrival_time: "",
+        }]);
       }
-      if (details?.return) {
-        setReturnDeparture(details.return.departure || "");
-        setReturnArrival(details.return.arrival || "");
-        setReturnAirline(details.return.airline || "");
-        setReturnAirlineName(details.return.airline_name || "");
-        setReturnFlightNumber(details.return.flight_number || "");
+      
+      if (details?.return_segments && details.return_segments.length > 0) {
+        setReturnSegments(details.return_segments);
+        setIsOneWay(false);
+      } else if ((details as any)?.return) {
+        // Legacy support
+        const legacy = details as any;
+        setReturnSegments([{
+          departure: legacy.return.departure || "",
+          arrival: legacy.return.arrival || "",
+          airline: legacy.return.airline || "",
+          airline_name: legacy.return.airline_name || "",
+          flight_number: legacy.return.flight_number || "",
+          departure_time: "",
+          arrival_time: "",
+        }]);
         setIsOneWay(false);
       } else {
-        setIsOneWay(service.service_type === "flight" && !details?.return);
+        setIsOneWay(service.service_type === "flight");
       }
     } else {
       resetForm();
@@ -139,17 +158,8 @@ export const VariantServiceDialog = ({
     setPrice("");
     setPersonCount("1");
     setSupplierId("");
-    // Reset flight fields
-    setOutboundDeparture("");
-    setOutboundArrival("");
-    setOutboundAirline("");
-    setOutboundAirlineName("");
-    setOutboundFlightNumber("");
-    setReturnDeparture("");
-    setReturnArrival("");
-    setReturnAirline("");
-    setReturnAirlineName("");
-    setReturnFlightNumber("");
+    setOutboundSegments([emptySegment()]);
+    setReturnSegments([emptySegment()]);
     setIsOneWay(false);
     setShowAiImport(false);
     setAiImportText("");
@@ -176,30 +186,45 @@ export const VariantServiceDialog = ({
       if (data?.flightData) {
         const flightData = data.flightData;
         
-        // Fill outbound flight data
-        if (flightData.outbound) {
-          setOutboundDeparture(flightData.outbound.departure_airport || "");
-          setOutboundArrival(flightData.outbound.arrival_airport || "");
-          setOutboundAirline(flightData.outbound.airline_code || "");
-          setOutboundAirlineName(flightData.outbound.airline_name || "");
-          setOutboundFlightNumber(flightData.outbound.flight_number || "");
+        // Fill outbound segments
+        if (flightData.outbound_segments && flightData.outbound_segments.length > 0) {
+          const segments: FlightSegment[] = flightData.outbound_segments.map((seg: any) => ({
+            departure: seg.departure_airport || "",
+            arrival: seg.arrival_airport || "",
+            airline: seg.airline_code || "",
+            airline_name: seg.airline_name || "",
+            flight_number: seg.flight_number || "",
+            date: seg.date || "",
+            departure_time: seg.departure_time || "",
+            arrival_time: seg.arrival_time || "",
+          }));
+          setOutboundSegments(segments);
           
-          if (flightData.outbound.date) {
-            setStartDate(new Date(flightData.outbound.date));
+          // Set start date from first outbound segment
+          if (flightData.outbound_segments[0]?.date) {
+            setStartDate(new Date(flightData.outbound_segments[0].date));
           }
         }
 
-        // Fill return flight data
-        if (flightData.return_flight && !flightData.is_one_way) {
-          setReturnDeparture(flightData.return_flight.departure_airport || "");
-          setReturnArrival(flightData.return_flight.arrival_airport || "");
-          setReturnAirline(flightData.return_flight.airline_code || "");
-          setReturnAirlineName(flightData.return_flight.airline_name || "");
-          setReturnFlightNumber(flightData.return_flight.flight_number || "");
+        // Fill return segments
+        if (flightData.return_segments && flightData.return_segments.length > 0) {
+          const segments: FlightSegment[] = flightData.return_segments.map((seg: any) => ({
+            departure: seg.departure_airport || "",
+            arrival: seg.arrival_airport || "",
+            airline: seg.airline_code || "",
+            airline_name: seg.airline_name || "",
+            flight_number: seg.flight_number || "",
+            date: seg.date || "",
+            departure_time: seg.departure_time || "",
+            arrival_time: seg.arrival_time || "",
+          }));
+          setReturnSegments(segments);
           setIsOneWay(false);
           
-          if (flightData.return_flight.date) {
-            setEndDate(new Date(flightData.return_flight.date));
+          // Set end date from last return segment
+          const lastReturnSeg = flightData.return_segments[flightData.return_segments.length - 1];
+          if (lastReturnSeg?.date) {
+            setEndDate(new Date(lastReturnSeg.date));
           }
         } else if (flightData.is_one_way) {
           setIsOneWay(true);
@@ -232,14 +257,45 @@ export const VariantServiceDialog = ({
     }
   };
 
+  const updateOutboundSegment = (index: number, field: keyof FlightSegment, value: string) => {
+    setOutboundSegments(prev => prev.map((seg, i) => 
+      i === index ? { ...seg, [field]: value } : seg
+    ));
+  };
+
+  const updateReturnSegment = (index: number, field: keyof FlightSegment, value: string) => {
+    setReturnSegments(prev => prev.map((seg, i) => 
+      i === index ? { ...seg, [field]: value } : seg
+    ));
+  };
+
+  const addOutboundSegment = () => {
+    setOutboundSegments(prev => [...prev, emptySegment()]);
+  };
+
+  const addReturnSegment = () => {
+    setReturnSegments(prev => [...prev, emptySegment()]);
+  };
+
+  const removeOutboundSegment = (index: number) => {
+    if (outboundSegments.length > 1) {
+      setOutboundSegments(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const removeReturnSegment = (index: number) => {
+    if (returnSegments.length > 1) {
+      setReturnSegments(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const handleSave = async () => {
-    // For flight type, generate automatic service_name
     let finalServiceName = serviceName;
     let flightDetails: FlightDetails | null = null;
 
     if (serviceType === "flight") {
-      // Require at least outbound airports
-      if (!outboundDeparture || !outboundArrival) {
+      // Require at least first outbound segment
+      if (!outboundSegments[0]?.departure || !outboundSegments[0]?.arrival) {
         toast({
           title: "Chyba",
           description: "Vyplňte prosím letiště odletu a příletu",
@@ -248,26 +304,18 @@ export const VariantServiceDialog = ({
         return;
       }
 
-      // Generate automatic service name with return airport if exists
-      const airlineName = outboundAirlineName || outboundAirline;
-      const returnPart = !isOneWay && returnArrival ? ` - ${returnArrival}` : '';
-      finalServiceName = `Letenka ${outboundDeparture} - ${outboundArrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
+      // Generate automatic service name
+      const firstDeparture = outboundSegments[0].departure;
+      const lastOutboundArrival = outboundSegments[outboundSegments.length - 1].arrival;
+      const lastReturnArrival = !isOneWay && returnSegments.length > 0 ? returnSegments[returnSegments.length - 1].arrival : "";
+      const airlineName = outboundSegments[0].airline_name || outboundSegments[0].airline;
+      
+      const returnPart = lastReturnArrival ? ` - ${lastReturnArrival}` : '';
+      finalServiceName = `Letenka ${firstDeparture} - ${lastOutboundArrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
 
       flightDetails = {
-        outbound: {
-          departure: outboundDeparture,
-          arrival: outboundArrival,
-          airline: outboundAirline,
-          airline_name: outboundAirlineName,
-          flight_number: outboundFlightNumber,
-        },
-        return: !isOneWay && returnDeparture ? {
-          departure: returnDeparture,
-          arrival: returnArrival,
-          airline: returnAirline,
-          airline_name: returnAirlineName,
-          flight_number: returnFlightNumber,
-        } : undefined,
+        outbound_segments: outboundSegments.filter(s => s.departure && s.arrival),
+        return_segments: !isOneWay ? returnSegments.filter(s => s.departure && s.arrival) : undefined,
       };
     } else if (!serviceName.trim()) {
       toast({
@@ -281,7 +329,6 @@ export const VariantServiceDialog = ({
     setSaving(true);
     try {
       if (service) {
-        // Update existing service
         const { error } = await supabase
           .from("deal_variant_services")
           .update({
@@ -299,7 +346,6 @@ export const VariantServiceDialog = ({
 
         if (error) throw error;
       } else {
-        // Create new service
         const { error } = await supabase
           .from("deal_variant_services")
           .insert({
@@ -337,6 +383,83 @@ export const VariantServiceDialog = ({
     }
   };
 
+  const renderFlightSegment = (
+    segment: FlightSegment,
+    index: number,
+    isOutbound: boolean,
+    canRemove: boolean
+  ) => {
+    const updateFn = isOutbound ? updateOutboundSegment : updateReturnSegment;
+    const removeFn = isOutbound ? removeOutboundSegment : removeReturnSegment;
+
+    return (
+      <div key={index} className="space-y-2 p-3 border rounded bg-background/50 relative">
+        {canRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute top-1 right-1 h-6 w-6 p-0"
+            onClick={() => removeFn(index)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
+        
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Odkud</Label>
+            <AirportCombobox
+              value={segment.departure}
+              onSelect={(iata) => updateFn(index, "departure", iata)}
+              placeholder="Letiště..."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Kam</Label>
+            <AirportCombobox
+              value={segment.arrival}
+              onSelect={(iata) => updateFn(index, "arrival", iata)}
+              placeholder="Letiště..."
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Letecká spol.</Label>
+            <AirlineCombobox
+              value={segment.airline}
+              onSelect={(code, name) => {
+                updateFn(index, "airline", code);
+                updateFn(index, "airline_name", name);
+              }}
+              placeholder="Vyberte..."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Číslo letu</Label>
+            <Input
+              value={segment.flight_number}
+              onChange={(e) => updateFn(index, "flight_number", e.target.value)}
+              placeholder="QR292"
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Odlet</Label>
+            <Input
+              value={segment.departure_time || ""}
+              onChange={(e) => updateFn(index, "departure_time", e.target.value)}
+              placeholder="14:55"
+              className="h-9"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -367,7 +490,6 @@ export const VariantServiceDialog = ({
             </Select>
           </div>
 
-          {/* Flight-specific form */}
           {serviceType === "flight" ? (
             <>
               {/* AI Import Section */}
@@ -391,9 +513,13 @@ export const VariantServiceDialog = ({
                     <Textarea
                       value={aiImportText}
                       onChange={(e) => setAiImportText(e.target.value)}
-                      placeholder="Vložte text obsahující informace o letu, např.: 'Let z Prahy do Malagy s Czech Airlines OK 801 dne 15.6.2025, zpáteční let OK 802 dne 22.6.2025'"
-                      rows={3}
-                      className="text-sm"
+                      placeholder="Vložte text z rezervačního systému, např.:
+3 QR 292 K 20DEC PRGDOH 1455 2240
+4 QR 834 K 21DEC DOHBKK 0140 1215
+5 QR 835 Q 28DEC BKKDOH 1855 2220
+6 QR 289 Q 29DEC DOHPRG 0210 0620"
+                      rows={4}
+                      className="text-sm font-mono"
                     />
                     <Button
                       type="button"
@@ -409,7 +535,7 @@ export const VariantServiceDialog = ({
                       ) : (
                         <>
                           <Sparkles className="mr-2 h-4 w-4" />
-                          Extrahovat data
+                          Extrahovat všechny segmenty
                         </>
                       )}
                     </Button>
@@ -417,80 +543,39 @@ export const VariantServiceDialog = ({
                 )}
               </div>
 
-              {/* Outbound flight */}
+              {/* Outbound flights */}
               <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Plane className="h-4 w-4" />
-                  Odletový let
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Plane className="h-4 w-4" />
+                    Odletové lety ({outboundSegments.length} {outboundSegments.length === 1 ? 'segment' : 'segmenty'})
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addOutboundSegment}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Přidat přestup
+                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Odkud *</Label>
-                    <AirportCombobox
-                      value={outboundDeparture}
-                      onSelect={(iata) => {
-                        setOutboundDeparture(iata);
-                        // Auto-fill return arrival
-                        if (!returnArrival) setReturnArrival(iata);
-                      }}
-                      placeholder="Vyberte letiště..."
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Kam *</Label>
-                    <AirportCombobox
-                      value={outboundArrival}
-                      onSelect={(iata) => {
-                        setOutboundArrival(iata);
-                        // Auto-fill return departure
-                        if (!returnDeparture) setReturnDeparture(iata);
-                      }}
-                      placeholder="Vyberte letiště..."
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Letecká společnost</Label>
-                    <AirlineCombobox
-                      value={outboundAirline}
-                      onSelect={(code, name) => {
-                        setOutboundAirline(code);
-                        setOutboundAirlineName(name);
-                        // Auto-fill return airline
-                        if (!returnAirline) {
-                          setReturnAirline(code);
-                          setReturnAirlineName(name);
-                        }
-                      }}
-                      placeholder="Vyberte..."
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Číslo letu</Label>
-                    <Input
-                      value={outboundFlightNumber}
-                      onChange={(e) => setOutboundFlightNumber(e.target.value)}
-                      placeholder="OK123"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  {outboundSegments.map((segment, index) => 
+                    renderFlightSegment(segment, index, true, outboundSegments.length > 1)
+                  )}
                 </div>
               </div>
 
-              {/* One-way flight checkbox */}
+              {/* One-way checkbox */}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is_one_way"
                   checked={isOneWay}
                   onCheckedChange={(checked) => {
                     setIsOneWay(!!checked);
-                    // Clear return fields when switching to one-way
                     if (checked) {
-                      setReturnDeparture("");
-                      setReturnArrival("");
-                      setReturnAirline("");
-                      setReturnAirlineName("");
-                      setReturnFlightNumber("");
+                      setReturnSegments([emptySegment()]);
                     }
                   }}
                 />
@@ -499,51 +584,28 @@ export const VariantServiceDialog = ({
                 </Label>
               </div>
 
-              {/* Return flight - only show if not one-way */}
+              {/* Return flights */}
               {!isOneWay && (
                 <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Plane className="h-4 w-4 rotate-180" />
-                    Zpáteční let
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Plane className="h-4 w-4 rotate-180" />
+                      Zpáteční lety ({returnSegments.length} {returnSegments.length === 1 ? 'segment' : 'segmenty'})
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addReturnSegment}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Přidat přestup
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Odkud</Label>
-                      <AirportCombobox
-                        value={returnDeparture}
-                        onSelect={setReturnDeparture}
-                        placeholder="Vyberte letiště..."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Kam</Label>
-                      <AirportCombobox
-                        value={returnArrival}
-                        onSelect={setReturnArrival}
-                        placeholder="Vyberte letiště..."
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Letecká společnost</Label>
-                      <AirlineCombobox
-                        value={returnAirline}
-                        onSelect={(code, name) => {
-                          setReturnAirline(code);
-                          setReturnAirlineName(name);
-                        }}
-                        placeholder="Vyberte..."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Číslo letu</Label>
-                      <Input
-                        value={returnFlightNumber}
-                        onChange={(e) => setReturnFlightNumber(e.target.value)}
-                        placeholder="OK124"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    {returnSegments.map((segment, index) => 
+                      renderFlightSegment(segment, index, false, returnSegments.length > 1)
+                    )}
                   </div>
                 </div>
               )}
