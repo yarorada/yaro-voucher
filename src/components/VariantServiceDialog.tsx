@@ -53,6 +53,7 @@ interface VariantServiceDialogProps {
   variantEndDate?: string | null;
   preselectedServiceType?: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
   preselectedServiceName?: string;
+  defaultTravelerCount?: number;
 }
 
 const emptySegment = (): FlightSegment => ({
@@ -74,6 +75,7 @@ export const VariantServiceDialog = ({
   variantEndDate,
   preselectedServiceType = "hotel",
   preselectedServiceName = "",
+  defaultTravelerCount = 1,
 }: VariantServiceDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -156,7 +158,7 @@ export const VariantServiceDialog = ({
     setStartDate(variantStartDate ? new Date(variantStartDate) : undefined);
     setEndDate(variantEndDate ? new Date(variantEndDate) : undefined);
     setPrice("");
-    setPersonCount("1");
+    setPersonCount(defaultTravelerCount.toString());
     setSupplierId("");
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
