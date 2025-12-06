@@ -31,15 +31,17 @@ interface ServiceTemplate {
   id: string;
   name: string;
   english_name?: string;
+  service_type?: string;
 }
 
 interface ServiceComboboxProps {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (serviceName: string) => void;
+  serviceType?: string;
 }
 
-export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxProps) {
+export function ServiceCombobox({ value, onChange, onSelect, serviceType }: ServiceComboboxProps) {
   const [open, setOpen] = useState(false);
   const [services, setServices] = useState<ServiceTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +87,8 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
         .from("service_templates")
         .insert({ 
           name: newServiceName.trim(),
-          english_name: newEnglishName.trim()
+          english_name: newEnglishName.trim(),
+          service_type: serviceType || 'other'
         })
         .select()
         .single();
@@ -156,9 +159,11 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
     setEditDialogOpen(true);
   };
 
-  const filteredServices = services.filter((service) =>
-    service.name.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredServices = services.filter((service) => {
+    const matchesSearch = service.name.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesType = !serviceType || service.service_type === serviceType || !service.service_type;
+    return matchesSearch && matchesType;
+  });
 
   const showCreateOption = searchValue.trim() && 
     !services.some(s => s.name.toLowerCase() === searchValue.toLowerCase());

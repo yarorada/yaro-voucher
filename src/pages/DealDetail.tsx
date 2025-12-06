@@ -1062,6 +1062,7 @@ const DealDetail = () => {
                       <ServiceCombobox
                         value={serviceForm.service_name}
                         onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
+                        serviceType={serviceForm.service_type}
                       />
                     </div>
 
