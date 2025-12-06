@@ -33,7 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Calculator } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Calculator, Pencil } from "lucide-react";
 import { format, subMonths, isPast, startOfDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [formData, setFormData] = useState({
     payment_type: "deposit",
@@ -89,7 +90,24 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     fetchPayments();
   }, [contractId]);
 
-  const handleAddPayment = async () => {
+  const resetForm = () => {
+    setFormData({ payment_type: "deposit", amount: "", notes: "" });
+    setSelectedDate(undefined);
+    setEditingPayment(null);
+  };
+
+  const openEditDialog = (payment: Payment) => {
+    setEditingPayment(payment);
+    setFormData({
+      payment_type: payment.payment_type,
+      amount: payment.amount.toString(),
+      notes: payment.notes || "",
+    });
+    setSelectedDate(new Date(payment.due_date));
+    setDialogOpen(true);
+  };
+
+  const handleSavePayment = async () => {
     if (!formData.amount || !selectedDate) {
       toast({
         title: "Chyba",
@@ -100,30 +118,52 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     }
 
     try {
-      // @ts-ignore - Supabase types not updated after migration
-      const { error } = await (supabase as any).from("contract_payments").insert({
-        contract_id: contractId,
-        payment_type: formData.payment_type,
-        amount: parseFloat(formData.amount),
-        due_date: format(selectedDate, "yyyy-MM-dd"),
-        notes: formData.notes || null,
-      });
+      if (editingPayment) {
+        // Update existing payment
+        // @ts-ignore - Supabase types not updated after migration
+        const { error } = await (supabase as any)
+          .from("contract_payments")
+          .update({
+            payment_type: formData.payment_type,
+            amount: parseFloat(formData.amount),
+            due_date: format(selectedDate, "yyyy-MM-dd"),
+            notes: formData.notes || null,
+          })
+          .eq("id", editingPayment.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Přidáno",
-        description: "Platba byla přidána",
-      });
+        toast({
+          title: "Uloženo",
+          description: "Platba byla upravena",
+        });
+      } else {
+        // Add new payment
+        // @ts-ignore - Supabase types not updated after migration
+        const { error } = await (supabase as any).from("contract_payments").insert({
+          contract_id: contractId,
+          payment_type: formData.payment_type,
+          amount: parseFloat(formData.amount),
+          due_date: format(selectedDate, "yyyy-MM-dd"),
+          notes: formData.notes || null,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Přidáno",
+          description: "Platba byla přidána",
+        });
+      }
+
       setDialogOpen(false);
-      setFormData({ payment_type: "deposit", amount: "", notes: "" });
-      setSelectedDate(undefined);
+      resetForm();
       fetchPayments();
     } catch (error) {
-      console.error("Error adding payment:", error);
+      console.error("Error saving payment:", error);
       toast({
         title: "Chyba",
-        description: "Nepodařilo se přidat platbu",
+        description: editingPayment ? "Nepodařilo se upravit platbu" : "Nepodařilo se přidat platbu",
         variant: "destructive",
       });
     }
@@ -236,7 +276,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                 Doplatek {remainingPayment.toLocaleString("cs-CZ")} Kč
               </Button>
             )}
-            <Button onClick={() => setDialogOpen(true)} size="sm">
+            <Button onClick={() => { resetForm(); setDialogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Přidat platbu
             </Button>
@@ -298,13 +338,22 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                           {payment.notes || "-"}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePayment(payment.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(payment)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePayment(payment.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -338,10 +387,10 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Přidat platbu</DialogTitle>
+            <DialogTitle>{editingPayment ? "Upravit platbu" : "Přidat platbu"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -411,12 +460,13 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => {
                 setDialogOpen(false);
-                setFormData({ payment_type: "deposit", amount: "", notes: "" });
-                setSelectedDate(undefined);
+                resetForm();
               }}>
                 Zrušit
               </Button>
-              <Button onClick={handleAddPayment}>Přidat platbu</Button>
+              <Button onClick={handleSavePayment}>
+                {editingPayment ? "Uložit změny" : "Přidat platbu"}
+              </Button>
             </div>
           </div>
         </DialogContent>
