@@ -26,7 +26,7 @@ import { SupplierCombobox } from "./SupplierCombobox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
-import { formatPriceCurrency } from "@/lib/utils";
+import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
 interface FlightDetails {
   outbound?: {
@@ -288,8 +288,8 @@ export const VariantServiceDialog = ({
             service_type: serviceType,
             service_name: finalServiceName,
             description: description || null,
-            start_date: startDate?.toISOString() || null,
-            end_date: endDate?.toISOString() || null,
+            start_date: formatDateForDB(startDate),
+            end_date: formatDateForDB(endDate),
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
@@ -307,8 +307,8 @@ export const VariantServiceDialog = ({
             service_type: serviceType,
             service_name: finalServiceName,
             description: description || null,
-            start_date: startDate?.toISOString() || null,
-            end_date: endDate?.toISOString() || null,
+            start_date: formatDateForDB(startDate),
+            end_date: formatDateForDB(endDate),
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
