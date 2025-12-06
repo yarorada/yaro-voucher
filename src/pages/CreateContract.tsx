@@ -56,25 +56,26 @@ const CreateContract = () => {
     setLoading(true);
 
     try {
-      // First, fetch deal details to get client_id and total_price
+      // Fetch deal details with travelers and services
       const { data: deal, error: dealError } = await supabase
         .from("deals")
         .select(`
           id,
           total_price,
-          deal_travelers!inner(client_id, is_lead_traveler)
+          deal_travelers(client_id, is_lead_traveler),
+          deal_services(service_type, service_name)
         `)
         .eq("id", formData.deal_id)
         .single();
 
       if (dealError) throw dealError;
 
-      const leadTraveler = (deal.deal_travelers as any[]).find(
-        (t: any) => t.is_lead_traveler
-      );
+      const travelers = deal.deal_travelers as any[];
+      const leadTraveler = travelers?.find((t: any) => t.is_lead_traveler);
 
       if (!leadTraveler) {
         toast.error("Obchodní případ nemá hlavního cestujícího");
+        setLoading(false);
         return;
       }
 
@@ -97,6 +98,32 @@ const CreateContract = () => {
         .single();
 
       if (error) throw error;
+
+      // Copy services to contract_service_travelers for all travelers
+      const services = deal.deal_services as any[];
+      if (services && services.length > 0 && travelers && travelers.length > 0) {
+        const serviceTravelers = [];
+        
+        for (const service of services) {
+          for (const traveler of travelers) {
+            serviceTravelers.push({
+              contract_id: contract.id,
+              client_id: traveler.client_id,
+              service_type: service.service_type,
+              service_name: service.service_name,
+            });
+          }
+        }
+
+        const { error: serviceTravelersError } = await supabase
+          .from("contract_service_travelers")
+          .insert(serviceTravelers);
+
+        if (serviceTravelersError) {
+          console.error("Error copying services to contract:", serviceTravelersError);
+          // Don't fail the whole operation, just log the error
+        }
+      }
 
       toast.success("Cestovní smlouva byla vytvořena");
       navigate(`/contracts/${contract.id}`);
