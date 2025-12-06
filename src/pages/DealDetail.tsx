@@ -1005,6 +1005,24 @@ const DealDetail = () => {
                     <HeadphonesIcon className="h-4 w-4 mr-2" />
                     Asistence
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "insurance",
+                      service_name: "",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Pojištění
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
