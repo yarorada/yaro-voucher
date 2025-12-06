@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
 import { formatPriceCurrency } from "@/lib/utils";
@@ -167,6 +167,67 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     }
   };
 
+  const handleCopyServicesToMain = async (variantId: string) => {
+    if (!confirm("Opravdu chcete přepsat služby obchodního případu službami z této varianty?")) return;
+
+    try {
+      // Get variant services
+      const { data: variantServices, error: fetchError } = await supabase
+        .from("deal_variant_services")
+        .select("*")
+        .eq("variant_id", variantId)
+        .order("order_index");
+
+      if (fetchError) throw fetchError;
+
+      // Delete existing deal services
+      const { error: deleteError } = await supabase
+        .from("deal_services")
+        .delete()
+        .eq("deal_id", dealId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert variant services as deal services
+      if (variantServices && variantServices.length > 0) {
+        const dealServices = variantServices.map((vs) => ({
+          deal_id: dealId,
+          service_type: vs.service_type,
+          service_name: vs.service_name,
+          description: vs.description,
+          supplier_id: vs.supplier_id,
+          start_date: vs.start_date,
+          end_date: vs.end_date,
+          person_count: vs.person_count,
+          price: vs.price,
+          cost_price: vs.cost_price,
+          details: vs.details,
+          order_index: vs.order_index,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("deal_services")
+          .insert(dealServices);
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Úspěch",
+        description: "Služby byly zkopírovány do obchodního případu",
+      });
+
+      onVariantSelected?.();
+    } catch (error) {
+      console.error("Error copying services:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zkopírovat služby",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEditVariant = (variant: DealVariant) => {
     setEditingVariant(variant);
     setDialogOpen(true);
@@ -283,7 +344,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   {!variant.is_selected && (
                     <Button
                       onClick={() => handleSelectVariant(variant.id)}
@@ -294,6 +355,14 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                       Vybrat jako finální
                     </Button>
                   )}
+                  <Button
+                    onClick={() => handleCopyServicesToMain(variant.id)}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Uložit do služeb
+                  </Button>
                   <Button
                     onClick={() => handleEditVariant(variant)}
                     size="sm"
