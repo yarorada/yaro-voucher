@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,18 +50,63 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
   const [newCity, setNewCity] = useState("");
   const [newName, setNewName] = useState("");
   const [newCountry, setNewCountry] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
+  // Fetch selected airport on mount if value exists
   useEffect(() => {
-    fetchAirports();
-  }, []);
+    if (value && !selectedAirport) {
+      fetchSelectedAirport(value);
+    }
+  }, [value]);
 
-  const fetchAirports = async () => {
-    setLoading(true);
+  const fetchSelectedAirport = async (iata: string) => {
     try {
       const { data, error } = await supabase
         .from('airport_templates')
         .select('iata, city, name, country')
+        .eq('iata', iata)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setSelectedAirport(data);
+      }
+    } catch (error) {
+      console.error('Error fetching selected airport:', error);
+    }
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.length >= 2 || open) {
+        fetchAirports(searchQuery);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, open]);
+
+  const fetchAirports = async (query: string = "") => {
+    setLoading(true);
+    try {
+      let queryBuilder = supabase
+        .from('airport_templates')
+        .select('iata, city, name, country')
         .order('city');
+
+      // Server-side filtering - search in iata, city, name, or country
+      if (query.length >= 2) {
+        queryBuilder = queryBuilder.or(
+          `iata.ilike.%${query}%,city.ilike.%${query}%,name.ilike.%${query}%,country.ilike.%${query}%`
+        );
+      } else {
+        // Only load first 50 when no search query
+        queryBuilder = queryBuilder.limit(50);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       setAirports(data || []);
@@ -94,7 +139,7 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
       if (error) throw error;
 
       toast.success("Letiště přidáno");
-      setAirports([...airports, data]);
+      setSelectedAirport(data);
       onSelect(data.iata, data.city);
       setDialogOpen(false);
       setNewIata("");
@@ -112,11 +157,21 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
     }
   };
 
-  const selectedAirport = airports.find((airport) => airport.iata === value);
+  const handleSelect = (airport: Airport) => {
+    setSelectedAirport(airport);
+    onSelect(airport.iata, airport.city);
+    setOpen(false);
+    setSearchQuery("");
+  };
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          setSearchQuery("");
+        }
+      }}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -131,68 +186,82 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
           >
             {selectedAirport
               ? `${selectedAirport.iata} - ${selectedAirport.city}`
-              : placeholder}
+              : value || placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0 bg-popover z-50">
-          <Command>
-            <CommandInput placeholder="Hledat letiště..." />
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder="Hledat letiště (min. 2 znaky)..." 
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+            />
             <CommandList>
-              <CommandEmpty>
-                <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Žádné letiště nenalezeno.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setDialogOpen(true);
-                      setOpen(false);
-                    }}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Přidat nové
-                  </Button>
+              {loading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Načítám...
                 </div>
-              </CommandEmpty>
-              <CommandGroup>
-                {airports.map((airport) => (
-                  <CommandItem
-                    key={airport.iata}
-                    value={`${airport.iata} ${airport.city} ${airport.name} ${airport.country}`}
-                    onSelect={() => {
-                      onSelect(airport.iata, airport.city);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === airport.iata ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-semibold">{airport.iata} - {airport.city}</span>
-                      <span className="text-xs text-muted-foreground">{airport.name}, {airport.country}</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    setDialogOpen(true);
-                    setOpen(false);
-                  }}
-                  className="justify-center text-primary"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Přidat nové letiště
-                </CommandItem>
-              </CommandGroup>
+              ) : airports.length === 0 ? (
+                <CommandEmpty>
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {searchQuery.length < 2 
+                        ? "Zadejte alespoň 2 znaky pro vyhledávání"
+                        : "Žádné letiště nenalezeno."}
+                    </p>
+                    {searchQuery.length >= 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDialogOpen(true);
+                          setOpen(false);
+                        }}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Přidat nové
+                      </Button>
+                    )}
+                  </div>
+                </CommandEmpty>
+              ) : (
+                <>
+                  <CommandGroup>
+                    {airports.map((airport) => (
+                      <CommandItem
+                        key={airport.iata}
+                        value={airport.iata}
+                        onSelect={() => handleSelect(airport)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === airport.iata ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{airport.iata} - {airport.city}</span>
+                          <span className="text-xs text-muted-foreground">{airport.name}, {airport.country}</span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => {
+                        setDialogOpen(true);
+                        setOpen(false);
+                      }}
+                      className="justify-center text-primary"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Přidat nové letiště
+                    </CommandItem>
+                  </CommandGroup>
+                </>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
