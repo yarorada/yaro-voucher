@@ -14,6 +14,8 @@ import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
+import { AirportCombobox } from "@/components/AirportCombobox";
+import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { DealVariants } from "@/components/DealVariants";
 import { DateInput } from "@/components/ui/date-input";
 import {
@@ -57,6 +59,23 @@ interface DealTraveler {
   };
 }
 
+interface FlightDetails {
+  outbound?: {
+    departure: string;
+    arrival: string;
+    airline: string;
+    airline_name: string;
+    flight_number: string;
+  };
+  return?: {
+    departure: string;
+    arrival: string;
+    airline: string;
+    airline_name: string;
+    flight_number: string;
+  };
+}
+
 interface DealService {
   id: string;
   service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
@@ -67,6 +86,7 @@ interface DealService {
   price: number | null;
   supplier_id: string | null;
   person_count: number | null;
+  details?: FlightDetails | null;
   suppliers?: {
     name: string;
   };
@@ -120,6 +140,17 @@ const DealDetail = () => {
     price: "",
     supplier_id: "",
     person_count: "1",
+    // Flight-specific fields
+    outbound_departure: "",
+    outbound_arrival: "",
+    outbound_airline: "",
+    outbound_airline_name: "",
+    outbound_flight_number: "",
+    return_departure: "",
+    return_arrival: "",
+    return_airline: "",
+    return_airline_name: "",
+    return_flight_number: "",
   });
 
   // Form state
@@ -213,7 +244,10 @@ const DealDetail = () => {
         .eq("deal_id", id);
 
       if (error) throw error;
-      setServices(data || []);
+      setServices((data || []).map(service => ({
+        ...service,
+        details: service.details as FlightDetails | null
+      })));
     } catch (error) {
       console.error("Error fetching services:", error);
     } finally {
@@ -299,7 +333,46 @@ const DealDetail = () => {
   };
 
   const handleSaveService = async () => {
-    if (!serviceForm.service_name || !deal) return;
+    if (!deal) return;
+    
+    // For flight type, generate automatic service_name
+    let finalServiceName = serviceForm.service_name;
+    let flightDetails: FlightDetails | null = null;
+    
+    if (serviceForm.service_type === "flight") {
+      // Require at least outbound airports
+      if (!serviceForm.outbound_departure || !serviceForm.outbound_arrival) {
+        toast({
+          title: "Chyba",
+          description: "Vyplňte prosím letiště odletu a příletu",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generate automatic service name
+      const airlineName = serviceForm.outbound_airline_name || serviceForm.outbound_airline;
+      finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${airlineName ? ` se společností ${airlineName}` : ''}`;
+      
+      flightDetails = {
+        outbound: {
+          departure: serviceForm.outbound_departure,
+          arrival: serviceForm.outbound_arrival,
+          airline: serviceForm.outbound_airline,
+          airline_name: serviceForm.outbound_airline_name,
+          flight_number: serviceForm.outbound_flight_number,
+        },
+        return: serviceForm.return_departure ? {
+          departure: serviceForm.return_departure,
+          arrival: serviceForm.return_arrival,
+          airline: serviceForm.return_airline,
+          airline_name: serviceForm.return_airline_name,
+          flight_number: serviceForm.return_flight_number,
+        } : undefined,
+      };
+    } else if (!serviceForm.service_name) {
+      return;
+    }
 
     try {
       if (serviceForm.id) {
@@ -308,13 +381,15 @@ const DealDetail = () => {
           .from("deal_services")
           .update({
             service_type: serviceForm.service_type,
-            service_name: serviceForm.service_name,
+            service_name: finalServiceName,
             description: serviceForm.description || null,
             start_date: serviceForm.start_date?.toISOString() || null,
             end_date: serviceForm.end_date?.toISOString() || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            details: flightDetails as any,
           })
           .eq("id", serviceForm.id);
 
@@ -323,17 +398,19 @@ const DealDetail = () => {
         // Create new service
         const { error } = await supabase
           .from("deal_services")
-          .insert({
+          .insert([{
             deal_id: deal.id,
             service_type: serviceForm.service_type,
-            service_name: serviceForm.service_name,
+            service_name: finalServiceName,
             description: serviceForm.description || null,
             start_date: serviceForm.start_date?.toISOString() || null,
             end_date: serviceForm.end_date?.toISOString() || null,
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
-          });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            details: flightDetails as any,
+          }]);
 
         if (error) throw error;
       }
@@ -415,6 +492,37 @@ const DealDetail = () => {
     }
   };
 
+  const getEmptyFlightFields = () => ({
+    outbound_departure: "",
+    outbound_arrival: "",
+    outbound_airline: "",
+    outbound_airline_name: "",
+    outbound_flight_number: "",
+    return_departure: "",
+    return_arrival: "",
+    return_airline: "",
+    return_airline_name: "",
+    return_flight_number: "",
+  });
+
+  const createServiceFormData = (
+    serviceType: DealService["service_type"],
+    serviceName: string = "",
+    overrides: Partial<typeof serviceForm> = {}
+  ) => ({
+    id: "",
+    service_type: serviceType,
+    service_name: serviceName,
+    description: "",
+    start_date: startDate,
+    end_date: endDate,
+    price: "",
+    supplier_id: "",
+    person_count: (deal?.deal_travelers?.length || 1).toString(),
+    ...getEmptyFlightFields(),
+    ...overrides,
+  });
+
   const resetServiceForm = () => {
     setServiceForm({
       id: "",
@@ -426,10 +534,12 @@ const DealDetail = () => {
       price: "",
       supplier_id: "",
       person_count: "1",
+      ...getEmptyFlightFields(),
     });
   };
 
   const openEditService = (service: DealService) => {
+    const details = service.details;
     setServiceForm({
       id: service.id,
       service_type: service.service_type,
@@ -440,6 +550,16 @@ const DealDetail = () => {
       price: service.price?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
+      outbound_departure: details?.outbound?.departure || "",
+      outbound_arrival: details?.outbound?.arrival || "",
+      outbound_airline: details?.outbound?.airline || "",
+      outbound_airline_name: details?.outbound?.airline_name || "",
+      outbound_flight_number: details?.outbound?.flight_number || "",
+      return_departure: details?.return?.departure || "",
+      return_arrival: details?.return?.arrival || "",
+      return_airline: details?.return?.airline || "",
+      return_airline_name: details?.return?.airline_name || "",
+      return_flight_number: details?.return?.flight_number || "",
     });
     setServiceDialogOpen(true);
   };
@@ -880,144 +1000,56 @@ const DealDetail = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-background w-48">
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "flight",
-                      service_name: "",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("flight"));
                     setServiceDialogOpen(true);
                   }}>
                     <Plane className="h-4 w-4 mr-2" />
                     Letenka
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "hotel",
-                      service_name: "",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("hotel"));
                     setServiceDialogOpen(true);
                   }}>
                     <Hotel className="h-4 w-4 mr-2" />
                     Ubytování
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "golf",
-                      service_name: "",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("golf"));
                     setServiceDialogOpen(true);
                   }}>
                     <Navigation className="h-4 w-4 mr-2" />
                     Green fee
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "transfer",
-                      service_name: "",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("transfer"));
                     setServiceDialogOpen(true);
                   }}>
                     <Car className="h-4 w-4 mr-2" />
                     Transfery
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "other",
-                      service_name: "Rent-a-car",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("other", "Rent-a-car"));
                     setServiceDialogOpen(true);
                   }}>
                     <Car className="h-4 w-4 mr-2" />
                     Rent-a-car
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "other",
-                      service_name: "Strava",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("other", "Strava"));
                     setServiceDialogOpen(true);
                   }}>
                     <Utensils className="h-4 w-4 mr-2" />
                     Strava
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "other",
-                      service_name: "Asistence",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("other", "Asistence"));
                     setServiceDialogOpen(true);
                   }}>
                     <HeadphonesIcon className="h-4 w-4 mr-2" />
                     Asistence
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    const travelerCount = deal?.deal_travelers?.length || 1;
-                    setServiceForm({
-                      id: "",
-                      service_type: "insurance",
-                      service_name: "",
-                      description: "",
-                      start_date: startDate,
-                      end_date: endDate,
-                      price: "",
-                      supplier_id: "",
-                      person_count: travelerCount.toString(),
-                    });
+                    setServiceForm(createServiceFormData("insurance"));
                     setServiceDialogOpen(true);
                   }}>
                     <Shield className="h-4 w-4 mr-2" />
@@ -1057,24 +1089,141 @@ const DealDetail = () => {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Název služby *</Label>
-                      <ServiceCombobox
-                        value={serviceForm.service_name}
-                        onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
-                        serviceType={serviceForm.service_type}
-                      />
-                    </div>
+                    {/* Flight-specific form */}
+                    {serviceForm.service_type === "flight" ? (
+                      <>
+                        {/* Outbound flight */}
+                        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Plane className="h-4 w-4" />
+                            Odletový let
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Odkud *</Label>
+                              <AirportCombobox
+                                value={serviceForm.outbound_departure}
+                                onSelect={(iata) => {
+                                  setServiceForm({ 
+                                    ...serviceForm, 
+                                    outbound_departure: iata,
+                                    // Auto-fill return arrival
+                                    return_arrival: serviceForm.return_arrival || iata
+                                  });
+                                }}
+                                placeholder="Vyberte letiště..."
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Kam *</Label>
+                              <AirportCombobox
+                                value={serviceForm.outbound_arrival}
+                                onSelect={(iata) => {
+                                  setServiceForm({ 
+                                    ...serviceForm, 
+                                    outbound_arrival: iata,
+                                    // Auto-fill return departure
+                                    return_departure: serviceForm.return_departure || iata
+                                  });
+                                }}
+                                placeholder="Vyberte letiště..."
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Letecká společnost</Label>
+                              <AirlineCombobox
+                                value={serviceForm.outbound_airline}
+                                onSelect={(code, name) => setServiceForm({ 
+                                  ...serviceForm, 
+                                  outbound_airline: code,
+                                  outbound_airline_name: name 
+                                })}
+                                placeholder="Vyberte..."
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Číslo letu</Label>
+                              <Input
+                                value={serviceForm.outbound_flight_number}
+                                onChange={(e) => setServiceForm({ ...serviceForm, outbound_flight_number: e.target.value })}
+                                placeholder="OK123"
+                              />
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label>Popis</Label>
-                      <Textarea
-                        value={serviceForm.description}
-                        onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
-                        placeholder="Detaily služby..."
-                        rows={3}
-                      />
-                    </div>
+                        {/* Return flight */}
+                        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Plane className="h-4 w-4 rotate-180" />
+                            Zpáteční let
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Odkud</Label>
+                              <AirportCombobox
+                                value={serviceForm.return_departure}
+                                onSelect={(iata) => setServiceForm({ ...serviceForm, return_departure: iata })}
+                                placeholder="Vyberte letiště..."
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Kam</Label>
+                              <AirportCombobox
+                                value={serviceForm.return_arrival}
+                                onSelect={(iata) => setServiceForm({ ...serviceForm, return_arrival: iata })}
+                                placeholder="Vyberte letiště..."
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Letecká společnost</Label>
+                              <AirlineCombobox
+                                value={serviceForm.return_airline}
+                                onSelect={(code, name) => setServiceForm({ 
+                                  ...serviceForm, 
+                                  return_airline: code,
+                                  return_airline_name: name 
+                                })}
+                                placeholder="Vyberte..."
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Číslo letu</Label>
+                              <Input
+                                value={serviceForm.return_flight_number}
+                                onChange={(e) => setServiceForm({ ...serviceForm, return_flight_number: e.target.value })}
+                                placeholder="OK124"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Název služby *</Label>
+                          <ServiceCombobox
+                            value={serviceForm.service_name}
+                            onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
+                            serviceType={serviceForm.service_type}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Popis</Label>
+                          <Textarea
+                            value={serviceForm.description}
+                            onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                            placeholder="Detaily služby..."
+                            rows={3}
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1129,7 +1278,12 @@ const DealDetail = () => {
                       <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>
                         Zrušit
                       </Button>
-                      <Button onClick={handleSaveService} disabled={!serviceForm.service_name}>
+                      <Button 
+                        onClick={handleSaveService} 
+                        disabled={serviceForm.service_type === "flight" 
+                          ? !serviceForm.outbound_departure || !serviceForm.outbound_arrival 
+                          : !serviceForm.service_name}
+                      >
                         {serviceForm.id ? "Uložit" : "Přidat"}
                       </Button>
                     </div>
