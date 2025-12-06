@@ -1,20 +1,23 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Send, FileSignature } from "lucide-react";
+import { Download, Send, FileSignature, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
 import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
 import { ContractServiceAssignment } from "@/components/ContractServiceAssignment";
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
+import { EditContractDialog } from "@/components/EditContractDialog";
 
 const ContractDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: contract, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ["travel_contract", id],
@@ -116,6 +119,10 @@ const ContractDetail = () => {
           </p>
         </div>
         <div className="flex gap-2 mb-8">
+          <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Upravit
+          </Button>
           <CreateVoucherFromContract 
             contractId={contract.id} 
             contractStatus={contract.status} 
@@ -340,6 +347,21 @@ const ContractDetail = () => {
           </Card>
         </div>
       </div>
+
+      <EditContractDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        contract={{
+          id: contract.id,
+          contract_number: contract.contract_number,
+          status: contract.status,
+          contract_date: contract.contract_date,
+          total_price: contract.total_price,
+          deposit_amount: contract.deposit_amount,
+          terms: contract.terms,
+        }}
+        onUpdate={refetch}
+      />
     </div>
   );
 };
