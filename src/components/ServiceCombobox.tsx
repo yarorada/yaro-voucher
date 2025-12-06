@@ -237,107 +237,114 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
 
   return (
     <>
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Zadejte název služby..."
-          className="pr-10"
-          onFocus={() => setOpen(true)}
-        />
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div className="relative">
+            <Input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => {
+                e.stopPropagation();
+                onChange(e.target.value);
+              }}
+              placeholder="Zadejte název služby..."
+              className="pr-10"
+              onFocus={() => setOpen(true)}
+              onClick={(e) => e.stopPropagation()}
+            />
             <Button
               variant="ghost"
               size="sm"
               className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-              onClick={() => setOpen(!open)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(!open);
+              }}
+              type="button"
             >
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="p-0 bg-popover border border-border shadow-lg z-50" 
-            style={{ width: 'var(--radix-popover-trigger-width)', minWidth: '300px' }}
-            align="start" 
-            alignOffset={0} 
-            sideOffset={4}
-          >
-            <Command>
-              <CommandInput 
-                placeholder="Hledat v šablonách..." 
-                value={searchValue}
-                onValueChange={setSearchValue}
-              />
-              <CommandList className="max-h-64 overflow-y-auto">
-                <CommandEmpty>
-                  {showCreateOption ? (
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setNewServiceName(searchValue);
-                        setCreateDialogOpen(true);
-                        setOpen(false);
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Uložit "{searchValue}" jako šablonu
-                    </Button>
-                  ) : (
-                    "Žádná šablona nenalezena"
-                  )}
-                </CommandEmpty>
-                <CommandGroup heading="Šablony služeb">
-                  {filteredServices.map((service) => (
-                    <CommandItem
-                      key={service.id}
-                      value={service.name}
-                      onSelect={() => {
-                        onChange(service.name);
-                        if (onSelect) onSelect(service.name);
-                        setOpen(false);
-                        setSearchValue("");
-                        inputRef.current?.focus();
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center flex-1 min-w-0">
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4 shrink-0",
-                            value === service.name ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <span className="break-words">{service.name}</span>
-                      </div>
-                      <div className="flex items-center shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => handleEditClick(service, e)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={(e) => handleDeleteClick(service, e)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="p-0 bg-popover border border-border shadow-lg z-50" 
+          style={{ width: 'var(--radix-popover-trigger-width)', minWidth: '300px' }}
+          align="start" 
+          sideOffset={4}
+        >
+          <Command>
+            <CommandInput 
+              placeholder="Hledat v šablonách..." 
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList className="max-h-64 overflow-y-auto">
+              <CommandEmpty>
+                {showCreateOption ? (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setNewServiceName(searchValue);
+                      setCreateDialogOpen(true);
+                      setOpen(false);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Uložit "{searchValue}" jako šablonu
+                  </Button>
+                ) : (
+                  "Žádná šablona nenalezena"
+                )}
+              </CommandEmpty>
+              <CommandGroup heading="Šablony služeb">
+                {filteredServices.map((service) => (
+                  <CommandItem
+                    key={service.id}
+                    value={service.name}
+                    onSelect={() => {
+                      onChange(service.name);
+                      if (onSelect) onSelect(service.name);
+                      setOpen(false);
+                      setSearchValue("");
+                      inputRef.current?.focus();
+                    }}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center flex-1 min-w-0">
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          value === service.name ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="break-words">{service.name}</span>
+                    </div>
+                    <div className="flex items-center shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => handleEditClick(service, e)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={(e) => handleDeleteClick(service, e)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
