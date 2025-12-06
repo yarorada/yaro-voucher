@@ -32,6 +32,31 @@ import {
 } from "@/components/ui/table";
 import { formatPriceCurrency } from "@/lib/utils";
 
+interface FlightSegment {
+  departure: string;
+  arrival: string;
+  airline: string;
+  flight_number: string;
+  date: string;
+  departure_time: string;
+  arrival_time: string;
+}
+
+interface FlightDetails {
+  outbound_segments?: FlightSegment[];
+  return_segments?: FlightSegment[];
+  one_way?: boolean;
+  // Legacy fields
+  departure_airport?: string;
+  arrival_airport?: string;
+  airline?: string;
+  flight_number?: string;
+  return_departure_airport?: string;
+  return_arrival_airport?: string;
+  return_airline?: string;
+  return_flight_number?: string;
+}
+
 interface VariantService {
   id: string;
   service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
@@ -42,6 +67,8 @@ interface VariantService {
   price: number | null;
   person_count: number | null;
   supplier_id: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  details?: any;
   suppliers?: {
     name: string;
   };
@@ -260,6 +287,93 @@ export const VariantDetailDialog = ({
 
   const formatPrice = (price: number | null) => formatPriceCurrency(price);
 
+  const renderFlightSegments = (service: VariantService) => {
+    const details = service.details as FlightDetails | null;
+    if (!details) return null;
+
+    const formatSegmentDate = (dateStr: string | null) => {
+      if (!dateStr) return "";
+      try {
+        return new Date(dateStr).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
+      } catch {
+        return dateStr;
+      }
+    };
+
+    const renderSegment = (segment: FlightSegment, index: number, isReturn: boolean) => (
+      <div key={`${isReturn ? 'ret' : 'out'}-${index}`} className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="font-medium">{segment.departure}</span>
+        <span>→</span>
+        <span className="font-medium">{segment.arrival}</span>
+        {segment.date && (
+          <span className="text-muted-foreground/70">
+            {formatSegmentDate(segment.date)}
+          </span>
+        )}
+        {(segment.departure_time || segment.arrival_time) && (
+          <span className="text-muted-foreground/70">
+            {segment.departure_time || "?"} - {segment.arrival_time || "?"}
+          </span>
+        )}
+        {segment.airline && (
+          <span className="text-muted-foreground/70">
+            ({segment.airline}{segment.flight_number ? ` ${segment.flight_number}` : ""})
+          </span>
+        )}
+      </div>
+    );
+
+    // Handle new multi-segment format
+    if (details.outbound_segments && details.outbound_segments.length > 0) {
+      return (
+        <div className="space-y-1 mt-1">
+          {details.outbound_segments.map((seg, idx) => renderSegment(seg, idx, false))}
+          {details.return_segments && details.return_segments.length > 0 && !details.one_way && (
+            <>
+              <div className="border-t border-border/50 my-1"></div>
+              {details.return_segments.map((seg, idx) => renderSegment(seg, idx, true))}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // Handle legacy single-segment format
+    if (details.departure_airport && details.arrival_airport) {
+      return (
+        <div className="space-y-1 mt-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium">{details.departure_airport}</span>
+            <span>→</span>
+            <span className="font-medium">{details.arrival_airport}</span>
+            {details.airline && (
+              <span className="text-muted-foreground/70">
+                ({details.airline}{details.flight_number ? ` ${details.flight_number}` : ""})
+              </span>
+            )}
+          </div>
+          {!details.one_way && details.return_departure_airport && details.return_arrival_airport && (
+            <>
+              <div className="border-t border-border/50 my-1"></div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-medium">{details.return_departure_airport}</span>
+                <span>→</span>
+                <span className="font-medium">{details.return_arrival_airport}</span>
+                {details.return_airline && (
+                  <span className="text-muted-foreground/70">
+                    ({details.return_airline}{details.return_flight_number ? ` ${details.return_flight_number}` : ""})
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={() => onClose()}>
@@ -458,6 +572,7 @@ export const VariantDetailDialog = ({
                           <TableCell>
                             <div>
                               <div className="font-medium">{service.service_name}</div>
+                              {service.service_type === "flight" && renderFlightSegments(service)}
                               {service.suppliers && (
                                 <div className="text-sm text-muted-foreground">
                                   {service.suppliers.name}
