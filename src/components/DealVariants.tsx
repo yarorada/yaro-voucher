@@ -37,10 +37,12 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     start_date: null, 
     end_date: null 
   });
+  const [travelerCount, setTravelerCount] = useState(1);
 
   useEffect(() => {
     fetchVariants();
     fetchDealDates();
+    fetchTravelerCount();
   }, [dealId]);
 
   const fetchDealDates = async () => {
@@ -60,6 +62,20 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       }
     } catch (error) {
       console.error("Error fetching deal dates:", error);
+    }
+  };
+
+  const fetchTravelerCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from("deal_travelers")
+        .select("*", { count: "exact", head: true })
+        .eq("deal_id", dealId);
+
+      if (error) throw error;
+      setTravelerCount(count || 1);
+    } catch (error) {
+      console.error("Error fetching traveler count:", error);
     }
   };
 
@@ -308,6 +324,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         onClose={handleDialogClose}
         dealStartDate={dealDates.start_date}
         dealEndDate={dealDates.end_date}
+        defaultTravelerCount={travelerCount}
       />
     </div>
   );

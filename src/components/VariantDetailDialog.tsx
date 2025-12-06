@@ -81,6 +81,7 @@ interface VariantDetailDialogProps {
   onClose: (success?: boolean) => void;
   dealStartDate?: string | null;
   dealEndDate?: string | null;
+  defaultTravelerCount?: number;
 }
 
 export const VariantDetailDialog = ({
@@ -90,6 +91,7 @@ export const VariantDetailDialog = ({
   onClose,
   dealStartDate,
   dealEndDate,
+  defaultTravelerCount = 1,
 }: VariantDetailDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -652,6 +654,7 @@ export const VariantDetailDialog = ({
           variantEndDate={variant.end_date}
           preselectedServiceType={preselectedServiceType}
           preselectedServiceName={preselectedServiceName}
+          defaultTravelerCount={defaultTravelerCount}
         />
       )}
     </>
