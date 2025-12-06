@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateInput } from "@/components/ui/date-input";
+import { Plane } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +23,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SupplierCombobox } from "./SupplierCombobox";
+import { AirportCombobox } from "./AirportCombobox";
+import { AirlineCombobox } from "./AirlineCombobox";
+import { ServiceCombobox } from "./ServiceCombobox";
+
+interface FlightDetails {
+  outbound?: {
+    departure: string;
+    arrival: string;
+    airline: string;
+    airline_name: string;
+    flight_number: string;
+  };
+  return?: {
+    departure: string;
+    arrival: string;
+    airline: string;
+    airline_name: string;
+    flight_number: string;
+  };
+}
 
 interface VariantServiceDialogProps {
   variantId: string;
@@ -54,6 +76,19 @@ export const VariantServiceDialog = ({
   const [personCount, setPersonCount] = useState("1");
   const [supplierId, setSupplierId] = useState("");
 
+  // Flight-specific fields
+  const [outboundDeparture, setOutboundDeparture] = useState("");
+  const [outboundArrival, setOutboundArrival] = useState("");
+  const [outboundAirline, setOutboundAirline] = useState("");
+  const [outboundAirlineName, setOutboundAirlineName] = useState("");
+  const [outboundFlightNumber, setOutboundFlightNumber] = useState("");
+  const [returnDeparture, setReturnDeparture] = useState("");
+  const [returnArrival, setReturnArrival] = useState("");
+  const [returnAirline, setReturnAirline] = useState("");
+  const [returnAirlineName, setReturnAirlineName] = useState("");
+  const [returnFlightNumber, setReturnFlightNumber] = useState("");
+  const [isOneWay, setIsOneWay] = useState(false);
+
   useEffect(() => {
     if (service) {
       setServiceType(service.service_type);
@@ -64,6 +99,26 @@ export const VariantServiceDialog = ({
       setPrice(service.price?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
       setSupplierId(service.supplier_id || "");
+
+      // Load flight details if exists
+      const details = service.details as FlightDetails | null;
+      if (details?.outbound) {
+        setOutboundDeparture(details.outbound.departure || "");
+        setOutboundArrival(details.outbound.arrival || "");
+        setOutboundAirline(details.outbound.airline || "");
+        setOutboundAirlineName(details.outbound.airline_name || "");
+        setOutboundFlightNumber(details.outbound.flight_number || "");
+      }
+      if (details?.return) {
+        setReturnDeparture(details.return.departure || "");
+        setReturnArrival(details.return.arrival || "");
+        setReturnAirline(details.return.airline || "");
+        setReturnAirlineName(details.return.airline_name || "");
+        setReturnFlightNumber(details.return.flight_number || "");
+        setIsOneWay(false);
+      } else {
+        setIsOneWay(service.service_type === "flight" && !details?.return);
+      }
     } else {
       resetForm();
     }
@@ -78,10 +133,58 @@ export const VariantServiceDialog = ({
     setPrice("");
     setPersonCount("1");
     setSupplierId("");
+    // Reset flight fields
+    setOutboundDeparture("");
+    setOutboundArrival("");
+    setOutboundAirline("");
+    setOutboundAirlineName("");
+    setOutboundFlightNumber("");
+    setReturnDeparture("");
+    setReturnArrival("");
+    setReturnAirline("");
+    setReturnAirlineName("");
+    setReturnFlightNumber("");
+    setIsOneWay(false);
   };
 
   const handleSave = async () => {
-    if (!serviceName.trim()) {
+    // For flight type, generate automatic service_name
+    let finalServiceName = serviceName;
+    let flightDetails: FlightDetails | null = null;
+
+    if (serviceType === "flight") {
+      // Require at least outbound airports
+      if (!outboundDeparture || !outboundArrival) {
+        toast({
+          title: "Chyba",
+          description: "Vyplňte prosím letiště odletu a příletu",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate automatic service name with return airport if exists
+      const airlineName = outboundAirlineName || outboundAirline;
+      const returnPart = !isOneWay && returnArrival ? ` - ${returnArrival}` : '';
+      finalServiceName = `Letenka ${outboundDeparture} - ${outboundArrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
+
+      flightDetails = {
+        outbound: {
+          departure: outboundDeparture,
+          arrival: outboundArrival,
+          airline: outboundAirline,
+          airline_name: outboundAirlineName,
+          flight_number: outboundFlightNumber,
+        },
+        return: !isOneWay && returnDeparture ? {
+          departure: returnDeparture,
+          arrival: returnArrival,
+          airline: returnAirline,
+          airline_name: returnAirlineName,
+          flight_number: returnFlightNumber,
+        } : undefined,
+      };
+    } else if (!serviceName.trim()) {
       toast({
         title: "Chyba",
         description: "Vyplňte název služby",
@@ -98,13 +201,14 @@ export const VariantServiceDialog = ({
           .from("deal_variant_services")
           .update({
             service_type: serviceType,
-            service_name: serviceName,
+            service_name: finalServiceName,
             description: description || null,
             start_date: startDate?.toISOString() || null,
             end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
+            details: flightDetails as any,
           })
           .eq("id", service.id);
 
@@ -116,13 +220,14 @@ export const VariantServiceDialog = ({
           .insert({
             variant_id: variantId,
             service_type: serviceType,
-            service_name: serviceName,
+            service_name: finalServiceName,
             description: description || null,
             start_date: startDate?.toISOString() || null,
             end_date: endDate?.toISOString() || null,
             price: price ? parseFloat(price) : null,
             person_count: personCount ? parseInt(personCount) : 1,
             supplier_id: supplierId || null,
+            details: flightDetails as any,
           });
 
         if (error) throw error;
@@ -149,7 +254,7 @@ export const VariantServiceDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {service ? "Upravit službu" : "Přidat službu"}
@@ -177,26 +282,163 @@ export const VariantServiceDialog = ({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="service-name">Název služby *</Label>
-            <Input
-              id="service-name"
-              value={serviceName}
-              onChange={(e) => setServiceName(e.target.value)}
-              placeholder="např. Hotel Paradise Resort"
-            />
-          </div>
+          {/* Flight-specific form */}
+          {serviceType === "flight" ? (
+            <>
+              {/* Outbound flight */}
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Plane className="h-4 w-4" />
+                  Odletový let
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Odkud *</Label>
+                    <AirportCombobox
+                      value={outboundDeparture}
+                      onSelect={(iata) => {
+                        setOutboundDeparture(iata);
+                        // Auto-fill return arrival
+                        if (!returnArrival) setReturnArrival(iata);
+                      }}
+                      placeholder="Vyberte letiště..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Kam *</Label>
+                    <AirportCombobox
+                      value={outboundArrival}
+                      onSelect={(iata) => {
+                        setOutboundArrival(iata);
+                        // Auto-fill return departure
+                        if (!returnDeparture) setReturnDeparture(iata);
+                      }}
+                      placeholder="Vyberte letiště..."
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Letecká společnost</Label>
+                    <AirlineCombobox
+                      value={outboundAirline}
+                      onSelect={(code, name) => {
+                        setOutboundAirline(code);
+                        setOutboundAirlineName(name);
+                        // Auto-fill return airline
+                        if (!returnAirline) {
+                          setReturnAirline(code);
+                          setReturnAirlineName(name);
+                        }
+                      }}
+                      placeholder="Vyberte..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Číslo letu</Label>
+                    <Input
+                      value={outboundFlightNumber}
+                      onChange={(e) => setOutboundFlightNumber(e.target.value)}
+                      placeholder="OK123"
+                    />
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            <Label htmlFor="description">Popis</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Podrobnosti o službě..."
-              rows={3}
-            />
-          </div>
+              {/* One-way flight checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_one_way"
+                  checked={isOneWay}
+                  onCheckedChange={(checked) => {
+                    setIsOneWay(!!checked);
+                    // Clear return fields when switching to one-way
+                    if (checked) {
+                      setReturnDeparture("");
+                      setReturnArrival("");
+                      setReturnAirline("");
+                      setReturnAirlineName("");
+                      setReturnFlightNumber("");
+                    }
+                  }}
+                />
+                <Label htmlFor="is_one_way" className="text-sm cursor-pointer">
+                  Jednosměrná letenka (bez zpátečního letu)
+                </Label>
+              </div>
+
+              {/* Return flight - only show if not one-way */}
+              {!isOneWay && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Plane className="h-4 w-4 rotate-180" />
+                    Zpáteční let
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Odkud</Label>
+                      <AirportCombobox
+                        value={returnDeparture}
+                        onSelect={setReturnDeparture}
+                        placeholder="Vyberte letiště..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Kam</Label>
+                      <AirportCombobox
+                        value={returnArrival}
+                        onSelect={setReturnArrival}
+                        placeholder="Vyberte letiště..."
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Letecká společnost</Label>
+                      <AirlineCombobox
+                        value={returnAirline}
+                        onSelect={(code, name) => {
+                          setReturnAirline(code);
+                          setReturnAirlineName(name);
+                        }}
+                        placeholder="Vyberte..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Číslo letu</Label>
+                      <Input
+                        value={returnFlightNumber}
+                        onChange={(e) => setReturnFlightNumber(e.target.value)}
+                        placeholder="OK124"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div>
+                <Label htmlFor="service-name">Název služby *</Label>
+                <ServiceCombobox
+                  value={serviceName}
+                  onChange={setServiceName}
+                  serviceType={serviceType}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Popis</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Podrobnosti o službě..."
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <Label htmlFor="supplier">Dodavatel</Label>
@@ -256,6 +498,8 @@ export const VariantServiceDialog = ({
                 Celková cena: {new Intl.NumberFormat("cs-CZ", {
                   style: "currency",
                   currency: "CZK",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
                 }).format(parseFloat(price) * parseInt(personCount))}
               </p>
             </div>
