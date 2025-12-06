@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.parse-bulk-client-data]
 verify_jwt = true
+
+[functions.translate-service-name]
+verify_jwt = true

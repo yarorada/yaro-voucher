@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus, Pencil } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Check, ChevronsUpDown, Plus, Pencil, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +51,30 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
   const [editingService, setEditingService] = useState<ServiceTemplate | null>(null);
   const [newServiceName, setNewServiceName] = useState("");
   const [newEnglishName, setNewEnglishName] = useState("");
+  const [translating, setTranslating] = useState(false);
+
+  const translateName = useCallback(async (czechName: string) => {
+    if (!czechName.trim()) {
+      setNewEnglishName("");
+      return;
+    }
+    
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-service-name', {
+        body: { czechName }
+      });
+      
+      if (error) throw error;
+      if (data?.englishName) {
+        setNewEnglishName(data.englishName);
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+    } finally {
+      setTranslating(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchServices();
@@ -267,16 +291,21 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
                 id="service-name"
                 value={newServiceName}
                 onChange={(e) => setNewServiceName(e.target.value)}
+                onBlur={() => translateName(newServiceName)}
                 placeholder="např. Ubytování"
               />
             </div>
             <div>
-              <Label htmlFor="english-name">Název služby (anglicky) *</Label>
+              <Label htmlFor="english-name" className="flex items-center gap-2">
+                Název služby (anglicky) *
+                {translating && <Loader2 className="h-3 w-3 animate-spin" />}
+              </Label>
               <Input
                 id="english-name"
                 value={newEnglishName}
                 onChange={(e) => setNewEnglishName(e.target.value)}
-                placeholder="e.g. Accommodation"
+                placeholder={translating ? "Překládám..." : "e.g. Accommodation"}
+                disabled={translating}
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -313,16 +342,21 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
                 id="edit-service-name"
                 value={newServiceName}
                 onChange={(e) => setNewServiceName(e.target.value)}
+                onBlur={() => translateName(newServiceName)}
                 placeholder="např. Ubytování"
               />
             </div>
             <div>
-              <Label htmlFor="edit-english-name">Název služby (anglicky) *</Label>
+              <Label htmlFor="edit-english-name" className="flex items-center gap-2">
+                Název služby (anglicky) *
+                {translating && <Loader2 className="h-3 w-3 animate-spin" />}
+              </Label>
               <Input
                 id="edit-english-name"
                 value={newEnglishName}
                 onChange={(e) => setNewEnglishName(e.target.value)}
-                placeholder="e.g. Accommodation"
+                placeholder={translating ? "Překládám..." : "e.g. Accommodation"}
+                disabled={translating}
               />
             </div>
             <div className="flex justify-end gap-2">
