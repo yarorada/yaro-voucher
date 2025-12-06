@@ -350,9 +350,10 @@ const DealDetail = () => {
         return;
       }
       
-      // Generate automatic service name
+      // Generate automatic service name with return airport if exists
       const airlineName = serviceForm.outbound_airline_name || serviceForm.outbound_airline;
-      finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${airlineName ? ` se společností ${airlineName}` : ''}`;
+      const returnPart = serviceForm.return_arrival ? ` - ${serviceForm.return_arrival}` : '';
+      finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
       
       flightDetails = {
         outbound: {
@@ -1138,7 +1139,10 @@ const DealDetail = () => {
                                 onSelect={(code, name) => setServiceForm({ 
                                   ...serviceForm, 
                                   outbound_airline: code,
-                                  outbound_airline_name: name 
+                                  outbound_airline_name: name,
+                                  // Auto-fill return airline
+                                  return_airline: serviceForm.return_airline || code,
+                                  return_airline_name: serviceForm.return_airline_name || name,
                                 })}
                                 placeholder="Vyberte..."
                               />
