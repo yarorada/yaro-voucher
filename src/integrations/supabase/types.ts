@@ -300,6 +300,7 @@ export type Database = {
           details: Json | null
           end_date: string | null
           id: string
+          order_index: number | null
           person_count: number | null
           price: number | null
           service_name: string
@@ -316,6 +317,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          order_index?: number | null
           person_count?: number | null
           price?: number | null
           service_name: string
@@ -332,6 +334,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          order_index?: number | null
           person_count?: number | null
           price?: number | null
           service_name?: string
@@ -418,6 +421,7 @@ export type Database = {
           details: Json | null
           end_date: string | null
           id: string
+          order_index: number | null
           person_count: number | null
           price: number | null
           service_name: string
@@ -434,6 +438,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          order_index?: number | null
           person_count?: number | null
           price?: number | null
           service_name: string
@@ -450,6 +455,7 @@ export type Database = {
           details?: Json | null
           end_date?: string | null
           id?: string
+          order_index?: number | null
           person_count?: number | null
           price?: number | null
           service_name?: string
