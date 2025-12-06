@@ -12,6 +12,7 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
+import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { DealVariants } from "@/components/DealVariants";
 import { DateInput } from "@/components/ui/date-input";
@@ -1040,10 +1041,9 @@ const DealDetail = () => {
 
                     <div className="space-y-2">
                       <Label>Název služby *</Label>
-                      <Input
+                      <ServiceCombobox
                         value={serviceForm.service_name}
-                        onChange={(e) => setServiceForm({ ...serviceForm, service_name: e.target.value })}
-                        placeholder="např. Hotel Royal"
+                        onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
                       />
                     </div>
 
