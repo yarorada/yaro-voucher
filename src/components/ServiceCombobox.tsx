@@ -215,7 +215,13 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[400px] min-w-[300px] p-0 bg-popover border border-border shadow-lg z-50" align="start" alignOffset={0} sideOffset={4}>
+          <PopoverContent 
+            className="p-0 bg-popover border border-border shadow-lg z-50" 
+            style={{ width: 'var(--radix-popover-trigger-width)', minWidth: '300px' }}
+            align="start" 
+            alignOffset={0} 
+            sideOffset={4}
+          >
             <Command>
               <CommandInput 
                 placeholder="Hledat v šablonách..." 
