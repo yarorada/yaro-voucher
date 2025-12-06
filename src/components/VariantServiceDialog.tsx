@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateInput } from "@/components/ui/date-input";
-import { Plane } from "lucide-react";
+import { Plane, Sparkles, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -90,6 +90,11 @@ export const VariantServiceDialog = ({
   const [returnFlightNumber, setReturnFlightNumber] = useState("");
   const [isOneWay, setIsOneWay] = useState(false);
 
+  // AI import state
+  const [showAiImport, setShowAiImport] = useState(false);
+  const [aiImportText, setAiImportText] = useState("");
+  const [aiImportLoading, setAiImportLoading] = useState(false);
+
   useEffect(() => {
     if (service) {
       setServiceType(service.service_type);
@@ -146,6 +151,85 @@ export const VariantServiceDialog = ({
     setReturnAirlineName("");
     setReturnFlightNumber("");
     setIsOneWay(false);
+    setShowAiImport(false);
+    setAiImportText("");
+  };
+
+  const handleAiImport = async () => {
+    if (!aiImportText.trim()) {
+      toast({
+        title: "Chyba",
+        description: "Zadejte text k importu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAiImportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-flight-data", {
+        body: { text: aiImportText },
+      });
+
+      if (error) throw error;
+
+      if (data?.flightData) {
+        const flightData = data.flightData;
+        
+        // Fill outbound flight data
+        if (flightData.outbound) {
+          setOutboundDeparture(flightData.outbound.departure_airport || "");
+          setOutboundArrival(flightData.outbound.arrival_airport || "");
+          setOutboundAirline(flightData.outbound.airline_code || "");
+          setOutboundAirlineName(flightData.outbound.airline_name || "");
+          setOutboundFlightNumber(flightData.outbound.flight_number || "");
+          
+          if (flightData.outbound.date) {
+            setStartDate(new Date(flightData.outbound.date));
+          }
+        }
+
+        // Fill return flight data
+        if (flightData.return_flight && !flightData.is_one_way) {
+          setReturnDeparture(flightData.return_flight.departure_airport || "");
+          setReturnArrival(flightData.return_flight.arrival_airport || "");
+          setReturnAirline(flightData.return_flight.airline_code || "");
+          setReturnAirlineName(flightData.return_flight.airline_name || "");
+          setReturnFlightNumber(flightData.return_flight.flight_number || "");
+          setIsOneWay(false);
+          
+          if (flightData.return_flight.date) {
+            setEndDate(new Date(flightData.return_flight.date));
+          }
+        } else if (flightData.is_one_way) {
+          setIsOneWay(true);
+        }
+
+        // Fill price and person count if available
+        if (flightData.price) {
+          setPrice(flightData.price.toString());
+        }
+        if (flightData.person_count) {
+          setPersonCount(flightData.person_count.toString());
+        }
+
+        toast({
+          title: "Úspěch",
+          description: "Data byla úspěšně importována",
+        });
+        setShowAiImport(false);
+        setAiImportText("");
+      }
+    } catch (error) {
+      console.error("Error parsing flight data:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zpracovat data",
+        variant: "destructive",
+      });
+    } finally {
+      setAiImportLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -286,6 +370,53 @@ export const VariantServiceDialog = ({
           {/* Flight-specific form */}
           {serviceType === "flight" ? (
             <>
+              {/* AI Import Section */}
+              <div className="space-y-3 p-4 border rounded-lg bg-primary/5 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Inteligentní import
+                  </div>
+                  <Button
+                    type="button"
+                    variant={showAiImport ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setShowAiImport(!showAiImport)}
+                  >
+                    {showAiImport ? "Skrýt" : "Importovat z textu"}
+                  </Button>
+                </div>
+                {showAiImport && (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={aiImportText}
+                      onChange={(e) => setAiImportText(e.target.value)}
+                      placeholder="Vložte text obsahující informace o letu, např.: 'Let z Prahy do Malagy s Czech Airlines OK 801 dne 15.6.2025, zpáteční let OK 802 dne 22.6.2025'"
+                      rows={3}
+                      className="text-sm"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAiImport}
+                      disabled={aiImportLoading || !aiImportText.trim()}
+                      className="w-full"
+                    >
+                      {aiImportLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Zpracovávám...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Extrahovat data
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               {/* Outbound flight */}
               <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
                 <div className="flex items-center gap-2 text-sm font-medium">
