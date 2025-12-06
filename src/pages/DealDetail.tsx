@@ -862,30 +862,6 @@ const DealDetail = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="depositAmount">Záloha (Kč)</Label>
-                <Input
-                  id="depositAmount"
-                  type="number"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 pt-7">
-                <input
-                  type="checkbox"
-                  id="depositPaid"
-                  checked={depositPaid}
-                  onChange={(e) => setDepositPaid(e.target.checked)}
-                  className="h-4 w-4 rounded border-input"
-                />
-                <Label htmlFor="depositPaid" className="cursor-pointer">
-                  Záloha zaplacena
-                </Label>
-              </div>
-
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="notes">Poznámky</Label>
                 <Textarea
