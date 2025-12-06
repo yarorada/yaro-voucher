@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -151,6 +152,7 @@ const DealDetail = () => {
     return_airline: "",
     return_airline_name: "",
     return_flight_number: "",
+    is_one_way: false,
   });
 
   // Form state
@@ -352,7 +354,7 @@ const DealDetail = () => {
       
       // Generate automatic service name with return airport if exists
       const airlineName = serviceForm.outbound_airline_name || serviceForm.outbound_airline;
-      const returnPart = serviceForm.return_arrival ? ` - ${serviceForm.return_arrival}` : '';
+      const returnPart = !serviceForm.is_one_way && serviceForm.return_arrival ? ` - ${serviceForm.return_arrival}` : '';
       finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
       
       flightDetails = {
@@ -363,7 +365,7 @@ const DealDetail = () => {
           airline_name: serviceForm.outbound_airline_name,
           flight_number: serviceForm.outbound_flight_number,
         },
-        return: serviceForm.return_departure ? {
+        return: !serviceForm.is_one_way && serviceForm.return_departure ? {
           departure: serviceForm.return_departure,
           arrival: serviceForm.return_arrival,
           airline: serviceForm.return_airline,
@@ -504,6 +506,7 @@ const DealDetail = () => {
     return_airline: "",
     return_airline_name: "",
     return_flight_number: "",
+    is_one_way: false,
   });
 
   const createServiceFormData = (
@@ -541,6 +544,7 @@ const DealDetail = () => {
 
   const openEditService = (service: DealService) => {
     const details = service.details;
+    const hasReturn = !!details?.return?.departure;
     setServiceForm({
       id: service.id,
       service_type: service.service_type,
@@ -561,6 +565,7 @@ const DealDetail = () => {
       return_airline: details?.return?.airline || "",
       return_airline_name: details?.return?.airline_name || "",
       return_flight_number: details?.return?.flight_number || "",
+      is_one_way: !hasReturn,
     });
     setServiceDialogOpen(true);
   };
@@ -1158,53 +1163,78 @@ const DealDetail = () => {
                           </div>
                         </div>
 
-                        {/* Return flight */}
-                        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <Plane className="h-4 w-4 rotate-180" />
-                            Zpáteční let
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Odkud</Label>
-                              <AirportCombobox
-                                value={serviceForm.return_departure}
-                                onSelect={(iata) => setServiceForm({ ...serviceForm, return_departure: iata })}
-                                placeholder="Vyberte letiště..."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Kam</Label>
-                              <AirportCombobox
-                                value={serviceForm.return_arrival}
-                                onSelect={(iata) => setServiceForm({ ...serviceForm, return_arrival: iata })}
-                                placeholder="Vyberte letiště..."
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Letecká společnost</Label>
-                              <AirlineCombobox
-                                value={serviceForm.return_airline}
-                                onSelect={(code, name) => setServiceForm({ 
-                                  ...serviceForm, 
-                                  return_airline: code,
-                                  return_airline_name: name 
-                                })}
-                                placeholder="Vyberte..."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Číslo letu</Label>
-                              <Input
-                                value={serviceForm.return_flight_number}
-                                onChange={(e) => setServiceForm({ ...serviceForm, return_flight_number: e.target.value })}
-                                placeholder="OK124"
-                              />
-                            </div>
-                          </div>
+                        {/* One-way flight checkbox */}
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="is_one_way"
+                            checked={serviceForm.is_one_way}
+                            onCheckedChange={(checked) => setServiceForm({ 
+                              ...serviceForm, 
+                              is_one_way: !!checked,
+                              // Clear return fields when switching to one-way
+                              ...(checked ? {
+                                return_departure: "",
+                                return_arrival: "",
+                                return_airline: "",
+                                return_airline_name: "",
+                                return_flight_number: "",
+                              } : {})
+                            })}
+                          />
+                          <Label htmlFor="is_one_way" className="text-sm cursor-pointer">
+                            Jednosměrná letenka (bez zpátečního letu)
+                          </Label>
                         </div>
+
+                        {/* Return flight - only show if not one-way */}
+                        {!serviceForm.is_one_way && (
+                          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Plane className="h-4 w-4 rotate-180" />
+                              Zpáteční let
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Odkud</Label>
+                                <AirportCombobox
+                                  value={serviceForm.return_departure}
+                                  onSelect={(iata) => setServiceForm({ ...serviceForm, return_departure: iata })}
+                                  placeholder="Vyberte letiště..."
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Kam</Label>
+                                <AirportCombobox
+                                  value={serviceForm.return_arrival}
+                                  onSelect={(iata) => setServiceForm({ ...serviceForm, return_arrival: iata })}
+                                  placeholder="Vyberte letiště..."
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Letecká společnost</Label>
+                                <AirlineCombobox
+                                  value={serviceForm.return_airline}
+                                  onSelect={(code, name) => setServiceForm({ 
+                                    ...serviceForm, 
+                                    return_airline: code,
+                                    return_airline_name: name 
+                                  })}
+                                  placeholder="Vyberte..."
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Číslo letu</Label>
+                                <Input
+                                  value={serviceForm.return_flight_number}
+                                  onChange={(e) => setServiceForm({ ...serviceForm, return_flight_number: e.target.value })}
+                                  placeholder="OK124"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
