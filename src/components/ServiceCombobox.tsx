@@ -30,6 +30,7 @@ import { toast } from "sonner";
 interface ServiceTemplate {
   id: string;
   name: string;
+  english_name?: string;
 }
 
 interface ServiceComboboxProps {
@@ -47,6 +48,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceTemplate | null>(null);
   const [newServiceName, setNewServiceName] = useState("");
+  const [newEnglishName, setNewEnglishName] = useState("");
 
   useEffect(() => {
     fetchServices();
@@ -72,12 +74,19 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
       toast.error("Název služby je povinný");
       return;
     }
+    if (!newEnglishName.trim()) {
+      toast.error("Anglický název služby je povinný");
+      return;
+    }
 
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("service_templates")
-        .insert({ name: newServiceName.trim() })
+        .insert({ 
+          name: newServiceName.trim(),
+          english_name: newEnglishName.trim()
+        })
         .select()
         .single();
 
@@ -88,6 +97,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
       onChange(data.name);
       if (onSelect) onSelect(data.name);
       setNewServiceName("");
+      setNewEnglishName("");
       setCreateDialogOpen(false);
       setOpen(false);
     } catch (error) {
@@ -103,12 +113,19 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
       toast.error("Název služby je povinný");
       return;
     }
+    if (!newEnglishName.trim()) {
+      toast.error("Anglický název služby je povinný");
+      return;
+    }
 
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("service_templates")
-        .update({ name: newServiceName.trim() })
+        .update({ 
+          name: newServiceName.trim(),
+          english_name: newEnglishName.trim()
+        })
         .eq("id", editingService.id)
         .select()
         .single();
@@ -120,6 +137,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
       onChange(data.name);
       if (onSelect) onSelect(data.name);
       setNewServiceName("");
+      setNewEnglishName("");
       setEditDialogOpen(false);
       setEditingService(null);
     } catch (error) {
@@ -134,6 +152,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
     e.stopPropagation();
     setEditingService(service);
     setNewServiceName(service.name);
+    setNewEnglishName(service.english_name || "");
     setEditDialogOpen(true);
   };
 
@@ -238,12 +257,21 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="service-name">Název služby *</Label>
+              <Label htmlFor="service-name">Název služby (česky) *</Label>
               <Input
                 id="service-name"
                 value={newServiceName}
                 onChange={(e) => setNewServiceName(e.target.value)}
-                placeholder="Název služby"
+                placeholder="např. Ubytování"
+              />
+            </div>
+            <div>
+              <Label htmlFor="english-name">Název služby (anglicky) *</Label>
+              <Input
+                id="english-name"
+                value={newEnglishName}
+                onChange={(e) => setNewEnglishName(e.target.value)}
+                placeholder="e.g. Accommodation"
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -252,6 +280,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
                 onClick={() => {
                   setCreateDialogOpen(false);
                   setNewServiceName("");
+                  setNewEnglishName("");
                 }}
               >
                 Zrušit
@@ -274,12 +303,21 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-service-name">Název služby *</Label>
+              <Label htmlFor="edit-service-name">Název služby (česky) *</Label>
               <Input
                 id="edit-service-name"
                 value={newServiceName}
                 onChange={(e) => setNewServiceName(e.target.value)}
-                placeholder="Název služby"
+                placeholder="např. Ubytování"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-english-name">Název služby (anglicky) *</Label>
+              <Input
+                id="edit-english-name"
+                value={newEnglishName}
+                onChange={(e) => setNewEnglishName(e.target.value)}
+                placeholder="e.g. Accommodation"
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -288,6 +326,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
                 onClick={() => {
                   setEditDialogOpen(false);
                   setNewServiceName("");
+                  setNewEnglishName("");
                   setEditingService(null);
                 }}
               >
