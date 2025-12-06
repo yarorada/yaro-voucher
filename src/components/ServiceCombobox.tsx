@@ -38,10 +38,9 @@ interface ServiceComboboxProps {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (serviceName: string) => void;
-  serviceType?: string;
 }
 
-export function ServiceCombobox({ value, onChange, onSelect, serviceType }: ServiceComboboxProps) {
+export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxProps) {
   const [open, setOpen] = useState(false);
   const [services, setServices] = useState<ServiceTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,8 +86,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
         .from("service_templates")
         .insert({ 
           name: newServiceName.trim(),
-          english_name: newEnglishName.trim(),
-          service_type: serviceType || 'other'
+          english_name: newEnglishName.trim()
         })
         .select()
         .single();
@@ -160,9 +158,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
   };
 
   const filteredServices = services.filter((service) => {
-    const matchesSearch = service.name.toLowerCase().includes(searchValue.toLowerCase());
-    const matchesType = !serviceType || service.service_type === serviceType || !service.service_type;
-    return matchesSearch && matchesType;
+    return service.name.toLowerCase().includes(searchValue.toLowerCase());
   });
 
   const showCreateOption = searchValue.trim() && 
