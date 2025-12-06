@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
@@ -30,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -863,13 +869,34 @@ const DealDetail = () => {
                 <CardTitle>Služby</CardTitle>
                 <CardDescription>Správa služeb v obchodním případu</CardDescription>
               </div>
-              <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
-                setServiceDialogOpen(open);
-                if (!open) resetServiceForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" onClick={() => {
-                    // Pre-fill form with default values from deal
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat službu
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background w-48">
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "flight",
+                      service_name: "",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Plane className="h-4 w-4 mr-2" />
+                    Letenka
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
                     const travelerCount = deal?.deal_travelers?.length || 1;
                     setServiceForm({
                       id: "",
@@ -882,11 +909,107 @@ const DealDetail = () => {
                       supplier_id: "",
                       person_count: travelerCount.toString(),
                     });
+                    setServiceDialogOpen(true);
                   }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Přidat službu
-                  </Button>
-                </DialogTrigger>
+                    <Hotel className="h-4 w-4 mr-2" />
+                    Ubytování
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "golf",
+                      service_name: "",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Navigation className="h-4 w-4 mr-2" />
+                    Green fee
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "transfer",
+                      service_name: "",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Car className="h-4 w-4 mr-2" />
+                    Transfery
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "other",
+                      service_name: "Rent-a-car",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Car className="h-4 w-4 mr-2" />
+                    Rent-a-car
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "other",
+                      service_name: "Strava",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <Utensils className="h-4 w-4 mr-2" />
+                    Strava
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const travelerCount = deal?.deal_travelers?.length || 1;
+                    setServiceForm({
+                      id: "",
+                      service_type: "other",
+                      service_name: "Asistence",
+                      description: "",
+                      start_date: startDate,
+                      end_date: endDate,
+                      price: "",
+                      supplier_id: "",
+                      person_count: travelerCount.toString(),
+                    });
+                    setServiceDialogOpen(true);
+                  }}>
+                    <HeadphonesIcon className="h-4 w-4 mr-2" />
+                    Asistence
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
+                setServiceDialogOpen(open);
+                if (!open) resetServiceForm();
+              }}>
                 <DialogContent className="bg-background max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>{serviceForm.id ? "Upravit službu" : "Přidat službu"}</DialogTitle>
