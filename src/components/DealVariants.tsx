@@ -178,6 +178,8 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     return new Intl.NumberFormat("cs-CZ", {
       style: "currency",
       currency: "CZK",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price);
   };
 
