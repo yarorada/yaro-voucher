@@ -294,6 +294,17 @@ const DealDetail = () => {
     fetchServices();
   }, [id]);
 
+  // Recalculate total price when services or adjustments change
+  useEffect(() => {
+    if (services.length > 0 || discountAmount || adjustmentAmount) {
+      calculateTotalPrice(
+        services, 
+        parseFloat(discountAmount) || 0, 
+        parseFloat(adjustmentAmount) || 0
+      );
+    }
+  }, [services, discountAmount, adjustmentAmount]);
+
   const fetchDeal = async () => {
     try {
       const { data, error } = await supabase
