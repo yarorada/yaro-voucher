@@ -215,7 +215,7 @@ const ContractDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Celková cena</p>
                 <p className="font-medium text-foreground text-xl">
-                  {contract.deal?.total_price?.toLocaleString("cs-CZ")} Kč
+                  {contract.deal?.total_price?.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
                 </p>
               </div>
               {contract.deal?.start_date && (
@@ -284,7 +284,7 @@ const ContractDetail = () => {
                         </div>
                       </div>
                       <p className="font-bold text-foreground">
-                        {service.price?.toLocaleString("cs-CZ")} Kč
+                        {service.price?.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
                       </p>
                     </div>
                     {service.description && (
