@@ -191,7 +191,7 @@ export function ServiceCombobox({ value, onChange, onSelect }: ServiceComboboxPr
               value={searchValue}
               onValueChange={setSearchValue}
             />
-            <CommandList>
+            <CommandList className="max-h-64 overflow-y-auto">
               <CommandEmpty>
                 {showCreateOption ? (
                   <Button
