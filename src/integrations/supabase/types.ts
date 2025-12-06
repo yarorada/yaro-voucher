@@ -184,6 +184,7 @@ export type Database = {
           id: string
           notes: string | null
           paid: boolean | null
+          paid_at: string | null
           payment_type: string
         }
         Insert: {
@@ -194,6 +195,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid?: boolean | null
+          paid_at?: string | null
           payment_type: string
         }
         Update: {
@@ -204,6 +206,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid?: boolean | null
+          paid_at?: string | null
           payment_type?: string
         }
         Relationships: [
