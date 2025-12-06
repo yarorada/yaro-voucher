@@ -15,7 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { DestinationCombobox } from "./DestinationCombobox";
 import { VariantServiceDialog } from "./VariantServiceDialog";
-import { Plus, Edit, Trash2, Plane, Hotel, Navigation, Car, Shield, FileText } from "lucide-react";
+import { Plus, Edit, Trash2, Plane, Hotel, Navigation, Car, Shield, FileText, ChevronDown, Utensils, HeadphonesIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -67,6 +73,8 @@ export const VariantDetailDialog = ({
   const [services, setServices] = useState<VariantService[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<VariantService | null>(null);
+  const [preselectedServiceType, setPreselectedServiceType] = useState<VariantService["service_type"]>("hotel");
+  const [preselectedServiceName, setPreselectedServiceName] = useState<string>("");
 
   useEffect(() => {
     if (variant) {
@@ -331,16 +339,98 @@ export const VariantDetailDialog = ({
                       Celková cena: {formatPrice(calculateTotalPrice())}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setEditingService(null);
-                      setServiceDialogOpen(true);
-                    }}
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Přidat službu
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Přidat službu
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background w-48">
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("flight");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Plane className="h-4 w-4 mr-2" />
+                        Letenka
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("hotel");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Hotel className="h-4 w-4 mr-2" />
+                        Ubytování
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("golf");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Navigation className="h-4 w-4 mr-2" />
+                        Green fee
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("transfer");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Car className="h-4 w-4 mr-2" />
+                        Transfery
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("other");
+                        setPreselectedServiceName("Rent-a-car");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Car className="h-4 w-4 mr-2" />
+                        Rent-a-car
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("other");
+                        setPreselectedServiceName("Strava");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Utensils className="h-4 w-4 mr-2" />
+                        Strava
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("other");
+                        setPreselectedServiceName("Asistence");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <HeadphonesIcon className="h-4 w-4 mr-2" />
+                        Asistence
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("insurance");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Pojištění
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setEditingService(null);
+                        setPreselectedServiceType("other");
+                        setPreselectedServiceName("");
+                        setServiceDialogOpen(true);
+                      }}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Ostatní
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {services.length === 0 ? (
@@ -450,6 +540,8 @@ export const VariantDetailDialog = ({
           }}
           variantStartDate={variant.start_date}
           variantEndDate={variant.end_date}
+          preselectedServiceType={preselectedServiceType}
+          preselectedServiceName={preselectedServiceName}
         />
       )}
     </>
