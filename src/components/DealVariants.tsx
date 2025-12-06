@@ -105,7 +105,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
   };
 
   const handleSelectVariant = async (variantId: string) => {
-    if (!confirm("Opravdu chcete použít tuto variantu jako finální? Tato akce přepíše současné údaje obchodního případu.")) return;
+    if (!confirm("Opravdu chcete vybrat tuto variantu jako finální?")) return;
 
     try {
       const { error } = await supabase.rpc("select_deal_variant", {
