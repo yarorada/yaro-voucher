@@ -44,6 +44,7 @@ interface Payment {
   amount: number;
   due_date: string;
   paid: boolean;
+  paid_at?: string | null;
   notes?: string;
 }
 
@@ -130,10 +131,14 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
 
   const handleTogglePaid = async (paymentId: string, paid: boolean) => {
     try {
+      const updateData = !paid 
+        ? { paid: true, paid_at: new Date().toISOString() }
+        : { paid: false, paid_at: null };
+      
       // @ts-ignore - Supabase types not updated after migration
       const { error } = await (supabase as any)
         .from("contract_payments")
-        .update({ paid: !paid })
+        .update(updateData)
         .eq("id", paymentId);
 
       if (error) throw error;
@@ -253,6 +258,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     <TableHead>Typ</TableHead>
                     <TableHead>Částka</TableHead>
                     <TableHead>Splatnost</TableHead>
+                    <TableHead>Uhrazeno</TableHead>
                     <TableHead>Poznámka</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
@@ -276,6 +282,11 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                       </TableCell>
                       <TableCell className="text-body">
                         {format(new Date(payment.due_date), "d. M. yyyy", { locale: cs })}
+                      </TableCell>
+                      <TableCell className="text-body text-green-600">
+                        {payment.paid_at 
+                          ? format(new Date(payment.paid_at), "d. M. yyyy", { locale: cs })
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-body text-muted-foreground">
                         {payment.notes || "-"}
