@@ -52,9 +52,13 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let newValue = e.target.value;
+      const newValue = e.target.value;
       
-      // Remove all non-digit characters for auto-formatting
+      // Allow direct typing - don't block any input
+      // Remove all non-digit and non-dot characters
+      const cleanValue = newValue.replace(/[^\d.]/g, '');
+      
+      // Extract only digits for auto-formatting logic
       const digitsOnly = newValue.replace(/\D/g, '');
       
       // Auto-format with dots as user types
@@ -68,7 +72,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         
         // Add second dot after month (2 digits)
         if (digitsOnly.length >= 5) {
-          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2, 4) + '.' + digitsOnly.slice(4);
+          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2, 4) + '.' + digitsOnly.slice(4, 6);
         }
         
         // Limit to 8 characters (DD.MM.RR)
