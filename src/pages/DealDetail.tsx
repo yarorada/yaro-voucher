@@ -362,6 +362,7 @@ const DealDetail = () => {
           suppliers(name)
         `)
         .eq("deal_id", id)
+        .order("order_index", { ascending: true })
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -387,12 +388,28 @@ const DealDetail = () => {
     const newServices = arrayMove(services, oldIndex, newIndex);
     setServices(newServices);
 
-    // Update order in the state immediately, but we don't save to DB since there's no order_index column
-    // The order will be maintained only for the current session
-    toast({
-      title: "Pořadí změněno",
-      description: "Pořadí služeb bylo aktualizováno",
-    });
+    // Save order to database
+    try {
+      const updates = newServices.map((service, index) => 
+        supabase
+          .from("deal_services")
+          .update({ order_index: index })
+          .eq("id", service.id)
+      );
+      await Promise.all(updates);
+      
+      toast({
+        title: "Pořadí uloženo",
+        description: "Pořadí služeb bylo uloženo",
+      });
+    } catch (error) {
+      console.error("Error saving order:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se uložit pořadí",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddTraveler = async () => {
