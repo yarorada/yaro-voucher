@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Pencil, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
   const [newServiceName, setNewServiceName] = useState("");
   const [newEnglishName, setNewEnglishName] = useState("");
   const [translating, setTranslating] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const translateName = useCallback(async (czechName: string) => {
     if (!czechName.trim()) {
@@ -119,7 +120,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
 
       if (error) throw error;
 
-      toast.success("Služba vytvořena");
+      toast.success("Šablona služby vytvořena");
       setServices([...services, data]);
       onChange(data.name);
       if (onSelect) onSelect(data.name);
@@ -129,7 +130,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
       setOpen(false);
     } catch (error) {
       console.error("Error creating service:", error);
-      toast.error("Nepodařilo se vytvořit službu");
+      toast.error("Nepodařilo se vytvořit šablonu služby");
     } finally {
       setLoading(false);
     }
@@ -159,7 +160,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
 
       if (error) throw error;
 
-      toast.success("Služba upravena");
+      toast.success("Šablona služby upravena");
       setServices(services.map(s => s.id === data.id ? data : s));
       onChange(data.name);
       if (onSelect) onSelect(data.name);
@@ -169,7 +170,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
       setEditingService(null);
     } catch (error) {
       console.error("Error updating service:", error);
-      toast.error("Nepodařilo se upravit službu");
+      toast.error("Nepodařilo se upravit šablonu služby");
     } finally {
       setLoading(false);
     }
@@ -194,94 +195,98 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            onKeyDown={(e) => {
-              if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                setOpen(true);
-                setSearchValue(e.key);
-              }
-            }}
-          >
-            {value || "Vyberte službu..."}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0 bg-popover z-50" align="start">
-          <Command>
-            <CommandInput 
-              placeholder="Hledat službu..." 
-              value={searchValue}
-              onValueChange={setSearchValue}
-            />
-            <CommandList className="max-h-64 overflow-y-auto">
-              <CommandEmpty>
-                {showCreateOption ? (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      setNewServiceName(searchValue);
-                      setCreateDialogOpen(true);
-                      setOpen(false);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Vytvořit "{searchValue}"
-                  </Button>
-                ) : (
-                  "Služba nenalezena"
-                )}
-              </CommandEmpty>
-              <CommandGroup>
-                {filteredServices.map((service) => (
-                  <CommandItem
-                    key={service.id}
-                    value={service.name}
-                    onSelect={() => {
-                      onChange(service.name);
-                      if (onSelect) onSelect(service.name);
-                      setOpen(false);
-                      setSearchValue("");
-                    }}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center flex-1">
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          value === service.name ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {service.name}
-                    </div>
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Zadejte název služby..."
+          className="pr-10"
+          onFocus={() => setOpen(true)}
+        />
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setOpen(!open)}
+            >
+              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover z-50" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Hledat v šablonách..." 
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+              <CommandList className="max-h-64 overflow-y-auto">
+                <CommandEmpty>
+                  {showCreateOption ? (
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={(e) => handleEditClick(service, e)}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setNewServiceName(searchValue);
+                        setCreateDialogOpen(true);
+                        setOpen(false);
+                      }}
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Plus className="mr-2 h-4 w-4" />
+                      Uložit "{searchValue}" jako šablonu
                     </Button>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  ) : (
+                    "Žádná šablona nenalezena"
+                  )}
+                </CommandEmpty>
+                <CommandGroup heading="Šablony služeb">
+                  {filteredServices.map((service) => (
+                    <CommandItem
+                      key={service.id}
+                      value={service.name}
+                      onSelect={() => {
+                        onChange(service.name);
+                        if (onSelect) onSelect(service.name);
+                        setOpen(false);
+                        setSearchValue("");
+                        inputRef.current?.focus();
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center flex-1">
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === service.name ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {service.name}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => handleEditClick(service, e)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Vytvořit novou službu</DialogTitle>
+            <DialogTitle>Vytvořit novou šablonu</DialogTitle>
             <DialogDescription>
-              Zadejte název nové služby
+              Uložte název služby jako šablonu pro budoucí použití
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -320,7 +325,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
                 Zrušit
               </Button>
               <Button onClick={handleCreateService} disabled={loading}>
-                {loading ? "Vytvářím..." : "Vytvořit"}
+                {loading ? "Ukládám..." : "Uložit šablonu"}
               </Button>
             </div>
           </div>
@@ -330,9 +335,9 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upravit službu</DialogTitle>
+            <DialogTitle>Upravit šablonu</DialogTitle>
             <DialogDescription>
-              Změňte název služby
+              Změňte název šablony služby
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
