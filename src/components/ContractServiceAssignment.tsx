@@ -75,12 +75,28 @@ export function ContractServiceAssignment({
 
         if (assignmentsError) throw assignmentsError;
 
-        setServices(servicesData || []);
-        setTravelers(
-          travelersData?.map((t: any) => t.clients).filter(Boolean) || []
-        );
-        // @ts-ignore - Supabase types not updated after migration
-        setAssignments(assignmentsData || []);
+        const loadedServices = servicesData || [];
+        const loadedTravelers = travelersData?.map((t: any) => t.clients).filter(Boolean) || [];
+        
+        setServices(loadedServices);
+        setTravelers(loadedTravelers);
+        
+        // If no assignments exist, default to all travelers assigned to all services
+        if (!assignmentsData || assignmentsData.length === 0) {
+          const defaultAssignments: Assignment[] = [];
+          loadedServices.forEach((service: Service) => {
+            loadedTravelers.forEach((traveler: Traveler) => {
+              defaultAssignments.push({
+                service_type: service.service_type,
+                service_name: service.service_name,
+                client_id: traveler.id,
+              });
+            });
+          });
+          setAssignments(defaultAssignments);
+        } else {
+          setAssignments(assignmentsData);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
