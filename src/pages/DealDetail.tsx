@@ -27,7 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
-import { formatPriceCurrency } from "@/lib/utils";
+import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
@@ -759,8 +759,8 @@ const DealDetail = () => {
         .update({
           status,
           destination_id: destinationId || null,
-          start_date: startDate ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}` : null,
-          end_date: endDate ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}` : null,
+          start_date: formatDateForDB(startDate),
+          end_date: formatDateForDB(endDate),
           total_price: totalPrice ? parseFloat(totalPrice) : null,
           deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
           deposit_paid: depositPaid,
