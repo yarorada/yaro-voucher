@@ -300,7 +300,11 @@ const ContractDetail = () => {
           />
 
           {/* Platební kalendář */}
-          <ContractPaymentSchedule contractId={contract.id} />
+          <ContractPaymentSchedule 
+            contractId={contract.id} 
+            totalPrice={contract.deal?.total_price}
+            departureDate={contract.deal?.start_date}
+          />
 
           {/* Přiřazení cestujících ke službám */}
           {contract.deal?.id && (
