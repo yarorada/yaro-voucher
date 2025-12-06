@@ -127,6 +127,7 @@ Example format:
         services: translatedServices,
         issue_date: new Date().toISOString().split('T')[0],
         voucher_number: Math.floor(Math.random() * 10000), // Temporary, will be set by trigger
+        user_id: contract.user_id, // Copy user_id from contract
       })
       .select()
       .single()
