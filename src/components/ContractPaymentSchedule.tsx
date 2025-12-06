@@ -33,8 +33,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Trash2, Wallet, CalendarIcon, Calculator } from "lucide-react";
+import { format, subMonths } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -49,9 +49,11 @@ interface Payment {
 
 interface ContractPaymentScheduleProps {
   contractId: string;
+  totalPrice?: number;
+  departureDate?: string;
 }
 
-export function ContractPaymentSchedule({ contractId }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,8 +177,44 @@ export function ContractPaymentSchedule({ contractId }: ContractPaymentScheduleP
     return labels[type] || type;
   };
 
+  const depositsSum = payments
+    .filter((p) => p.payment_type === "deposit" || p.payment_type === "installment")
+    .reduce((sum, p) => sum + p.amount, 0);
+  const remainingPayment = Math.max(0, totalPrice - depositsSum);
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
+
+  const handleAddFinalPayment = async () => {
+    if (!departureDate || remainingPayment <= 0) return;
+    
+    const dueDate = subMonths(new Date(departureDate), 1);
+    
+    try {
+      // @ts-ignore - Supabase types not updated after migration
+      const { error } = await (supabase as any).from("contract_payments").insert({
+        contract_id: contractId,
+        payment_type: "final",
+        amount: remainingPayment,
+        due_date: format(dueDate, "yyyy-MM-dd"),
+        notes: "Doplatek měsíc před odjezdem",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Přidáno",
+        description: "Doplatek byl přidán",
+      });
+      fetchPayments();
+    } catch (error) {
+      console.error("Error adding final payment:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se přidat doplatek",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -186,10 +224,18 @@ export function ContractPaymentSchedule({ contractId }: ContractPaymentScheduleP
             <Wallet className="h-5 w-5" />
             Platební kalendář
           </CardTitle>
-          <Button onClick={() => setDialogOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Přidat platbu
-          </Button>
+          <div className="flex gap-2">
+            {remainingPayment > 0 && departureDate && (
+              <Button onClick={handleAddFinalPayment} size="sm" variant="outline">
+                <Calculator className="h-4 w-4 mr-2" />
+                Doplatek {remainingPayment.toLocaleString("cs-CZ")} Kč
+              </Button>
+            )}
+            <Button onClick={() => setDialogOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Přidat platbu
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -249,18 +295,24 @@ export function ContractPaymentSchedule({ contractId }: ContractPaymentScheduleP
               </Table>
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-body">
-                  <span>Celkem k úhradě:</span>
-                  <span className="font-semibold">{totalAmount.toLocaleString("cs-CZ")} Kč</span>
-                </div>
-                <div className="flex justify-between text-body text-green-600">
-                  <span>Zaplaceno:</span>
-                  <span className="font-semibold">{paidAmount.toLocaleString("cs-CZ")} Kč</span>
+                  <span>Celková cena zájezdu:</span>
+                  <span className="font-semibold">{totalPrice.toLocaleString("cs-CZ")} Kč</span>
                 </div>
                 <div className="flex justify-between text-body">
-                  <span>Zbývá zaplatit:</span>
-                  <span className="font-semibold">
-                    {(totalAmount - paidAmount).toLocaleString("cs-CZ")} Kč
+                  <span>Zálohy a splátky:</span>
+                  <span className="font-semibold">{depositsSum.toLocaleString("cs-CZ")} Kč</span>
+                </div>
+                <div className="flex justify-between text-body font-medium">
+                  <span>Zbývá k doplacení:</span>
+                  <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
+                    {remainingPayment.toLocaleString("cs-CZ")} Kč
                   </span>
+                </div>
+                <div className="border-t mt-2 pt-2">
+                  <div className="flex justify-between text-body text-green-600">
+                    <span>Zaplaceno:</span>
+                    <span className="font-semibold">{paidAmount.toLocaleString("cs-CZ")} Kč</span>
+                  </div>
                 </div>
               </div>
             </>
