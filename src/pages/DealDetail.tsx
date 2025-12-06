@@ -1192,13 +1192,6 @@ const DealDetail = () => {
                     <Shield className="h-4 w-4 mr-2" />
                     Pojištění
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setServiceForm(createServiceFormData("other"));
-                    setServiceDialogOpen(true);
-                  }}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ostatní
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
