@@ -4,13 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -33,8 +26,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Calculator, Pencil } from "lucide-react";
-import { format, subMonths, isPast, startOfDay } from "date-fns";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
+import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +41,14 @@ interface Payment {
   notes?: string;
 }
 
+interface ScheduleItem {
+  enabled: boolean;
+  amount: string;
+  date: Date | undefined;
+  type: "deposit" | "installment" | "final";
+  label: string;
+}
+
 interface ContractPaymentScheduleProps {
   contractId: string;
   totalPrice?: number;
@@ -58,26 +59,33 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [formData, setFormData] = useState({
+  const [editSelectedDate, setEditSelectedDate] = useState<Date | undefined>(undefined);
+  const [editFormData, setEditFormData] = useState({
     payment_type: "deposit",
     amount: "",
     notes: "",
   });
 
+  // Schedule builder state
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([
+    { enabled: true, amount: "", date: undefined, type: "deposit", label: "1. záloha" },
+    { enabled: false, amount: "", date: undefined, type: "deposit", label: "2. záloha" },
+    { enabled: false, amount: "", date: undefined, type: "deposit", label: "3. záloha" },
+    { enabled: true, amount: "", date: undefined, type: "final", label: "Doplatek" },
+  ]);
+
   const fetchPayments = async () => {
     try {
-      // @ts-ignore - Supabase types not updated after migration
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("contract_payments")
         .select("*")
         .eq("contract_id", contractId)
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      // @ts-ignore - Supabase types not updated after migration
       setPayments(data || []);
     } catch (error) {
       console.error("Error fetching payments:", error);
@@ -90,25 +98,48 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     fetchPayments();
   }, [contractId]);
 
-  const resetForm = () => {
-    setFormData({ payment_type: "deposit", amount: "", notes: "" });
-    setSelectedDate(undefined);
-    setEditingPayment(null);
+  // Calculate final payment automatically
+  useEffect(() => {
+    const depositsTotal = scheduleItems
+      .filter(item => item.enabled && item.type !== "final")
+      .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    
+    const finalPayment = Math.max(0, totalPrice - depositsTotal);
+    
+    setScheduleItems(prev => prev.map(item => 
+      item.type === "final" 
+        ? { ...item, amount: finalPayment > 0 ? finalPayment.toString() : "0" }
+        : item
+    ));
+  }, [scheduleItems.filter(i => i.type !== "final").map(i => `${i.enabled}-${i.amount}`).join(","), totalPrice]);
+
+  const resetSchedule = () => {
+    const today = new Date();
+    const defaultFinalDate = departureDate 
+      ? addMonths(new Date(departureDate), -1)
+      : addMonths(today, 2);
+    
+    setScheduleItems([
+      { enabled: true, amount: "", date: today, type: "deposit", label: "1. záloha" },
+      { enabled: false, amount: "", date: undefined, type: "deposit", label: "2. záloha" },
+      { enabled: false, amount: "", date: undefined, type: "deposit", label: "3. záloha" },
+      { enabled: true, amount: totalPrice.toString(), date: defaultFinalDate, type: "final", label: "Doplatek" },
+    ]);
   };
 
   const openEditDialog = (payment: Payment) => {
     setEditingPayment(payment);
-    setFormData({
+    setEditFormData({
       payment_type: payment.payment_type,
       amount: payment.amount.toString(),
       notes: payment.notes || "",
     });
-    setSelectedDate(new Date(payment.due_date));
-    setDialogOpen(true);
+    setEditSelectedDate(new Date(payment.due_date));
+    setEditDialogOpen(true);
   };
 
-  const handleSavePayment = async () => {
-    if (!formData.amount || !selectedDate) {
+  const handleSaveEditPayment = async () => {
+    if (!editFormData.amount || !editSelectedDate || !editingPayment) {
       toast({
         title: "Chyba",
         description: "Vyplňte částku a datum splatnosti",
@@ -118,52 +149,77 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     }
 
     try {
-      if (editingPayment) {
-        // Update existing payment
-        // @ts-ignore - Supabase types not updated after migration
-        const { error } = await (supabase as any)
-          .from("contract_payments")
-          .update({
-            payment_type: formData.payment_type,
-            amount: parseFloat(formData.amount),
-            due_date: format(selectedDate, "yyyy-MM-dd"),
-            notes: formData.notes || null,
-          })
-          .eq("id", editingPayment.id);
+      const { error } = await supabase
+        .from("contract_payments")
+        .update({
+          payment_type: editFormData.payment_type,
+          amount: parseFloat(editFormData.amount),
+          due_date: format(editSelectedDate, "yyyy-MM-dd"),
+          notes: editFormData.notes || null,
+        })
+        .eq("id", editingPayment.id);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "Uloženo",
-          description: "Platba byla upravena",
-        });
-      } else {
-        // Add new payment
-        // @ts-ignore - Supabase types not updated after migration
-        const { error } = await (supabase as any).from("contract_payments").insert({
-          contract_id: contractId,
-          payment_type: formData.payment_type,
-          amount: parseFloat(formData.amount),
-          due_date: format(selectedDate, "yyyy-MM-dd"),
-          notes: formData.notes || null,
-        });
+      toast({
+        title: "Uloženo",
+        description: "Platba byla upravena",
+      });
 
-        if (error) throw error;
-
-        toast({
-          title: "Přidáno",
-          description: "Platba byla přidána",
-        });
-      }
-
-      setDialogOpen(false);
-      resetForm();
+      setEditDialogOpen(false);
+      setEditingPayment(null);
       fetchPayments();
     } catch (error) {
       console.error("Error saving payment:", error);
       toast({
         title: "Chyba",
-        description: editingPayment ? "Nepodařilo se upravit platbu" : "Nepodařilo se přidat platbu",
+        description: "Nepodařilo se upravit platbu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+    const validItems = scheduleItems.filter(
+      item => item.enabled && item.date && parseFloat(item.amount) > 0
+    );
+
+    if (validItems.length === 0) {
+      toast({
+        title: "Chyba",
+        description: "Přidejte alespoň jednu platbu s částkou a datem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const paymentsToInsert = validItems.map((item, index) => ({
+        contract_id: contractId,
+        payment_type: item.type === "final" ? "final" : (index === 0 ? "deposit" : "installment"),
+        amount: parseFloat(item.amount),
+        due_date: format(item.date!, "yyyy-MM-dd"),
+        notes: item.label,
+      }));
+
+      const { error } = await supabase
+        .from("contract_payments")
+        .insert(paymentsToInsert);
+
+      if (error) throw error;
+
+      toast({
+        title: "Přidáno",
+        description: `Přidáno ${validItems.length} plateb`,
+      });
+
+      setScheduleDialogOpen(false);
+      fetchPayments();
+    } catch (error) {
+      console.error("Error saving schedule:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se uložit platební kalendář",
         variant: "destructive",
       });
     }
@@ -175,8 +231,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
         ? { paid: true, paid_at: new Date().toISOString() }
         : { paid: false, paid_at: null };
       
-      // @ts-ignore - Supabase types not updated after migration
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("contract_payments")
         .update(updateData)
         .eq("id", paymentId);
@@ -190,8 +245,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
 
   const handleDeletePayment = async (paymentId: string) => {
     try {
-      // @ts-ignore - Supabase types not updated after migration
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("contract_payments")
         .delete()
         .eq("id", paymentId);
@@ -222,44 +276,24 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     return labels[type] || type;
   };
 
+  const updateScheduleItem = (index: number, updates: Partial<ScheduleItem>) => {
+    setScheduleItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, ...updates } : item
+    ));
+  };
+
   const depositsSum = payments
     .filter((p) => p.payment_type === "deposit" || p.payment_type === "installment")
     .reduce((sum, p) => sum + p.amount, 0);
   const remainingPayment = Math.max(0, totalPrice - depositsSum);
-  const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
 
-  const handleAddFinalPayment = async () => {
-    if (!departureDate || remainingPayment <= 0) return;
-    
-    const dueDate = subMonths(new Date(departureDate), 1);
-    
-    try {
-      // @ts-ignore - Supabase types not updated after migration
-      const { error } = await (supabase as any).from("contract_payments").insert({
-        contract_id: contractId,
-        payment_type: "final",
-        amount: remainingPayment,
-        due_date: format(dueDate, "yyyy-MM-dd"),
-        notes: "Doplatek měsíc před odjezdem",
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Přidáno",
-        description: "Doplatek byl přidán",
-      });
-      fetchPayments();
-    } catch (error) {
-      console.error("Error adding final payment:", error);
-      toast({
-        title: "Chyba",
-        description: "Nepodařilo se přidat doplatek",
-        variant: "destructive",
-      });
-    }
-  };
+  // Calculate schedule totals
+  const scheduleDepositsTotal = scheduleItems
+    .filter(item => item.enabled && item.type !== "final")
+    .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const scheduleFinalAmount = parseFloat(scheduleItems.find(i => i.type === "final")?.amount || "0");
+  const scheduleTotal = scheduleDepositsTotal + scheduleFinalAmount;
 
   return (
     <>
@@ -269,18 +303,10 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <Wallet className="h-5 w-5" />
             Platební kalendář
           </CardTitle>
-          <div className="flex gap-2">
-            {remainingPayment > 0 && departureDate && (
-              <Button onClick={handleAddFinalPayment} size="sm" variant="outline">
-                <Calculator className="h-4 w-4 mr-2" />
-                Doplatek {remainingPayment.toLocaleString("cs-CZ")} Kč
-              </Button>
-            )}
-            <Button onClick={() => { resetForm(); setDialogOpen(true); }} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Přidat platbu
-            </Button>
-          </div>
+          <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Přidat platbu
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -300,7 +326,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     <TableHead>Splatnost</TableHead>
                     <TableHead>Uhrazeno</TableHead>
                     <TableHead>Poznámka</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -387,40 +413,174 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-md">
+      {/* Schedule Builder Dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingPayment ? "Upravit platbu" : "Přidat platbu"}</DialogTitle>
+            <DialogTitle>Rozpis plateb</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Typ platby</Label>
-                <Select
-                  value={formData.payment_type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, payment_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="deposit">Záloha</SelectItem>
-                    <SelectItem value="installment">Splátka</SelectItem>
-                    <SelectItem value="final">Doplatek</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <div className="flex justify-between text-sm">
+                <span>Celková cena zájezdu:</span>
+                <span className="font-semibold">{totalPrice.toLocaleString("cs-CZ")} Kč</span>
               </div>
-              <div className="space-y-2">
-                <Label>Částka (Kč)</Label>
-                <Input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0"
-                />
+            </div>
+
+            <div className="space-y-3">
+              {scheduleItems.filter(item => item.type !== "final").map((item, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Checkbox
+                    checked={item.enabled}
+                    onCheckedChange={(checked) => 
+                      updateScheduleItem(index, { enabled: !!checked })
+                    }
+                  />
+                  <div className="flex-1 grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">{item.label}</Label>
+                      <Input
+                        type="number"
+                        value={item.amount}
+                        onChange={(e) => updateScheduleItem(index, { amount: e.target.value })}
+                        placeholder="Částka"
+                        disabled={!item.enabled}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Splatnost</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            disabled={!item.enabled}
+                            className={cn(
+                              "w-full h-9 justify-start text-left font-normal",
+                              !item.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {item.date ? format(item.date, "d. M. yyyy", { locale: cs }) : "Datum"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={item.date}
+                            onSelect={(date) => updateScheduleItem(index, { date })}
+                            initialFocus
+                            locale={cs}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Final Payment - always shown */}
+              <div className="p-3 border-2 border-primary/20 rounded-lg bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={scheduleItems[3].enabled}
+                    onCheckedChange={(checked) => 
+                      updateScheduleItem(3, { enabled: !!checked })
+                    }
+                  />
+                  <div className="flex-1 grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Doplatek (automaticky)</Label>
+                      <div className="h-9 px-3 flex items-center bg-muted rounded-md font-semibold">
+                        {parseFloat(scheduleItems[3].amount || "0").toLocaleString("cs-CZ")} Kč
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Splatnost</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            disabled={!scheduleItems[3].enabled}
+                            className={cn(
+                              "w-full h-9 justify-start text-left font-normal",
+                              !scheduleItems[3].date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {scheduleItems[3].date 
+                              ? format(scheduleItems[3].date, "d. M. yyyy", { locale: cs }) 
+                              : "Datum"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={scheduleItems[3].date}
+                            onSelect={(date) => updateScheduleItem(3, { date })}
+                            initialFocus
+                            locale={cs}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>Zálohy celkem:</span>
+                <span className="font-medium">{scheduleDepositsTotal.toLocaleString("cs-CZ")} Kč</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Doplatek:</span>
+                <span className="font-medium">{scheduleFinalAmount.toLocaleString("cs-CZ")} Kč</span>
+              </div>
+              <div className="flex justify-between text-sm font-semibold border-t pt-1">
+                <span>Celkem:</span>
+                <span className={cn(
+                  scheduleTotal === totalPrice ? "text-green-600" : "text-orange-600"
+                )}>
+                  {scheduleTotal.toLocaleString("cs-CZ")} Kč
+                  {scheduleTotal !== totalPrice && " ⚠️"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={handleSaveSchedule}>
+                Uložit platby
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Single Payment Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { 
+        setEditDialogOpen(open); 
+        if (!open) setEditingPayment(null); 
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upravit platbu</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Částka (Kč)</Label>
+              <Input
+                type="number"
+                value={editFormData.amount}
+                onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                placeholder="0"
+              />
             </div>
             <div className="space-y-2">
               <Label>Datum splatnosti</Label>
@@ -430,18 +590,18 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
+                      !editSelectedDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "d. M. yyyy", { locale: cs }) : "Vyberte datum"}
+                    {editSelectedDate ? format(editSelectedDate, "d. M. yyyy", { locale: cs }) : "Vyberte datum"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
+                    selected={editSelectedDate}
+                    onSelect={setEditSelectedDate}
                     initialFocus
                     locale={cs}
                     className={cn("p-3 pointer-events-auto")}
@@ -452,20 +612,20 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="space-y-2">
               <Label>Poznámka</Label>
               <Input
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
                 placeholder="Nepovinné"
               />
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => {
-                setDialogOpen(false);
-                resetForm();
+                setEditDialogOpen(false);
+                setEditingPayment(null);
               }}>
                 Zrušit
               </Button>
-              <Button onClick={handleSavePayment}>
-                {editingPayment ? "Uložit změny" : "Přidat platbu"}
+              <Button onClick={handleSaveEditPayment}>
+                Uložit změny
               </Button>
             </div>
           </div>
