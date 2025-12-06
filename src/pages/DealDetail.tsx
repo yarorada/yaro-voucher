@@ -759,8 +759,8 @@ const DealDetail = () => {
         .update({
           status,
           destination_id: destinationId || null,
-          start_date: startDate?.toISOString() || null,
-          end_date: endDate?.toISOString() || null,
+          start_date: startDate ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}` : null,
+          end_date: endDate ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}` : null,
           total_price: totalPrice ? parseFloat(totalPrice) : null,
           deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
           deposit_paid: depositPaid,
