@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
+import { formatPriceCurrency } from "@/lib/utils";
 
 interface DealVariant {
   id: string;
@@ -173,15 +174,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     return new Date(dateString).toLocaleDateString("cs-CZ");
   };
 
-  const formatPrice = (price: number | null) => {
-    if (!price) return "-";
-    return new Intl.NumberFormat("cs-CZ", {
-      style: "currency",
-      currency: "CZK",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = (price: number | null) => formatPriceCurrency(price);
 
   if (loading) {
     return <div>Načítám varianty...</div>;

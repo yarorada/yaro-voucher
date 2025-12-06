@@ -13,6 +13,7 @@ import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
 import { ContractServiceAssignment } from "@/components/ContractServiceAssignment";
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
 import { EditContractDialog } from "@/components/EditContractDialog";
+import { formatPrice } from "@/lib/utils";
 
 const ContractDetail = () => {
   const { id } = useParams();
@@ -215,7 +216,7 @@ const ContractDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Celková cena</p>
                 <p className="font-medium text-foreground text-xl">
-                  {contract.deal?.total_price?.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                  {formatPrice(contract.deal?.total_price)}
                 </p>
               </div>
               {contract.deal?.start_date && (
@@ -284,7 +285,7 @@ const ContractDetail = () => {
                         </div>
                       </div>
                       <p className="font-bold text-foreground">
-                        {service.price?.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                        {formatPrice(service.price)}
                       </p>
                     </div>
                     {service.description && (
