@@ -26,6 +26,7 @@ import { SupplierCombobox } from "./SupplierCombobox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
+import { formatPriceCurrency } from "@/lib/utils";
 
 interface FlightDetails {
   outbound?: {
@@ -495,12 +496,7 @@ export const VariantServiceDialog = ({
           {price && personCount && (
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm font-medium">
-                Celková cena: {new Intl.NumberFormat("cs-CZ", {
-                  style: "currency",
-                  currency: "CZK",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(parseFloat(price) * parseInt(personCount))}
+                Celková cena: {formatPriceCurrency(parseFloat(price) * parseInt(personCount))}
               </p>
             </div>
           )}

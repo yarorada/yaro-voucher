@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 interface Payment {
   id: string;
@@ -349,7 +349,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                           {getPaymentTypeLabel(payment.payment_type)}
                         </TableCell>
                         <TableCell className="text-body font-semibold">
-                          {payment.amount.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                          {formatPrice(payment.amount)}
                         </TableCell>
                         <TableCell className={cn("text-body", isOverdue && "text-red-600 font-semibold")}>
                           {format(new Date(payment.due_date), "d. M. yyyy", { locale: cs })}
@@ -389,22 +389,22 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-body">
                   <span>Celková cena zájezdu:</span>
-                  <span className="font-semibold">{totalPrice.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                  <span className="font-semibold">{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-body">
                   <span>Zálohy a splátky:</span>
-                  <span className="font-semibold">{depositsSum.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                  <span className="font-semibold">{formatPrice(depositsSum)}</span>
                 </div>
                 <div className="flex justify-between text-body font-medium">
                   <span>Zbývá k doplacení:</span>
                   <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
-                    {remainingPayment.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                    {formatPrice(remainingPayment)}
                   </span>
                 </div>
                 <div className="border-t mt-2 pt-2">
                   <div className="flex justify-between text-body text-green-600">
                     <span>Zaplaceno:</span>
-                    <span className="font-semibold">{paidAmount.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                    <span className="font-semibold">{formatPrice(paidAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -423,7 +423,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="bg-muted/50 p-3 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Celková cena zájezdu:</span>
-                <span className="font-semibold">{totalPrice.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                <span className="font-semibold">{formatPrice(totalPrice)}</span>
               </div>
             </div>
 
@@ -493,7 +493,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Doplatek (automaticky)</Label>
                       <div className="h-9 px-3 flex items-center bg-muted rounded-md font-semibold">
-                        {parseFloat(scheduleItems[3].amount || "0").toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                        {formatPrice(parseFloat(scheduleItems[3].amount || "0"))}
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -534,18 +534,18 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="bg-muted/50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Zálohy celkem:</span>
-                <span className="font-medium">{scheduleDepositsTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                <span className="font-medium">{formatPrice(scheduleDepositsTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Doplatek:</span>
-                <span className="font-medium">{scheduleFinalAmount.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč</span>
+                <span className="font-medium">{formatPrice(scheduleFinalAmount)}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold border-t pt-1">
                 <span>Celkem:</span>
                 <span className={cn(
                   scheduleTotal === totalPrice ? "text-green-600" : "text-orange-600"
                 )}>
-                  {scheduleTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Kč
+                  {formatPrice(scheduleTotal)}
                   {scheduleTotal !== totalPrice && " ⚠️"}
                 </span>
               </div>

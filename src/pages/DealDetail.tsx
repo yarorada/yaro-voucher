@@ -27,6 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { formatPriceCurrency } from "@/lib/utils";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
@@ -171,11 +172,11 @@ const SortableServiceRow = ({
       </TableCell>
       <TableCell className="text-right">
         <div className="text-sm font-medium">
-        {service.price ? new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(service.price * (service.person_count || 1)) : '-'}
+        {service.price ? formatPriceCurrency(service.price * (service.person_count || 1)) : '-'}
         </div>
         {service.price && service.person_count && service.person_count > 1 && (
           <div className="text-xs text-muted-foreground">
-            {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(service.price)} × {service.person_count}
+            {formatPriceCurrency(service.price)} × {service.person_count}
           </div>
         )}
       </TableCell>
@@ -1551,7 +1552,7 @@ const DealDetail = () => {
                 <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30">
                   <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
                   <span className="font-bold text-base sm:text-lg text-primary">
-                    {new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(
+                    {formatPriceCurrency(
                       services.reduce((sum, s) => sum + ((s.price || 0) * (s.person_count || 1)), 0)
                     )}
                   </span>

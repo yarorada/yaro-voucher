@@ -9,6 +9,7 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { formatPriceCurrency } from "@/lib/utils";
 
 interface Deal {
   id: string;
@@ -94,15 +95,7 @@ const Deals = () => {
     return format(new Date(dateString), "dd.MM.yyyy", { locale: cs });
   };
 
-  const formatPrice = (price: number | null) => {
-    if (!price) return "-";
-    return new Intl.NumberFormat("cs-CZ", {
-      style: "currency",
-      currency: "CZK",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = (price: number | null) => formatPriceCurrency(price);
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">

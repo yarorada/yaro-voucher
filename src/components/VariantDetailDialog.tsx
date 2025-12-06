@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatPriceCurrency } from "@/lib/utils";
 
 interface VariantService {
   id: string;
@@ -257,15 +258,7 @@ export const VariantDetailDialog = ({
     return new Date(dateString).toLocaleDateString("cs-CZ");
   };
 
-  const formatPrice = (price: number | null) => {
-    if (!price) return "-";
-    return new Intl.NumberFormat("cs-CZ", {
-      style: "currency",
-      currency: "CZK",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = (price: number | null) => formatPriceCurrency(price);
 
   return (
     <>
