@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Check, ChevronsUpDown, Plus, Pencil, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Pencil, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +58,8 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
   const [searchValue, setSearchValue] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingService, setDeletingService] = useState<ServiceTemplate | null>(null);
   const [editingService, setEditingService] = useState<ServiceTemplate | null>(null);
   const [newServiceName, setNewServiceName] = useState("");
   const [newEnglishName, setNewEnglishName] = useState("");
@@ -184,6 +196,36 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
     setEditDialogOpen(true);
   };
 
+  const handleDeleteClick = (service: ServiceTemplate, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingService(service);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteService = async () => {
+    if (!deletingService) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("service_templates")
+        .delete()
+        .eq("id", deletingService.id);
+
+      if (error) throw error;
+
+      toast.success("Šablona služby smazána");
+      setServices(services.filter(s => s.id !== deletingService.id));
+      setDeleteDialogOpen(false);
+      setDeletingService(null);
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast.error("Nepodařilo se smazat šablonu služby");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredServices = services.filter((service) => {
     const matchesSearch = service.name.toLowerCase().includes(searchValue.toLowerCase());
     const matchesType = !serviceType || service.service_type === serviceType;
@@ -270,14 +312,24 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
                         />
                         <span className="break-words">{service.name}</span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={(e) => handleEditClick(service, e)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                      <div className="flex items-center shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => handleEditClick(service, e)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          onClick={(e) => handleDeleteClick(service, e)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -389,6 +441,29 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat šablonu služby?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat šablonu "{deletingService?.name}"? Tuto akci nelze vrátit zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingService(null)}>
+              Zrušit
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteService}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={loading}
+            >
+              {loading ? "Mažu..." : "Smazat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
