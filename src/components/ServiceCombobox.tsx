@@ -215,7 +215,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover z-50" align="start">
+          <PopoverContent className="w-[400px] min-w-[300px] p-0 bg-popover border border-border shadow-lg z-50" align="start" sideOffset={4}>
             <Command>
               <CommandInput 
                 placeholder="Hledat v šablonách..." 
@@ -255,14 +255,14 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
                       }}
                       className="flex items-center justify-between"
                     >
-                      <div className="flex items-center flex-1">
+                      <div className="flex items-center flex-1 min-w-0">
                         <Check
                           className={cn(
-                            "mr-2 h-4 w-4",
+                            "mr-2 h-4 w-4 shrink-0",
                             value === service.name ? "opacity-100" : "opacity-0"
                           )}
                         />
-                        {service.name}
+                        <span className="break-words">{service.name}</span>
                       </div>
                       <Button
                         variant="ghost"
