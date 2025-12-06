@@ -710,8 +710,14 @@ const DealDetail = () => {
   };
 
   const openEditService = (service: DealService) => {
-    const details = service.details;
-    const hasReturn = !!details?.return?.departure;
+    const details = service.details as any;
+    
+    // Support both old format (outbound/return) and new format (outbound_segments/return_segments)
+    const outboundSegment = details?.outbound_segments?.[0] || details?.outbound;
+    const returnSegments = details?.return_segments || [];
+    const returnSegment = returnSegments.length > 0 ? returnSegments[returnSegments.length - 1] : details?.return;
+    const hasReturn = !!returnSegment?.departure;
+    
     setServiceForm({
       id: service.id,
       service_type: service.service_type,
@@ -722,16 +728,16 @@ const DealDetail = () => {
       price: service.price?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
-      outbound_departure: details?.outbound?.departure || "",
-      outbound_arrival: details?.outbound?.arrival || "",
-      outbound_airline: details?.outbound?.airline || "",
-      outbound_airline_name: details?.outbound?.airline_name || "",
-      outbound_flight_number: details?.outbound?.flight_number || "",
-      return_departure: details?.return?.departure || "",
-      return_arrival: details?.return?.arrival || "",
-      return_airline: details?.return?.airline || "",
-      return_airline_name: details?.return?.airline_name || "",
-      return_flight_number: details?.return?.flight_number || "",
+      outbound_departure: outboundSegment?.departure || "",
+      outbound_arrival: outboundSegment?.arrival || "",
+      outbound_airline: outboundSegment?.airline || "",
+      outbound_airline_name: outboundSegment?.airline_name || "",
+      outbound_flight_number: outboundSegment?.flight_number || "",
+      return_departure: returnSegment?.departure || "",
+      return_arrival: returnSegment?.arrival || "",
+      return_airline: returnSegment?.airline || "",
+      return_airline_name: returnSegment?.airline_name || "",
+      return_flight_number: returnSegment?.flight_number || "",
       is_one_way: !hasReturn,
     });
     setServiceDialogOpen(true);
