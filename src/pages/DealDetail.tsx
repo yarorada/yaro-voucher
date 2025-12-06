@@ -1018,6 +1018,13 @@ const DealDetail = () => {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label>Celková cena</Label>
+                <div className="text-2xl font-bold text-primary">
+                  {formatPriceCurrency(parseFloat(totalPrice) || 0)}
+                </div>
+              </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="notes">Poznámky</Label>
                 <Textarea
