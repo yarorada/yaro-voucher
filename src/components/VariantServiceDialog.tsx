@@ -29,6 +29,8 @@ interface VariantServiceDialogProps {
   onClose: (success?: boolean) => void;
   variantStartDate?: string | null;
   variantEndDate?: string | null;
+  preselectedServiceType?: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
+  preselectedServiceName?: string;
 }
 
 export const VariantServiceDialog = ({
@@ -38,6 +40,8 @@ export const VariantServiceDialog = ({
   onClose,
   variantStartDate,
   variantEndDate,
+  preselectedServiceType = "hotel",
+  preselectedServiceName = "",
 }: VariantServiceDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -63,11 +67,11 @@ export const VariantServiceDialog = ({
     } else {
       resetForm();
     }
-  }, [service]);
+  }, [service, open]);
 
   const resetForm = () => {
-    setServiceType("hotel");
-    setServiceName("");
+    setServiceType(preselectedServiceType);
+    setServiceName(preselectedServiceName);
     setDescription("");
     setStartDate(variantStartDate ? new Date(variantStartDate) : undefined);
     setEndDate(variantEndDate ? new Date(variantEndDate) : undefined);
