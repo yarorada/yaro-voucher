@@ -34,7 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Wallet, CalendarIcon, Calculator } from "lucide-react";
-import { format, subMonths } from "date-fns";
+import { format, subMonths, isPast, startOfDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -264,44 +264,51 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={payment.paid}
-                          onCheckedChange={() =>
-                            handleTogglePaid(payment.id, payment.paid)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-body">
-                        {getPaymentTypeLabel(payment.payment_type)}
-                      </TableCell>
-                      <TableCell className="text-body font-semibold">
-                        {payment.amount.toLocaleString("cs-CZ")} Kč
-                      </TableCell>
-                      <TableCell className="text-body">
-                        {format(new Date(payment.due_date), "d. M. yyyy", { locale: cs })}
-                      </TableCell>
-                      <TableCell className="text-body text-green-600">
-                        {payment.paid_at 
-                          ? format(new Date(payment.paid_at), "d. M. yyyy", { locale: cs })
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-body text-muted-foreground">
-                        {payment.notes || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePayment(payment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {payments.map((payment) => {
+                    const isOverdue = !payment.paid && isPast(startOfDay(new Date(payment.due_date)));
+                    return (
+                      <TableRow 
+                        key={payment.id}
+                        className={cn(isOverdue && "bg-red-50 dark:bg-red-950/20")}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={payment.paid}
+                            onCheckedChange={() =>
+                              handleTogglePaid(payment.id, payment.paid)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-body">
+                          {getPaymentTypeLabel(payment.payment_type)}
+                        </TableCell>
+                        <TableCell className="text-body font-semibold">
+                          {payment.amount.toLocaleString("cs-CZ")} Kč
+                        </TableCell>
+                        <TableCell className={cn("text-body", isOverdue && "text-red-600 font-semibold")}>
+                          {format(new Date(payment.due_date), "d. M. yyyy", { locale: cs })}
+                          {isOverdue && <span className="ml-2 text-xs">⚠️</span>}
+                        </TableCell>
+                        <TableCell className="text-body text-green-600">
+                          {payment.paid_at 
+                            ? format(new Date(payment.paid_at), "d. M. yyyy", { locale: cs })
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-body text-muted-foreground">
+                          {payment.notes || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePayment(payment.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               <div className="border-t pt-4 space-y-2">
