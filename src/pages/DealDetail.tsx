@@ -528,10 +528,16 @@ const DealDetail = () => {
       finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
       
       // Preserve original segments if they exist, otherwise create new format
+      console.log('originalFlightDetails:', JSON.stringify(originalFlightDetails, null, 2));
+      console.log('Has outbound_segments:', !!originalFlightDetails?.outbound_segments);
+      console.log('Has return_segments:', !!originalFlightDetails?.return_segments);
+      
       if (originalFlightDetails && (originalFlightDetails.outbound_segments || originalFlightDetails.return_segments)) {
         // Keep the original multi-segment format
         flightDetails = { ...originalFlightDetails };
+        console.log('Using original flight details with all segments');
       } else {
+        console.log('Creating new simple format');
         // Create simple format for new flights
         flightDetails = {
           outbound: {
