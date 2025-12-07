@@ -265,6 +265,9 @@ const DealDetail = () => {
     return_flight_number: "",
     is_one_way: false,
   });
+  
+  // Store original flight details to preserve all segments
+  const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed">("inquiry");
@@ -506,7 +509,7 @@ const DealDetail = () => {
     
     // For flight type, generate automatic service_name
     let finalServiceName = serviceForm.service_name;
-    let flightDetails: FlightDetails | null = null;
+    let flightDetails: any = null;
     
     if (serviceForm.service_type === "flight") {
       // Require at least outbound airports
@@ -524,22 +527,29 @@ const DealDetail = () => {
       const returnPart = !serviceForm.is_one_way && serviceForm.return_arrival ? ` - ${serviceForm.return_arrival}` : '';
       finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
       
-      flightDetails = {
-        outbound: {
-          departure: serviceForm.outbound_departure,
-          arrival: serviceForm.outbound_arrival,
-          airline: serviceForm.outbound_airline,
-          airline_name: serviceForm.outbound_airline_name,
-          flight_number: serviceForm.outbound_flight_number,
-        },
-        return: !serviceForm.is_one_way && serviceForm.return_departure ? {
-          departure: serviceForm.return_departure,
-          arrival: serviceForm.return_arrival,
-          airline: serviceForm.return_airline,
-          airline_name: serviceForm.return_airline_name,
-          flight_number: serviceForm.return_flight_number,
-        } : undefined,
-      };
+      // Preserve original segments if they exist, otherwise create new format
+      if (originalFlightDetails && (originalFlightDetails.outbound_segments || originalFlightDetails.return_segments)) {
+        // Keep the original multi-segment format
+        flightDetails = { ...originalFlightDetails };
+      } else {
+        // Create simple format for new flights
+        flightDetails = {
+          outbound: {
+            departure: serviceForm.outbound_departure,
+            arrival: serviceForm.outbound_arrival,
+            airline: serviceForm.outbound_airline,
+            airline_name: serviceForm.outbound_airline_name,
+            flight_number: serviceForm.outbound_flight_number,
+          },
+          return: !serviceForm.is_one_way && serviceForm.return_departure ? {
+            departure: serviceForm.return_departure,
+            arrival: serviceForm.return_arrival,
+            airline: serviceForm.return_airline,
+            airline_name: serviceForm.return_airline_name,
+            flight_number: serviceForm.return_flight_number,
+          } : undefined,
+        };
+      }
     } else if (!serviceForm.service_name) {
       return;
     }
@@ -707,10 +717,14 @@ const DealDetail = () => {
       person_count: "1",
       ...getEmptyFlightFields(),
     });
+    setOriginalFlightDetails(null);
   };
 
   const openEditService = (service: DealService) => {
     const details = service.details as any;
+    
+    // Store original details to preserve all segments when saving
+    setOriginalFlightDetails(details);
     
     // Support both old format (outbound/return) and new format (outbound_segments/return_segments)
     const outboundSegment = details?.outbound_segments?.[0] || details?.outbound;
