@@ -37,7 +37,11 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: "You are a translator. Translate the given Czech travel service name to English. Return ONLY the English translation, nothing else. Keep it concise and professional." 
+            content: `You are a translator specializing in travel industry terminology. Your task:
+1. If the input text is in Czech, translate it to English.
+2. If the input text is already in English, return it unchanged.
+3. Return ONLY the translation/text, nothing else. No explanations, no quotes.
+4. Keep it concise and professional.` 
           },
           { role: "user", content: czechName }
         ],
