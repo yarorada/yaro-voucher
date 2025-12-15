@@ -700,7 +700,7 @@ export const VoucherDisplay = ({
               const toCity = flight.toCity || getCityName(flight.toIata);
               const mainFlights = flights.filter(f => !f.isVariant);
               const flightNumber = flight.isVariant ? mainFlights.length + 1 : mainFlights.filter((f, i) => i < flights.indexOf(flight)).length + 1;
-              const flightLabel = flightNumber === 1 ? "Let TAM" : flightNumber === 2 ? "Let ZPĚT" : `Let ${flightNumber}`;
+              const flightLabel = flightNumber === 1 ? "Outbound Flight" : flightNumber === 2 ? "Return Flight" : `Flight ${flightNumber}`;
               const showSeparator = flight.isVariant && index > 0 && !flights[index - 1].isVariant;
               return <li key={index}>
                       {showSeparator && <div className="border-t-2 border-primary my-3 print:my-2" />}
