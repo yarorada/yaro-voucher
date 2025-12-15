@@ -712,6 +712,27 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setTeeTimes(updated);
   };
 
+  // Helper function to translate service name to English
+  const translateServiceName = async (czechName: string): Promise<string> => {
+    if (!czechName.trim()) return czechName;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-service-name', {
+        body: { czechName }
+      });
+      
+      if (error) {
+        console.error('Translation error:', error);
+        return czechName; // Fall back to original if translation fails
+      }
+      
+      return data?.englishName || czechName;
+    } catch (err) {
+      console.error('Translation failed:', err);
+      return czechName;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -773,11 +794,17 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setLoading(true);
 
     try {
+      // Translate all service names to English
+      toast.info("Překládám služby do angličtiny...");
+      const translatedServiceNames = await Promise.all(
+        services.map(s => translateServiceName(s.name))
+      );
+
       if (voucherId) {
         // UPDATE MODE
         // Update voucher
-        const servicesData = services.map(s => ({
-          name: s.name,
+        const servicesData = services.map((s, idx) => ({
+          name: translatedServiceNames[idx],
           pax: s.pax,
           qty: s.qty,
           dateFrom: s.dateFrom ? format(s.dateFrom, 'yyyy-MM-dd') : '',
@@ -850,9 +877,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         navigate('/vouchers');
       } else {
         // CREATE MODE
-        // Prepare services data
-        const servicesData = services.map(s => ({
-          name: s.name,
+        // Prepare services data (already translated above)
+        const servicesData = services.map((s, idx) => ({
+          name: translatedServiceNames[idx],
           pax: s.pax,
           qty: s.qty,
           dateFrom: s.dateFrom ? format(s.dateFrom, 'yyyy-MM-dd') : '',
