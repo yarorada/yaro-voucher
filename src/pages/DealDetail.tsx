@@ -1483,6 +1483,7 @@ const DealDetail = () => {
                           value={serviceForm.start_date}
                           onChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
                           placeholder="DD.MM.RR"
+                          autoSetDate={() => startDate}
                         />
                       </div>
                       <div className="space-y-2">
@@ -1491,7 +1492,7 @@ const DealDetail = () => {
                           value={serviceForm.end_date}
                           onChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
                           placeholder="DD.MM.RR"
-                          autoSetDate={() => serviceForm.start_date ? new Date(serviceForm.start_date.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
+                          autoSetDate={() => serviceForm.start_date || endDate}
                         />
                       </div>
                     </div>

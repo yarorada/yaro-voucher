@@ -416,6 +416,7 @@ export const VariantDetailDialog = ({
                     value={startDate}
                     onChange={setStartDate}
                     placeholder="DD.MM.RR"
+                    autoSetDate={() => dealStartDate ? new Date(dealStartDate) : undefined}
                   />
                 </div>
                 <div>
@@ -424,7 +425,7 @@ export const VariantDetailDialog = ({
                     value={endDate}
                     onChange={setEndDate}
                     placeholder="DD.MM.RR"
-                    autoSetDate={() => startDate ? new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
+                    autoSetDate={() => startDate || (dealEndDate ? new Date(dealEndDate) : undefined)}
                   />
                 </div>
               </div>
