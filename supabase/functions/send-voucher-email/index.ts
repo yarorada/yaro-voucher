@@ -294,7 +294,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "YARO Travel <onboarding@resend.dev>",
+        from: "YARO Travel <zajezdy@yarotravel.cz>",
         to: recipients,
         subject: `Travel Voucher ${voucher.voucher_code} - YARO Travel`,
         html: html,
