@@ -20,7 +20,7 @@ export async function compressImage(
     reader.onload = (e) => {
       const img = new Image();
       
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => reject(new Error("Obrázek nelze načíst. Pokud používáte iPhone, změňte v nastavení fotoaparátu formát z HEIC na JPG."));
       
       img.onload = () => {
         try {

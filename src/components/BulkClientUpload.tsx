@@ -932,7 +932,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
               type="file"
               id="bulk-upload"
               className="hidden"
-              accept="image/*,.pdf"
+              accept="image/jpeg,image/png,image/webp,.pdf"
               multiple
               onChange={handleFileInput}
             />
