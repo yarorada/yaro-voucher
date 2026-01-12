@@ -104,15 +104,24 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
 
   const processFile = async (file: File, index: number): Promise<{ extractedData: ExtractedData; compressedBlob: Blob }> => {
-    // Update status to compressing
-    setUploads(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], status: 'compressing', progress: 10 };
-      return updated;
-    });
+    const isImage = file.type.startsWith('image/') && file.type !== 'image/gif';
+    let blob: Blob;
+    
+    if (isImage) {
+      // Update status to compressing only for images
+      setUploads(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], status: 'compressing', progress: 10 };
+        return updated;
+      });
 
-    // Compress image first to reduce size for AI gateway
-    const { blob } = await compressImage(file, 1920, 1920, 0.8);
+      // Compress image first to reduce size for AI gateway
+      const result = await compressImage(file, 1920, 1920, 0.8);
+      blob = result.blob;
+    } else {
+      // For PDF files, use the original file
+      blob = file;
+    }
     
     // Update status to uploading (converting to base64)
     setUploads(prev => {
@@ -121,7 +130,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       return updated;
     });
 
-    // Convert compressed blob to base64
+    // Convert blob to base64
     const base64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
