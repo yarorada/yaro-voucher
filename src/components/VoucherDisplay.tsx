@@ -214,7 +214,55 @@ export const VoucherDisplay = ({
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [translatedServices, setTranslatedServices] = useState<Service[]>(services);
+  const [isTranslating, setIsTranslating] = useState(false);
   const queryClient = useQueryClient();
+
+  // Translate services to English on mount
+  useEffect(() => {
+    const translateServices = async () => {
+      if (!services || services.length === 0) return;
+      
+      setIsTranslating(true);
+      try {
+        const translated = await Promise.all(
+          services.map(async (service) => {
+            if (!service.name || service.name.trim() === '') {
+              return service;
+            }
+            
+            try {
+              const { data, error } = await supabase.functions.invoke('translate-service-name', {
+                body: { czechName: service.name }
+              });
+              
+              if (error) {
+                console.error('Translation error for service:', service.name, error);
+                return service;
+              }
+              
+              return {
+                ...service,
+                name: data?.englishName || service.name
+              };
+            } catch (err) {
+              console.error('Failed to translate service:', service.name, err);
+              return service;
+            }
+          })
+        );
+        
+        setTranslatedServices(translated);
+      } catch (error) {
+        console.error('Error translating services:', error);
+        setTranslatedServices(services);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+
+    translateServices();
+  }, [services]);
 
   // Fetch global PDF settings from database
   const { data: settings } = useQuery({
@@ -656,6 +704,7 @@ export const VoucherDisplay = ({
         <div className="section-spacing">
           <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
             Service Overview
+            {isTranslating && <span className="ml-2 text-sm text-muted-foreground font-normal">(translating...)</span>}
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse print:text-[11px]">
@@ -669,7 +718,7 @@ export const VoucherDisplay = ({
                 </tr>
               </thead>
               <tbody>
-                {services.map((service, index) => <tr key={index} className={index % 2 === 0 ? "bg-muted" : "bg-card"}>
+                {translatedServices.map((service, index) => <tr key={index} className={index % 2 === 0 ? "bg-muted" : "bg-card"}>
                     <td className="p-2 text-muted-foreground print:p-0.5">
                       {service.pax || "—"}
                     </td>
