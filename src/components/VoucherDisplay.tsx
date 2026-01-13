@@ -343,6 +343,12 @@ export const VoucherDisplay = ({
   };
 
   const handleDownloadPDF = async () => {
+    // Wait for translations to complete before generating PDF
+    if (isTranslating) {
+      toast.info('Čekám na dokončení překladu služeb...');
+      return;
+    }
+    
     setIsGeneratingPdf(true);
     try {
       const element = document.getElementById('voucher-content');
@@ -672,7 +678,7 @@ export const VoucherDisplay = ({
             </div>
           </DialogContent>
         </Dialog>
-        <Button onClick={handleDownloadPDF} className="flex-1" size="icon" disabled={isGeneratingPdf}>
+        <Button onClick={handleDownloadPDF} className="flex-1" size="icon" disabled={isGeneratingPdf || isTranslating} title={isTranslating ? "Čekám na překlad služeb..." : "Stáhnout PDF"}>
           <Download className="h-5 w-5" />
         </Button>
         <Button variant="outline" className="flex-1" size="icon" onClick={handleSendEmail} disabled={isSendingEmail || !voucherId}>
