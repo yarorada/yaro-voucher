@@ -371,10 +371,39 @@ export const VoucherDisplay = ({
               clonedElement.style.backgroundColor = '#ffffff';
               clonedElement.style.color = '#000000';
 
-              // Apply light theme to all child elements
+              // Apply light theme to all elements with inline styles
+              const allElements = clonedElement.querySelectorAll('*');
+              allElements.forEach(el => {
+                const htmlEl = el as HTMLElement;
+                const computedStyle = window.getComputedStyle(el);
+                
+                // Force background colors to light variants
+                const bgColor = computedStyle.backgroundColor;
+                if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+                  // Check if it's a dark background (rough heuristic)
+                  const rgb = bgColor.match(/\d+/g);
+                  if (rgb && rgb.length >= 3) {
+                    const brightness = (parseInt(rgb[0]) + parseInt(rgb[1]) + parseInt(rgb[2])) / 3;
+                    if (brightness < 128) {
+                      // Dark background - make it light
+                      htmlEl.style.backgroundColor = '#f5f5f5';
+                    }
+                  }
+                }
+              });
+
+              // Apply light theme to specific classes
               const bgMuted = clonedElement.querySelectorAll('.bg-muted');
               bgMuted.forEach(el => {
                 (el as HTMLElement).style.backgroundColor = '#f5f5f5';
+              });
+              const bgCard = clonedElement.querySelectorAll('.bg-card');
+              bgCard.forEach(el => {
+                (el as HTMLElement).style.backgroundColor = '#ffffff';
+              });
+              const bgBackground = clonedElement.querySelectorAll('.bg-background');
+              bgBackground.forEach(el => {
+                (el as HTMLElement).style.backgroundColor = '#ffffff';
               });
               const textForeground = clonedElement.querySelectorAll('.text-foreground');
               textForeground.forEach(el => {
@@ -395,6 +424,24 @@ export const VoucherDisplay = ({
               const borderAccent = clonedElement.querySelectorAll('.border-accent');
               borderAccent.forEach(el => {
                 (el as HTMLElement).style.borderColor = '#00aaff';
+              });
+              const borderBorder = clonedElement.querySelectorAll('.border-border, [class*="border-"]');
+              borderBorder.forEach(el => {
+                const htmlEl = el as HTMLElement;
+                if (!htmlEl.style.borderColor) {
+                  htmlEl.style.borderColor = '#e5e5e5';
+                }
+              });
+              
+              // Force primary background (table headers) to be visible
+              const bgPrimary = clonedElement.querySelectorAll('.bg-primary');
+              bgPrimary.forEach(el => {
+                (el as HTMLElement).style.backgroundColor = '#0066cc';
+                (el as HTMLElement).style.color = '#ffffff';
+              });
+              const textPrimaryForeground = clonedElement.querySelectorAll('.text-primary-foreground');
+              textPrimaryForeground.forEach(el => {
+                (el as HTMLElement).style.color = '#ffffff';
               });
             }
           }
