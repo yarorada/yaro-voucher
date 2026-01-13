@@ -1,3 +1,41 @@
+import heic2any from "heic2any";
+
+/**
+ * Check if a file is a HEIC/HEIF format
+ */
+export function isHeicFile(file: File): boolean {
+  const heicTypes = ["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"];
+  if (heicTypes.includes(file.type.toLowerCase())) {
+    return true;
+  }
+  // Also check file extension as some browsers don't set the correct MIME type
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  return extension === "heic" || extension === "heif";
+}
+
+/**
+ * Convert HEIC file to JPEG
+ */
+export async function convertHeicToJpeg(file: File): Promise<File> {
+  try {
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.9,
+    });
+    
+    // heic2any can return a single blob or an array of blobs
+    const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+    
+    // Create a new File with .jpg extension
+    const newFileName = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
+    return new File([resultBlob], newFileName, { type: "image/jpeg" });
+  } catch (error) {
+    console.error("HEIC conversion failed:", error);
+    throw new Error("Nepodařilo se převést HEIC obrázek. Zkuste prosím jiný formát.");
+  }
+}
+
 /**
  * Compress an image file using canvas
  * @param file - The image file to compress
@@ -12,6 +50,12 @@ export async function compressImage(
   maxHeight: number = 1920,
   quality: number = 0.8
 ): Promise<{ blob: Blob; originalSize: number; compressedSize: number; savings: number }> {
+  // Auto-convert HEIC files to JPEG first
+  let processedFile = file;
+  if (isHeicFile(file)) {
+    processedFile = await convertHeicToJpeg(file);
+  }
+  
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -20,7 +64,7 @@ export async function compressImage(
     reader.onload = (e) => {
       const img = new Image();
       
-      img.onerror = () => reject(new Error("Obrázek nelze načíst. Pokud používáte iPhone, změňte v nastavení fotoaparátu formát z HEIC na JPG."));
+      img.onerror = () => reject(new Error("Obrázek nelze načíst. Zkuste prosím jiný formát."));
       
       img.onload = () => {
         try {
@@ -88,14 +132,17 @@ export async function compressImage(
       img.src = e.target?.result as string;
     };
     
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
   });
 }
 
 /**
- * Check if a file is an image
+ * Check if a file is an image (including HEIC)
  */
 export function isImageFile(file: File): boolean {
+  if (isHeicFile(file)) {
+    return true;
+  }
   return file.type.startsWith("image/") && file.type !== "image/gif";
 }
 
