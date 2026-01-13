@@ -613,6 +613,7 @@ export const VoucherDisplay = ({
                   <p className="text-muted-foreground">
                     {supplierName}
                     {supplierAddress && ` • ${supplierAddress}`}
+                    {supplierPhone && ` • ${supplierPhone}`}
                     {supplierEmail && ` • ${supplierEmail}`}
                   </p>
                    {supplierNotes && <p className="pt-1 border-t border-border/50 text-muted-foreground print:pt-0 print:border-t-0 print:mt-0.5">{supplierNotes}</p>}
