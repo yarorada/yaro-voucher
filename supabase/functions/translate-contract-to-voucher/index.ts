@@ -17,14 +17,40 @@ Deno.serve(async (req) => {
       throw new Error('Contract ID is required')
     }
 
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Create client with user's JWT to respect RLS and verify ownership
+    const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
 
-    // 1. Fetch contract data with related information
-    const { data: contract, error: contractError } = await supabase
+    // Verify the user's authentication
+    const { data: { user }, error: userError } = await supabaseWithAuth.auth.getUser()
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const userId = user.id
+
+    // 1. Fetch contract data with ownership verification via RLS
+    // Using the authenticated client ensures only the owner can access their contract
+    const { data: contract, error: contractError } = await supabaseWithAuth
       .from('travel_contracts')
       .select(`
         *,
@@ -54,7 +80,23 @@ Deno.serve(async (req) => {
       .eq('id', contractId)
       .single()
 
-    if (contractError) throw contractError
+    if (contractError) {
+      console.error('Contract fetch error:', contractError)
+      // Return a generic error to avoid leaking information about contract existence
+      return new Response(
+        JSON.stringify({ error: 'Contract not found or access denied' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Additional ownership verification (defense in depth)
+    if (contract.user_id !== userId) {
+      console.error('Ownership mismatch: contract belongs to different user')
+      return new Response(
+        JSON.stringify({ error: 'Contract not found or access denied' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // 2. Prepare services for translation
     const servicesToTranslate = contract.deal?.deal_services || []
@@ -128,8 +170,9 @@ Expected output format:
     const jsonText = translatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const translatedServices = JSON.parse(jsonText)
 
-    // 4. Create voucher with translated data
-    const { data: voucher, error: voucherError } = await supabase
+    // 4. Create voucher with translated data using authenticated client
+    // This ensures RLS policies are respected for the insert
+    const { data: voucher, error: voucherError } = await supabaseWithAuth
       .from('vouchers')
       .insert({
         contract_id: contractId,
@@ -140,12 +183,15 @@ Expected output format:
         services: translatedServices,
         issue_date: new Date().toISOString().split('T')[0],
         voucher_number: Math.floor(Math.random() * 10000), // Temporary, will be set by trigger
-        user_id: contract.user_id, // Copy user_id from contract
+        user_id: userId, // Use the authenticated user's ID, not from contract
       })
       .select()
       .single()
 
-    if (voucherError) throw voucherError
+    if (voucherError) {
+      console.error('Voucher creation error:', voucherError)
+      throw voucherError
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -161,8 +207,7 @@ Expected output format:
     console.error('Error in translate-contract-to-voucher:', error)
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        details: error
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       }),
       {
         status: 500,
