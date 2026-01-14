@@ -127,10 +127,11 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 
-  /* Logo dark mode support */
-  .dark .logo-dark-mode {
-    filter: brightness(0) invert(1);
-  }
+}
+
+/* Logo dark mode support - outside @layer to ensure it works */
+.dark .logo-dark-mode {
+  filter: brightness(0) invert(1);
 }
 
 @layer components {
