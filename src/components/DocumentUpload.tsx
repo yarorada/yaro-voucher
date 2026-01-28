@@ -236,14 +236,25 @@ export function DocumentUpload({
               const updateData: any = {};
               
               // Parse date from DD.MM.YY format to ISO date string
-              const parseDate = (dateStr: string): string | null => {
+              const parseDate = (dateStr: string, isBirthDate: boolean = false): string | null => {
                 if (!dateStr) return null;
                 const parts = dateStr.split('.');
                 if (parts.length !== 3) return null;
                 
                 const day = parseInt(parts[0]);
                 const month = parseInt(parts[1]);
-                const year = 2000 + parseInt(parts[2]);
+                let year = parseInt(parts[2]);
+                
+                // Convert 2-digit year to 4-digit year
+                if (year < 100) {
+                  if (isBirthDate) {
+                    // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
+                    year += year < 30 ? 2000 : 1900;
+                  } else {
+                    // For expiry dates: always assume 2000+
+                    year += 2000;
+                  }
+                }
                 
                 // Use Date.UTC to avoid timezone issues
                 const date = new Date(Date.UTC(year, month - 1, day));
@@ -254,8 +265,8 @@ export function DocumentUpload({
                 if (ocrData.data.passport_number) {
                   updateData.passport_number = ocrData.data.passport_number;
                 }
-                if (ocrData.data.expiry_date) {
-                  const parsed = parseDate(ocrData.data.expiry_date);
+                if (ocrData.data.passport_expiry || ocrData.data.expiry_date) {
+                  const parsed = parseDate(ocrData.data.passport_expiry || ocrData.data.expiry_date, false);
                   if (parsed) updateData.passport_expiry = parsed;
                 }
                 if (ocrData.data.first_name) {
@@ -264,12 +275,16 @@ export function DocumentUpload({
                 if (ocrData.data.last_name) {
                   updateData.last_name = ocrData.data.last_name;
                 }
+                if (ocrData.data.date_of_birth) {
+                  const parsed = parseDate(ocrData.data.date_of_birth, true);
+                  if (parsed) updateData.date_of_birth = parsed;
+                }
               } else if (documentType === "id_card") {
                 if (ocrData.data.id_card_number) {
                   updateData.id_card_number = ocrData.data.id_card_number;
                 }
-                if (ocrData.data.expiry_date) {
-                  const parsed = parseDate(ocrData.data.expiry_date);
+                if (ocrData.data.id_card_expiry || ocrData.data.expiry_date) {
+                  const parsed = parseDate(ocrData.data.id_card_expiry || ocrData.data.expiry_date, false);
                   if (parsed) updateData.id_card_expiry = parsed;
                 }
                 if (ocrData.data.first_name) {
@@ -277,6 +292,10 @@ export function DocumentUpload({
                 }
                 if (ocrData.data.last_name) {
                   updateData.last_name = ocrData.data.last_name;
+                }
+                if (ocrData.data.date_of_birth) {
+                  const parsed = parseDate(ocrData.data.date_of_birth, true);
+                  if (parsed) updateData.date_of_birth = parsed;
                 }
               }
               
