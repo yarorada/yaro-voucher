@@ -430,8 +430,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         }
       }
 
-      // Add only client IDs to voucher travelers list
-      setOtherTravelerIds([...otherTravelerIds, ...newTravelerIds]);
+      // Add only client IDs to voucher travelers list - use functional update to avoid stale closure
+      setOtherTravelerIds(prev => [...prev, ...newTravelerIds]);
       setBulkImportText("");
       setExtractedClients([]);
       setShowPreview(false);
