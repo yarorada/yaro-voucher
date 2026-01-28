@@ -8,6 +8,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
 import { BulkClientUpload } from "@/components/BulkClientUpload";
+import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
 import {
   Select,
   SelectContent,
@@ -430,6 +431,8 @@ const Clients = () => {
                 </p>
               </div>
               <div className="flex gap-2">
+                <DuplicateClientChecker onComplete={fetchClients} />
+                
                 <Button 
                   variant="outline" 
                   className="gap-2 shrink-0"
