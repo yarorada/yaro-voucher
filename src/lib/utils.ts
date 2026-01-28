@@ -47,3 +47,14 @@ export function formatDateForDB(date: Date | undefined | null): string | null {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Capitalizes each word in a string (e.g., "jan pavel" -> "Jan Pavel")
+ */
+export function capitalizeWords(str: string): string {
+  if (!str) return "";
+  return str
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
