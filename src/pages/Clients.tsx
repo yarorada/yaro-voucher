@@ -717,14 +717,27 @@ const Clients = () => {
                               setFormData(prev => ({ ...prev, passport_number: data.passport_number }));
                               newFilledFields.add("passport_number");
                             }
-                            if (data.expiry_date) {
-                              const parts = data.expiry_date.split('.');
+                            if (data.passport_expiry || data.expiry_date) {
+                              const dateStr = data.passport_expiry || data.expiry_date;
+                              const parts = dateStr.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
                                 setFormData(prev => ({ ...prev, passport_expiry: new Date(Date.UTC(year, month - 1, day)) }));
                                 newFilledFields.add("passport_expiry");
+                              }
+                            }
+                            if (data.date_of_birth) {
+                              const parts = data.date_of_birth.split('.');
+                              if (parts.length === 3) {
+                                const day = parseInt(parts[0]);
+                                const month = parseInt(parts[1]);
+                                let year = parseInt(parts[2]);
+                                // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
+                                year += year < 30 ? 2000 : 1900;
+                                setFormData(prev => ({ ...prev, date_of_birth: new Date(Date.UTC(year, month - 1, day)) }));
+                                newFilledFields.add("date_of_birth");
                               }
                             }
                             if (data.first_name && !formData.first_name) {
@@ -754,14 +767,27 @@ const Clients = () => {
                               setFormData(prev => ({ ...prev, id_card_number: data.id_card_number }));
                               newFilledFields.add("id_card_number");
                             }
-                            if (data.expiry_date) {
-                              const parts = data.expiry_date.split('.');
+                            if (data.id_card_expiry || data.expiry_date) {
+                              const dateStr = data.id_card_expiry || data.expiry_date;
+                              const parts = dateStr.split('.');
                               if (parts.length === 3) {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
                                 setFormData(prev => ({ ...prev, id_card_expiry: new Date(Date.UTC(year, month - 1, day)) }));
                                 newFilledFields.add("id_card_expiry");
+                              }
+                            }
+                            if (data.date_of_birth) {
+                              const parts = data.date_of_birth.split('.');
+                              if (parts.length === 3) {
+                                const day = parseInt(parts[0]);
+                                const month = parseInt(parts[1]);
+                                let year = parseInt(parts[2]);
+                                // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
+                                year += year < 30 ? 2000 : 1900;
+                                setFormData(prev => ({ ...prev, date_of_birth: new Date(Date.UTC(year, month - 1, day)) }));
+                                newFilledFields.add("date_of_birth");
                               }
                             }
                             if (data.first_name && !formData.first_name) {
