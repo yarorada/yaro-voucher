@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, Merge, X, Loader2, CheckCircle2 } from "lucide-react";
-import { removeDiacritics } from "@/lib/utils";
+import { removeDiacritics, capitalizeWords } from "@/lib/utils";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -236,7 +236,7 @@ export function DuplicateClientChecker({ onComplete }: DuplicateClientCheckerPro
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="font-semibold text-lg">
-                          {client.first_name} {client.last_name}
+                          {capitalizeWords(client.first_name)} {capitalizeWords(client.last_name)}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <span className="font-medium">Datum narození:</span>{" "}
