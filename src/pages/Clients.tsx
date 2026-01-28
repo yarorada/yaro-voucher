@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye } from "lucide-react";
+import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1019,35 +1019,33 @@ const Clients = () => {
               {documentPreviewClient?.document_urls && documentPreviewClient.document_urls.length > 0 ? (
                 <div className="grid gap-4">
                   {documentPreviewClient.document_urls.map((doc, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium capitalize">
-                          {doc.type === 'passport' ? 'Cestovní pas' : 
-                           doc.type === 'id_card' ? 'Občanský průkaz' : 'Ostatní'}
-                        </span>
-                        <a 
-                          href={doc.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
+                    <Card key={index} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-muted rounded-lg">
+                            <FileText className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {doc.type === 'passport' ? 'Cestovní pas' : 
+                               doc.type === 'id_card' ? 'Občanský průkaz' : 'Ostatní dokument'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('cs-CZ') : 'Datum neznámé'}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => window.open(doc.url, '_blank')}
                         >
-                          Otevřít v novém okně
-                        </a>
+                          <ExternalLink className="h-4 w-4" />
+                          Otevřít
+                        </Button>
                       </div>
-                      {doc.url.toLowerCase().includes('.pdf') ? (
-                        <iframe 
-                          src={doc.url} 
-                          className="w-full h-[400px] border rounded"
-                          title={`Document ${index + 1}`}
-                        />
-                      ) : (
-                        <img 
-                          src={doc.url} 
-                          alt={`Document ${index + 1}`}
-                          className="max-w-full max-h-[400px] object-contain mx-auto rounded"
-                        />
-                      )}
-                    </div>
+                    </Card>
                   ))}
                 </div>
               ) : (
