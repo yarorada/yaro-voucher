@@ -742,6 +742,11 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== SUBMIT START ===');
+    console.log('clientId:', clientId);
+    console.log('otherTravelerIds at submit:', otherTravelerIds);
+    console.log('otherTravelerIds length:', otherTravelerIds.length);
+    
     if (!clientId) {
       toast.error("Prosím vyberte klienta");
       return;
