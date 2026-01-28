@@ -1018,35 +1018,72 @@ const Clients = () => {
             <div className="overflow-y-auto max-h-[70vh]">
               {documentPreviewClient?.document_urls && documentPreviewClient.document_urls.length > 0 ? (
                 <div className="grid gap-4">
-                  {documentPreviewClient.document_urls.map((doc, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-muted rounded-lg">
-                            <FileText className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="font-medium">
+                  {documentPreviewClient.document_urls.map((doc, index) => {
+                    const isPdf = doc.url.toLowerCase().includes('.pdf');
+                    return (
+                      <Card key={index} className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium">
                               {doc.type === 'passport' ? 'Cestovní pas' : 
-                               doc.type === 'id_card' ? 'Občanský průkaz' : 'Ostatní dokument'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('cs-CZ') : 'Datum neznámé'}
-                            </p>
+                               doc.type === 'id_card' ? 'Občanský průkaz' : 'Ostatní'}
+                            </span>
                           </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => window.open(doc.url, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Nové okno
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => window.open(doc.url, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Otevřít
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
+                        {isPdf ? (
+                          <div className="bg-muted/50 rounded-lg p-8 text-center">
+                            <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mb-3">PDF dokument</p>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => window.open(doc.url, '_blank')}
+                            >
+                              Otevřít PDF
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <img 
+                              src={doc.url} 
+                              alt={`Dokument ${index + 1}`}
+                              className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div 
+                              className="hidden flex-col items-center justify-center bg-muted/50 rounded-lg p-8"
+                              style={{ display: 'none' }}
+                            >
+                              <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                              <p className="text-sm text-muted-foreground mb-3">Náhled nelze zobrazit</p>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => window.open(doc.url, '_blank')}
+                              >
+                                Otevřít dokument
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-8">
