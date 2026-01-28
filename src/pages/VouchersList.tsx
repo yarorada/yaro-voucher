@@ -129,6 +129,12 @@ const VouchersList = () => {
     try {
       setLoading(true);
 
+      // Get the voucher to be deleted to know its year
+      const voucherToRemove = vouchers.find(v => v.id === voucherToDelete);
+      if (!voucherToRemove) return;
+
+      const year = new Date(voucherToRemove.issue_date).getFullYear();
+
       // Delete voucher_travelers first (foreign key constraint)
       await supabase.from("voucher_travelers").delete().eq("voucher_id", voucherToDelete);
 
@@ -137,7 +143,10 @@ const VouchersList = () => {
 
       if (error) throw error;
 
-      toast.success("Voucher úspěšně smazán!");
+      // Renumber remaining vouchers for this year
+      await renumberVouchersForYear(year);
+
+      toast.success("Voucher úspěšně smazán a čísla aktualizována!");
       setDeleteDialogOpen(false);
       setVoucherToDelete(null);
       fetchVouchers();
@@ -146,6 +155,46 @@ const VouchersList = () => {
       toast.error("Nepodařilo se smazat voucher");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renumberVouchersForYear = async (year: number) => {
+    try {
+      // Get all vouchers for the year, ordered by created_at
+      const startOfYear = `${year}-01-01`;
+      const endOfYear = `${year}-12-31`;
+      
+      const { data: yearVouchers, error: fetchError } = await supabase
+        .from("vouchers")
+        .select("id, issue_date, created_at")
+        .gte("issue_date", startOfYear)
+        .lte("issue_date", endOfYear)
+        .order("created_at", { ascending: true });
+
+      if (fetchError) throw fetchError;
+
+      // Update each voucher with new sequential number
+      for (let i = 0; i < (yearVouchers?.length || 0); i++) {
+        const voucher = yearVouchers![i];
+        const newNumber = i + 1;
+        const newCode = `${year}${String(newNumber).padStart(3, "0")}`;
+
+        await supabase
+          .from("vouchers")
+          .update({ 
+            voucher_number: newNumber, 
+            voucher_code: newCode 
+          })
+          .eq("id", voucher.id);
+      }
+
+      // Update the counter table
+      await supabase
+        .from("voucher_counters")
+        .upsert({ year, last_number: yearVouchers?.length || 0 });
+
+    } catch (error) {
+      console.error("Error renumbering vouchers:", error);
     }
   };
 
