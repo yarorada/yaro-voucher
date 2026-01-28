@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Contact } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -78,12 +78,6 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
     }
   };
 
-  const removeDiacritics = (text: string): string => {
-    return text
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  };
-
   const handleCreateClient = async () => {
     if (!newClientFirstName.trim() || !newClientLastName.trim()) {
       toast.error("Vyplňte jméno a příjmení klienta");
@@ -92,11 +86,38 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
 
     setCreating(true);
     try {
+      const normalizedFirstName = removeDiacritics(newClientFirstName.trim());
+      const normalizedLastName = removeDiacritics(newClientLastName.trim());
+      
+      // Check for existing client with diacritics normalization
+      const existingClient = clients.find(client => 
+        removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName.toLowerCase() &&
+        removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName.toLowerCase()
+      );
+      
+      if (existingClient) {
+        // Use existing client instead of creating duplicate
+        onChange(existingClient.id);
+        setDialogOpen(false);
+        setNewClientFirstName("");
+        setNewClientLastName("");
+        setNewClientEmail("");
+        setNewClientPhone("");
+        setNewClientAddress("");
+        setNewClientNotes("");
+        setNewClientPassportNumber("");
+        setNewClientPassportExpiry(undefined);
+        setNewClientIdCardNumber("");
+        setNewClientIdCardExpiry(undefined);
+        toast.info(`Klient ${existingClient.first_name} ${existingClient.last_name} již existuje, byl vybrán`);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("clients")
         .insert({
-          first_name: removeDiacritics(newClientFirstName.trim()),
-          last_name: removeDiacritics(newClientLastName.trim()),
+          first_name: normalizedFirstName,
+          last_name: normalizedLastName,
           email: newClientEmail.trim() || null,
           phone: newClientPhone.trim() || null,
           address: newClientAddress.trim() || null,
