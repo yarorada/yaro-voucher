@@ -431,7 +431,13 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       }
 
       // Add only client IDs to voucher travelers list - use functional update to avoid stale closure
-      setOtherTravelerIds(prev => [...prev, ...newTravelerIds]);
+      console.log('BULK IMPORT - Adding new traveler IDs:', newTravelerIds);
+      console.log('BULK IMPORT - Current otherTravelerIds before update:', otherTravelerIds);
+      setOtherTravelerIds(prev => {
+        const updated = [...prev, ...newTravelerIds];
+        console.log('BULK IMPORT - New otherTravelerIds after update:', updated);
+        return updated;
+      });
       setBulkImportText("");
       setExtractedClients([]);
       setShowPreview(false);
@@ -862,15 +868,22 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         });
 
         // Insert other travelers
-        const filteredTravelers = otherTravelerIds.filter(id => id !== "");
+        const filteredTravelers = otherTravelerIds.filter(id => id && id !== "");
+        console.log('UPDATE MODE - Other travelers to insert:', filteredTravelers);
+        console.log('UPDATE MODE - otherTravelerIds state:', otherTravelerIds);
         if (filteredTravelers.length > 0) {
-          await supabase.from('voucher_travelers').insert(
+          const { error: travelersError } = await supabase.from('voucher_travelers').insert(
             filteredTravelers.map(id => ({
               voucher_id: voucherId,
               client_id: id,
               is_main_client: false,
             }))
           );
+          if (travelersError) {
+            console.error('Error inserting other travelers:', travelersError);
+          } else {
+            console.log('Successfully inserted', filteredTravelers.length, 'other travelers');
+          }
         }
 
         toast.success("Voucher úspěšně aktualizován!");
@@ -935,15 +948,22 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         });
 
         // Insert other travelers
-        const filteredTravelers = otherTravelerIds.filter(id => id !== "");
+        const filteredTravelers = otherTravelerIds.filter(id => id && id !== "");
+        console.log('CREATE MODE - Other travelers to insert:', filteredTravelers);
+        console.log('CREATE MODE - otherTravelerIds state:', otherTravelerIds);
         if (filteredTravelers.length > 0) {
-          await supabase.from('voucher_travelers').insert(
+          const { error: travelersError } = await supabase.from('voucher_travelers').insert(
             filteredTravelers.map(id => ({
               voucher_id: voucherData.id,
               client_id: id,
               is_main_client: false,
             }))
           );
+          if (travelersError) {
+            console.error('Error inserting other travelers:', travelersError);
+          } else {
+            console.log('Successfully inserted', filteredTravelers.length, 'other travelers');
+          }
         }
 
         toast.success("Voucher úspěšně vytvořen!");
