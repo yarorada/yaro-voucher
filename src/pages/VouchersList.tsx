@@ -177,7 +177,8 @@ const VouchersList = () => {
       for (let i = 0; i < (yearVouchers?.length || 0); i++) {
         const voucher = yearVouchers![i];
         const newNumber = i + 1;
-        const newCode = `${year}${String(newNumber).padStart(3, "0")}`;
+        const yearSuffix = String(year).slice(-2);
+        const newCode = `YT-${yearSuffix}${String(newNumber).padStart(3, "0")}`;
 
         await supabase
           .from("vouchers")
