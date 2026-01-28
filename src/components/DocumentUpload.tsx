@@ -203,16 +203,37 @@ export function DocumentUpload({
           reader.readAsDataURL(fileToUpload);
         });
 
-        // Call OCR function
-        const { data: ocrData, error: ocrError } = await supabase.functions.invoke(
-          "ocr-document",
-          {
-            body: {
-              imageBase64: base64,
-              documentType: documentType,
-            },
+        // Call OCR function with retry logic for rate limiting
+        let ocrData = null;
+        let ocrError = null;
+        const maxRetries = 3;
+        
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          const result = await supabase.functions.invoke(
+            "ocr-document",
+            {
+              body: {
+                imageBase64: base64,
+                documentType: documentType,
+              },
+            }
+          );
+          
+          // Check if rate limited
+          if (result.error?.message?.includes("429") || result.data?.error?.includes("Rate limit")) {
+            if (attempt < maxRetries - 1) {
+              // Wait with exponential backoff: 2s, 4s, 8s
+              const waitTime = Math.pow(2, attempt + 1) * 1000;
+              console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 2}/${maxRetries}`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              continue;
+            }
           }
-        );
+          
+          ocrData = result.data;
+          ocrError = result.error;
+          break;
+        }
 
         if (ocrError) {
           console.error("OCR error:", ocrError);
