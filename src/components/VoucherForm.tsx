@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Trash2, Users, RotateCcw, Copy, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { removeDiacritics } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
@@ -313,11 +314,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
     setOtherTravelerIds(updated);
   };
 
-  const removeDiacritics = (text: string): string => {
-    return text
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  };
 
   const handleExtractData = async () => {
     if (!bulkImportText.trim()) {
@@ -373,20 +369,29 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       let existingCount = 0;
       const createdDetails: string[] = [];
 
+      // Fetch all existing clients once for efficient local comparison
+      const { data: allClients } = await supabase
+        .from('clients')
+        .select('id, first_name, last_name');
+      
+      // Keep track of newly created clients for duplicate detection within batch
+      const localClients = [...(allClients || [])];
+
       for (const clientData of extractedClients) {
         const firstName = removeDiacritics(clientData.first_name);
         const lastName = removeDiacritics(clientData.last_name);
+        const normalizedFirstName = firstName.trim().toLowerCase();
+        const normalizedLastName = lastName.trim().toLowerCase();
 
-        // Check if client exists by name
-        const { data: existingClients } = await supabase
-          .from('clients')
-          .select('id')
-          .ilike('first_name', firstName)
-          .ilike('last_name', lastName);
+        // Check if client exists by name with diacritics normalization
+        const existingClient = localClients.find(client => 
+          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
+        );
 
-        if (existingClients && existingClients.length > 0) {
+        if (existingClient) {
           // Use existing client - only ID is added to voucher
-          newTravelerIds.push(existingClients[0].id);
+          newTravelerIds.push(existingClient.id);
           existingCount++;
         } else {
           // Create new client with ALL AI-extracted data in database
@@ -414,6 +419,9 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (newClient) {
             newTravelerIds.push(newClient.id);
             createdCount++;
+            
+            // Add to local clients array for duplicate detection within batch
+            localClients.push({ id: newClient.id, first_name: newClient.first_name, last_name: newClient.last_name });
             
             // Prepare detail info for toast
             const details = [

@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 interface ExtractedData {
@@ -216,40 +216,42 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
   const checkForDuplicate = async (extractedData: ExtractedData): Promise<DuplicateClient | null> => {
     try {
-      const supabaseClient = supabase as any;
+      // Fetch all clients once for local comparison with diacritics normalization
+      const { data: allClients, error } = await supabase
+        .from('clients')
+        .select('id, first_name, last_name, passport_number, id_card_number');
       
-      // Check by passport number
+      if (error || !allClients) {
+        console.error('Error fetching clients:', error);
+        return null;
+      }
+
+      // Check by passport number first (exact match)
       if (extractedData.passport_number) {
-        const result = await supabaseClient
-          .from('clients')
-          .select('id, first_name, last_name, passport_number, id_card_number')
-          .eq('passport_number', extractedData.passport_number)
-          .limit(1);
-        
-        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+        const matchByPassport = allClients.find(client => 
+          client.passport_number === extractedData.passport_number
+        );
+        if (matchByPassport) return matchByPassport as DuplicateClient;
       }
 
-      // Check by ID card number
+      // Check by ID card number (exact match)
       if (extractedData.id_card_number) {
-        const result = await supabaseClient
-          .from('clients')
-          .select('id, first_name, last_name, passport_number, id_card_number')
-          .eq('id_card_number', extractedData.id_card_number)
-          .limit(1);
-        
-        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+        const matchByIdCard = allClients.find(client => 
+          client.id_card_number === extractedData.id_card_number
+        );
+        if (matchByIdCard) return matchByIdCard as DuplicateClient;
       }
 
-      // Check by name
+      // Check by name with diacritics normalization
       if (extractedData.first_name && extractedData.last_name) {
-        const result = await supabaseClient
-          .from('clients')
-          .select('id, first_name, last_name, passport_number, id_card_number')
-          .ilike('first_name', extractedData.first_name)
-          .ilike('last_name', extractedData.last_name)
-          .limit(1);
+        const normalizedFirstName = removeDiacritics(extractedData.first_name.trim().toLowerCase());
+        const normalizedLastName = removeDiacritics(extractedData.last_name.trim().toLowerCase());
         
-        if (!result.error && result.data && result.data.length > 0) return result.data[0] as DuplicateClient;
+        const matchByName = allClients.find(client => 
+          removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
+          removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
+        );
+        if (matchByName) return matchByName as DuplicateClient;
       }
 
       return null;
