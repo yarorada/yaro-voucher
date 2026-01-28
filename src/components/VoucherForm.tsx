@@ -867,13 +867,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           is_main_client: true,
         });
 
-        // Insert other travelers
-        const filteredTravelers = otherTravelerIds.filter(id => id && id !== "");
-        console.log('UPDATE MODE - Other travelers to insert:', filteredTravelers);
-        console.log('UPDATE MODE - otherTravelerIds state:', otherTravelerIds);
-        if (filteredTravelers.length > 0) {
+        // Insert other travelers - filter out main client and remove duplicates
+        const uniqueTravelers = [...new Set(otherTravelerIds.filter(id => id && id !== "" && id !== clientId))];
+        console.log('UPDATE MODE - Unique other travelers to insert:', uniqueTravelers);
+        if (uniqueTravelers.length > 0) {
           const { error: travelersError } = await supabase.from('voucher_travelers').insert(
-            filteredTravelers.map(id => ({
+            uniqueTravelers.map(id => ({
               voucher_id: voucherId,
               client_id: id,
               is_main_client: false,
@@ -882,7 +881,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (travelersError) {
             console.error('Error inserting other travelers:', travelersError);
           } else {
-            console.log('Successfully inserted', filteredTravelers.length, 'other travelers');
+            console.log('Successfully inserted', uniqueTravelers.length, 'other travelers');
           }
         }
 
@@ -947,13 +946,12 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           is_main_client: true,
         });
 
-        // Insert other travelers
-        const filteredTravelers = otherTravelerIds.filter(id => id && id !== "");
-        console.log('CREATE MODE - Other travelers to insert:', filteredTravelers);
-        console.log('CREATE MODE - otherTravelerIds state:', otherTravelerIds);
-        if (filteredTravelers.length > 0) {
+        // Insert other travelers - filter out main client and remove duplicates
+        const uniqueTravelers = [...new Set(otherTravelerIds.filter(id => id && id !== "" && id !== clientId))];
+        console.log('CREATE MODE - Unique other travelers to insert:', uniqueTravelers);
+        if (uniqueTravelers.length > 0) {
           const { error: travelersError } = await supabase.from('voucher_travelers').insert(
-            filteredTravelers.map(id => ({
+            uniqueTravelers.map(id => ({
               voucher_id: voucherData.id,
               client_id: id,
               is_main_client: false,
@@ -962,7 +960,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (travelersError) {
             console.error('Error inserting other travelers:', travelersError);
           } else {
-            console.log('Successfully inserted', filteredTravelers.length, 'other travelers');
+            console.log('Successfully inserted', uniqueTravelers.length, 'other travelers');
           }
         }
 
