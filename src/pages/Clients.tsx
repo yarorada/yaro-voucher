@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -64,6 +64,7 @@ const Clients = () => {
   const [bulkDocumentUploadOpen, setBulkDocumentUploadOpen] = useState(false);
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [searchText, setSearchText] = useState("");
+  const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -946,6 +947,16 @@ const Clients = () => {
                     {client.first_name} {client.last_name}
                   </h3>
                   <div className="flex gap-2">
+                    {client.document_urls && client.document_urls.length > 0 && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setDocumentPreviewClient(client)}
+                        title="Zobrazit dokumenty"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       size="icon"
                       variant="outline"
@@ -992,6 +1003,61 @@ const Clients = () => {
             ))}
           </div>
         )}
+
+        {/* Document Preview Dialog */}
+        <Dialog open={!!documentPreviewClient} onOpenChange={(open) => !open && setDocumentPreviewClient(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-background">
+            <DialogHeader>
+              <DialogTitle>
+                Dokumenty - {documentPreviewClient?.first_name} {documentPreviewClient?.last_name}
+              </DialogTitle>
+              <DialogDescription>
+                Nahrané dokumenty klienta (pas, OP, ostatní)
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[70vh]">
+              {documentPreviewClient?.document_urls && documentPreviewClient.document_urls.length > 0 ? (
+                <div className="grid gap-4">
+                  {documentPreviewClient.document_urls.map((doc, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium capitalize">
+                          {doc.type === 'passport' ? 'Cestovní pas' : 
+                           doc.type === 'id_card' ? 'Občanský průkaz' : 'Ostatní'}
+                        </span>
+                        <a 
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Otevřít v novém okně
+                        </a>
+                      </div>
+                      {doc.url.toLowerCase().includes('.pdf') ? (
+                        <iframe 
+                          src={doc.url} 
+                          className="w-full h-[400px] border rounded"
+                          title={`Document ${index + 1}`}
+                        />
+                      ) : (
+                        <img 
+                          src={doc.url} 
+                          alt={`Document ${index + 1}`}
+                          className="max-w-full max-h-[400px] object-contain mx-auto rounded"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  Žádné dokumenty nebyly nahrány
+                </p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
