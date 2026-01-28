@@ -82,7 +82,7 @@ const Deals = () => {
         deal.deal_number.toLowerCase().includes(query) ||
         deal.destinations?.name.toLowerCase().includes(query) ||
         deal.deal_travelers.some((dt: any) =>
-          `${dt.clients.first_name} ${dt.clients.last_name}`
+          dt.clients && `${dt.clients.first_name} ${dt.clients.last_name}`
             .toLowerCase()
             .includes(query)
         )
@@ -156,6 +156,7 @@ const Deals = () => {
             ) : (
               filteredDeals.map((deal) => {
                 const mainTravelers = deal.deal_travelers
+                  .filter((dt: any) => dt.clients)
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
                 const title = deal.destinations?.name
