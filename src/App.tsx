@@ -22,6 +22,8 @@ import ContractDetail from "./pages/ContractDetail";
 import CreateContract from "./pages/CreateContract";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import MfaSetup from "./pages/MfaSetup";
+import MfaVerify from "./pages/MfaVerify";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -57,6 +59,8 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/mfa-setup" element={<MfaSetup />} />
+          <Route path="/mfa-verify" element={<MfaVerify />} />
           <Route
             path="/"
             element={
