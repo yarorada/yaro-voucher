@@ -29,6 +29,7 @@ interface Voucher {
   issue_date: string;
   created_at: string;
   client_id: string;
+  expiration_date: string | null;
   creator_email?: string;
   clients?: {
     first_name: string;
@@ -263,21 +264,48 @@ const VouchersList = () => {
                 <p className="text-muted-foreground">Nenalezeny žádné vouchery odpovídající vašemu hledání</p>
               </Card>
             ) : (
-              filteredVouchers.map((voucher) => {
+              filteredVouchers.map((voucher, index) => {
                 const displayName = voucher.clients
                   ? `${voucher.clients.first_name} ${voucher.clients.last_name}`
                   : voucher.client_name;
                 const title = voucher.hotel_name ? `${displayName} - ${voucher.hotel_name}` : displayName;
+                
+                // Check if voucher is expired
+                const isExpired = voucher.expiration_date 
+                  ? new Date(voucher.expiration_date) < new Date() 
+                  : false;
 
                 return (
-                  <Card key={voucher.id} className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow">
+                  <Card 
+                    key={voucher.id} 
+                    className={`p-6 hover:shadow-[var(--shadow-medium)] transition-shadow ${
+                      isExpired ? 'bg-muted/50 opacity-75' : ''
+                    }`}
+                  >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div className="flex-1 cursor-pointer" onClick={() => navigate(`/voucher/${voucher.id}`)}>
                         <div className="flex items-center gap-3 mb-2">
-                          <Badge variant="outline" className="text-primary border-primary font-mono">
+                          <span className="text-sm font-medium text-muted-foreground min-w-[24px]">
+                            {index + 1}.
+                          </span>
+                          <Badge 
+                            variant="outline" 
+                            className={`font-mono ${
+                              isExpired 
+                                ? 'text-muted-foreground border-muted-foreground' 
+                                : 'text-primary border-primary'
+                            }`}
+                          >
                             {voucher.voucher_code}
                           </Badge>
-                          <h3 className="text-xl font-bold text-foreground">{title}</h3>
+                          <h3 className={`text-xl font-bold ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
+                            {title}
+                          </h3>
+                          {isExpired && (
+                            <Badge variant="secondary" className="text-xs">
+                              Využitý
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <span>
