@@ -1,89 +1,95 @@
 
-# Plán: Ignorování diakritiky při kontrole duplicit klientů
+# Plán: Nastavení odesílání PDF voucheru emailem
 
-## Popis problému
-Při importu klientů (hromadném i jednotlivém) se kontrola duplicit provádí pomocí SQL dotazu `ilike`, který nerozpozná, že "Jiří Novák" a "Jiri Novak" je stejná osoba. Databáze obsahuje jména uložená bez diakritiky (normalizovaná), ale kontrola přicházejících dat nefunguje správně.
+## Přehled
+Rozšíření stávající funkcionality odesílání voucherů tak, aby bylo možné odeslat PDF verzi voucheru jako přílohu emailu na adresu hlavního klienta.
 
-## Řešení
-Změnit strategii kontroly duplicit ve všech relevantních souborech - místo použití `ilike` dotazu načíst všechny klienty a porovnat jména lokálně po odstranění diakritiky na obou stranách.
+## Technický přístup
 
----
+### Problém
+Aktuálně se PDF generuje na straně klienta (prohlížeče) pomocí knihovny `html2pdf.js`, která vyžaduje DOM. Edge funkce na serveru nemá přístup k DOM, takže je potřeba zvolit alternativní řešení.
 
-## Soubory k úpravě
+### Navrhované řešení
+Použití služby **Puppeteer/Browserless** nebo **pdf-lib** pro server-side generování PDF. Vzhledem k omezením Deno edge functions doporučuji:
 
-### 1. BulkClientUpload.tsx
-**Funkce:** `checkForDuplicate` (řádky 217-260)
+**Varianta A (doporučená)**: Generování PDF na klientovi → upload do storage → odeslání z edge funkce
+- PDF se vygeneruje v prohlížeči (stávající logika)
+- Upload do dočasného Supabase Storage bucketu
+- Edge funkce stáhne a připojí k emailu
 
-**Problém:** Kontrola podle jména používá `ilike` bez normalizace diakritiky
-```typescript
-// Aktuálně - nefunguje pro Jiří vs Jiri
-.ilike('first_name', extractedData.first_name)
-.ilike('last_name', extractedData.last_name)
+**Varianta B**: Použití externí API pro PDF generování (např. html2pdf.app, PDFShift)
+- Vyžaduje další API klíč
+
+## Implementační kroky
+
+### 1. Databázová migrace
+Přidání sloupců pro nastavení emailu do `global_pdf_settings`:
+- `email_send_pdf` (boolean) - zda odesílat PDF přílohu
+- `email_subject_template` (text) - šablona předmětu emailu
+- `email_cc_supplier` (boolean) - kopie dodavateli
+
+### 2. Úprava VoucherDisplay komponenty
+- Nová funkce pro generování PDF blobu místo přímého stažení
+- Upload PDF do Supabase Storage před odesláním emailu
+- Rozšíření dialogu nastavení o email sekci
+
+### 3. Úprava Edge funkce `send-voucher-email`
+- Přidání parametru pro URL PDF souboru
+- Stažení PDF ze storage
+- Připojení PDF jako base64 přílohy přes Resend API
+- Vyčištění dočasného souboru po odeslání
+
+### 4. UI komponenty
+- Switch pro zapnutí/vypnutí PDF přílohy
+- Pole pro úpravu šablony předmětu emailu
+- Checkbox pro kopii dodavateli
+
+## Struktura změn
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  VoucherDisplay.tsx                                     │
+│  ├── Nastavení PDF emailu dialog                        │
+│  ├── handleSendEmailWithPdf()                           │
+│  │   ├── generatePdfBlob()                              │
+│  │   ├── uploadToStorage()                              │
+│  │   └── invokeEdgeFunction()                           │
+│  └── UI pro zapnutí/vypnutí PDF přílohy                 │
+├─────────────────────────────────────────────────────────┤
+│  send-voucher-email/index.ts                            │
+│  ├── Parametr pdfUrl                                    │
+│  ├── Stažení PDF ze storage                             │
+│  └── Odeslání s PDF přílohou přes Resend                │
+├─────────────────────────────────────────────────────────┤
+│  global_pdf_settings (databáze)                         │
+│  ├── email_send_pdf: boolean                            │
+│  ├── email_subject_template: text                       │
+│  └── email_cc_supplier: boolean                         │
+└─────────────────────────────────────────────────────────┘
 ```
-
-**Oprava:**
-- Importovat `removeDiacritics` z `@/lib/utils`
-- Načíst všechny klienty
-- Porovnat jména lokálně po normalizaci obou stran
-
-### 2. VoucherForm.tsx
-**Funkce:** `handleConfirmImport` (řádky 380-385)
-
-**Problém:** Stejný problém - hledá normalizované jméno pomocí `ilike`
-
-**Oprava:**
-- Před cyklem načíst všechny existující klienty
-- V cyklu porovnávat lokálně s normalizací
-- Efektivnější - jedno načtení místo N dotazů
-
-### 3. ClientCombobox.tsx
-**Funkce:** `handleCreateClient` (řádky 87-133)
-
-**Problém:** Nekontroluje duplicity vůbec před vytvořením nového klienta
-
-**Oprava:**
-- Přidat kontrolu duplicit před `insert`
-- Načíst všechny klienty
-- Porovnat s normalizací diakritiky
-- Pokud existuje duplicita, zobrazit chybu nebo použít existujícího
-
----
 
 ## Technické detaily
 
-### Vzorový kód pro kontrolu duplicit
+### Resend API s přílohou
 ```typescript
-import { removeDiacritics } from "@/lib/utils";
-
-// Načíst všechny klienty jednou
-const { data: allClients } = await supabase
-  .from('clients')
-  .select('id, first_name, last_name, passport_number, id_card_number');
-
-// Normalizovat vstupní jméno
-const normalizedFirstName = removeDiacritics(firstName.trim().toLowerCase());
-const normalizedLastName = removeDiacritics(lastName.trim().toLowerCase());
-
-// Najít duplicitu s normalizací obou stran
-const existingClient = allClients?.find(client => 
-  removeDiacritics(client.first_name.toLowerCase()) === normalizedFirstName &&
-  removeDiacritics(client.last_name.toLowerCase()) === normalizedLastName
-);
+await resend.emails.send({
+  from: "YARO Travel <zajezdy@yarotravel.cz>",
+  to: [clientEmail],
+  subject: "Travel Voucher YT-26001",
+  html: htmlContent,
+  attachments: [{
+    filename: "voucher-YT-26001.pdf",
+    content: pdfBase64,
+  }]
+});
 ```
 
-### Optimalizace pro hromadný import
-V `VoucherForm.tsx` se aktuálně provádí dotaz do DB pro každého klienta v cyklu. Nová implementace:
-1. Načte všechny klienty před cyklem (1 dotaz)
-2. V cyklu pouze lokální porovnání (rychlé)
-3. Po vytvoření nového klienta ho přidá do lokálního pole pro další porovnání
+### Storage bucket
+Vytvoření nového bucketu `voucher-pdfs` pro dočasné ukládání PDF souborů před odesláním.
 
----
-
-## Shrnutí změn
-| Soubor | Změna |
-|--------|-------|
-| `BulkClientUpload.tsx` | Přidat import `removeDiacritics`, změnit `checkForDuplicate` na lokální porovnání |
-| `VoucherForm.tsx` | Optimalizovat `handleConfirmImport` - načíst klienty před cyklem, lokální porovnání |
-| `ClientCombobox.tsx` | Přidat kontrolu duplicit před vytvořením klienta |
-
-Všechny soubory budou používat centrální funkci `removeDiacritics` z `src/lib/utils.ts` pro konzistenci.
+## Odhad práce
+- Databázová migrace: 5 min
+- Frontend komponenty: 30 min
+- Edge funkce úprava: 20 min
+- Storage nastavení: 10 min
+- Testování: 15 min
