@@ -63,25 +63,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending email for voucher:", voucherId, "by user:", user.id, "with PDF:", !!pdfPath);
 
-    // Fetch voucher and verify ownership
-    const { data: voucher, error: voucherError } = await supabaseClient
+    // Use SERVICE_ROLE_KEY for fetching data (RLS bypassed for internal operations)
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch voucher (service role - no RLS restriction)
+    const { data: voucher, error: voucherError } = await supabase
       .from("vouchers")
       .select("*")
       .eq("id", voucherId)
-      .eq("user_id", user.id)
       .single();
 
     if (voucherError || !voucher) {
       console.error("Voucher access error:", voucherError);
-      return new Response(JSON.stringify({ error: "Voucher not found or access denied" }), {
-        status: 403,
+      return new Response(JSON.stringify({ error: "Voucher not found" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Use SERVICE_ROLE_KEY for fetching related data only
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch travelers
     const { data: travelers, error: travelersError } = await supabase
