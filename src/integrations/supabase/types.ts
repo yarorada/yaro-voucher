@@ -661,6 +661,9 @@ export type Database = {
       global_pdf_settings: {
         Row: {
           content_padding: number
+          email_cc_supplier: boolean | null
+          email_send_pdf: boolean | null
+          email_subject_template: string | null
           font_size: number
           heading_size: number
           id: string
@@ -672,6 +675,9 @@ export type Database = {
         }
         Insert: {
           content_padding?: number
+          email_cc_supplier?: boolean | null
+          email_send_pdf?: boolean | null
+          email_subject_template?: string | null
           font_size?: number
           heading_size?: number
           id?: string
@@ -683,6 +689,9 @@ export type Database = {
         }
         Update: {
           content_padding?: number
+          email_cc_supplier?: boolean | null
+          email_send_pdf?: boolean | null
+          email_subject_template?: string | null
           font_size?: number
           heading_size?: number
           id?: string

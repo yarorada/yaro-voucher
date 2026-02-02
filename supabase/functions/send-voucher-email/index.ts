@@ -8,6 +8,9 @@ const corsHeaders = {
 
 interface SendEmailRequest {
   voucherId: string;
+  pdfPath?: string | null;
+  emailSubjectTemplate?: string;
+  emailCcSupplier?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -47,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { voucherId }: SendEmailRequest = await req.json();
+    const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier }: SendEmailRequest = await req.json();
 
     // Validate voucherId format (UUID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -58,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log("Sending email for voucher:", voucherId, "by user:", user.id);
+    console.log("Sending email for voucher:", voucherId, "by user:", user.id, "with PDF:", !!pdfPath);
 
     // Fetch voucher and verify ownership
     const { data: voucher, error: voucherError } = await supabaseClient
@@ -278,13 +281,63 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send emails
+    // Build recipients list
     const recipients = [clientEmail];
-    if (supplier?.email) {
+    const shouldCcSupplier = emailCcSupplier !== false; // Default to true
+    if (shouldCcSupplier && supplier?.email) {
       recipients.push(supplier.email);
     }
 
     console.log("Sending email to:", recipients);
+
+    // Build email subject from template
+    const defaultSubjectTemplate = "Travel Voucher {{voucher_code}} - YARO Travel";
+    const subjectTemplate = emailSubjectTemplate || defaultSubjectTemplate;
+    const subject = subjectTemplate.replace(/\{\{voucher_code\}\}/g, voucher.voucher_code);
+
+    // Prepare email payload
+    const emailPayload: any = {
+      from: "YARO Travel <zajezdy@yarotravel.cz>",
+      to: recipients,
+      subject: subject,
+      html: html,
+    };
+
+    // If pdfPath is provided, download PDF and attach it
+    if (pdfPath) {
+      console.log("Downloading PDF from storage:", pdfPath);
+      
+      const { data: pdfData, error: pdfError } = await supabase.storage
+        .from("voucher-pdfs")
+        .download(pdfPath);
+
+      if (pdfError) {
+        console.error("Error downloading PDF:", pdfError);
+        // Continue without attachment if PDF download fails
+      } else if (pdfData) {
+        // Convert blob to base64
+        const arrayBuffer = await pdfData.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        
+        emailPayload.attachments = [{
+          filename: `voucher-${voucher.voucher_code}.pdf`,
+          content: base64,
+        }];
+        
+        console.log("PDF attachment added, size:", arrayBuffer.byteLength, "bytes");
+      }
+      
+      // Clean up the temporary PDF file after attaching
+      const { error: deleteError } = await supabase.storage
+        .from("voucher-pdfs")
+        .remove([pdfPath]);
+      
+      if (deleteError) {
+        console.error("Error deleting temporary PDF:", deleteError);
+      } else {
+        console.log("Temporary PDF cleaned up:", pdfPath);
+      }
+    }
 
     // Send email via Resend API
     const resendResponse = await fetch("https://api.resend.com/emails", {
@@ -293,12 +346,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "YARO Travel <zajezdy@yarotravel.cz>",
-        to: recipients,
-        subject: `Travel Voucher ${voucher.voucher_code} - YARO Travel`,
-        html: html,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     if (!resendResponse.ok) {
@@ -314,6 +362,7 @@ const handler = async (req: Request): Promise<Response> => {
         success: true,
         message: "Email sent successfully",
         recipients: recipients,
+        hasPdfAttachment: !!pdfPath,
       }),
       {
         status: 200,

@@ -9,6 +9,9 @@ import html2pdf from "html2pdf.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Airport lookup data
@@ -285,6 +288,11 @@ export const VoucherDisplay = ({
   const lineHeight = settings?.line_height ?? 1.1;
   const headingSize = settings?.heading_size ?? 17;
   const sectionSpacing = settings?.section_spacing ?? 4;
+  
+  // Email settings
+  const emailSendPdf = (settings as any)?.email_send_pdf ?? false;
+  const emailSubjectTemplate = (settings as any)?.email_subject_template ?? 'Travel Voucher {{voucher_code}} - YARO Travel';
+  const emailCcSupplier = (settings as any)?.email_cc_supplier ?? true;
   const contentPadding = settings?.content_padding ?? 6;
 
   // Mutation to update global PDF settings
@@ -296,6 +304,9 @@ export const VoucherDisplay = ({
       heading_size?: number;
       section_spacing?: number;
       content_padding?: number;
+      email_send_pdf?: boolean;
+      email_subject_template?: string;
+      email_cc_supplier?: boolean;
     }) => {
       const { data: existing } = await supabase
         .from('global_pdf_settings')
@@ -340,6 +351,94 @@ export const VoucherDisplay = ({
 
   const setContentPadding = (value: number) => {
     updateSettingsMutation.mutate({ content_padding: value });
+  };
+
+  const setEmailSendPdf = (value: boolean) => {
+    updateSettingsMutation.mutate({ email_send_pdf: value });
+  };
+
+  const setEmailSubjectTemplate = (value: string) => {
+    updateSettingsMutation.mutate({ email_subject_template: value });
+  };
+
+  const setEmailCcSupplier = (value: boolean) => {
+    updateSettingsMutation.mutate({ email_cc_supplier: value });
+  };
+
+  // Generate PDF blob for email attachment
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    const element = document.getElementById('voucher-content');
+    if (!element) return null;
+
+    const opt = {
+      margin: [10, 10, 10, 10] as [number, number, number, number],
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        allowTaint: true,
+        letterRendering: true,
+        onclone: (clonedDoc: Document) => {
+          const clonedElement = clonedDoc.getElementById('voucher-content');
+          if (clonedElement) {
+            clonedElement.style.backgroundColor = '#ffffff';
+            clonedElement.style.color = '#000000';
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach(el => {
+              const htmlEl = el as HTMLElement;
+              const computedStyle = window.getComputedStyle(el);
+              const bgColor = computedStyle.backgroundColor;
+              if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+                const rgb = bgColor.match(/\d+/g);
+                if (rgb && rgb.length >= 3) {
+                  const brightness = (parseInt(rgb[0]) + parseInt(rgb[1]) + parseInt(rgb[2])) / 3;
+                  if (brightness < 128) {
+                    htmlEl.style.backgroundColor = '#f5f5f5';
+                  }
+                }
+              }
+            });
+            const bgMuted = clonedElement.querySelectorAll('.bg-muted');
+            bgMuted.forEach(el => { (el as HTMLElement).style.backgroundColor = '#f5f5f5'; });
+            const bgCard = clonedElement.querySelectorAll('.bg-card');
+            bgCard.forEach(el => { (el as HTMLElement).style.backgroundColor = '#ffffff'; });
+            const bgPrimary = clonedElement.querySelectorAll('.bg-primary');
+            bgPrimary.forEach(el => {
+              (el as HTMLElement).style.backgroundColor = '#0066cc';
+              (el as HTMLElement).style.color = '#ffffff';
+            });
+          }
+        }
+      },
+      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    return await html2pdf().set(opt).from(element).outputPdf('blob');
+  };
+
+  // Upload PDF to storage and return the path
+  const uploadPdfToStorage = async (pdfBlob: Blob): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const filePath = `${user.id}/${voucherCode}-${Date.now()}.pdf`;
+    
+    const { error } = await supabase.storage
+      .from('voucher-pdfs')
+      .upload(filePath, pdfBlob, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Error uploading PDF:', error);
+      return null;
+    }
+
+    return filePath;
   };
 
   const handleDownloadPDF = async () => {
@@ -475,16 +574,39 @@ export const VoucherDisplay = ({
       toast.error("Chyba: ID voucheru nebylo nalezeno");
       return;
     }
+    
+    if (isTranslating) {
+      toast.info('Čekám na dokončení překladu služeb...');
+      return;
+    }
+    
     setIsSendingEmail(true);
     try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('send-voucher-email', {
+      let pdfPath: string | null = null;
+      
+      // If email_send_pdf is enabled, generate and upload PDF first
+      if (emailSendPdf) {
+        toast.info('Generuji PDF přílohu...');
+        const pdfBlob = await generatePdfBlob();
+        if (pdfBlob) {
+          pdfPath = await uploadPdfToStorage(pdfBlob);
+          if (!pdfPath) {
+            toast.error('Chyba při nahrávání PDF');
+            setIsSendingEmail(false);
+            return;
+          }
+        }
+      }
+      
+      const { data, error } = await supabase.functions.invoke('send-voucher-email', {
         body: {
-          voucherId
+          voucherId,
+          pdfPath,
+          emailSubjectTemplate,
+          emailCcSupplier
         }
       });
+      
       if (error) throw error;
       if (data?.success) {
         toast.success(`Email úspěšně odeslán na: ${data.recipients.join(', ')}`);
@@ -674,6 +796,38 @@ export const VoucherDisplay = ({
               <div className="space-y-2">
                 <Label>Padding obsahu: {contentPadding}px</Label>
                 <Slider value={[contentPadding]} onValueChange={([value]) => setContentPadding(value)} min={4} max={24} step={2} />
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Nastavení emailu</h4>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email-send-pdf" className="flex-1">Přiložit PDF k emailu</Label>
+                  <Switch 
+                    id="email-send-pdf"
+                    checked={emailSendPdf}
+                    onCheckedChange={setEmailSendPdf}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email-cc-supplier" className="flex-1">Poslat kopii dodavateli</Label>
+                  <Switch 
+                    id="email-cc-supplier"
+                    checked={emailCcSupplier}
+                    onCheckedChange={setEmailCcSupplier}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email-subject">Předmět emailu</Label>
+                  <Input
+                    id="email-subject"
+                    value={emailSubjectTemplate}
+                    onChange={(e) => setEmailSubjectTemplate(e.target.value)}
+                    placeholder="Travel Voucher {{voucher_code}} - YARO Travel"
+                  />
+                  <p className="text-xs text-muted-foreground">Použijte {"{{voucher_code}}"} pro kód voucheru</p>
+                </div>
               </div>
             </div>
           </DialogContent>
