@@ -296,7 +296,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Prepare email payload
     const emailPayload: any = {
-      from: "YARO Travel <zajezdy@yarotravel.cz>",
+      from: "YARO Travel <radek@yarogolf.cz>",
       to: recipients,
       subject: subject,
       html: html,
