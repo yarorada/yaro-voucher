@@ -381,10 +381,15 @@ export const VoucherDisplay = ({
         allowTaint: true,
         letterRendering: true,
         onclone: (clonedDoc: Document) => {
+          // Remove dark class to force light mode CSS variables
+          clonedDoc.documentElement.classList.remove('dark');
+          
           const clonedElement = clonedDoc.getElementById('voucher-content');
           if (clonedElement) {
             clonedElement.style.backgroundColor = '#ffffff';
             clonedElement.style.color = '#000000';
+            
+            // Force light theme to all elements
             const allElements = clonedElement.querySelectorAll('*');
             allElements.forEach(el => {
               const htmlEl = el as HTMLElement;
@@ -399,16 +404,41 @@ export const VoucherDisplay = ({
                   }
                 }
               }
+              // Force text colors to dark
+              const textColor = computedStyle.color;
+              if (textColor) {
+                const rgb = textColor.match(/\d+/g);
+                if (rgb && rgb.length >= 3) {
+                  const brightness = (parseInt(rgb[0]) + parseInt(rgb[1]) + parseInt(rgb[2])) / 3;
+                  if (brightness > 200) {
+                    htmlEl.style.color = '#000000';
+                  }
+                }
+              }
             });
+            
+            // Apply light theme to specific classes
             const bgMuted = clonedElement.querySelectorAll('.bg-muted');
             bgMuted.forEach(el => { (el as HTMLElement).style.backgroundColor = '#f5f5f5'; });
             const bgCard = clonedElement.querySelectorAll('.bg-card');
             bgCard.forEach(el => { (el as HTMLElement).style.backgroundColor = '#ffffff'; });
+            const bgBackground = clonedElement.querySelectorAll('.bg-background');
+            bgBackground.forEach(el => { (el as HTMLElement).style.backgroundColor = '#ffffff'; });
+            const textForeground = clonedElement.querySelectorAll('.text-foreground');
+            textForeground.forEach(el => { (el as HTMLElement).style.color = '#000000'; });
+            const textMuted = clonedElement.querySelectorAll('.text-muted-foreground');
+            textMuted.forEach(el => { (el as HTMLElement).style.color = '#666666'; });
             const bgPrimary = clonedElement.querySelectorAll('.bg-primary');
             bgPrimary.forEach(el => {
               (el as HTMLElement).style.backgroundColor = '#0066cc';
               (el as HTMLElement).style.color = '#ffffff';
             });
+            const textPrimaryForeground = clonedElement.querySelectorAll('.text-primary-foreground');
+            textPrimaryForeground.forEach(el => { (el as HTMLElement).style.color = '#ffffff'; });
+            
+            // Remove dark mode filter from logo
+            const logos = clonedElement.querySelectorAll('.logo-dark-mode');
+            logos.forEach(el => { (el as HTMLElement).style.filter = 'none'; });
           }
         }
       },
@@ -470,6 +500,9 @@ export const VoucherDisplay = ({
           allowTaint: true,
           letterRendering: true,
           onclone: (clonedDoc: Document) => {
+            // Remove dark class to force light mode CSS variables
+            clonedDoc.documentElement.classList.remove('dark');
+            
             const clonedElement = clonedDoc.getElementById('voucher-content');
             if (clonedElement) {
               // Force light theme colors for PDF export
@@ -548,6 +581,10 @@ export const VoucherDisplay = ({
               textPrimaryForeground.forEach(el => {
                 (el as HTMLElement).style.color = '#ffffff';
               });
+              
+              // Remove dark mode filter from logo
+              const logos = clonedElement.querySelectorAll('.logo-dark-mode');
+              logos.forEach(el => { (el as HTMLElement).style.filter = 'none'; });
             }
           }
         },
