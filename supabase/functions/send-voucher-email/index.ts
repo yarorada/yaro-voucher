@@ -34,7 +34,7 @@ we are sending to you voucher for our clients for their stay from ${dateFrom} to
 Best regards,
 YARO Travel
 Tel.: +420 602 102 108
-Email: zajezdy@yarotravel.cz`;
+zajezdy@yarotravel.cz`;
 };
 
 // Format date to DD.MM.YY
@@ -185,10 +185,8 @@ const handler = async (req: Request): Promise<Response> => {
     let pdfAttachment: any[] = [];
     if (pdfPath) {
       console.log("Downloading PDF from storage:", pdfPath);
-      
-      const { data: pdfData, error: pdfError } = await supabase.storage
-        .from("voucher-pdfs")
-        .download(pdfPath);
+
+      const { data: pdfData, error: pdfError } = await supabase.storage.from("voucher-pdfs").download(pdfPath);
 
       if (pdfError) {
         console.error("Error downloading PDF:", pdfError);
@@ -198,29 +196,29 @@ const handler = async (req: Request): Promise<Response> => {
         const bytes = new Uint8Array(arrayBuffer);
         const chunkSize = 8192;
         let binary = "";
-        
+
         for (let i = 0; i < bytes.length; i += chunkSize) {
           const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
           for (let j = 0; j < chunk.length; j++) {
             binary += String.fromCharCode(chunk[j]);
           }
         }
-        
+
         const base64 = btoa(binary);
-        
-        pdfAttachment = [{
-          filename: `voucher-${voucher.voucher_code}.pdf`,
-          content: base64,
-        }];
-        
+
+        pdfAttachment = [
+          {
+            filename: `voucher-${voucher.voucher_code}.pdf`,
+            content: base64,
+          },
+        ];
+
         console.log("PDF attachment prepared, size:", arrayBuffer.byteLength, "bytes");
       }
-      
+
       // Clean up the temporary PDF file after preparing attachment
-      const { error: deleteError } = await supabase.storage
-        .from("voucher-pdfs")
-        .remove([pdfPath]);
-      
+      const { error: deleteError } = await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
+
       if (deleteError) {
         console.error("Error deleting temporary PDF:", deleteError);
       } else {
@@ -301,8 +299,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const allSuccessful = emailResults.every(r => r.success);
-    const recipients = emailResults.map(r => r.recipient);
+    const allSuccessful = emailResults.every((r) => r.success);
+    const recipients = emailResults.map((r) => r.recipient);
 
     return new Response(
       JSON.stringify({

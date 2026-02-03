@@ -28,6 +28,7 @@ YARO Travel - Váš specialista na dovolenou
 Tel.: +420 602 102 108
 www.yarotravel.cz
 zajezdy@yarotravel.cz`;
+
 };
 
 // Anglický text pro dodavatele
