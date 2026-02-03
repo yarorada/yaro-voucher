@@ -336,7 +336,7 @@ const VouchersList = () => {
                       <div className="flex-1 cursor-pointer" onClick={() => navigate(`/voucher/${voucher.id}`)}>
                         <div className="flex items-center gap-3 mb-2">
                           <span className="text-sm font-medium text-muted-foreground min-w-[24px]">
-                            {index + 1}.
+                            {voucher.voucher_number}.
                           </span>
                           <Badge 
                             variant="outline" 
