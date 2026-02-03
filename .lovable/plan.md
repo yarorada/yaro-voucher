@@ -1,36 +1,117 @@
 
-# Plán: Nastavení odesílání PDF voucheru emailem ✅ DOKONČENO
+# Plán: Změna těla emailu voucheru na jednoduchý text
 
-## Přehled
-Rozšíření stávající funkcionality odesílání voucherů tak, aby bylo možné odeslat PDF verzi voucheru jako přílohu emailu na adresu hlavního klienta.
+## Přehled změny
+Nahrazení komplexního HTML emailu jednoduchým textovým emailem:
+- **Pro klienta (čeština)**: "Vážený {příjmení}, posíláme vám voucher na služby k vašemu zájezdu od {termín od} do {termín do} do hotelu {hotel}."
+- **Pro dodavatele (angličtina)**: "Dear valued partner, we are sending to you voucher for our clients for their stay from {Date From} to {Date To} at {hotel}."
 
-## Implementováno
+## Technické změny
 
-### 1. Databázová migrace ✅
-Přidány sloupce do `global_pdf_settings`:
-- `email_send_pdf` (boolean) - zda odesílat PDF přílohu
-- `email_subject_template` (text) - šablona předmětu emailu
-- `email_cc_supplier` (boolean) - kopie dodavateli
+### Edge funkce `send-voucher-email/index.ts`
 
-Vytvořen storage bucket `voucher-pdfs` s RLS politikami.
+1. **Odstranit generování HTML** (řádky 138-281)
+   - Smazat celou sekci `servicesHtml` a `html` template
 
-### 2. VoucherDisplay komponenta ✅
-- Přidáno UI pro nastavení emailu v dialogu Nastavení PDF
-- Implementována funkce `generatePdfBlob()` pro generování PDF
-- Implementována funkce `uploadPdfToStorage()` pro upload do storage
-- Upravena funkce `handleSendEmail()` pro podporu PDF přílohy
+2. **Přidat pomocné funkce pro texty**
+   ```typescript
+   // Český text pro klienta
+   const buildClientEmailText = (lastName: string, dateFrom: string, dateTo: string, hotel: string) => {
+     return `Vážený ${lastName},
 
-### 3. Edge funkce `send-voucher-email` ✅
-- Přidán parametr `pdfPath` pro cestu k PDF souboru
-- Stažení PDF ze storage
-- Připojení PDF jako base64 přílohy přes Resend API
-- Automatické vyčištění dočasného souboru po odeslání
-- Podpora vlastní šablony předmětu emailu
-- Možnost vypnout kopii dodavateli
+posíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.
 
-## Použití
-1. Otevřete voucher
-2. Klikněte na ikonu nastavení (ozubené kolo)
-3. V sekci "Nastavení emailu" zapněte "Přiložit PDF k emailu"
-4. Volitelně upravte předmět emailu a kopii dodavateli
-5. Klikněte na tlačítko email pro odeslání
+S pozdravem,
+YARO Travel
+Tel.: +420 602 102 108
+Email: zajezdy@yarotravel.cz`;
+   };
+
+   // Anglický text pro dodavatele
+   const buildSupplierEmailText = (dateFrom: string, dateTo: string, hotel: string) => {
+     return `Dear valued partner,
+
+we are sending to you voucher for our clients for their stay from ${dateFrom} to ${dateTo} at ${hotel}.
+
+Best regards,
+YARO Travel
+Tel.: +420 602 102 108
+Email: zajezdy@yarotravel.cz`;
+   };
+   ```
+
+3. **Určení dat zájezdu**
+   - Najít nejranější `dateFrom` a nejpozdější `dateTo` ze služeb voucheru
+   - Použít hotel z `voucher.hotel_name`
+
+4. **Odeslání dvou samostatných emailů**
+   - Jeden email klientovi v češtině
+   - Druhý email dodavateli v angličtině (pokud je `emailCcSupplier` true a dodavatel má email)
+   - Oba s PDF přílohou
+
+### Logika odesílání
+
+```text
+┌─────────────────────────────────────────┐
+│         Připravit data voucheru         │
+│  (termíny, hotel, příjmení klienta)     │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│     Odeslat email KLIENTOVI (CZ)        │
+│  "Vážený {příjmení}, posíláme..."       │
+│         + PDF příloha                    │
+└─────────────────┬───────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────┐
+│   emailCcSupplier && supplier.email?    │
+└────────┬───────────────────────┬────────┘
+         │ ANO                   │ NE
+         ▼                       ▼
+┌────────────────────┐    ┌──────────────┐
+│ Odeslat email      │    │   Hotovo     │
+│ DODAVATELI (EN)    │    │              │
+│ "Dear valued..."   │    │              │
+│ + PDF příloha      │    │              │
+└────────────────────┘    └──────────────┘
+```
+
+## Kompletní změny v kódu
+
+### Soubor: `supabase/functions/send-voucher-email/index.ts`
+
+**Nové pomocné funkce** (před handler):
+- `buildClientEmailText()` - český text
+- `buildSupplierEmailText()` - anglický text
+
+**Změny v handleru**:
+1. Smazat generování `servicesHtml` a `html`
+2. Přidat výpočet dat zájezdu ze služeb
+3. Změnit odesílání na dva samostatné emaily:
+   - Email 1: klient (CZ text)
+   - Email 2: dodavatel (EN text) - podmíněně
+
+**Použití `text` místo `html`** v Resend API:
+```typescript
+const emailPayload = {
+  from: "YARO Travel <radek@yarogolf.cz>",
+  to: [clientEmail],
+  subject: subject,
+  text: clientEmailText,  // změna z html na text
+  attachments: [...]
+};
+```
+
+## Očekávané chování po implementaci
+
+| Příjemce | Jazyk | Obsah |
+|----------|-------|-------|
+| Klient | Čeština | "Vážený {příjmení}, posíláme vám voucher..." + PDF |
+| Dodavatel | Angličtina | "Dear valued partner, we are sending..." + PDF |
+
+## Poznámky
+- PDF příloha zůstává beze změny
+- Pokud voucher nemá hotel, použije se "N/A" nebo prázdný string
+- Předmět emailu zůstává stejný pro obě verze
