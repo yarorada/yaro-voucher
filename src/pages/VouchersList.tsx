@@ -386,8 +386,9 @@ const VouchersList = () => {
                           >
                             {voucher.voucher_code}
                           </Badge>
-                          <h3 className={`text-xl font-bold ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
-                            {title}
+                        <h3 className={`text-xl ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
+                            <span className="font-bold">{displayName}</span>
+                            {voucher.hotel_name && <span className="font-normal"> - {voucher.hotel_name}</span>}
                           </h3>
                           {isExpired && (
                             <Badge variant="secondary" className="text-xs">
