@@ -998,6 +998,7 @@ export type Database = {
           id: string
           issue_date: string
           other_travelers: string[] | null
+          sent_at: string | null
           services: Json
           supplier_id: string | null
           tee_times: Json | null
@@ -1018,6 +1019,7 @@ export type Database = {
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
+          sent_at?: string | null
           services: Json
           supplier_id?: string | null
           tee_times?: Json | null
@@ -1038,6 +1040,7 @@ export type Database = {
           id?: string
           issue_date?: string
           other_travelers?: string[] | null
+          sent_at?: string | null
           services?: Json
           supplier_id?: string | null
           tee_times?: Json | null
