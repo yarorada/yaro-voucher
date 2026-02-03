@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Edit, Copy, Search, Trash2 } from "lucide-react";
+import { Plus, FileText, Edit, Copy, Search, Trash2, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DuplicateVoucherDialog } from "@/components/DuplicateVoucherDialog";
 
 interface Voucher {
@@ -30,6 +36,7 @@ interface Voucher {
   created_at: string;
   client_id: string;
   expiration_date: string | null;
+  sent_at: string | null;
   creator_email?: string;
   clients?: {
     first_name: string;
@@ -389,6 +396,21 @@ const VouchersList = () => {
                           <h3 className={`text-xl font-bold ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
                             {title}
                           </h3>
+                          {voucher.sent_at && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-xs gap-1 text-emerald-600 border-emerald-600 cursor-help">
+                                    <Mail className="h-3 w-3" />
+                                    Odesláno
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Odesláno: {formatDate(voucher.sent_at)}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {isExpired && (
                             <Badge variant="secondary" className="text-xs">
                               Využitý

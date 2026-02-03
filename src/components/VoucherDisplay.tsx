@@ -646,6 +646,12 @@ export const VoucherDisplay = ({
       
       if (error) throw error;
       if (data?.success) {
+        // Update sent_at timestamp
+        await supabase
+          .from('vouchers')
+          .update({ sent_at: new Date().toISOString() })
+          .eq('id', voucherId);
+        
         toast.success(`Email úspěšně odeslán na: ${data.recipients.join(', ')}`);
       } else {
         throw new Error(data?.error || 'Unknown error');
