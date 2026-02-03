@@ -314,9 +314,20 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error downloading PDF:", pdfError);
         // Continue without attachment if PDF download fails
       } else if (pdfData) {
-        // Convert blob to base64
+        // Convert blob to base64 in chunks to avoid stack overflow
         const arrayBuffer = await pdfData.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const bytes = new Uint8Array(arrayBuffer);
+        const chunkSize = 8192; // Process 8KB at a time
+        let binary = "";
+        
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          for (let j = 0; j < chunk.length; j++) {
+            binary += String.fromCharCode(chunk[j]);
+          }
+        }
+        
+        const base64 = btoa(binary);
         
         emailPayload.attachments = [{
           filename: `voucher-${voucher.voucher_code}.pdf`,
