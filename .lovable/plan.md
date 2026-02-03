@@ -41,6 +41,7 @@ Best regards,
 YARO Travel
 Tel.: +420 602 102 108
 Email: zajezdy@yarotravel.cz`;
+
 };
 
 ````

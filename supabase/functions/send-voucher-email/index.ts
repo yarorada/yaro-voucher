@@ -20,9 +20,10 @@ const buildClientEmailText = (lastName: string, dateFrom: string, dateTo: string
 posíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.
 
 S pozdravem,
-YARO Travel
+YARO Travel - Váš specialista na dovolenou
 Tel.: +420 602 102 108
-Email: zajezdy@yarotravel.cz`;
+www.yarotravel.cz
+zajezdy@yarotravel.cz`;
 };
 
 // English email text for supplier
