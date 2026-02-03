@@ -32,6 +32,8 @@ const buildSupplierEmailText = (dateFrom: string, dateTo: string, hotel: string)
 
 we are sending to you voucher for our clients for their stay from ${dateFrom} to ${dateTo} at ${hotel}.
 
+Please find the voucher attached.
+
 Best regards,
 YARO Travel
 Tel.: +420 602 102 108
