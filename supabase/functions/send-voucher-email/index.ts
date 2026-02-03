@@ -13,6 +13,64 @@ interface SendEmailRequest {
   emailCcSupplier?: boolean;
 }
 
+// Czech email text for client
+const buildClientEmailText = (lastName: string, dateFrom: string, dateTo: string, hotel: string) => {
+  return `Vážený ${lastName},
+
+posíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.
+
+S pozdravem,
+YARO Travel
+Tel.: +420 602 102 108
+Email: zajezdy@yarotravel.cz`;
+};
+
+// English email text for supplier
+const buildSupplierEmailText = (dateFrom: string, dateTo: string, hotel: string) => {
+  return `Dear valued partner,
+
+we are sending to you voucher for our clients for their stay from ${dateFrom} to ${dateTo} at ${hotel}.
+
+Best regards,
+YARO Travel
+Tel.: +420 602 102 108
+Email: zajezdy@yarotravel.cz`;
+};
+
+// Format date to DD.MM.YY
+const formatDate = (dateString: string) => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}.${month}.${year}`;
+};
+
+// Get travel date range from services
+const getTravelDateRange = (services: any[]) => {
+  let earliestFrom: string | null = null;
+  let latestTo: string | null = null;
+
+  for (const service of services) {
+    if (service.dateFrom) {
+      if (!earliestFrom || service.dateFrom < earliestFrom) {
+        earliestFrom = service.dateFrom;
+      }
+    }
+    if (service.dateTo) {
+      if (!latestTo || service.dateTo > latestTo) {
+        latestTo = service.dateTo;
+      }
+    }
+  }
+
+  return {
+    dateFrom: earliestFrom ? formatDate(earliestFrom) : "N/A",
+    dateTo: latestTo ? formatDate(latestTo) : "N/A",
+  };
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -104,205 +162,27 @@ const handler = async (req: Request): Promise<Response> => {
       supplier = supplierData;
     }
 
-    // Find main client email
+    // Find main client email and name
     const mainClient = travelers?.find((t: any) => t.is_main_client);
     const mainClientData = mainClient?.clients as any;
     const clientEmail = mainClientData?.email;
-    const clientName = mainClientData
-      ? `${mainClientData.first_name} ${mainClientData.last_name}`
-      : voucher.client_name;
+    const clientLastName = mainClientData?.last_name || "klient";
 
     if (!clientEmail) {
       throw new Error("Client email not found");
     }
 
-    // Build other travelers list
-    const otherTravelers = travelers
-      ?.filter((t: any) => !t.is_main_client)
-      .map((t: any) => {
-        const client = t.clients as any;
-        return `${client.first_name} ${client.last_name}`;
-      })
-      .join(", ");
-
-    // Format dates
-    const formatDate = (dateString: string) => {
-      if (!dateString) return "N/A";
-      const date = new Date(dateString);
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = String(date.getFullYear()).slice(-2);
-      return `${day}.${month}.${year}`;
-    };
-
-    // Build services HTML
-    const servicesHtml = voucher.services
-      .map(
-        (service: any, index: number) => `
-      <tr style="background-color: ${index % 2 === 0 ? "#f9fafb" : "#ffffff"};">
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.pax || "—"}</td>
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${service.qty || "—"}</td>
-        <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: 600;">${service.name}</td>
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(service.dateFrom)}</td>
-        <td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(service.dateTo)}</td>
-      </tr>
-    `,
-      )
-      .join("");
-
-    // Build HTML email
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Travel Voucher - ${voucher.voucher_code}</title>
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-          
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-            <h1 style="margin: 0; font-size: 32px;">YARO Travel</h1>
-            <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Your Journey, Our Passion</p>
-          </div>
-
-          <!-- Voucher Code -->
-          <div style="background-color: white; padding: 20px; border-bottom: 4px solid #667eea;">
-            <div style="text-align: center;">
-              <div style="font-size: 36px; font-weight: bold; color: #667eea; margin-bottom: 5px;">${voucher.voucher_code}</div>
-              <p style="color: #6b7280; margin: 0;">Travel Voucher</p>
-            </div>
-          </div>
-
-          <!-- Service Provider -->
-          ${
-            supplier
-              ? `
-          <div style="background-color: white; padding: 20px; border-left: 4px solid #667eea; margin-top: 20px;">
-            <h3 style="margin-top: 0; color: #1f2937; font-size: 16px;">Service Provider:</h3>
-            <p style="margin: 5px 0; color: #4b5563;">
-              <strong>${supplier.name}</strong>
-              ${supplier.address ? `<br>${supplier.address}` : ""}
-              ${supplier.email ? `<br>Email: ${supplier.email}` : ""}
-              ${supplier.phone ? `<br>Tel: ${supplier.phone}` : ""}
-            </p>
-            ${supplier.notes ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">${supplier.notes}</p>` : ""}
-          </div>
-          `
-              : ""
-          }
-
-          <!-- Client Information -->
-          <div style="background-color: white; padding: 20px; margin-top: 20px;">
-            <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Client Information</h2>
-            <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
-              <p style="margin: 0 0 10px 0;"><strong>Main Client:</strong> ${clientName}</p>
-              ${otherTravelers ? `<p style="margin: 0;"><strong>Other Travelers:</strong> ${otherTravelers}</p>` : ""}
-            </div>
-          </div>
-
-          <!-- Hotel Accommodation -->
-          ${
-            voucher.hotel_name
-              ? `
-          <div style="background-color: white; padding: 20px; margin-top: 20px;">
-            <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Hotel Accommodation</h2>
-            <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
-              <p style="margin: 0;"><strong>Hotel:</strong> ${voucher.hotel_name}</p>
-            </div>
-          </div>
-          `
-              : ""
-          }
-
-          <!-- Services -->
-          <div style="background-color: white; padding: 20px; margin-top: 20px;">
-            <h2 style="color: #1f2937; font-size: 20px; border-left: 4px solid #10b981; padding-left: 12px; margin-top: 0;">Service Overview</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-              <thead>
-                <tr style="background-color: #667eea; color: white;">
-                  <th style="padding: 12px; text-align: left; border: 1px solid #4f46e5;">PAX</th>
-                  <th style="padding: 12px; text-align: left; border: 1px solid #4f46e5;">Qtd.</th>
-                  <th style="padding: 12px; text-align: left; border: 1px solid #4f46e5;">Service</th>
-                  <th style="padding: 12px; text-align: left; border: 1px solid #4f46e5;">Date From</th>
-                  <th style="padding: 12px; text-align: left; border: 1px solid #4f46e5;">Date To</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${servicesHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Dates -->
-          <div style="background-color: white; padding: 20px; margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
-              <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px;">Issue Date</p>
-              <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatDate(voucher.issue_date)}</p>
-            </div>
-            <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px;">
-              <p style="margin: 0 0 5px; color: #6b7280; font-size: 14px;">Expiration Date</p>
-              <p style="margin: 0; font-weight: 600; color: #1f2937;">${voucher.expiration_date ? formatDate(voucher.expiration_date) : "No Expiration"}</p>
-            </div>
-          </div>
-
-          <!-- Company Info -->
-          <div style="background-color: white; padding: 20px; margin-top: 20px; border-top: 2px solid #e5e7eb;">
-            <div style="background: linear-gradient(to right, rgba(102, 126, 234, 0.1), rgba(16, 185, 129, 0.1)); padding: 20px; border-radius: 8px;">
-              <h3 style="margin-top: 0; color: #1f2937;">YARO Travel</h3>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 14px; color: #4b5563;">
-                <div>
-                  <p style="margin: 0 0 5px; font-weight: 600; color: #1f2937;">Address:</p>
-                  <p style="margin: 0;">Bratrancu Veverkowych 680</p>
-                  <p style="margin: 0;">Pardubice, 530 02</p>
-                </div>
-                <div>
-                  <p style="margin: 0 0 5px; font-weight: 600; color: #1f2937;">Contact:</p>
-                  <p style="margin: 0;">Tel.: +420 602 102 108</p>
-                  <p style="margin: 0;">Email: zajezdy@yarotravel.cz</p>
-                </div>
-                <div>
-                  <p style="margin: 0 0 5px; font-weight: 600; color: #1f2937;">Website:</p>
-                  <p style="margin: 0;">www.yarotravel.cz</p>
-                  <p style="margin: 8px 0 0; font-size: 8px;">Available 24/7 for your travel needs</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Terms -->
-          <div style="background-color: white; padding: 20px; margin-top: 20px; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 12px; color: #6b7280; margin: 0;"><strong style="color: #1f2937;">Terms & Conditions:</strong> This voucher is valid for the services listed above. Please present this voucher to service providers. Changes or cancellations must be made 48 hours in advance. For assistance, contact YARO Travel support.</p>
-          </div>
-
-        </body>
-      </html>
-    `;
-
-    // Build recipients list
-    const recipients = [clientEmail];
-    const shouldCcSupplier = emailCcSupplier !== false; // Default to true
-    if (shouldCcSupplier && supplier?.email) {
-      recipients.push(supplier.email);
-    }
-
-    console.log("Sending email to:", recipients);
+    // Get travel dates and hotel
+    const { dateFrom, dateTo } = getTravelDateRange(voucher.services || []);
+    const hotelName = voucher.hotel_name || "N/A";
 
     // Build email subject from template
     const defaultSubjectTemplate = "Travel Voucher {{voucher_code}} - YARO Travel";
     const subjectTemplate = emailSubjectTemplate || defaultSubjectTemplate;
     const subject = subjectTemplate.replace(/\{\{voucher_code\}\}/g, voucher.voucher_code);
 
-    // Prepare email payload
-    const emailPayload: any = {
-      from: "YARO Travel <radek@yarogolf.cz>",
-      to: recipients,
-      subject: subject,
-      html: html,
-    };
-
-    // If pdfPath is provided, download PDF and attach it
+    // Prepare PDF attachment if provided
+    let pdfAttachment: any[] = [];
     if (pdfPath) {
       console.log("Downloading PDF from storage:", pdfPath);
       
@@ -312,12 +192,11 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (pdfError) {
         console.error("Error downloading PDF:", pdfError);
-        // Continue without attachment if PDF download fails
       } else if (pdfData) {
         // Convert blob to base64 in chunks to avoid stack overflow
         const arrayBuffer = await pdfData.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
-        const chunkSize = 8192; // Process 8KB at a time
+        const chunkSize = 8192;
         let binary = "";
         
         for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -329,15 +208,15 @@ const handler = async (req: Request): Promise<Response> => {
         
         const base64 = btoa(binary);
         
-        emailPayload.attachments = [{
+        pdfAttachment = [{
           filename: `voucher-${voucher.voucher_code}.pdf`,
           content: base64,
         }];
         
-        console.log("PDF attachment added, size:", arrayBuffer.byteLength, "bytes");
+        console.log("PDF attachment prepared, size:", arrayBuffer.byteLength, "bytes");
       }
       
-      // Clean up the temporary PDF file after attaching
+      // Clean up the temporary PDF file after preparing attachment
       const { error: deleteError } = await supabase.storage
         .from("voucher-pdfs")
         .remove([pdfPath]);
@@ -349,33 +228,92 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Send email via Resend API
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
+
+    // Send email to CLIENT (Czech)
+    const clientEmailText = buildClientEmailText(clientLastName, dateFrom, dateTo, hotelName);
+    console.log("Sending email to client:", clientEmail);
+
+    const clientEmailPayload: any = {
+      from: "YARO Travel <radek@yarogolf.cz>",
+      to: [clientEmail],
+      subject: subject,
+      text: clientEmailText,
+    };
+
+    if (pdfAttachment.length > 0) {
+      clientEmailPayload.attachments = pdfAttachment;
+    }
+
+    const clientResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(emailPayload),
+      body: JSON.stringify(clientEmailPayload),
     });
 
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.json();
-      throw new Error(`Resend API error: ${JSON.stringify(errorData)}`);
+    if (clientResponse.ok) {
+      const clientResult = await clientResponse.json();
+      console.log("Client email sent successfully:", clientResult);
+      emailResults.push({ recipient: clientEmail, success: true, id: clientResult.id });
+    } else {
+      const clientError = await clientResponse.json();
+      console.error("Client email error:", clientError);
+      emailResults.push({ recipient: clientEmail, success: false, error: JSON.stringify(clientError) });
     }
 
-    const emailResponse = await resendResponse.json();
-    console.log("Email sent successfully:", emailResponse);
+    // Send email to SUPPLIER (English) if enabled
+    const shouldCcSupplier = emailCcSupplier !== false;
+    if (shouldCcSupplier && supplier?.email) {
+      const supplierEmailText = buildSupplierEmailText(dateFrom, dateTo, hotelName);
+      console.log("Sending email to supplier:", supplier.email);
+
+      const supplierEmailPayload: any = {
+        from: "YARO Travel <radek@yarogolf.cz>",
+        to: [supplier.email],
+        subject: subject,
+        text: supplierEmailText,
+      };
+
+      if (pdfAttachment.length > 0) {
+        supplierEmailPayload.attachments = pdfAttachment;
+      }
+
+      const supplierResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(supplierEmailPayload),
+      });
+
+      if (supplierResponse.ok) {
+        const supplierResult = await supplierResponse.json();
+        console.log("Supplier email sent successfully:", supplierResult);
+        emailResults.push({ recipient: supplier.email, success: true, id: supplierResult.id });
+      } else {
+        const supplierError = await supplierResponse.json();
+        console.error("Supplier email error:", supplierError);
+        emailResults.push({ recipient: supplier.email, success: false, error: JSON.stringify(supplierError) });
+      }
+    }
+
+    const allSuccessful = emailResults.every(r => r.success);
+    const recipients = emailResults.map(r => r.recipient);
 
     return new Response(
       JSON.stringify({
-        success: true,
-        message: "Email sent successfully",
+        success: allSuccessful,
+        message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
         recipients: recipients,
-        hasPdfAttachment: !!pdfPath,
+        results: emailResults,
+        hasPdfAttachment: pdfAttachment.length > 0,
       }),
       {
-        status: 200,
+        status: allSuccessful ? 200 : 207,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );
