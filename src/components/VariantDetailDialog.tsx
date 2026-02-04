@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatPriceCurrency } from "@/lib/utils";
+import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
 interface FlightSegment {
   departure: string;
@@ -173,8 +173,8 @@ export const VariantDetailDialog = ({
           .update({
             variant_name: variantName,
             destination_id: destinationId || null,
-            start_date: startDate?.toISOString() || null,
-            end_date: endDate?.toISOString() || null,
+            start_date: formatDateForDB(startDate),
+            end_date: formatDateForDB(endDate),
             total_price: totalPrice,
             notes: notes || null,
           })
@@ -189,8 +189,8 @@ export const VariantDetailDialog = ({
             deal_id: dealId,
             variant_name: variantName,
             destination_id: destinationId || null,
-            start_date: startDate?.toISOString() || null,
-            end_date: endDate?.toISOString() || null,
+            start_date: formatDateForDB(startDate),
+            end_date: formatDateForDB(endDate),
             total_price: totalPrice,
             notes: notes || null,
             is_selected: false,
