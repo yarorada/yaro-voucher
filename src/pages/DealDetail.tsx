@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -117,12 +117,14 @@ const SortableServiceRow = ({
   service, 
   onEdit, 
   onDelete,
+  onDuplicate,
   getServiceIcon,
   getServiceTypeLabel
 }: { 
   service: DealService;
   onEdit: (service: DealService) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (service: DealService) => void;
   getServiceIcon: (type: string) => React.ReactNode;
   getServiceTypeLabel: (type: string) => string;
 }) => {
@@ -187,14 +189,25 @@ const SortableServiceRow = ({
             variant="ghost" 
             className="h-7 w-7 p-0" 
             onClick={() => onEdit(service)}
+            title="Upravit"
           >
             <Edit className="h-3 w-3" />
           </Button>
           <Button 
             size="sm" 
             variant="ghost" 
+            className="h-7 w-7 p-0" 
+            onClick={() => onDuplicate(service)}
+            title="Duplikovat"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
             className="h-7 w-7 p-0 text-destructive hover:text-destructive" 
             onClick={() => onDelete(service.id)}
+            title="Smazat"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -673,6 +686,61 @@ const DealDetail = () => {
       toast({
         title: "Chyba",
         description: "Nepodařilo se smazat službu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDuplicateService = async (service: DealService) => {
+    if (!deal) return;
+
+    try {
+      const { error } = await supabase
+        .from("deal_services")
+        .insert([{
+          deal_id: deal.id,
+          service_type: service.service_type,
+          service_name: service.service_name,
+          description: service.description || null,
+          start_date: service.start_date || null,
+          end_date: service.end_date || null,
+          price: service.price,
+          supplier_id: service.supplier_id || null,
+          person_count: service.person_count || 1,
+          details: service.details as any,
+          order_index: services.length,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Úspěch",
+        description: "Služba byla duplikována",
+      });
+
+      await fetchServices();
+      
+      // Recalculate total price
+      const discount = parseFloat(discountAmount) || 0;
+      const adjustment = parseFloat(adjustmentAmount) || 0;
+      const newTotal = calculateTotalPrice(
+        [...services, { price: service.price, person_count: service.person_count } as any], 
+        discount, 
+        adjustment
+      );
+      
+      // Update in database
+      if (deal?.id) {
+        await supabase
+          .from("deals")
+          .update({ total_price: newTotal })
+          .eq("id", deal.id);
+      }
+    } catch (error) {
+      console.error("Error duplicating service:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se duplikovat službu",
         variant: "destructive",
       });
     }
@@ -1580,6 +1648,7 @@ const DealDetail = () => {
                               service={service}
                               onEdit={openEditService}
                               onDelete={handleDeleteService}
+                              onDuplicate={handleDuplicateService}
                               getServiceIcon={getServiceIcon}
                               getServiceTypeLabel={getServiceTypeLabel}
                             />
