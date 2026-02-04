@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Plane, Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -644,25 +644,14 @@ export const VariantServiceDialog = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="start-date">Datum od</Label>
-              <DateInput
-                value={startDate}
-                onChange={setStartDate}
-                placeholder="DD.MM.RR"
-                autoSetDate={() => variantStartDate ? new Date(variantStartDate) : undefined}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end-date">Datum do</Label>
-              <DateInput
-                value={endDate}
-                onChange={setEndDate}
-                placeholder="DD.MM.RR"
-                autoSetDate={() => startDate || (variantEndDate ? new Date(variantEndDate) : undefined)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>Datum</Label>
+            <DateRangePicker
+              dateFrom={startDate}
+              dateTo={endDate}
+              onDateFromChange={setStartDate}
+              onDateToChange={setEndDate}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
