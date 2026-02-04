@@ -384,6 +384,15 @@ const DealDetail = () => {
     return finalTotal;
   };
 
+  // Calculate total cost price from services
+  const totalCostPrice = services.reduce((sum, service) => {
+    const serviceCost = (service.cost_price || 0) * (service.person_count || 1);
+    return sum + serviceCost;
+  }, 0);
+
+  // Calculate profit
+  const profit = (parseFloat(totalPrice) || 0) - totalCostPrice;
+
   const fetchServices = async () => {
     try {
       const { data, error } = await supabase
@@ -1072,7 +1081,7 @@ const DealDetail = () => {
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-3">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Stav</Label>
                 <Select value={status} onValueChange={(value) => setStatus(value as any)}>
@@ -1106,13 +1115,27 @@ const DealDetail = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Celková cena</Label>
-                <div className="text-xl font-bold text-primary h-9 flex items-center">
+                <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
+                <div className="text-lg font-bold text-primary h-9 flex items-center">
                   {formatPriceCurrency(parseFloat(totalPrice) || 0)}
                 </div>
               </div>
 
-              <div className="space-y-1 col-span-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
+                <div className="text-lg font-semibold text-muted-foreground h-9 flex items-center">
+                  {formatPriceCurrency(totalCostPrice)}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Zisk</Label>
+                <div className={`text-lg font-bold h-9 flex items-center ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatPriceCurrency(profit)}
+                </div>
+              </div>
+
+              <div className="space-y-1 col-span-2 md:col-span-3">
                 <Label className="text-xs text-muted-foreground">Datum</Label>
                 <DateRangePicker
                   dateFrom={startDate}
@@ -1122,7 +1145,7 @@ const DealDetail = () => {
                 />
               </div>
 
-              <div className="space-y-1 col-span-2">
+              <div className="space-y-1 col-span-2 md:col-span-3">
                 <Label className="text-xs text-muted-foreground">Poznámky</Label>
                 <Textarea
                   id="notes"
