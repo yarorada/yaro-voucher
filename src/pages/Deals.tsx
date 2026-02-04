@@ -14,6 +14,7 @@ import { formatPriceCurrency } from "@/lib/utils";
 interface Deal {
   id: string;
   deal_number: string;
+  name: string | null;
   status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled";
   start_date: string | null;
   end_date: string | null;
@@ -45,6 +46,7 @@ const Deals = () => {
         .select(`
           id,
           deal_number,
+          name,
           status,
           start_date,
           end_date,
@@ -159,9 +161,7 @@ const Deals = () => {
                   .filter((dt: any) => dt.clients)
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
-                const title = deal.destinations?.name
-                  ? `${deal.deal_number} - ${deal.destinations.name}`
-                  : deal.deal_number;
+                const displayName = deal.name || deal.destinations?.name || deal.deal_number;
 
                 return (
                   <Card key={deal.id} className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
@@ -169,7 +169,8 @@ const Deals = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <DealStatusBadge status={deal.status} />
-                          <h3 className="text-xl font-bold text-foreground">{title}</h3>
+                          <h3 className="text-xl font-bold text-foreground">{displayName}</h3>
+                          <span className="text-sm text-muted-foreground">{deal.deal_number}</span>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           {mainTravelers && (

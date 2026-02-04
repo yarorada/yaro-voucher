@@ -222,6 +222,7 @@ const SortableServiceRow = ({
 interface Deal {
   id: string;
   deal_number: string;
+  name: string | null;
   status: "inquiry" | "quote" | "confirmed" | "cancelled" | "completed";
   start_date: string | null;
   end_date: string | null;
@@ -297,6 +298,7 @@ const DealDetail = () => {
   const [leadTravelerId, setLeadTravelerId] = useState("");
   const [discountAmount, setDiscountAmount] = useState("");
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [dealName, setDealName] = useState("");
   const [discountNote, setDiscountNote] = useState("");
   const [adjustmentNote, setAdjustmentNote] = useState("");
 
@@ -356,6 +358,7 @@ const DealDetail = () => {
       setAdjustmentAmount(data.adjustment_amount?.toString() || "");
       setDiscountNote(data.discount_note || "");
       setAdjustmentNote(data.adjustment_note || "");
+      setDealName(data.name || "");
       
       const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
       if (leadTraveler) {
@@ -880,6 +883,7 @@ const DealDetail = () => {
       const { error: dealError } = await supabase
         .from("deals")
         .update({
+          name: dealName || null,
           status,
           destination_id: destinationId || null,
           start_date: formatDateForDB(startDate),
@@ -1065,12 +1069,17 @@ const DealDetail = () => {
             </Button>
           </div>
           
-          <div className="flex items-center gap-3">
-            <DealStatusBadge status={deal.status} />
-            <h1 className="text-4xl font-bold text-foreground">{deal.deal_number}</h1>
-            {deal.destination?.name && (
-              <span className="text-2xl text-muted-foreground">- {deal.destination.name}</span>
-            )}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <DealStatusBadge status={deal.status} />
+              <span className="text-lg text-muted-foreground">{deal.deal_number}</span>
+            </div>
+            <Input
+              value={dealName}
+              onChange={(e) => setDealName(e.target.value)}
+              placeholder="Název obchodního případu..."
+              className="text-2xl font-bold h-auto py-1 px-2 border-transparent hover:border-input focus:border-input bg-transparent"
+            />
           </div>
         </header>
 

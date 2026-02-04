@@ -565,6 +565,7 @@ export type Database = {
           discount_note: string | null
           end_date: string | null
           id: string
+          name: string | null
           notes: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["deal_status"]
@@ -584,6 +585,7 @@ export type Database = {
           discount_note?: string | null
           end_date?: string | null
           id?: string
+          name?: string | null
           notes?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
@@ -603,6 +605,7 @@ export type Database = {
           discount_note?: string | null
           end_date?: string | null
           id?: string
+          name?: string | null
           notes?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
