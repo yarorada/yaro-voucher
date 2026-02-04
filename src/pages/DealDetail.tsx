@@ -1081,80 +1081,86 @@ const DealDetail = () => {
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Stav</Label>
-                <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inquiry">Poptávka</SelectItem>
-                    <SelectItem value="quote">Nabídka odeslána</SelectItem>
-                    <SelectItem value="confirmed">Potvrzeno</SelectItem>
-                    <SelectItem value="cancelled">Zrušeno</SelectItem>
-                    <SelectItem value="completed">Dokončeno</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Left side - form fields */}
+              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Stav</Label>
+                  <Select value={status} onValueChange={(value) => setStatus(value as any)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="inquiry">Poptávka</SelectItem>
+                      <SelectItem value="quote">Nabídka odeslána</SelectItem>
+                      <SelectItem value="confirmed">Potvrzeno</SelectItem>
+                      <SelectItem value="cancelled">Zrušeno</SelectItem>
+                      <SelectItem value="completed">Dokončeno</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Hlavní cestující</Label>
-                <ClientCombobox
-                  value={leadTravelerId}
-                  onChange={setLeadTravelerId}
-                />
-              </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Hlavní cestující</Label>
+                  <ClientCombobox
+                    value={leadTravelerId}
+                    onChange={setLeadTravelerId}
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Destinace</Label>
-                <DestinationCombobox
-                  value={destinationId}
-                  onValueChange={setDestinationId}
-                />
-              </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Destinace</Label>
+                  <DestinationCombobox
+                    value={destinationId}
+                    onValueChange={setDestinationId}
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
-                <div className="text-lg font-bold text-primary h-9 flex items-center">
-                  {formatPriceCurrency(parseFloat(totalPrice) || 0)}
+                <div className="space-y-1 col-span-2 md:col-span-3">
+                  <Label className="text-xs text-muted-foreground">Datum</Label>
+                  <DateRangePicker
+                    dateFrom={startDate}
+                    dateTo={endDate}
+                    onDateFromChange={setStartDate}
+                    onDateToChange={setEndDate}
+                  />
+                </div>
+
+                <div className="space-y-1 col-span-2 md:col-span-3">
+                  <Label className="text-xs text-muted-foreground">Poznámky</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Interní poznámky..."
+                    rows={2}
+                    className="resize-none"
+                  />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
-                <div className="text-lg font-semibold text-muted-foreground h-9 flex items-center">
-                  {formatPriceCurrency(totalCostPrice)}
+              {/* Right side - price summary */}
+              <div className="md:w-48 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
+                  <div className="text-lg font-bold text-primary">
+                    {formatPriceCurrency(parseFloat(totalPrice) || 0)}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Zisk</Label>
-                <div className={`text-lg font-bold h-9 flex items-center ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatPriceCurrency(profit)}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
+                  <div className="text-lg font-semibold text-muted-foreground">
+                    {formatPriceCurrency(totalCostPrice)}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1 col-span-2 md:col-span-3">
-                <Label className="text-xs text-muted-foreground">Datum</Label>
-                <DateRangePicker
-                  dateFrom={startDate}
-                  dateTo={endDate}
-                  onDateFromChange={setStartDate}
-                  onDateToChange={setEndDate}
-                />
-              </div>
-
-              <div className="space-y-1 col-span-2 md:col-span-3">
-                <Label className="text-xs text-muted-foreground">Poznámky</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Interní poznámky..."
-                  rows={2}
-                  className="resize-none"
-                />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Zisk</Label>
+                  <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatPriceCurrency(profit)}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
