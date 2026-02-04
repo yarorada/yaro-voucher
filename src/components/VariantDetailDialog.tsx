@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -409,25 +409,14 @@ export const VariantDetailDialog = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start-date">Datum od</Label>
-                  <DateInput
-                    value={startDate}
-                    onChange={setStartDate}
-                    placeholder="DD.MM.RR"
-                    autoSetDate={() => dealStartDate ? new Date(dealStartDate) : undefined}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="end-date">Datum do</Label>
-                  <DateInput
-                    value={endDate}
-                    onChange={setEndDate}
-                    placeholder="DD.MM.RR"
-                    autoSetDate={() => startDate || (dealEndDate ? new Date(dealEndDate) : undefined)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Datum</Label>
+                <DateRangePicker
+                  dateFrom={startDate}
+                  dateTo={endDate}
+                  onDateFromChange={setStartDate}
+                  onDateToChange={setEndDate}
+                />
               </div>
 
               <div>

@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { toast } from "sonner";
 import { ClientCombobox } from "@/components/ClientCombobox";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { formatDateForDB } from "@/lib/utils";
 import {
   Select,
@@ -121,25 +121,14 @@ const CreateDeal = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start_date">Datum od</Label>
-                  <DateInput
-                    value={startDate}
-                    onChange={setStartDate}
-                    placeholder="DD.MM.RR"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="end_date">Datum do</Label>
-                  <DateInput
-                    value={endDate}
-                    onChange={setEndDate}
-                    placeholder="DD.MM.RR"
-                    autoSetDate={() => startDate ? new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Datum</Label>
+                <DateRangePicker
+                  dateFrom={startDate}
+                  dateTo={endDate}
+                  onDateFromChange={setStartDate}
+                  onDateToChange={setEndDate}
+                />
               </div>
 
               <div className="space-y-2">

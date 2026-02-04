@@ -37,6 +37,7 @@ import { AirportCombobox } from "@/components/AirportCombobox";
 import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { DealVariants } from "@/components/DealVariants";
 import { DateInput } from "@/components/ui/date-input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -1097,25 +1098,14 @@ const DealDetail = () => {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Datum od</Label>
-                    <DateInput
-                      value={startDate}
-                      onChange={setStartDate}
-                      placeholder="DD.MM.RR"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">Datum do</Label>
-                    <DateInput
-                      value={endDate}
-                      onChange={setEndDate}
-                      placeholder="DD.MM.RR"
-                      autoSetDate={() => startDate ? new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Datum</Label>
+                  <DateRangePicker
+                    dateFrom={startDate}
+                    dateTo={endDate}
+                    onDateFromChange={setStartDate}
+                    onDateToChange={setEndDate}
+                  />
                 </div>
               </div>
 
@@ -1544,25 +1534,14 @@ const DealDetail = () => {
                       </>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Datum od</Label>
-                        <DateInput
-                          value={serviceForm.start_date}
-                          onChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
-                          placeholder="DD.MM.RR"
-                          autoSetDate={() => startDate}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Datum do</Label>
-                        <DateInput
-                          value={serviceForm.end_date}
-                          onChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
-                          placeholder="DD.MM.RR"
-                          autoSetDate={() => serviceForm.start_date || endDate}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label>Datum</Label>
+                      <DateRangePicker
+                        dateFrom={serviceForm.start_date}
+                        dateTo={serviceForm.end_date}
+                        onDateFromChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
+                        onDateToChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
+                      />
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
