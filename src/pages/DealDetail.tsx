@@ -104,6 +104,7 @@ interface DealService {
   start_date: string | null;
   end_date: string | null;
   price: number | null;
+  cost_price: number | null;
   supplier_id: string | null;
   person_count: number | null;
   details?: FlightDetails | null;
@@ -264,6 +265,7 @@ const DealDetail = () => {
     start_date: undefined as Date | undefined,
     end_date: undefined as Date | undefined,
     price: "",
+    cost_price: "",
     supplier_id: "",
     person_count: "1",
     // Flight-specific fields
@@ -586,6 +588,7 @@ const DealDetail = () => {
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            cost_price: serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -606,6 +609,7 @@ const DealDetail = () => {
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            cost_price: serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -706,6 +710,7 @@ const DealDetail = () => {
           start_date: service.start_date || null,
           end_date: service.end_date || null,
           price: service.price,
+          cost_price: service.cost_price,
           supplier_id: service.supplier_id || null,
           person_count: service.person_count || 1,
           details: service.details as any,
@@ -773,6 +778,7 @@ const DealDetail = () => {
     start_date: startDate,
     end_date: endDate,
     price: "",
+    cost_price: "",
     supplier_id: "",
     person_count: (deal?.deal_travelers?.length || 1).toString(),
     ...getEmptyFlightFields(),
@@ -788,6 +794,7 @@ const DealDetail = () => {
       start_date: undefined,
       end_date: undefined,
       price: "",
+      cost_price: "",
       supplier_id: "",
       person_count: "1",
       ...getEmptyFlightFields(),
@@ -815,6 +822,7 @@ const DealDetail = () => {
       start_date: service.start_date ? new Date(service.start_date) : undefined,
       end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
+      cost_price: service.cost_price?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
       outbound_departure: outboundSegment?.departure || "",
@@ -1543,13 +1551,22 @@ const DealDetail = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label>Cena (Kč)</Label>
+                        <Label>Prodejní cena (Kč)</Label>
                         <Input
                           type="number"
                           value={serviceForm.price}
                           onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nákupní cena (Kč)</Label>
+                        <Input
+                          type="number"
+                          value={serviceForm.cost_price}
+                          onChange={(e) => setServiceForm({ ...serviceForm, cost_price: e.target.value })}
                           placeholder="0"
                         />
                       </div>
