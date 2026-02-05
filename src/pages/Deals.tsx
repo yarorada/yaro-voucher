@@ -170,7 +170,6 @@ const Deals = () => {
                         <div className="flex items-center gap-3 mb-2">
                           <DealStatusBadge status={deal.status} />
                           <h3 className="text-xl font-bold text-foreground">{displayName}</h3>
-                          <span className="text-sm text-muted-foreground">{deal.deal_number}</span>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           {mainTravelers && (
