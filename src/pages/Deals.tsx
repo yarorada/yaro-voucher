@@ -31,7 +31,7 @@ interface Deal {
   id: string;
   deal_number: string;
   name: string | null;
-  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled";
+  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled" | "dispatched";
   start_date: string | null;
   end_date: string | null;
   total_price: number | null;
