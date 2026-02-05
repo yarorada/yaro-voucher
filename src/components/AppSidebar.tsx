@@ -30,9 +30,9 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const menuItems = [
   { title: "Domů", url: "/", icon: Home },
-  { title: "Vouchery", url: "/vouchers", icon: FileText },
   { title: "Obchodní případy", url: "/deals", icon: Briefcase },
   { title: "Smlouvy", url: "/contracts", icon: FileSignature },
+  { title: "Vouchery", url: "/vouchers", icon: FileText },
   { title: "Statistiky", url: "/statistics", icon: BarChart3 },
   { title: "Klienti", url: "/clients", icon: Users },
   { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
