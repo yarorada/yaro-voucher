@@ -296,7 +296,9 @@ export type Database = {
       }
       deal_services: {
         Row: {
+          cost_currency: string | null
           cost_price: number | null
+          cost_price_original: number | null
           created_at: string
           deal_id: string
           description: string | null
@@ -313,7 +315,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cost_currency?: string | null
           cost_price?: number | null
+          cost_price_original?: number | null
           created_at?: string
           deal_id: string
           description?: string | null
@@ -330,7 +334,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cost_currency?: string | null
           cost_price?: number | null
+          cost_price_original?: number | null
           created_at?: string
           deal_id?: string
           description?: string | null
@@ -418,7 +424,9 @@ export type Database = {
       }
       deal_variant_services: {
         Row: {
+          cost_currency: string | null
           cost_price: number | null
+          cost_price_original: number | null
           created_at: string
           description: string | null
           details: Json | null
@@ -435,7 +443,9 @@ export type Database = {
           variant_id: string
         }
         Insert: {
+          cost_currency?: string | null
           cost_price?: number | null
+          cost_price_original?: number | null
           created_at?: string
           description?: string | null
           details?: Json | null
@@ -452,7 +462,9 @@ export type Database = {
           variant_id: string
         }
         Update: {
+          cost_currency?: string | null
           cost_price?: number | null
+          cost_price_original?: number | null
           created_at?: string
           description?: string | null
           details?: Json | null
