@@ -388,9 +388,9 @@ const VouchersList = () => {
                     }`}
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex-1 cursor-pointer" onClick={() => navigate(`/voucher/${voucher.id}`)}>
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-sm font-medium text-muted-foreground min-w-[24px]">
+                      <div className="flex-1 cursor-pointer min-w-0" onClick={() => navigate(`/voucher/${voucher.id}`)}>
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                          <span className="text-sm font-medium text-muted-foreground">
                             {voucher.voucher_number}.
                           </span>
                           <Badge 
@@ -403,7 +403,7 @@ const VouchersList = () => {
                           >
                             {voucher.voucher_code}
                           </Badge>
-                          <h3 className={`text-xl font-bold ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
+                          <h3 className={`text-lg md:text-xl font-bold truncate ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
                             {title}
                           </h3>
                           {voucher.sent_at && (
@@ -427,7 +427,7 @@ const VouchersList = () => {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
                           <span>
                             <span className="font-semibold text-foreground">Služby:</span> {voucher.services.length}
                           </span>

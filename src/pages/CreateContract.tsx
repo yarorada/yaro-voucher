@@ -139,11 +139,11 @@ const CreateContract = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate("/contracts")}>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/contracts")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-heading-1 text-foreground">
+            <h1 className="text-2xl md:text-heading-1 text-foreground">
               Nová cestovní smlouva
             </h1>
             <p className="text-body text-muted-foreground mt-1">
@@ -209,15 +209,16 @@ const CreateContract = () => {
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex justify-end gap-4">
+          <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate("/contracts")}
+              className="w-full sm:w-auto"
             >
               Zrušit
             </Button>
-            <Button type="submit" disabled={loading} className="gap-2">
+            <Button type="submit" disabled={loading} className="gap-2 w-full sm:w-auto">
               <Save className="h-4 w-4" />
               {loading ? "Ukládání..." : "Vytvořit smlouvu"}
             </Button>

@@ -82,7 +82,7 @@ const CreateDeal = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <h1 className="text-heading-1 text-foreground">
+          <h1 className="text-2xl md:text-heading-1 text-foreground">
             Nový obchodní případ
           </h1>
           <p className="text-body text-muted-foreground mt-2">
@@ -155,15 +155,16 @@ const CreateDeal = () => {
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex justify-end gap-4">
+          <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate("/deals")}
+              className="w-full sm:w-auto"
             >
               Zrušit
             </Button>
-            <Button type="submit" disabled={loading} className="gap-2">
+            <Button type="submit" disabled={loading} className="gap-2 w-full sm:w-auto">
               <Save className="h-4 w-4" />
               {loading ? "Ukládání..." : "Vytvořit případ"}
             </Button>

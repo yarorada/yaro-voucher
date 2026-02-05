@@ -106,16 +106,17 @@ const Contracts = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto py-8 px-4">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-heading-1 text-foreground">Cestovní smlouvy</h1>
+            <h1 className="text-2xl md:text-heading-1 text-foreground">Cestovní smlouvy</h1>
             <p className="text-body text-muted-foreground mt-1">Správa cestovních smluv podle §2521 OZ</p>
           </div>
-          <Button onClick={() => navigate("/contracts/new")}>
+          <Button onClick={() => navigate("/contracts/new")} className="shrink-0">
             <Plus className="h-4 w-4 mr-2" />
-            Nová smlouva
+            <span className="hidden sm:inline">Nová smlouva</span>
+            <span className="sm:hidden">Nová</span>
           </Button>
         </div>
 
@@ -140,22 +141,22 @@ const Contracts = () => {
             {filteredContracts.map((contract) => (
               <Card
                 key={contract.id}
-                className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                className="p-4 md:p-6 hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => navigate(`/contracts/${contract.id}`)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="p-3 rounded-lg bg-primary/10">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 md:gap-4 flex-1">
+                    <div className="p-2 md:p-3 rounded-lg bg-primary/10 shrink-0">
                       <FileText className="h-6 w-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-foreground">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <h3 className="text-lg md:text-xl font-bold text-foreground">
                           {contract.contract_number}
                         </h3>
                         {getStatusBadge(contract.status)}
                       </div>
-                      <p className="text-muted-foreground mb-2">
+                      <p className="text-sm md:text-base text-muted-foreground mb-2">
                         Klient: {(() => {
                           const client = contract.client as any;
                           if (!client) return '-';
@@ -165,7 +166,7 @@ const Contracts = () => {
                       <p className="text-sm text-muted-foreground">
                         Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
                       </p>
-                      <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap gap-2 md:gap-4 mt-3 text-xs md:text-sm text-muted-foreground">
                         <span>Vytvořeno: {format(new Date(contract.created_at), "d. M. yyyy", { locale: cs })}</span>
                         {contract.signed_at && (
                           <span>Podepsáno: {format(new Date(contract.signed_at), "d. M. yyyy", { locale: cs })}</span>
@@ -177,7 +178,7 @@ const Contracts = () => {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => handleDeleteClick(e, contract.id, contract.contract_number)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end sm:self-start shrink-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
