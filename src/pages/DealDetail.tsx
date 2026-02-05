@@ -256,6 +256,9 @@ const DealDetail = () => {
   const [travelerDialogOpen, setTravelerDialogOpen] = useState(false);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [newTravelerId, setNewTravelerId] = useState("");
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
+  const [duplicating, setDuplicating] = useState(false);
   
   // Service form state
   const [serviceForm, setServiceForm] = useState({
@@ -1032,6 +1035,95 @@ const DealDetail = () => {
     }
   };
 
+  const handleDuplicateDeal = async () => {
+    if (!deal) return;
+    
+    const personCount = parseInt(duplicatePersonCount) || 1;
+    setDuplicating(true);
+    
+    try {
+      // Generate new deal number
+      const { data: newDealNumber, error: dealNumberError } = await supabase
+        .rpc("generate_deal_number");
+      
+      if (dealNumberError) throw dealNumberError;
+      
+      // Create new deal
+      const { data: newDeal, error: dealError } = await supabase
+        .from("deals")
+        .insert({
+          deal_number: newDealNumber,
+          name: deal.name ? `${deal.name} (kopie)` : null,
+          status: "inquiry",
+          destination_id: deal.destination_id,
+          start_date: deal.start_date,
+          end_date: deal.end_date,
+          notes: deal.notes,
+          discount_amount: deal.discount_amount,
+          adjustment_amount: deal.adjustment_amount,
+          discount_note: deal.discount_note,
+          adjustment_note: deal.adjustment_note,
+        })
+        .select()
+        .single();
+      
+      if (dealError) throw dealError;
+      
+      // Copy services with updated person count
+      if (services.length > 0) {
+        const newServices = services.map((service, index) => ({
+          deal_id: newDeal.id,
+          service_type: service.service_type,
+          service_name: service.service_name,
+          description: service.description,
+          start_date: service.start_date,
+          end_date: service.end_date,
+          price: service.price,
+          cost_price: service.cost_price,
+          supplier_id: service.supplier_id,
+          person_count: personCount,
+          details: service.details as any,
+          order_index: index,
+        }));
+        
+        const { error: servicesError } = await supabase
+          .from("deal_services")
+          .insert(newServices);
+        
+        if (servicesError) throw servicesError;
+      }
+      
+      // Calculate and update total price
+      const servicesTotal = services.reduce((sum, service) => {
+        const servicePrice = (service.price || 0) * personCount;
+        return sum + servicePrice;
+      }, 0);
+      const finalTotal = servicesTotal - (deal.discount_amount || 0) + (deal.adjustment_amount || 0);
+      
+      await supabase
+        .from("deals")
+        .update({ total_price: finalTotal })
+        .eq("id", newDeal.id);
+      
+      toast({
+        title: "Úspěch",
+        description: "Obchodní případ byl zduplikován",
+      });
+      
+      setDuplicateDialogOpen(false);
+      navigate(`/deals/${newDeal.id}`);
+    } catch (error) {
+      console.error("Error duplicating deal:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zduplikovat obchodní případ",
+        variant: "destructive",
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
@@ -1057,6 +1149,46 @@ const DealDetail = () => {
               <Save className="h-4 w-4" />
               <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
             </Button>
+            <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 md:size-default"
+                  onClick={() => setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString())}
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="hidden sm:inline">Duplikovat</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background">
+                <DialogHeader>
+                  <DialogTitle>Duplikovat obchodní případ</DialogTitle>
+                  <DialogDescription>
+                    Zadejte počet osob pro nový obchodní případ. Počet osob bude nastaven u všech služeb.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Počet osob</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={duplicatePersonCount}
+                      onChange={(e) => setDuplicatePersonCount(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)}>
+                      Zrušit
+                    </Button>
+                    <Button onClick={handleDuplicateDeal} disabled={duplicating}>
+                      {duplicating ? "Duplikuji..." : "Duplikovat"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm" onClick={handleCreateContract} className="gap-2 md:size-default">
               <FileSignature className="h-4 w-4" />
               <span className="hidden sm:inline">Vytvořit smlouvu</span>
