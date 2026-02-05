@@ -1,0 +1,317 @@
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatsSummaryCards } from "@/components/statistics/StatsSummaryCards";
+import { StatsTimeChart } from "@/components/statistics/StatsTimeChart";
+import { StatsCountryChart } from "@/components/statistics/StatsCountryChart";
+import { StatsPeriodTable } from "@/components/statistics/StatsPeriodTable";
+import { StatsCountryTable } from "@/components/statistics/StatsCountryTable";
+import { Loader2 } from "lucide-react";
+
+type PeriodType = "year" | "quarter" | "month";
+type StatusFilter = "all" | "confirmed" | "completed";
+
+interface DealWithDetails {
+  id: string;
+  deal_number: string;
+  status: string;
+  start_date: string | null;
+  total_price: number | null;
+  destination_id: string | null;
+  destinations?: {
+    id: string;
+    name: string;
+    country_id: string;
+    countries?: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
+interface DealProfitability {
+  deal_id: string;
+  revenue: number | null;
+  total_costs: number | null;
+  profit: number | null;
+  start_date: string | null;
+  status: string | null;
+}
+
+export interface StatsData {
+  year: number;
+  quarter?: number;
+  month?: number;
+  countryName: string | null;
+  countryId: string | null;
+  dealCount: number;
+  revenue: number;
+  costs: number;
+  profit: number;
+}
+
+const Statistics = () => {
+  const [loading, setLoading] = useState(true);
+  const [deals, setDeals] = useState<DealWithDetails[]>([]);
+  const [profitability, setProfitability] = useState<DealProfitability[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [periodType, setPeriodType] = useState<PeriodType>("quarter");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch deals with destination and country info
+      const { data: dealsData, error: dealsError } = await supabase
+        .from("deals")
+        .select(`
+          id,
+          deal_number,
+          status,
+          start_date,
+          total_price,
+          destination_id,
+          destinations (
+            id,
+            name,
+            country_id,
+            countries (
+              id,
+              name
+            )
+          )
+        `)
+        .not("start_date", "is", null);
+
+      if (dealsError) throw dealsError;
+
+      // Fetch profitability data
+      const { data: profitData, error: profitError } = await supabase
+        .from("deal_profitability")
+        .select("*");
+
+      if (profitError) throw profitError;
+
+      setDeals((dealsData as unknown as DealWithDetails[]) || []);
+      setProfitability(profitData || []);
+
+      // Extract available years
+      const years = new Set<number>();
+      dealsData?.forEach((deal) => {
+        if (deal.start_date) {
+          years.add(new Date(deal.start_date).getFullYear());
+        }
+      });
+      const sortedYears = Array.from(years).sort((a, b) => b - a);
+      setAvailableYears(sortedYears);
+      
+      // Set current year as default if available
+      const currentYear = new Date().getFullYear();
+      if (sortedYears.includes(currentYear)) {
+        setSelectedYear(currentYear.toString());
+      } else if (sortedYears.length > 0) {
+        setSelectedYear(sortedYears[0].toString());
+      }
+    } catch (error) {
+      console.error("Error fetching statistics data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = useMemo(() => {
+    let filtered = deals.filter((deal) => {
+      // Filter by status
+      if (statusFilter === "confirmed" && deal.status !== "confirmed") return false;
+      if (statusFilter === "completed" && deal.status !== "completed") return false;
+      if (statusFilter === "all" && deal.status === "cancelled") return false;
+
+      // Filter by year
+      if (selectedYear !== "all" && deal.start_date) {
+        const dealYear = new Date(deal.start_date).getFullYear();
+        if (dealYear !== parseInt(selectedYear)) return false;
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }, [deals, selectedYear, statusFilter]);
+
+  const statsData = useMemo((): StatsData[] => {
+    const groupedData = new Map<string, StatsData>();
+
+    filteredData.forEach((deal) => {
+      if (!deal.start_date) return;
+
+      const date = new Date(deal.start_date);
+      const year = date.getFullYear();
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      const month = date.getMonth() + 1;
+      const countryName = deal.destinations?.countries?.name || null;
+      const countryId = deal.destinations?.countries?.id || null;
+
+      // Find profitability data for this deal
+      const profitData = profitability.find((p) => p.deal_id === deal.id);
+      const revenue = profitData?.revenue || deal.total_price || 0;
+      const costs = profitData?.total_costs || 0;
+      const profit = profitData?.profit || revenue - costs;
+
+      let key: string;
+      let entry: Partial<StatsData>;
+
+      if (periodType === "year") {
+        key = `${year}-${countryId || "unknown"}`;
+        entry = { year, countryName, countryId };
+      } else if (periodType === "quarter") {
+        key = `${year}-Q${quarter}-${countryId || "unknown"}`;
+        entry = { year, quarter, countryName, countryId };
+      } else {
+        key = `${year}-M${month}-${countryId || "unknown"}`;
+        entry = { year, month, countryName, countryId };
+      }
+
+      if (groupedData.has(key)) {
+        const existing = groupedData.get(key)!;
+        existing.dealCount += 1;
+        existing.revenue += revenue;
+        existing.costs += costs;
+        existing.profit += profit;
+      } else {
+        groupedData.set(key, {
+          ...entry,
+          dealCount: 1,
+          revenue,
+          costs,
+          profit,
+        } as StatsData);
+      }
+    });
+
+    return Array.from(groupedData.values());
+  }, [filteredData, profitability, periodType]);
+
+  const summaryStats = useMemo(() => {
+    const totalRevenue = statsData.reduce((sum, d) => sum + d.revenue, 0);
+    const totalCosts = statsData.reduce((sum, d) => sum + d.costs, 0);
+    const totalProfit = statsData.reduce((sum, d) => sum + d.profit, 0);
+    const dealCount = statsData.reduce((sum, d) => sum + d.dealCount, 0);
+
+    // Calculate YoY comparison
+    const prevYear = selectedYear !== "all" ? parseInt(selectedYear) - 1 : null;
+    let prevYearStats = { revenue: 0, costs: 0, profit: 0 };
+
+    if (prevYear) {
+      const prevYearDeals = deals.filter((deal) => {
+        if (!deal.start_date) return false;
+        const dealYear = new Date(deal.start_date).getFullYear();
+        if (dealYear !== prevYear) return false;
+        if (statusFilter === "confirmed" && deal.status !== "confirmed") return false;
+        if (statusFilter === "completed" && deal.status !== "completed") return false;
+        if (statusFilter === "all" && deal.status === "cancelled") return false;
+        return true;
+      });
+
+      prevYearDeals.forEach((deal) => {
+        const profitData = profitability.find((p) => p.deal_id === deal.id);
+        prevYearStats.revenue += profitData?.revenue || deal.total_price || 0;
+        prevYearStats.costs += profitData?.total_costs || 0;
+        prevYearStats.profit += profitData?.profit || (profitData?.revenue || deal.total_price || 0) - (profitData?.total_costs || 0);
+      });
+    }
+
+    const revenueChange = prevYearStats.revenue > 0 
+      ? ((totalRevenue - prevYearStats.revenue) / prevYearStats.revenue) * 100 
+      : null;
+    const costsChange = prevYearStats.costs > 0 
+      ? ((totalCosts - prevYearStats.costs) / prevYearStats.costs) * 100 
+      : null;
+    const profitChange = prevYearStats.profit > 0 
+      ? ((totalProfit - prevYearStats.profit) / prevYearStats.profit) * 100 
+      : null;
+
+    return {
+      totalRevenue,
+      totalCosts,
+      totalProfit,
+      dealCount,
+      revenueChange,
+      costsChange,
+      profitChange,
+    };
+  }, [statsData, deals, profitability, selectedYear, statusFilter]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold">Statistiky</h1>
+        
+        <div className="flex flex-wrap gap-3">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Rok" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny roky</SelectItem>
+              {availableYears.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Období" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="year">Roky</SelectItem>
+              <SelectItem value="quarter">Čtvrtletí</SelectItem>
+              <SelectItem value="month">Měsíce</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Stav" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny (bez zruš.)</SelectItem>
+              <SelectItem value="confirmed">Potvrzené</SelectItem>
+              <SelectItem value="completed">Dokončené</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <StatsSummaryCards stats={summaryStats} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <StatsTimeChart data={statsData} periodType={periodType} />
+        <StatsCountryChart data={statsData} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <StatsPeriodTable data={statsData} periodType={periodType} />
+        <StatsCountryTable data={statsData} />
+      </div>
+    </div>
+  );
+};
+
+export default Statistics;

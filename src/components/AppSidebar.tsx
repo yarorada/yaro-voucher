@@ -7,6 +7,7 @@ import {
   Briefcase, 
   MapPin, 
   FileSignature,
+  BarChart3,
   LogOut
 } from "lucide-react";
 import {
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Vouchery", url: "/vouchers", icon: FileText },
   { title: "Obchodní případy", url: "/deals", icon: Briefcase },
   { title: "Smlouvy", url: "/contracts", icon: FileSignature },
+  { title: "Statistiky", url: "/statistics", icon: BarChart3 },
   { title: "Klienti", url: "/clients", icon: Users },
   { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
   { title: "Destinace", url: "/destinations", icon: MapPin },
