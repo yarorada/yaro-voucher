@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2 } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2 } from "lucide-react";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
@@ -288,6 +288,138 @@ const DealDetail = () => {
     return_flight_number: "",
     is_one_way: false,
   });
+  
+  // Undo/Redo history for service form
+  const [serviceFormHistory, setServiceFormHistory] = useState<typeof serviceForm[]>([]);
+  const [serviceFormFuture, setServiceFormFuture] = useState<typeof serviceForm[]>([]);
+  const [lastDraftSave, setLastDraftSave] = useState<Date | null>(null);
+  const draftSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const DRAFT_KEY = `deal_service_draft_${id}`;
+  
+  // Auto-save draft to localStorage
+  const saveDraft = useCallback((form: typeof serviceForm) => {
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    draftSaveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: form, timestamp: Date.now() }));
+        setLastDraftSave(new Date());
+      } catch (e) { console.error("Draft save error:", e); }
+    }, 500);
+  }, [DRAFT_KEY]);
+  
+  // Load draft on dialog open
+  const loadDraft = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(DRAFT_KEY);
+      if (stored) {
+        const { data, timestamp } = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        if (data.start_date) data.start_date = new Date(data.start_date);
+        if (data.end_date) data.end_date = new Date(data.end_date);
+        setServiceForm(data);
+        setLastDraftSave(new Date(timestamp));
+        return true;
+      }
+    } catch (e) { console.error("Draft load error:", e); }
+    return false;
+  }, [DRAFT_KEY]);
+  
+  // Clear draft
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    setLastDraftSave(null);
+  }, [DRAFT_KEY]);
+  
+  // Update service form with history tracking
+  const updateServiceForm = useCallback((newForm: typeof serviceForm | ((prev: typeof serviceForm) => typeof serviceForm)) => {
+    setServiceForm(prev => {
+      const updated = typeof newForm === 'function' ? newForm(prev) : newForm;
+      // Add to history only if different
+      if (JSON.stringify(updated) !== JSON.stringify(prev)) {
+        setServiceFormHistory(h => [...h.slice(-49), prev]);
+        setServiceFormFuture([]);
+        saveDraft(updated);
+      }
+      return updated;
+    });
+  }, [saveDraft]);
+  
+  // Undo service form
+  const undoServiceForm = useCallback(() => {
+    if (serviceFormHistory.length === 0) return;
+    const prev = serviceFormHistory[serviceFormHistory.length - 1];
+    setServiceFormHistory(h => h.slice(0, -1));
+    setServiceFormFuture(f => [serviceForm, ...f]);
+    setServiceForm(prev);
+    saveDraft(prev);
+  }, [serviceFormHistory, serviceForm, saveDraft]);
+  
+  // Redo service form
+  const redoServiceForm = useCallback(() => {
+    if (serviceFormFuture.length === 0) return;
+    const next = serviceFormFuture[0];
+    setServiceFormFuture(f => f.slice(1));
+    setServiceFormHistory(h => [...h, serviceForm]);
+    setServiceForm(next);
+    saveDraft(next);
+  }, [serviceFormFuture, serviceForm, saveDraft]);
+  
+  // Track form changes for undo history (debounced)
+  const previousFormRef = useRef<string>('');
+  const historyTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (!serviceDialogOpen) return;
+    
+    const currentFormStr = JSON.stringify(serviceForm);
+    // Skip if form is empty/initial
+    if (!serviceForm.service_name && serviceForm.service_type === 'hotel' && !serviceForm.price) {
+      previousFormRef.current = currentFormStr;
+      return;
+    }
+    
+    if (previousFormRef.current && previousFormRef.current !== currentFormStr) {
+      // Debounce history capture
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+      historyTimer.current = setTimeout(() => {
+        try {
+          const prevForm = JSON.parse(previousFormRef.current);
+          setServiceFormHistory(h => [...h.slice(-49), prevForm]);
+          setServiceFormFuture([]);
+        } catch (e) {}
+        previousFormRef.current = currentFormStr;
+      }, 800);
+    } else if (!previousFormRef.current) {
+      previousFormRef.current = currentFormStr;
+    }
+  }, [serviceForm, serviceDialogOpen]);
+  
+  // Keyboard shortcuts for undo/redo in dialog
+  useEffect(() => {
+    if (!serviceDialogOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redoServiceForm();
+        else undoServiceForm();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redoServiceForm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [serviceDialogOpen, undoServiceForm, redoServiceForm]);
+  
+  // Auto-save draft when dialog is open and form changes
+  useEffect(() => {
+    if (!serviceDialogOpen) return;
+    // Only save if there's meaningful data
+    if (serviceForm.service_name || serviceForm.price || serviceForm.outbound_departure) {
+      saveDraft(serviceForm);
+    }
+  }, [serviceForm, serviceDialogOpen, saveDraft]);
   
   // Currency conversion state
   const [convertingCurrency, setConvertingCurrency] = useState(false);
@@ -859,6 +991,10 @@ const DealDetail = () => {
       ...getEmptyFlightFields(),
     });
     setOriginalFlightDetails(null);
+    // Clear draft and history
+    clearDraft();
+    setServiceFormHistory([]);
+    setServiceFormFuture([]);
   };
 
   const openEditService = (service: DealService) => {
@@ -1567,14 +1703,52 @@ const DealDetail = () => {
               </DropdownMenu>
               <Dialog open={serviceDialogOpen} onOpenChange={(open) => {
                 setServiceDialogOpen(open);
-                if (!open) resetServiceForm();
+                if (!open) {
+                  resetServiceForm();
+                  setServiceFormHistory([]);
+                  setServiceFormFuture([]);
+                }
               }}>
                 <DialogContent className="bg-background max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>{serviceForm.id ? "Upravit službu" : "Přidat službu"}</DialogTitle>
-                    <DialogDescription>
-                      Zadejte informace o službě
-                    </DialogDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <DialogTitle>{serviceForm.id ? "Upravit službu" : "Přidat službu"}</DialogTitle>
+                        <DialogDescription>
+                          Zadejte informace o službě
+                        </DialogDescription>
+                      </div>
+                      <div className="flex items-center gap-1 mr-6">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={undoServiceForm}
+                          disabled={serviceFormHistory.length === 0}
+                          title="Zpět (Ctrl+Z)"
+                          className="h-8 w-8"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={redoServiceForm}
+                          disabled={serviceFormFuture.length === 0}
+                          title="Vpřed (Ctrl+Shift+Z)"
+                          className="h-8 w-8"
+                        >
+                          <Redo2 className="h-4 w-4" />
+                        </Button>
+                        {lastDraftSave && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            <Save className="h-3 w-3 inline mr-1" />
+                            uloženo
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
