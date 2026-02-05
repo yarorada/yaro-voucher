@@ -1832,7 +1832,7 @@ const DealDetail = () => {
                               cost_price: serviceForm.cost_currency === "CZK" ? e.target.value : ""
                             })}
                             placeholder="0"
-                            className="flex-1"
+                            className="flex-1 min-w-[100px]"
                           />
                           <CurrencySelect
                             value={serviceForm.cost_currency}
@@ -1842,7 +1842,7 @@ const DealDetail = () => {
                               // Clear converted price when currency changes
                               cost_price: value === "CZK" ? serviceForm.cost_price_original : ""
                             })}
-                            className="w-28"
+                            className="w-20 shrink-0"
                           />
                         </div>
                         {serviceForm.cost_currency !== "CZK" && serviceForm.cost_price && (
