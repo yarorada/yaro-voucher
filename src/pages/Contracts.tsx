@@ -36,7 +36,7 @@ const Contracts = () => {
         .select(`
           *,
           client:clients(first_name, last_name, email),
-          deal:deals(deal_number)
+          deal:deals(deal_number, name, destination:destinations(name))
         `)
         .order("created_at", { ascending: false });
 
@@ -163,7 +163,7 @@ const Contracts = () => {
                         })()}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Obchodní případ: {contract.deal?.deal_number}
+                        Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
                       </p>
                       <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
                         <span>Vytvořeno: {format(new Date(contract.created_at), "d. M. yyyy", { locale: cs })}</span>
