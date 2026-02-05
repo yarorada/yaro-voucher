@@ -1,17 +1,40 @@
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { TasksCard } from "@/components/dashboard/TasksCard";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { RecentDealsCard } from "@/components/dashboard/RecentDealsCard";
+import { RecentVouchersCard } from "@/components/dashboard/RecentVouchersCard";
+import { RecentContractsCard } from "@/components/dashboard/RecentContractsCard";
 
 const Index = () => {
   return (
-    <div className="min-h-full bg-[var(--gradient-subtle)] flex items-center justify-center">
-      <div className="container max-w-4xl mx-auto py-8 md:py-12 px-4">
-        <div className="text-center">
-          <img src={yaroLogo} alt="YARO Travel" className="h-16 md:h-24 mx-auto mb-6 md:mb-8 logo-dark-mode" />
-          <h1 className="text-2xl md:text-heading-1 text-foreground mb-4 md:mb-6">
+    <div className="min-h-full bg-[var(--gradient-subtle)]">
+      <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
+        {/* Header */}
+        <div className="text-center pb-2">
+          <img 
+            src={yaroLogo} 
+            alt="YARO Travel" 
+            className="h-12 md:h-16 mx-auto mb-4 logo-dark-mode" 
+          />
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground">
             Vítejte v systému YARO
           </h1>
-          <p className="text-base md:text-title text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
-            Komplexní systém pro správu obchodních případů, voucherů a klientů cestovní kanceláře YARO Travel
-          </p>
+        </div>
+
+        {/* Main dashboard grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Tasks card - spans full width on mobile, left column on desktop */}
+          <TasksCard />
+          
+          {/* Stats card */}
+          <StatsCard />
+        </div>
+
+        {/* Recent items grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <RecentDealsCard />
+          <RecentVouchersCard />
+          <RecentContractsCard />
         </div>
       </div>
     </div>
