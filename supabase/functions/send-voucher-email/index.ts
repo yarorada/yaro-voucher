@@ -238,6 +238,7 @@ const handler = async (req: Request): Promise<Response> => {
     const clientEmailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
       to: [clientEmail],
+      bcc: ["zajezdy@yarotravel.cz"],
       subject: subject,
       text: clientEmailText,
     };
@@ -274,6 +275,7 @@ const handler = async (req: Request): Promise<Response> => {
       const supplierEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
         to: [supplier.email],
+        bcc: ["zajezdy@yarotravel.cz"],
         subject: subject,
         text: supplierEmailText,
       };
