@@ -116,7 +116,7 @@ const ContractDetail = () => {
             {getStatusBadge(contract.status)}
           </div>
           <p className="text-muted-foreground">
-            Obchodní případ: {contract.deal?.deal_number}
+            Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
           </p>
         </div>
         <div className="flex gap-2 mb-8">
