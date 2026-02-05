@@ -682,26 +682,42 @@ const DealDetail = () => {
     let costPriceCzk: number | null = null;
     const costPriceOriginal = serviceForm.cost_price_original ? parseFloat(serviceForm.cost_price_original) : null;
     
+    // Check if we're editing and currency/amount hasn't changed - skip recalculation
+    const existingService = services.find(s => s.id === serviceForm.id);
+    const existingCostPrice = existingService?.cost_price;
+    const existingCurrency = (existingService as any)?.cost_currency;
+    const existingOriginal = (existingService as any)?.cost_price_original;
+    
+    const currencyUnchanged = serviceForm.id && 
+      existingCurrency === serviceForm.cost_currency &&
+      existingOriginal === costPriceOriginal;
+    
     if (costPriceOriginal !== null && serviceForm.cost_currency !== "CZK") {
-      setConvertingCurrency(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
-          body: { currency: serviceForm.cost_currency, amount: costPriceOriginal },
-        });
-        
-        if (error) throw error;
-        costPriceCzk = data.convertedAmount;
-      } catch (error) {
-        console.error("Error converting currency:", error);
-        toast({
-          title: "Chyba",
-          description: "Nepodařilo se přepočítat měnu. Zkuste to znovu.",
-          variant: "destructive",
-        });
+      if (currencyUnchanged && existingCostPrice !== null) {
+        // Currency and original amount unchanged - keep existing converted price
+        costPriceCzk = existingCostPrice;
+      } else {
+        // Need to convert - currency or amount changed
+        setConvertingCurrency(true);
+        try {
+          const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
+            body: { currency: serviceForm.cost_currency, amount: costPriceOriginal },
+          });
+          
+          if (error) throw error;
+          costPriceCzk = data.convertedAmount;
+        } catch (error) {
+          console.error("Error converting currency:", error);
+          toast({
+            title: "Chyba",
+            description: "Nepodařilo se přepočítat měnu. Zkuste to znovu.",
+            variant: "destructive",
+          });
+          setConvertingCurrency(false);
+          return;
+        }
         setConvertingCurrency(false);
-        return;
       }
-      setConvertingCurrency(false);
     } else {
       costPriceCzk = costPriceOriginal;
     }
