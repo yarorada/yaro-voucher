@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2 } from "lucide-react";
+import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
   closestCenter,
@@ -270,6 +271,8 @@ const DealDetail = () => {
     end_date: undefined as Date | undefined,
     price: "",
     cost_price: "",
+    cost_currency: "CZK",
+    cost_price_original: "",
     supplier_id: "",
     person_count: "1",
     // Flight-specific fields
@@ -285,6 +288,9 @@ const DealDetail = () => {
     return_flight_number: "",
     is_one_way: false,
   });
+  
+  // Currency conversion state
+  const [convertingCurrency, setConvertingCurrency] = useState(false);
   
   // Store original flight details to preserve all segments
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
@@ -540,6 +546,34 @@ const DealDetail = () => {
   const handleSaveService = async () => {
     if (!deal) return;
     
+    // Convert currency if needed
+    let costPriceCzk: number | null = null;
+    const costPriceOriginal = serviceForm.cost_price_original ? parseFloat(serviceForm.cost_price_original) : null;
+    
+    if (costPriceOriginal !== null && serviceForm.cost_currency !== "CZK") {
+      setConvertingCurrency(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
+          body: { currency: serviceForm.cost_currency, amount: costPriceOriginal },
+        });
+        
+        if (error) throw error;
+        costPriceCzk = data.convertedAmount;
+      } catch (error) {
+        console.error("Error converting currency:", error);
+        toast({
+          title: "Chyba",
+          description: "Nepodařilo se přepočítat měnu. Zkuste to znovu.",
+          variant: "destructive",
+        });
+        setConvertingCurrency(false);
+        return;
+      }
+      setConvertingCurrency(false);
+    } else {
+      costPriceCzk = costPriceOriginal;
+    }
+    
     // For flight type, generate automatic service_name
     let finalServiceName = serviceForm.service_name;
     let flightDetails: any = null;
@@ -605,12 +639,14 @@ const DealDetail = () => {
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
-            cost_price: serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null,
+            cost_price: costPriceCzk,
+            cost_currency: serviceForm.cost_currency,
+            cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             details: flightDetails as any,
-          })
+          } as any)
           .eq("id", serviceForm.id);
 
         if (error) throw error;
@@ -626,12 +662,14 @@ const DealDetail = () => {
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
-            cost_price: serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null,
+            cost_price: costPriceCzk,
+            cost_currency: serviceForm.cost_currency,
+            cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             details: flightDetails as any,
-          }]);
+          } as any]);
 
         if (error) throw error;
       }
@@ -796,6 +834,8 @@ const DealDetail = () => {
     end_date: endDate,
     price: "",
     cost_price: "",
+    cost_currency: "CZK",
+    cost_price_original: "",
     supplier_id: "",
     person_count: (deal?.deal_travelers?.length || 1).toString(),
     ...getEmptyFlightFields(),
@@ -812,6 +852,8 @@ const DealDetail = () => {
       end_date: undefined,
       price: "",
       cost_price: "",
+      cost_currency: "CZK",
+      cost_price_original: "",
       supplier_id: "",
       person_count: "1",
       ...getEmptyFlightFields(),
@@ -831,6 +873,7 @@ const DealDetail = () => {
     const returnSegment = returnSegments.length > 0 ? returnSegments[returnSegments.length - 1] : details?.return;
     const hasReturn = !!returnSegment?.departure;
     
+    const serviceAny = service as any;
     setServiceForm({
       id: service.id,
       service_type: service.service_type,
@@ -840,6 +883,8 @@ const DealDetail = () => {
       end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
       cost_price: service.cost_price?.toString() || "",
+      cost_currency: serviceAny.cost_currency || "CZK",
+      cost_price_original: serviceAny.cost_price_original?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
       outbound_departure: outboundSegment?.departure || "",
@@ -1775,13 +1820,36 @@ const DealDetail = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Nákupní cena (Kč)</Label>
-                        <Input
-                          type="number"
-                          value={serviceForm.cost_price}
-                          onChange={(e) => setServiceForm({ ...serviceForm, cost_price: e.target.value })}
-                          placeholder="0"
-                        />
+                        <Label>Nákupní cena</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={serviceForm.cost_price_original || serviceForm.cost_price}
+                            onChange={(e) => setServiceForm({ 
+                              ...serviceForm, 
+                              cost_price_original: e.target.value,
+                              // Clear converted price when original changes
+                              cost_price: serviceForm.cost_currency === "CZK" ? e.target.value : ""
+                            })}
+                            placeholder="0"
+                            className="flex-1"
+                          />
+                          <CurrencySelect
+                            value={serviceForm.cost_currency}
+                            onChange={(value) => setServiceForm({ 
+                              ...serviceForm, 
+                              cost_currency: value,
+                              // Clear converted price when currency changes
+                              cost_price: value === "CZK" ? serviceForm.cost_price_original : ""
+                            })}
+                            className="w-28"
+                          />
+                        </div>
+                        {serviceForm.cost_currency !== "CZK" && serviceForm.cost_price && (
+                          <p className="text-xs text-muted-foreground">
+                            ≈ {formatPriceCurrency(parseFloat(serviceForm.cost_price))} (přepočteno)
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Počet osob *</Label>
@@ -1808,11 +1876,16 @@ const DealDetail = () => {
                       </Button>
                       <Button 
                         onClick={handleSaveService} 
-                        disabled={serviceForm.service_type === "flight" 
+                        disabled={convertingCurrency || (serviceForm.service_type === "flight" 
                           ? !serviceForm.outbound_departure || !serviceForm.outbound_arrival 
-                          : !serviceForm.service_name}
+                          : !serviceForm.service_name)}
                       >
-                        {serviceForm.id ? "Uložit" : "Přidat"}
+                        {convertingCurrency ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Přepočítávám...
+                          </>
+                        ) : serviceForm.id ? "Uložit" : "Přidat"}
                       </Button>
                     </div>
                   </div>

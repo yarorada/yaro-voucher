@@ -26,6 +26,7 @@ import { SupplierCombobox } from "./SupplierCombobox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
+import { CurrencySelect } from "./CurrencySelect";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
 interface FlightSegment {
@@ -79,12 +80,16 @@ export const VariantServiceDialog = ({
 }: VariantServiceDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [convertingCurrency, setConvertingCurrency] = useState(false);
   const [serviceType, setServiceType] = useState<"flight" | "hotel" | "golf" | "transfer" | "insurance" | "other">("hotel");
   const [serviceName, setServiceName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
+  const [costCurrency, setCostCurrency] = useState("CZK");
+  const [costPriceOriginal, setCostPriceOriginal] = useState("");
   const [personCount, setPersonCount] = useState("1");
   const [supplierId, setSupplierId] = useState("");
 
@@ -106,6 +111,9 @@ export const VariantServiceDialog = ({
       setStartDate(service.start_date ? new Date(service.start_date) : undefined);
       setEndDate(service.end_date ? new Date(service.end_date) : undefined);
       setPrice(service.price?.toString() || "");
+      setCostPrice(service.cost_price?.toString() || "");
+      setCostCurrency((service as any).cost_currency || "CZK");
+      setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
       setSupplierId(service.supplier_id || "");
 
@@ -158,6 +166,9 @@ export const VariantServiceDialog = ({
     setStartDate(variantStartDate ? new Date(variantStartDate) : undefined);
     setEndDate(variantEndDate ? new Date(variantEndDate) : undefined);
     setPrice("");
+    setCostPrice("");
+    setCostCurrency("CZK");
+    setCostPriceOriginal("");
     setPersonCount(defaultTravelerCount.toString());
     setSupplierId("");
     setOutboundSegments([emptySegment()]);
@@ -295,74 +306,71 @@ export const VariantServiceDialog = ({
     let finalServiceName = serviceName;
     let flightDetails: FlightDetails | null = null;
 
-    if (serviceType === "flight") {
-      // Require at least first outbound segment
-      if (!outboundSegments[0]?.departure || !outboundSegments[0]?.arrival) {
-        toast({
-          title: "Chyba",
-          description: "Vyplňte prosím letiště odletu a příletu",
-          variant: "destructive",
+    // Convert currency if needed
+    let costPriceCzk: number | null = null;
+    const costPriceOrig = costPriceOriginal ? parseFloat(costPriceOriginal) : null;
+    
+    if (costPriceOrig !== null && costCurrency !== "CZK") {
+      setConvertingCurrency(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
+          body: { currency: costCurrency, amount: costPriceOrig },
         });
+        if (error) throw error;
+        costPriceCzk = data.convertedAmount;
+      } catch (error) {
+        console.error("Error converting currency:", error);
+        toast({ title: "Chyba", description: "Nepodařilo se přepočítat měnu", variant: "destructive" });
+        setConvertingCurrency(false);
         return;
       }
+      setConvertingCurrency(false);
+    } else {
+      costPriceCzk = costPriceOrig;
+    }
 
-      // Generate automatic service name
+    if (serviceType === "flight") {
+      if (!outboundSegments[0]?.departure || !outboundSegments[0]?.arrival) {
+        toast({ title: "Chyba", description: "Vyplňte prosím letiště odletu a příletu", variant: "destructive" });
+        return;
+      }
       const firstDeparture = outboundSegments[0].departure;
       const lastOutboundArrival = outboundSegments[outboundSegments.length - 1].arrival;
       const lastReturnArrival = !isOneWay && returnSegments.length > 0 ? returnSegments[returnSegments.length - 1].arrival : "";
       const airlineName = outboundSegments[0].airline_name || outboundSegments[0].airline;
-      
       const returnPart = lastReturnArrival ? ` - ${lastReturnArrival}` : '';
       finalServiceName = `Letenka ${firstDeparture} - ${lastOutboundArrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
-
       flightDetails = {
         outbound_segments: outboundSegments.filter(s => s.departure && s.arrival),
         return_segments: !isOneWay ? returnSegments.filter(s => s.departure && s.arrival) : undefined,
       };
     } else if (!serviceName.trim()) {
-      toast({
-        title: "Chyba",
-        description: "Vyplňte název služby",
-        variant: "destructive",
-      });
+      toast({ title: "Chyba", description: "Vyplňte název služby", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
-      if (service) {
-        const { error } = await supabase
-          .from("deal_variant_services")
-          .update({
-            service_type: serviceType,
-            service_name: finalServiceName,
-            description: description || null,
-            start_date: formatDateForDB(startDate),
-            end_date: formatDateForDB(endDate),
-            price: price ? parseFloat(price) : null,
-            person_count: personCount ? parseInt(personCount) : 1,
-            supplier_id: supplierId || null,
-            details: flightDetails as any,
-          })
-          .eq("id", service.id);
+      const serviceData = {
+        service_type: serviceType,
+        service_name: finalServiceName,
+        description: description || null,
+        start_date: formatDateForDB(startDate),
+        end_date: formatDateForDB(endDate),
+        price: price ? parseFloat(price) : null,
+        cost_price: costPriceCzk,
+        cost_currency: costCurrency,
+        cost_price_original: costPriceOrig,
+        person_count: personCount ? parseInt(personCount) : 1,
+        supplier_id: supplierId || null,
+        details: flightDetails as any,
+      };
 
+      if (service) {
+        const { error } = await supabase.from("deal_variant_services").update(serviceData as any).eq("id", service.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("deal_variant_services")
-          .insert({
-            variant_id: variantId,
-            service_type: serviceType,
-            service_name: finalServiceName,
-            description: description || null,
-            start_date: formatDateForDB(startDate),
-            end_date: formatDateForDB(endDate),
-            price: price ? parseFloat(price) : null,
-            person_count: personCount ? parseInt(personCount) : 1,
-            supplier_id: supplierId || null,
-            details: flightDetails as any,
-          });
-
+        const { error } = await supabase.from("deal_variant_services").insert({ variant_id: variantId, ...serviceData } as any);
         if (error) throw error;
       }
 
@@ -676,6 +684,35 @@ export const VariantServiceDialog = ({
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          <div>
+            <Label>Nákupní cena</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={costPriceOriginal || costPrice}
+                onChange={(e) => {
+                  setCostPriceOriginal(e.target.value);
+                  if (costCurrency === "CZK") setCostPrice(e.target.value);
+                }}
+                placeholder="0"
+                className="flex-1"
+              />
+              <CurrencySelect
+                value={costCurrency}
+                onChange={(v) => {
+                  setCostCurrency(v);
+                  if (v === "CZK") setCostPrice(costPriceOriginal);
+                }}
+                className="w-28"
+              />
+            </div>
+            {costCurrency !== "CZK" && costPrice && (
+              <p className="text-xs text-muted-foreground mt-1">
+                ≈ {formatPriceCurrency(parseFloat(costPrice))} (přepočteno)
+              </p>
+            )}
           </div>
 
           {price && personCount && (
