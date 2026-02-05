@@ -178,7 +178,7 @@ const Destinations = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <h1 className="text-heading-1 text-foreground">Destinace</h1>
+          <h1 className="text-2xl md:text-heading-1 text-foreground">Destinace</h1>
           <p className="text-body text-muted-foreground mt-2">
             Správa zemí a destinací
           </p>
@@ -193,9 +193,9 @@ const Destinations = () => {
           <TabsContent value="destinations" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Přidat novou destinaci</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Přidat novou destinaci</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 md:p-6">
                 <form onSubmit={handleAddDestination} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -237,7 +237,7 @@ const Destinations = () => {
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {destinations.map((destination) => (
                 <Card key={destination.id}>
                   <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -291,9 +291,9 @@ const Destinations = () => {
           <TabsContent value="countries" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Přidat novou zemi</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Přidat novou zemi</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 md:p-6">
                 <form onSubmit={handleAddCountry} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -338,7 +338,7 @@ const Destinations = () => {
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {countries.map((country) => (
                 <Card key={country.id}>
                   <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">

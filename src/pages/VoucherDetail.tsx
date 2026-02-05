@@ -154,22 +154,22 @@ const VoucherDetail = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <header className="mb-8 print:hidden">
-          <div className="flex items-center justify-end gap-4 mb-4">
+          <div className="flex items-center justify-end gap-2 md:gap-4 mb-4">
             <Button
               variant="outline"
               onClick={() => navigate(`/edit/${id}`)}
-              className="gap-2"
+              className="gap-2 text-sm md:text-base"
             >
               <Edit className="h-4 w-4" />
-              Upravit
+              <span className="hidden sm:inline">Upravit</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(true)}
-              className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
+              className="gap-2 text-sm md:text-base hover:bg-destructive hover:text-destructive-foreground"
             >
               <Trash2 className="h-4 w-4" />
-              Smazat
+              <span className="hidden sm:inline">Smazat</span>
             </Button>
           </div>
         </header>

@@ -1052,27 +1052,28 @@ const DealDetail = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <div className="flex items-center justify-end gap-4 mb-4">
-            <Button variant="outline" onClick={handleSave} disabled={saving} className="gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-4 mb-4">
+            <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className="gap-2 md:size-default">
               <Save className="h-4 w-4" />
-              {saving ? "Ukládám..." : "Uložit"}
+              <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
             </Button>
-            <Button variant="outline" onClick={handleCreateContract} className="gap-2">
+            <Button variant="outline" size="sm" onClick={handleCreateContract} className="gap-2 md:size-default">
               <FileSignature className="h-4 w-4" />
-              Vytvořit smlouvu
+              <span className="hidden sm:inline">Vytvořit smlouvu</span>
             </Button>
             <Button
               variant="outline"
+              size="sm"
               onClick={handleDelete}
-              className="gap-2 hover:bg-destructive hover:text-destructive-foreground"
+              className="gap-2 hover:bg-destructive hover:text-destructive-foreground md:size-default"
             >
               <Trash2 className="h-4 w-4" />
-              Smazat
+              <span className="hidden sm:inline">Smazat</span>
             </Button>
           </div>
           
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <DealStatusBadge status={deal.status} />
               {isEditingName ? (
                 <>
@@ -1081,7 +1082,7 @@ const DealDetail = () => {
                     value={dealName}
                     onChange={(e) => setDealName(e.target.value)}
                     placeholder="Název obchodního případu..."
-                    className="text-2xl font-bold h-auto py-1 px-2 max-w-md"
+                    className="text-xl md:text-2xl font-bold h-auto py-1 px-2 max-w-md flex-1"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -1105,7 +1106,7 @@ const DealDetail = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-2xl font-bold text-foreground">
+                  <h1 className="text-xl md:text-2xl font-bold text-foreground">
                     {dealName || deal.destination?.name || deal.deal_number}
                   </h1>
                   <Button

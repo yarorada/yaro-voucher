@@ -426,17 +426,18 @@ const Clients = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <h1 className="text-4xl font-bold text-foreground">Klienti</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-foreground">Klienti</h1>
                 <p className="text-muted-foreground mt-2">
                   Správa klientů a cestujících
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <DuplicateClientChecker onComplete={fetchClients} />
                 
                 <Button 
-                  variant="outline" 
-                  className="gap-2 shrink-0"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 shrink-0 md:size-default"
                   onClick={async () => {
                     if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
                     
@@ -460,14 +461,16 @@ const Clients = () => {
                     }
                   }}
                 >
-                  Přiřadit tituly
+                  <span className="hidden md:inline">Přiřadit tituly</span>
+                  <span className="md:hidden">Tituly</span>
                 </Button>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="default" className="gap-2 shrink-0">
+                    <Button variant="default" size="sm" className="gap-2 shrink-0 md:size-default">
                       <Plus className="h-4 w-4" />
-                      Přidat klienta
+                      <span className="hidden md:inline">Přidat klienta</span>
+                      <span className="md:hidden">Přidat</span>
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>

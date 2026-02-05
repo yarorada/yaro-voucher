@@ -111,41 +111,42 @@ const ContractDetail = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-4xl font-bold text-foreground">{contract.contract_number}</h1>
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground">{contract.contract_number}</h1>
             {getStatusBadge(contract.status)}
           </div>
           <p className="text-muted-foreground">
             Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
           </p>
         </div>
-        <div className="flex gap-2 mb-8">
-          <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+        <div className="flex flex-wrap gap-2 mb-8">
+          <Button variant="outline" size="sm" className="md:size-default" onClick={() => setEditDialogOpen(true)}>
             <Pencil className="h-4 w-4 mr-2" />
-            Upravit
+            <span className="hidden sm:inline">Upravit</span>
           </Button>
           <CreateVoucherFromContract 
             contractId={contract.id} 
             contractStatus={contract.status} 
           />
-          <Button variant="outline">
+          <Button variant="outline" size="sm" className="md:size-default">
             <Send className="h-4 w-4 mr-2" />
-            Odeslat
+            <span className="hidden sm:inline">Odeslat</span>
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" size="sm" className="md:size-default">
             <FileSignature className="h-4 w-4 mr-2" />
-            Podepsat
+            <span className="hidden sm:inline">Podepsat</span>
           </Button>
-          <Button>
+          <Button size="sm" className="md:size-default">
             <Download className="h-4 w-4 mr-2" />
-            Stáhnout PDF
+            <span className="hidden sm:inline">Stáhnout PDF</span>
+            <span className="sm:hidden">PDF</span>
           </Button>
         </div>
 
         <div className="grid gap-6">
           {/* Základní informace */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Základní informace</h2>
+          <Card className="p-4 md:p-6">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Základní informace</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Číslo smlouvy</p>
@@ -173,8 +174,8 @@ const ContractDetail = () => {
           </Card>
 
           {/* Klient */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Zákazník</h2>
+          <Card className="p-4 md:p-6">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Zákazník</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Jméno a příjmení</p>
@@ -204,9 +205,9 @@ const ContractDetail = () => {
           </Card>
 
           {/* Zájezd */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Předmět smlouvy - Zájezd</h2>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <Card className="p-4 md:p-6">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Předmět smlouvy - Zájezd</h2>
+            <div className="grid md:grid-cols-2 gap-3 md:gap-4 mb-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Destinace</p>
                 <p className="font-medium text-foreground">
@@ -246,8 +247,8 @@ const ContractDetail = () => {
 
           {/* Cestující */}
           {contract.deal?.travelers && contract.deal.travelers.length > 0 && (
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-4">Cestující</h2>
+            <Card className="p-4 md:p-6">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Cestující</h2>
               <div className="space-y-3">
                 {contract.deal.travelers.map((traveler: any, idx: number) => (
                   <div key={idx} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
@@ -269,8 +270,8 @@ const ContractDetail = () => {
 
           {/* Služby */}
           {contract.deal?.services && contract.deal.services.length > 0 && (
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-4">Poskytnuté služby</h2>
+            <Card className="p-4 md:p-6">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Poskytnuté služby</h2>
               <div className="space-y-3">
                 {contract.deal.services.map((service: any) => (
                   <div key={service.id} className="p-4 border border-border rounded-lg">
@@ -323,8 +324,8 @@ const ContractDetail = () => {
           )}
 
           {/* Právní podmínky */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Právní podmínky</h2>
+          <Card className="p-4 md:p-6">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Právní podmínky</h2>
             <div className="prose prose-sm max-w-none">
               <p className="text-muted-foreground">
                 Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.

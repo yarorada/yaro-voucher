@@ -170,7 +170,7 @@ const Suppliers = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <h1 className="text-4xl font-bold text-foreground">Dodavatelé</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-foreground">Dodavatelé</h1>
                 <p className="text-muted-foreground mt-2">
                   Správa dodavatelů služeb
                 </p>
@@ -299,14 +299,14 @@ const Suppliers = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {suppliers.map((supplier) => (
               <Card
                 key={supplier.id}
-                className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
+                className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-lg md:text-xl font-bold text-foreground break-words">
                     {supplier.name}
                   </h3>
                   <div className="flex gap-2">

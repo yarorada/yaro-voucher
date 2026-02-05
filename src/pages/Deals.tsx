@@ -105,10 +105,10 @@ const Deals = () => {
         <header className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-foreground">Obchodní případy</h1>
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground">Obchodní případy</h1>
               <p className="text-muted-foreground mt-2">Správa všech obchodních příležitostí</p>
             </div>
-            <Button onClick={() => navigate("/deals/new")} variant="premium" className="gap-2">
+            <Button onClick={() => navigate("/deals/new")} variant="premium" className="gap-2 w-full md:w-auto">
               <Plus className="h-4 w-4" />
               Nový případ
             </Button>
@@ -164,14 +164,14 @@ const Deals = () => {
                 const displayName = deal.name || deal.destinations?.name || deal.deal_number;
 
                 return (
-                  <Card key={deal.id} className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
+                  <Card key={deal.id} className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           <DealStatusBadge status={deal.status} />
-                          <h3 className="text-xl font-bold text-foreground">{displayName}</h3>
+                          <h3 className="text-lg md:text-xl font-bold text-foreground truncate">{displayName}</h3>
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
                           {mainTravelers && (
                             <span>
                               <span className="font-semibold text-foreground">Cestující:</span> {mainTravelers}
