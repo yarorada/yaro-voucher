@@ -1074,7 +1074,7 @@ const DealDetail = () => {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <DealStatusBadge status={deal.status} />
-              <span className="text-lg text-muted-foreground">{deal.deal_number}</span>
+              <span className="text-sm text-muted-foreground">{deal.deal_number}</span>
             </div>
             <div className="flex items-center gap-2">
               {isEditingName ? (
@@ -1109,7 +1109,7 @@ const DealDetail = () => {
               ) : (
                 <>
                   <h1 className="text-2xl font-bold text-foreground">
-                    {dealName || <span className="text-muted-foreground italic">Bez názvu</span>}
+                    {dealName || deal.destination?.name || deal.deal_number}
                   </h1>
                   <Button
                     variant="ghost"
