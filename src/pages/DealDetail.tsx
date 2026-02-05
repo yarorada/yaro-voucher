@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -301,6 +301,8 @@ const DealDetail = () => {
   const [dealName, setDealName] = useState("");
   const [discountNote, setDiscountNote] = useState("");
   const [adjustmentNote, setAdjustmentNote] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1074,12 +1076,55 @@ const DealDetail = () => {
               <DealStatusBadge status={deal.status} />
               <span className="text-lg text-muted-foreground">{deal.deal_number}</span>
             </div>
-            <Input
-              value={dealName}
-              onChange={(e) => setDealName(e.target.value)}
-              placeholder="Název obchodního případu..."
-              className="text-2xl font-bold h-auto py-1 px-2 border-transparent hover:border-input focus:border-input bg-transparent"
-            />
+            <div className="flex items-center gap-2">
+              {isEditingName ? (
+                <>
+                  <Input
+                    ref={nameInputRef}
+                    value={dealName}
+                    onChange={(e) => setDealName(e.target.value)}
+                    placeholder="Název obchodního případu..."
+                    className="text-2xl font-bold h-auto py-1 px-2 max-w-md"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setIsEditingName(false);
+                      }
+                      if (e.key === "Escape") {
+                        setIsEditingName(false);
+                      }
+                    }}
+                    onBlur={() => setIsEditingName(false)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setIsEditingName(false)}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {dealName || <span className="text-muted-foreground italic">Bez názvu</span>}
+                  </h1>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setIsEditingName(true);
+                      setTimeout(() => nameInputRef.current?.focus(), 0);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
