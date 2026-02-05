@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Menu } from "lucide-react";
+import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
 import EditVoucher from "./pages/EditVoucher";
@@ -36,8 +38,14 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
       <AppSidebar />
       <div className="flex-1 flex flex-col">
         <header className="border-b bg-background print:hidden">
-          <div className="h-12 flex items-center px-4">
-            <SidebarTrigger />
+          <div className="h-14 flex items-center px-3 gap-3">
+            <SidebarTrigger className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
+              <Menu className="h-5 w-5" />
+            </SidebarTrigger>
+            <div className="flex items-center gap-2 md:hidden">
+              <img src={yaroLogo} alt="YARO" className="h-8 w-8 logo-dark-mode" />
+              <span className="font-semibold text-foreground">YARO Travel</span>
+            </div>
           </div>
           <div className="px-4 pb-3">
             <Breadcrumbs />
