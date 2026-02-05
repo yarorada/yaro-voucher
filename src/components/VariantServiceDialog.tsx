@@ -310,21 +310,36 @@ export const VariantServiceDialog = ({
     let costPriceCzk: number | null = null;
     const costPriceOrig = costPriceOriginal ? parseFloat(costPriceOriginal) : null;
     
+    // Check if we're editing and currency/amount hasn't changed - skip recalculation
+    const existingCostPrice = service?.cost_price;
+    const existingCurrency = (service as any)?.cost_currency;
+    const existingOriginal = (service as any)?.cost_price_original;
+    
+    const currencyUnchanged = service && 
+      existingCurrency === costCurrency &&
+      existingOriginal === costPriceOrig;
+    
     if (costPriceOrig !== null && costCurrency !== "CZK") {
-      setConvertingCurrency(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
-          body: { currency: costCurrency, amount: costPriceOrig },
-        });
-        if (error) throw error;
-        costPriceCzk = data.convertedAmount;
-      } catch (error) {
-        console.error("Error converting currency:", error);
-        toast({ title: "Chyba", description: "Nepodařilo se přepočítat měnu", variant: "destructive" });
+      if (currencyUnchanged && existingCostPrice !== null && existingCostPrice !== undefined) {
+        // Currency and original amount unchanged - keep existing converted price
+        costPriceCzk = existingCostPrice;
+      } else {
+        // Need to convert - currency or amount changed
+        setConvertingCurrency(true);
+        try {
+          const { data, error } = await supabase.functions.invoke("get-exchange-rate", {
+            body: { currency: costCurrency, amount: costPriceOrig },
+          });
+          if (error) throw error;
+          costPriceCzk = data.convertedAmount;
+        } catch (error) {
+          console.error("Error converting currency:", error);
+          toast({ title: "Chyba", description: "Nepodařilo se přepočítat měnu", variant: "destructive" });
+          setConvertingCurrency(false);
+          return;
+        }
         setConvertingCurrency(false);
-        return;
       }
-      setConvertingCurrency(false);
     } else {
       costPriceCzk = costPriceOrig;
     }
