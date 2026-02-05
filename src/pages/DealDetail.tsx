@@ -1072,11 +1072,8 @@ const DealDetail = () => {
           </div>
           
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <DealStatusBadge status={deal.status} />
-              <span className="text-sm text-muted-foreground">{deal.deal_number}</span>
-            </div>
             <div className="flex items-center gap-2">
+              <DealStatusBadge status={deal.status} />
               {isEditingName ? (
                 <>
                   <Input
