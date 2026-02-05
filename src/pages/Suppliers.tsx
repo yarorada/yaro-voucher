@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { BulkSupplierUpload } from "@/components/BulkSupplierUpload";
 
 interface Supplier {
   id: string;
@@ -175,20 +176,22 @@ const Suppliers = () => {
                   Správa dodavatelů služeb
                 </p>
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) handleDialogClose();
-              }}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="default"
-                    className="gap-2 shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Přidat dodavatele
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+              <div className="flex gap-2">
+                <BulkSupplierUpload onComplete={fetchSuppliers} />
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) handleDialogClose();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="default"
+                      className="gap-2 shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Přidat dodavatele
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
                   <DialogHeader>
                     <DialogTitle>
                       {editingSupplier ? "Upravit dodavatele" : "Nový dodavatel"}
@@ -279,8 +282,9 @@ const Suppliers = () => {
                     </Button>
                   </div>
                 </form>
-              </DialogContent>
-              </Dialog>
+                </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
         </header>
