@@ -1183,7 +1183,13 @@ export type Database = {
     }
     Enums: {
       contract_status: "draft" | "sent" | "signed" | "cancelled"
-      deal_status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled"
+      deal_status:
+        | "inquiry"
+        | "quote"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "dispatched"
       service_type:
         | "flight"
         | "hotel"
@@ -1319,7 +1325,14 @@ export const Constants = {
   public: {
     Enums: {
       contract_status: ["draft", "sent", "signed", "cancelled"],
-      deal_status: ["inquiry", "quote", "confirmed", "completed", "cancelled"],
+      deal_status: [
+        "inquiry",
+        "quote",
+        "confirmed",
+        "completed",
+        "cancelled",
+        "dispatched",
+      ],
       service_type: [
         "flight",
         "hotel",

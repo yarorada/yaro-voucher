@@ -224,7 +224,7 @@ interface Deal {
   id: string;
   deal_number: string;
   name: string | null;
-  status: "inquiry" | "quote" | "confirmed" | "cancelled" | "completed";
+  status: "inquiry" | "quote" | "confirmed" | "cancelled" | "completed" | "dispatched";
   start_date: string | null;
   end_date: string | null;
   total_price: number | null;
@@ -428,7 +428,7 @@ const DealDetail = () => {
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
-  const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed">("inquiry");
+  const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -1459,6 +1459,7 @@ const DealDetail = () => {
                       <SelectItem value="inquiry">Poptávka</SelectItem>
                       <SelectItem value="quote">Nabídka odeslána</SelectItem>
                       <SelectItem value="confirmed">Potvrzeno</SelectItem>
+                      <SelectItem value="dispatched">Odbaveno</SelectItem>
                       <SelectItem value="cancelled">Zrušeno</SelectItem>
                       <SelectItem value="completed">Dokončeno</SelectItem>
                     </SelectContent>
