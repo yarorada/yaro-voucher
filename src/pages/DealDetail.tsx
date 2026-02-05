@@ -1799,17 +1799,26 @@ const DealDetail = () => {
                       </>
                     )}
 
-                    <div className="space-y-2">
-                      <Label>Datum</Label>
-                      <DateRangePicker
-                        dateFrom={serviceForm.start_date}
-                        dateTo={serviceForm.end_date}
-                        onDateFromChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
-                        onDateToChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Datum</Label>
+                        <DateRangePicker
+                          dateFrom={serviceForm.start_date}
+                          dateTo={serviceForm.end_date}
+                          onDateFromChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
+                          onDateToChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Dodavatel</Label>
+                        <SupplierCombobox
+                          value={serviceForm.supplier_id}
+                          onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
+                        />
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Prodejní cena (Kč)</Label>
                         <Input
@@ -1832,7 +1841,7 @@ const DealDetail = () => {
                               cost_price: serviceForm.cost_currency === "CZK" ? e.target.value : ""
                             })}
                             placeholder="0"
-                            className="flex-1 min-w-[100px]"
+                            className="flex-1 min-w-[80px]"
                           />
                           <CurrencySelect
                             value={serviceForm.cost_currency}
@@ -1859,13 +1868,7 @@ const DealDetail = () => {
                           value={serviceForm.person_count}
                           onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
                           placeholder="1"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Dodavatel</Label>
-                        <SupplierCombobox
-                          value={serviceForm.supplier_id}
-                          onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
+                          className="w-20"
                         />
                       </div>
                     </div>
