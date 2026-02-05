@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useIsMobile } from "@/hooks/use-mobile";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const menuItems = [
@@ -41,12 +42,20 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { open } = useSidebar();
+  const { open, setOpenMobile } = useSidebar();
   const { signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
+  };
+
+  const handleNavigate = (url: string) => {
+    navigate(url);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
@@ -71,7 +80,7 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      onClick={() => navigate(item.url)}
+                      onClick={() => handleNavigate(item.url)}
                       isActive={active}
                       tooltip={item.title}
                       className={`
