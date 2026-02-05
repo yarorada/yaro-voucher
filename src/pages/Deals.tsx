@@ -3,13 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Copy, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { formatPriceCurrency } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface Deal {
   id: string;
@@ -19,6 +35,12 @@ interface Deal {
   start_date: string | null;
   end_date: string | null;
   total_price: number | null;
+  destination_id: string | null;
+  discount_amount: number | null;
+  adjustment_amount: number | null;
+  discount_note: string | null;
+  adjustment_note: string | null;
+  notes: string | null;
   destinations: { name: string } | null;
   deal_travelers: { clients: { first_name: string; last_name: string } }[];
   created_at: string;
@@ -26,10 +48,17 @@ interface Deal {
 
 const Deals = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Duplicate dialog state
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [dealToDuplicate, setDealToDuplicate] = useState<Deal | null>(null);
+  const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
+  const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
     fetchDeals();
@@ -51,6 +80,12 @@ const Deals = () => {
           start_date,
           end_date,
           total_price,
+          destination_id,
+          discount_amount,
+          adjustment_amount,
+          discount_note,
+          adjustment_note,
+          notes,
           created_at,
           destinations:destination_id (name),
           deal_travelers (
@@ -98,6 +133,111 @@ const Deals = () => {
   };
 
   const formatPrice = (price: number | null) => formatPriceCurrency(price);
+
+  const openDuplicateDialog = (deal: Deal, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDealToDuplicate(deal);
+    setDuplicatePersonCount("1");
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleDuplicateDeal = async () => {
+    if (!dealToDuplicate) return;
+    
+    const personCount = parseInt(duplicatePersonCount) || 1;
+    setDuplicating(true);
+    
+    try {
+      // First, fetch the services for this deal
+      const { data: services, error: servicesLoadError } = await supabase
+        .from("deal_services")
+        .select("*")
+        .eq("deal_id", dealToDuplicate.id)
+        .order("order_index");
+      
+      if (servicesLoadError) throw servicesLoadError;
+
+      // Generate new deal number
+      const { data: newDealNumber, error: dealNumberError } = await supabase
+        .rpc("generate_deal_number");
+      
+      if (dealNumberError) throw dealNumberError;
+      
+      // Create new deal
+      const { data: newDeal, error: dealError } = await supabase
+        .from("deals")
+        .insert({
+          deal_number: newDealNumber,
+          name: dealToDuplicate.name ? `${dealToDuplicate.name} (kopie)` : null,
+          status: "inquiry",
+          destination_id: dealToDuplicate.destination_id,
+          start_date: dealToDuplicate.start_date,
+          end_date: dealToDuplicate.end_date,
+          notes: dealToDuplicate.notes,
+          discount_amount: dealToDuplicate.discount_amount,
+          adjustment_amount: dealToDuplicate.adjustment_amount,
+          discount_note: dealToDuplicate.discount_note,
+          adjustment_note: dealToDuplicate.adjustment_note,
+        })
+        .select()
+        .single();
+      
+      if (dealError) throw dealError;
+      
+      // Copy services with updated person count
+      if (services && services.length > 0) {
+        const newServices = services.map((service, index) => ({
+          deal_id: newDeal.id,
+          service_type: service.service_type,
+          service_name: service.service_name,
+          description: service.description,
+          start_date: service.start_date,
+          end_date: service.end_date,
+          price: service.price,
+          cost_price: service.cost_price,
+          supplier_id: service.supplier_id,
+          person_count: personCount,
+          details: service.details as any,
+          order_index: index,
+        }));
+        
+        const { error: servicesError } = await supabase
+          .from("deal_services")
+          .insert(newServices);
+        
+        if (servicesError) throw servicesError;
+
+        // Calculate and update total price
+        const servicesTotal = services.reduce((sum, service) => {
+          const servicePrice = (service.price || 0) * personCount;
+          return sum + servicePrice;
+        }, 0);
+        const finalTotal = servicesTotal - (dealToDuplicate.discount_amount || 0) + (dealToDuplicate.adjustment_amount || 0);
+        
+        await supabase
+          .from("deals")
+          .update({ total_price: finalTotal })
+          .eq("id", newDeal.id);
+      }
+      
+      toast({
+        title: "Úspěch",
+        description: "Obchodní případ byl zduplikován",
+      });
+      
+      setDuplicateDialogOpen(false);
+      navigate(`/deals/${newDeal.id}`);
+    } catch (error) {
+      console.error("Error duplicating deal:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zduplikovat obchodní případ",
+        variant: "destructive",
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
@@ -193,6 +333,19 @@ const Deals = () => {
                           </span>
                         </div>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => openDuplicateDialog(deal, e)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplikovat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </Card>
                 );
@@ -201,6 +354,39 @@ const Deals = () => {
           </div>
         )}
       </div>
+
+      {/* Duplicate Dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplikovat obchodní případ</DialogTitle>
+            <DialogDescription>
+              Vytvoří se kopie obchodního případu se všemi službami. 
+              Zadejte počet osob pro nový případ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="personCount">Počet osob</Label>
+              <Input
+                id="personCount"
+                type="number"
+                min="1"
+                value={duplicatePersonCount}
+                onChange={(e) => setDuplicatePersonCount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleDuplicateDeal} disabled={duplicating}>
+              {duplicating ? "Duplikuji..." : "Duplikovat"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
