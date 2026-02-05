@@ -1,115 +1,130 @@
 
-
-# Plán: Vyhledávání letů podle data a routingu
+# Plán: Statistiky prodejů
 
 ## Přehled
+Vytvoření nové stránky Statistiky v navigaci, která bude zobrazovat přehledy prodejů (obrat a zisky) s možností filtrování podle roku, čtvrtletí a měsíce. Data budou řazena podle data odjezdu (`start_date`). Součástí budou tabulky s porovnáním období a grafy.
 
-Přidáme novou funkci do dialogu služeb, která umožní automatické vyhledání letů na základě zadaného data a trasy (odkud-kam). Systém vrátí dostupné lety s časy odletu/příletu, čísly letů a leteckými společnostmi.
+## Rozsah změn
 
-## Uživatelské rozhraní
+### 1. Navigace
+- Přidání položky "Statistiky" do postranního menu (`AppSidebar.tsx`)
+- Ikona: `BarChart3` z lucide-react
+- Pozice: mezi "Smlouvy" a "Klienti"
 
-Nový workflow pro uživatele:
-1. Vybere typ služby "Letenka"
-2. Zadá odkud, kam a datum
-3. Klikne na tlačítko "Vyhledat lety"
-4. Zobrazí se seznam dostupných letů
-5. Vybere požadovaný let - data se automaticky doplní do formuláře
+### 2. Nová stránka `/statistics`
+- Soubor: `src/pages/Statistics.tsx`
+- Route v `App.tsx`
 
-## Technické řešení
-
-### 1. Nová edge funkce `search-flight-schedules`
-
-Vytvoříme backend funkci, která:
-- Přijme parametry: departure airport, arrival airport, date, adults count
-- Zavolá Amadeus Flight Offers API
-- Vrátí seznam letů s detaily (časy, čísla letů, letecké společnosti, ceny)
+### 3. Hlavní komponenty stránky
 
 ```text
-Request:
-POST /search-flight-schedules
-{
-  "origin": "PRG",
-  "destination": "BKK",
-  "departure_date": "2026-03-15",
-  "adults": 2
-}
-
-Response:
-{
-  "flights": [
-    {
-      "segments": [
-        {
-          "departure_airport": "PRG",
-          "arrival_airport": "DOH",
-          "departure_time": "14:55",
-          "arrival_time": "22:40",
-          "airline_code": "QR",
-          "airline_name": "Qatar Airways",
-          "flight_number": "QR292",
-          "date": "2026-03-15"
-        },
-        {
-          "departure_airport": "DOH",
-          "arrival_airport": "BKK",
-          "departure_time": "01:40",
-          "arrival_time": "12:15",
-          "airline_code": "QR",
-          "airline_name": "Qatar Airways",
-          "flight_number": "QR834",
-          "date": "2026-03-16"
-        }
-      ],
-      "total_duration": "PT21H20M",
-      "price": 15600
-    }
-  ]
-}
++----------------------------------------------------------+
+|  STATISTIKY                                              |
++----------------------------------------------------------+
+|  [Rok: 2026 v]  [Období: Čtvrtletí v]  [Stav: Všechny v] |
++----------------------------------------------------------+
+|                                                          |
+|  +----------------+  +----------------+  +---------------+|
+|  |  OBRAT         |  |  NÁKLADY       |  |  ZISK         ||
+|  |  1 234 567 Kč  |  |  987 654 Kč    |  |  246 913 Kč   ||
+|  |  ▲ +15% YoY    |  |  ▲ +8% YoY     |  |  ▲ +35% YoY   ||
+|  +----------------+  +----------------+  +---------------+|
+|                                                          |
+|  +--------------------------+  +------------------------+|
+|  |  GRAF: Vývoj v čase      |  |  GRAF: Podle zemí      ||
+|  |  [BarChart]              |  |  [PieChart]            ||
+|  +--------------------------+  +------------------------+|
+|                                                          |
+|  +------------------------------------------------------+|
+|  |  TABULKA: Porovnání období                           ||
+|  |  Období | Obrat | Náklady | Zisk | Marže | Změna     ||
+|  |  Q1     | ...   | ...     | ...  | ...   | ▲ +10%    ||
+|  |  Q2     | ...   | ...     | ...  | ...   | ▼ -5%     ||
+|  +------------------------------------------------------+|
+|                                                          |
+|  +------------------------------------------------------+|
+|  |  TABULKA: Prodeje podle zemí/destinací               ||
+|  |  Země    | Počet | Obrat | Zisk | Podíl              ||
+|  |  Thajsko | 5     | ...   | ...  | 45%                ||
+|  +------------------------------------------------------+|
++----------------------------------------------------------+
 ```
 
-### 2. Úprava VariantServiceDialog.tsx
+### 4. Funkce a filtry
 
-Přidáme:
-- Tlačítko "Vyhledat lety" vedle polí pro výběr letišť
-- Dialog/dropdown se seznamem nalezených letů
-- Automatické vyplnění všech segmentů po výběru letu
+**Časové filtry:**
+- Rok (dropdown s roky kde existují data)
+- Období: Rok / Čtvrtletí / Měsíc
+- Filtr pouze potvrzené/dokončené případy
 
-### 3. Konfigurace API klíčů
+**Metriky:**
+- Celkový obrat (suma `total_price` z deals)
+- Celkové náklady (suma `cost_price * person_count` ze služeb)
+- Celkový zisk (obrat - náklady)
+- Marže (zisk / obrat * 100)
 
-Amadeus API vyžaduje:
-- `AMADEUS_CLIENT_ID`
-- `AMADEUS_CLIENT_SECRET`
+**Porovnání:**
+- Meziroční změna (YoY - Year over Year)
+- Mezikvartální změna
 
-Tyto je potřeba přidat jako secrets do projektu.
+### 5. Grafy (recharts)
 
-## Struktura souborů
+**Graf 1: Vývoj v čase**
+- Sloupcový graf zobrazující obrat a zisk
+- Osa X: čtvrtletí nebo měsíce
+- Osa Y: hodnota v Kč
 
-```text
-Nové soubory:
-├── supabase/functions/search-flight-schedules/index.ts
+**Graf 2: Rozložení podle zemí**
+- Koláčový graf nebo horizontální sloupcový graf
+- Zobrazení podílu jednotlivých zemí na celkovém obratu
 
-Upravené soubory:
-├── src/components/VariantServiceDialog.tsx
-│   └── Přidání vyhledávacího UI
+---
+
+## Technické detaily
+
+### Datové zdroje
+- Využití view `deal_profitability` pro agregovaná data
+- Query spojující `deals`, `destinations`, `countries` pro geografické členění
+- Filtrování podle `start_date` (datum odjezdu)
+
+### Příklad SQL dotazu pro statistiky
+```sql
+SELECT 
+  EXTRACT(YEAR FROM d.start_date) as year,
+  EXTRACT(QUARTER FROM d.start_date) as quarter,
+  c.name as country_name,
+  COUNT(*) as deal_count,
+  SUM(dp.revenue) as total_revenue,
+  SUM(dp.total_costs) as total_costs,
+  SUM(dp.profit) as total_profit
+FROM deals d
+LEFT JOIN deal_profitability dp ON d.id = dp.deal_id
+LEFT JOIN destinations dest ON d.destination_id = dest.id
+LEFT JOIN countries c ON dest.country_id = c.id
+WHERE d.start_date IS NOT NULL
+GROUP BY year, quarter, country_name
 ```
 
-## Omezení a alternativy
+### Nové soubory
+1. `src/pages/Statistics.tsx` - hlavní stránka
+2. `src/components/statistics/StatsSummaryCards.tsx` - karty s přehledem
+3. `src/components/statistics/StatsTimeChart.tsx` - graf vývoje
+4. `src/components/statistics/StatsCountryChart.tsx` - graf podle zemí
+5. `src/components/statistics/StatsPeriodTable.tsx` - tabulka porovnání
+6. `src/components/statistics/StatsCountryTable.tsx` - tabulka zemí
 
-### Amadeus API Free Tier
-- 2000 požadavků měsíčně zdarma
-- Testovací data (ne vždy aktuální)
-- Pro produkci nutná aktivace
+### Úpravy existujících souborů
+1. `src/components/AppSidebar.tsx` - přidání menu položky
+2. `src/App.tsx` - přidání route
 
-### Alternativní přístup bez API
-Pokud nechcete používat externí API, můžeme rozšířit stávající AI import:
-- Uživatel vloží jen routing a datum
-- AI vyhledá typické časy pro danou trasu na internetu
-- Méně přesné, ale bez nutnosti API klíče
+---
 
-## Další kroky
-
-1. Rozhodnout, zda použít Amadeus API nebo alternativní AI přístup
-2. Pokud Amadeus: registrace na developers.amadeus.com (zdarma)
-3. Implementace edge funkce
-4. Integrace do UI
-
+## Pořadí implementace
+1. Přidat položku "Statistiky" do navigace
+2. Vytvořit základní strukturu stránky s filtry
+3. Implementovat souhrnné karty (obrat, náklady, zisk)
+4. Přidat tabulku porovnání období
+5. Přidat tabulku podle zemí
+6. Implementovat graf vývoje v čase
+7. Implementovat graf podle zemí
+8. Přidat výpočet meziročních změn
