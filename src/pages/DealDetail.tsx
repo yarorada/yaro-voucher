@@ -165,13 +165,13 @@ const SortableServiceRow = ({
           </div>
         </div>
       </TableCell>
-      <TableCell className="hidden sm:table-cell text-xs">
+      <TableCell className="text-xs whitespace-nowrap">
         {service.start_date && new Date(service.start_date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })}
       </TableCell>
-      <TableCell className="hidden md:table-cell text-center text-sm">
+      <TableCell className="text-center text-sm">
         {service.person_count}
       </TableCell>
-      <TableCell className="hidden lg:table-cell text-xs truncate">
+      <TableCell className="text-xs truncate max-w-[100px]">
         {service.suppliers?.name || '-'}
       </TableCell>
       <TableCell className="text-right">
@@ -1705,12 +1705,12 @@ const DealDetail = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
-                          <TableHead className="w-[25%]">Služba</TableHead>
-                          <TableHead className="w-[15%] hidden sm:table-cell">Datum</TableHead>
-                          <TableHead className="w-[10%] hidden md:table-cell text-center">Osoby</TableHead>
-                          <TableHead className="w-[20%] hidden lg:table-cell">Dodavatel</TableHead>
-                          <TableHead className="w-[15%] text-right">Cena</TableHead>
-                          <TableHead className="w-[15%] text-right">Akce</TableHead>
+                          <TableHead>Služba</TableHead>
+                          <TableHead>Datum</TableHead>
+                          <TableHead className="text-center">Osoby</TableHead>
+                          <TableHead>Dodavatel</TableHead>
+                          <TableHead className="text-right">Cena</TableHead>
+                          <TableHead className="text-right">Akce</TableHead>
                         </TableRow>
                       </TableHeader>
                       <SortableContext
