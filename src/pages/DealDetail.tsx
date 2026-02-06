@@ -36,6 +36,7 @@ import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { AirportCombobox } from "@/components/AirportCombobox";
 import { AirlineCombobox } from "@/components/AirlineCombobox";
+import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "@/components/FlightSegmentForm";
 import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DateInput } from "@/components/ui/date-input";
@@ -82,12 +83,16 @@ interface DealTraveler {
 }
 
 interface FlightDetails {
+  outbound_segments?: import("@/components/FlightSegmentForm").FlightSegment[];
+  return_segments?: import("@/components/FlightSegmentForm").FlightSegment[];
   outbound?: {
     departure: string;
     arrival: string;
     airline: string;
     airline_name: string;
     flight_number: string;
+    departure_time?: string;
+    arrival_time?: string;
   };
   return?: {
     departure: string;
@@ -95,6 +100,8 @@ interface FlightDetails {
     airline: string;
     airline_name: string;
     flight_number: string;
+    departure_time?: string;
+    arrival_time?: string;
   };
 }
 
@@ -276,17 +283,12 @@ const DealDetail = () => {
     cost_price_original: "",
     supplier_id: "",
     person_count: "1",
-    // Flight-specific fields
-    outbound_departure: "",
-    outbound_arrival: "",
-    outbound_airline: "",
-    outbound_airline_name: "",
-    outbound_flight_number: "",
-    return_departure: "",
-    return_arrival: "",
-    return_airline: "",
-    return_airline_name: "",
-    return_flight_number: "",
+  });
+  
+  // Flight segments state (separate from form to avoid serialization issues)
+  const [flightFormData, setFlightFormData] = useState<FlightFormData>({
+    outbound_segments: [emptySegment()],
+    return_segments: [emptySegment()],
     is_one_way: false,
   });
   
@@ -417,10 +419,10 @@ const DealDetail = () => {
   useEffect(() => {
     if (!serviceDialogOpen) return;
     // Only save if there's meaningful data
-    if (serviceForm.service_name || serviceForm.price || serviceForm.outbound_departure) {
+    if (serviceForm.service_name || serviceForm.price || flightFormData.outbound_segments[0]?.departure) {
       saveDraft(serviceForm);
     }
-  }, [serviceForm, serviceDialogOpen, saveDraft]);
+  }, [serviceForm, flightFormData, serviceDialogOpen, saveDraft]);
   
   // Currency conversion state
   const [convertingCurrency, setConvertingCurrency] = useState(false);
@@ -728,8 +730,10 @@ const DealDetail = () => {
     let flightDetails: any = null;
     
     if (serviceForm.service_type === "flight") {
+      const outSegs = flightFormData.outbound_segments;
+      const retSegs = flightFormData.return_segments;
       // Require at least outbound airports
-      if (!serviceForm.outbound_departure || !serviceForm.outbound_arrival) {
+      if (!outSegs[0]?.departure || !outSegs[0]?.arrival) {
         toast({
           title: "Chyba",
           description: "Vyplňte prosím letiště odletu a příletu",
@@ -738,40 +742,19 @@ const DealDetail = () => {
         return;
       }
       
-      // Generate automatic service name with return airport if exists
-      const airlineName = serviceForm.outbound_airline_name || serviceForm.outbound_airline;
-      const returnPart = !serviceForm.is_one_way && serviceForm.return_arrival ? ` - ${serviceForm.return_arrival}` : '';
-      finalServiceName = `Letenka ${serviceForm.outbound_departure} - ${serviceForm.outbound_arrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
+      // Generate automatic service name
+      const firstDeparture = outSegs[0].departure;
+      const lastOutboundArrival = outSegs[outSegs.length - 1].arrival;
+      const airlineName = outSegs[0].airline_name || outSegs[0].airline;
+      const lastReturnArrival = !flightFormData.is_one_way && retSegs.length > 0 ? retSegs[retSegs.length - 1].arrival : "";
+      const returnPart = lastReturnArrival ? ` - ${lastReturnArrival}` : '';
+      finalServiceName = `Letenka ${firstDeparture} - ${lastOutboundArrival}${returnPart}${airlineName ? ` se společností ${airlineName}` : ''}`;
       
-      // Preserve original segments if they exist, otherwise create new format
-      console.log('originalFlightDetails:', JSON.stringify(originalFlightDetails, null, 2));
-      console.log('Has outbound_segments:', !!originalFlightDetails?.outbound_segments);
-      console.log('Has return_segments:', !!originalFlightDetails?.return_segments);
-      
-      if (originalFlightDetails && (originalFlightDetails.outbound_segments || originalFlightDetails.return_segments)) {
-        // Keep the original multi-segment format
-        flightDetails = { ...originalFlightDetails };
-        console.log('Using original flight details with all segments');
-      } else {
-        console.log('Creating new simple format');
-        // Create simple format for new flights
-        flightDetails = {
-          outbound: {
-            departure: serviceForm.outbound_departure,
-            arrival: serviceForm.outbound_arrival,
-            airline: serviceForm.outbound_airline,
-            airline_name: serviceForm.outbound_airline_name,
-            flight_number: serviceForm.outbound_flight_number,
-          },
-          return: !serviceForm.is_one_way && serviceForm.return_departure ? {
-            departure: serviceForm.return_departure,
-            arrival: serviceForm.return_arrival,
-            airline: serviceForm.return_airline,
-            airline_name: serviceForm.return_airline_name,
-            flight_number: serviceForm.return_flight_number,
-          } : undefined,
-        };
-      }
+      // Always save in multi-segment format
+      flightDetails = {
+        outbound_segments: outSegs.filter(s => s.departure && s.arrival),
+        return_segments: !flightFormData.is_one_way ? retSegs.filter(s => s.departure && s.arrival) : undefined,
+      };
     } else if (!serviceForm.service_name) {
       return;
     }
@@ -956,19 +939,13 @@ const DealDetail = () => {
     }
   };
 
-  const getEmptyFlightFields = () => ({
-    outbound_departure: "",
-    outbound_arrival: "",
-    outbound_airline: "",
-    outbound_airline_name: "",
-    outbound_flight_number: "",
-    return_departure: "",
-    return_arrival: "",
-    return_airline: "",
-    return_airline_name: "",
-    return_flight_number: "",
-    is_one_way: false,
-  });
+  const resetFlightForm = () => {
+    setFlightFormData({
+      outbound_segments: [emptySegment()],
+      return_segments: [emptySegment()],
+      is_one_way: false,
+    });
+  };
 
   const createServiceFormData = (
     serviceType: DealService["service_type"],
@@ -987,7 +964,6 @@ const DealDetail = () => {
     cost_price_original: "",
     supplier_id: "",
     person_count: (deal?.deal_travelers?.length || 1).toString(),
-    ...getEmptyFlightFields(),
     ...overrides,
   });
 
@@ -1005,8 +981,8 @@ const DealDetail = () => {
       cost_price_original: "",
       supplier_id: "",
       person_count: "1",
-      ...getEmptyFlightFields(),
     });
+    resetFlightForm();
     setOriginalFlightDetails(null);
     // Clear draft and history
     clearDraft();
@@ -1020,11 +996,64 @@ const DealDetail = () => {
     // Store original details to preserve all segments when saving
     setOriginalFlightDetails(details);
     
-    // Support both old format (outbound/return) and new format (outbound_segments/return_segments)
-    const outboundSegment = details?.outbound_segments?.[0] || details?.outbound;
-    const returnSegments = details?.return_segments || [];
-    const returnSegment = returnSegments.length > 0 ? returnSegments[returnSegments.length - 1] : details?.return;
-    const hasReturn = !!returnSegment?.departure;
+    // Load flight segments - support both legacy and new format
+    if (service.service_type === "flight" && details) {
+      let outSegs: FlightSegment[] = [emptySegment()];
+      let retSegs: FlightSegment[] = [emptySegment()];
+      let isOneWay = true;
+
+      if (details.outbound_segments && details.outbound_segments.length > 0) {
+        outSegs = details.outbound_segments.map((s: any) => ({
+          departure: s.departure || "",
+          arrival: s.arrival || "",
+          airline: s.airline || "",
+          airline_name: s.airline_name || "",
+          flight_number: s.flight_number || "",
+          date: s.date || "",
+          departure_time: s.departure_time || "",
+          arrival_time: s.arrival_time || "",
+        }));
+      } else if (details.outbound) {
+        outSegs = [{
+          departure: details.outbound.departure || "",
+          arrival: details.outbound.arrival || "",
+          airline: details.outbound.airline || "",
+          airline_name: details.outbound.airline_name || "",
+          flight_number: details.outbound.flight_number || "",
+          departure_time: details.outbound.departure_time || "",
+          arrival_time: details.outbound.arrival_time || "",
+        }];
+      }
+
+      if (details.return_segments && details.return_segments.length > 0) {
+        retSegs = details.return_segments.map((s: any) => ({
+          departure: s.departure || "",
+          arrival: s.arrival || "",
+          airline: s.airline || "",
+          airline_name: s.airline_name || "",
+          flight_number: s.flight_number || "",
+          date: s.date || "",
+          departure_time: s.departure_time || "",
+          arrival_time: s.arrival_time || "",
+        }));
+        isOneWay = false;
+      } else if (details.return) {
+        retSegs = [{
+          departure: details.return.departure || "",
+          arrival: details.return.arrival || "",
+          airline: details.return.airline || "",
+          airline_name: details.return.airline_name || "",
+          flight_number: details.return.flight_number || "",
+          departure_time: details.return.departure_time || "",
+          arrival_time: details.return.arrival_time || "",
+        }];
+        isOneWay = false;
+      }
+
+      setFlightFormData({ outbound_segments: outSegs, return_segments: retSegs, is_one_way: isOneWay });
+    } else {
+      resetFlightForm();
+    }
     
     const serviceAny = service as any;
     setServiceForm({
@@ -1040,17 +1069,6 @@ const DealDetail = () => {
       cost_price_original: serviceAny.cost_price_original?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
-      outbound_departure: outboundSegment?.departure || "",
-      outbound_arrival: outboundSegment?.arrival || "",
-      outbound_airline: outboundSegment?.airline || "",
-      outbound_airline_name: outboundSegment?.airline_name || "",
-      outbound_flight_number: outboundSegment?.flight_number || "",
-      return_departure: returnSegment?.departure || "",
-      return_arrival: returnSegment?.arrival || "",
-      return_airline: returnSegment?.airline || "",
-      return_airline_name: returnSegment?.airline_name || "",
-      return_flight_number: returnSegment?.flight_number || "",
-      is_one_way: !hasReturn,
     });
     setServiceDialogOpen(true);
   };
@@ -1837,145 +1855,10 @@ const DealDetail = () => {
 
                     {/* Flight-specific form */}
                     {serviceForm.service_type === "flight" ? (
-                      <>
-                        {/* Outbound flight */}
-                        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <Plane className="h-4 w-4" />
-                            Odletový let
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Odkud *</Label>
-                              <AirportCombobox
-                                value={serviceForm.outbound_departure}
-                                onSelect={(iata) => {
-                                  setServiceForm({ 
-                                    ...serviceForm, 
-                                    outbound_departure: iata,
-                                    // Auto-fill return arrival
-                                    return_arrival: serviceForm.return_arrival || iata
-                                  });
-                                }}
-                                placeholder="Vyberte letiště..."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Kam *</Label>
-                              <AirportCombobox
-                                value={serviceForm.outbound_arrival}
-                                onSelect={(iata) => {
-                                  setServiceForm({ 
-                                    ...serviceForm, 
-                                    outbound_arrival: iata,
-                                    // Auto-fill return departure
-                                    return_departure: serviceForm.return_departure || iata
-                                  });
-                                }}
-                                placeholder="Vyberte letiště..."
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Letecká společnost</Label>
-                              <AirlineCombobox
-                                value={serviceForm.outbound_airline}
-                                onSelect={(code, name) => setServiceForm({ 
-                                  ...serviceForm, 
-                                  outbound_airline: code,
-                                  outbound_airline_name: name,
-                                  // Auto-fill return airline
-                                  return_airline: serviceForm.return_airline || code,
-                                  return_airline_name: serviceForm.return_airline_name || name,
-                                })}
-                                placeholder="Vyberte..."
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Číslo letu</Label>
-                              <Input
-                                value={serviceForm.outbound_flight_number}
-                                onChange={(e) => setServiceForm({ ...serviceForm, outbound_flight_number: e.target.value })}
-                                placeholder="OK123"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* One-way flight checkbox */}
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="is_one_way"
-                            checked={serviceForm.is_one_way}
-                            onCheckedChange={(checked) => setServiceForm({ 
-                              ...serviceForm, 
-                              is_one_way: !!checked,
-                              // Clear return fields when switching to one-way
-                              ...(checked ? {
-                                return_departure: "",
-                                return_arrival: "",
-                                return_airline: "",
-                                return_airline_name: "",
-                                return_flight_number: "",
-                              } : {})
-                            })}
-                          />
-                          <Label htmlFor="is_one_way" className="text-sm cursor-pointer">
-                            Jednosměrná letenka (bez zpátečního letu)
-                          </Label>
-                        </div>
-
-                        {/* Return flight - only show if not one-way */}
-                        {!serviceForm.is_one_way && (
-                          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                              <Plane className="h-4 w-4 rotate-180" />
-                              Zpáteční let
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs">Odkud</Label>
-                                <AirportCombobox
-                                  value={serviceForm.return_departure}
-                                  onSelect={(iata) => setServiceForm({ ...serviceForm, return_departure: iata })}
-                                  placeholder="Vyberte letiště..."
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs">Kam</Label>
-                                <AirportCombobox
-                                  value={serviceForm.return_arrival}
-                                  onSelect={(iata) => setServiceForm({ ...serviceForm, return_arrival: iata })}
-                                  placeholder="Vyberte letiště..."
-                                />
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs">Letecká společnost</Label>
-                                <AirlineCombobox
-                                  value={serviceForm.return_airline}
-                                  onSelect={(code, name) => setServiceForm({ 
-                                    ...serviceForm, 
-                                    return_airline: code,
-                                    return_airline_name: name 
-                                  })}
-                                  placeholder="Vyberte..."
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs">Číslo letu</Label>
-                                <Input
-                                  value={serviceForm.return_flight_number}
-                                  onChange={(e) => setServiceForm({ ...serviceForm, return_flight_number: e.target.value })}
-                                  placeholder="OK124"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <FlightSegmentForm
+                        data={flightFormData}
+                        onChange={setFlightFormData}
+                      />
                     ) : (
                       <>
                         <div className="space-y-2">
@@ -2079,7 +1962,7 @@ const DealDetail = () => {
                       <Button 
                         onClick={handleSaveService} 
                         disabled={convertingCurrency || (serviceForm.service_type === "flight" 
-                          ? !serviceForm.outbound_departure || !serviceForm.outbound_arrival 
+                          ? !flightFormData.outbound_segments[0]?.departure || !flightFormData.outbound_segments[0]?.arrival 
                           : !serviceForm.service_name)}
                       >
                         {convertingCurrency ? (
