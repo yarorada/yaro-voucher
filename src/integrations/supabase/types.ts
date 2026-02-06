@@ -294,6 +294,57 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          deal_id: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid: boolean | null
+          paid_at: string | null
+          payment_type: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          deal_id: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          payment_type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          deal_id?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_payments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "deal_payments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_services: {
         Row: {
           cost_currency: string | null
