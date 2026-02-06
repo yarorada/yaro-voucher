@@ -37,6 +37,7 @@ import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { AirportCombobox } from "@/components/AirportCombobox";
 import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { DealVariants } from "@/components/DealVariants";
+import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -1548,88 +1549,96 @@ const DealDetail = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Cestující</CardTitle>
-                <CardDescription>Správa cestujících v obchodním případu</CardDescription>
-              </div>
-              <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" onClick={() => setNewTravelerId("")}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Přidat cestujícího
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-background">
-                  <DialogHeader>
-                    <DialogTitle>Přidat cestujícího</DialogTitle>
-                    <DialogDescription>
-                      Vyberte klienta ze seznamu
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Klient</Label>
-                      <ClientCombobox
-                        value={newTravelerId}
-                        onChange={setNewTravelerId}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setTravelerDialogOpen(false)}>
-                        Zrušit
-                      </Button>
-                      <Button onClick={handleAddTraveler} disabled={!newTravelerId}>
-                        Přidat
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50%]">Jméno</TableHead>
-                  <TableHead className="w-[35%]">Role</TableHead>
-                  <TableHead className="w-[15%] text-right">Akce</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {deal.deal_travelers.map((traveler) => (
-                  <TableRow key={traveler.id}>
-                    <TableCell className="font-medium text-sm">
-                      {traveler.clients.first_name} {traveler.clients.last_name}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {traveler.is_lead_traveler && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                          Hlavní cestující
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {!traveler.is_lead_traveler && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0"
-                          onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
-                        >
-                          <X className="h-3 w-3" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Cestující</CardTitle>
+                  <CardDescription>Správa cestujících v obchodním případu</CardDescription>
+                </div>
+                <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" onClick={() => setNewTravelerId("")}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Přidat</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-background">
+                    <DialogHeader>
+                      <DialogTitle>Přidat cestujícího</DialogTitle>
+                      <DialogDescription>
+                        Vyberte klienta ze seznamu
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Klient</Label>
+                        <ClientCombobox
+                          value={newTravelerId}
+                          onChange={setNewTravelerId}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setTravelerDialogOpen(false)}>
+                          Zrušit
                         </Button>
-                      )}
-                    </TableCell>
+                        <Button onClick={handleAddTraveler} disabled={!newTravelerId}>
+                          Přidat
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50%]">Jméno</TableHead>
+                    <TableHead className="w-[35%]">Role</TableHead>
+                    <TableHead className="w-[15%] text-right">Akce</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {deal.deal_travelers.map((traveler) => (
+                    <TableRow key={traveler.id}>
+                      <TableCell className="font-medium text-sm">
+                        {traveler.clients.first_name} {traveler.clients.last_name}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {traveler.is_lead_traveler && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            Hlavní cestující
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {!traveler.is_lead_traveler && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <DealPaymentSchedule 
+            dealId={deal.id} 
+            totalPrice={deal.total_price || 0}
+            departureDate={deal.start_date || undefined}
+          />
+        </div>
 
         <Card>
           <CardContent className="pt-6">
