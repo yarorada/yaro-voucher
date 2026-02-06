@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Plane, Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "./FlightSegmentForm";
 import {
   Dialog,
   DialogContent,
@@ -23,28 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SupplierCombobox } from "./SupplierCombobox";
-import { AirportCombobox } from "./AirportCombobox";
-import { AirlineCombobox } from "./AirlineCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
 import { CurrencySelect } from "./CurrencySelect";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
-
-interface FlightSegment {
-  departure: string;
-  arrival: string;
-  airline: string;
-  airline_name: string;
-  flight_number: string;
-  date?: string;
-  departure_time?: string;
-  arrival_time?: string;
-}
 
 interface FlightDetails {
   outbound_segments?: FlightSegment[];
   return_segments?: FlightSegment[];
 }
-
 interface VariantServiceDialogProps {
   variantId: string;
   service: any;
@@ -56,16 +43,6 @@ interface VariantServiceDialogProps {
   preselectedServiceName?: string;
   defaultTravelerCount?: number;
 }
-
-const emptySegment = (): FlightSegment => ({
-  departure: "",
-  arrival: "",
-  airline: "",
-  airline_name: "",
-  flight_number: "",
-  departure_time: "",
-  arrival_time: "",
-});
 
 export const VariantServiceDialog = ({
   variantId,
@@ -270,37 +247,7 @@ export const VariantServiceDialog = ({
     }
   };
 
-  const updateOutboundSegment = (index: number, field: keyof FlightSegment, value: string) => {
-    setOutboundSegments(prev => prev.map((seg, i) => 
-      i === index ? { ...seg, [field]: value } : seg
-    ));
-  };
-
-  const updateReturnSegment = (index: number, field: keyof FlightSegment, value: string) => {
-    setReturnSegments(prev => prev.map((seg, i) => 
-      i === index ? { ...seg, [field]: value } : seg
-    ));
-  };
-
-  const addOutboundSegment = () => {
-    setOutboundSegments(prev => [...prev, emptySegment()]);
-  };
-
-  const addReturnSegment = () => {
-    setReturnSegments(prev => [...prev, emptySegment()]);
-  };
-
-  const removeOutboundSegment = (index: number) => {
-    if (outboundSegments.length > 1) {
-      setOutboundSegments(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const removeReturnSegment = (index: number) => {
-    if (returnSegments.length > 1) {
-      setReturnSegments(prev => prev.filter((_, i) => i !== index));
-    }
-  };
+  // Segment update/add/remove functions now handled by FlightSegmentForm component
 
   const handleSave = async () => {
     let finalServiceName = serviceName;
@@ -408,82 +355,7 @@ export const VariantServiceDialog = ({
     }
   };
 
-  const renderFlightSegment = (
-    segment: FlightSegment,
-    index: number,
-    isOutbound: boolean,
-    canRemove: boolean
-  ) => {
-    const updateFn = isOutbound ? updateOutboundSegment : updateReturnSegment;
-    const removeFn = isOutbound ? removeOutboundSegment : removeReturnSegment;
-
-    return (
-      <div key={index} className="space-y-2 p-3 border rounded bg-background/50 relative">
-        {canRemove && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute top-1 right-1 h-6 w-6 p-0"
-            onClick={() => removeFn(index)}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
-        
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Odkud</Label>
-            <AirportCombobox
-              value={segment.departure}
-              onSelect={(iata) => updateFn(index, "departure", iata)}
-              placeholder="Letiště..."
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Kam</Label>
-            <AirportCombobox
-              value={segment.arrival}
-              onSelect={(iata) => updateFn(index, "arrival", iata)}
-              placeholder="Letiště..."
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Letecká spol.</Label>
-            <AirlineCombobox
-              value={segment.airline}
-              onSelect={(code, name) => {
-                updateFn(index, "airline", code);
-                updateFn(index, "airline_name", name);
-              }}
-              placeholder="Vyberte..."
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Číslo letu</Label>
-            <Input
-              value={segment.flight_number}
-              onChange={(e) => updateFn(index, "flight_number", e.target.value)}
-              placeholder="QR292"
-              className="h-9"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Odlet</Label>
-            <Input
-              value={segment.departure_time || ""}
-              onChange={(e) => updateFn(index, "departure_time", e.target.value)}
-              placeholder="14:55"
-              className="h-9"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // No longer needed - using shared FlightSegmentForm component
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
@@ -568,72 +440,18 @@ export const VariantServiceDialog = ({
                 )}
               </div>
 
-              {/* Outbound flights */}
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Plane className="h-4 w-4" />
-                    Odletové lety ({outboundSegments.length} {outboundSegments.length === 1 ? 'segment' : 'segmenty'})
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addOutboundSegment}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Přidat přestup
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {outboundSegments.map((segment, index) => 
-                    renderFlightSegment(segment, index, true, outboundSegments.length > 1)
-                  )}
-                </div>
-              </div>
-
-              {/* One-way checkbox */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_one_way"
-                  checked={isOneWay}
-                  onCheckedChange={(checked) => {
-                    setIsOneWay(!!checked);
-                    if (checked) {
-                      setReturnSegments([emptySegment()]);
-                    }
-                  }}
-                />
-                <Label htmlFor="is_one_way" className="text-sm cursor-pointer">
-                  Jednosměrná letenka (bez zpátečního letu)
-                </Label>
-              </div>
-
-              {/* Return flights */}
-              {!isOneWay && (
-                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Plane className="h-4 w-4 rotate-180" />
-                      Zpáteční lety ({returnSegments.length} {returnSegments.length === 1 ? 'segment' : 'segmenty'})
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addReturnSegment}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Přidat přestup
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {returnSegments.map((segment, index) => 
-                      renderFlightSegment(segment, index, false, returnSegments.length > 1)
-                    )}
-                  </div>
-                </div>
-              )}
+              <FlightSegmentForm
+                data={{
+                  outbound_segments: outboundSegments,
+                  return_segments: returnSegments,
+                  is_one_way: isOneWay,
+                }}
+                onChange={(data) => {
+                  setOutboundSegments(data.outbound_segments);
+                  setReturnSegments(data.return_segments);
+                  setIsOneWay(data.is_one_way);
+                }}
+              />
             </>
           ) : (
             <>
@@ -645,7 +463,6 @@ export const VariantServiceDialog = ({
                   serviceType={serviceType}
                 />
               </div>
-
               <div>
                 <Label htmlFor="description">Popis</Label>
                 <Textarea
