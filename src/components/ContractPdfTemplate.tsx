@@ -4,11 +4,13 @@ import { cs } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
-interface FlightSegment {
+interface ParsedFlightLeg {
+  date?: string;
+  airline_code?: string;
+  airline_name?: string;
+  flight_number?: string;
   departure_airport?: string;
   arrival_airport?: string;
-  airline?: string;
-  flight_number?: string;
   departure_time?: string;
   arrival_time?: string;
 }
@@ -38,7 +40,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
 
     // Extract flight services and their segments
     const flightServices = services.filter((s: any) => s.service_type === "flight");
-    const nonFlightServices = services.filter((s: any) => s.service_type !== "flight");
     const hasFlights = flightServices.length > 0;
 
     // Determine transportation method
@@ -49,11 +50,114 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
       return "individuální";
     };
 
-    // Parse flight segments from details JSON
-    const getFlightSegments = (service: any): FlightSegment[] => {
+    // Normalize all flight detail formats into a flat list of legs
+    const getFlightLegs = (service: any): ParsedFlightLeg[] => {
       if (!service.details) return [];
       const details = typeof service.details === "string" ? JSON.parse(service.details) : service.details;
-      return details.segments || details.flights || [];
+      const legs: ParsedFlightLeg[] = [];
+
+      // Format 1: outbound_segments / return_segments (multi-segment with times)
+      if (details.outbound_segments || details.return_segments) {
+        for (const seg of (details.outbound_segments || [])) {
+          legs.push({
+            date: seg.date,
+            airline_code: seg.airline,
+            airline_name: seg.airline_name,
+            flight_number: seg.flight_number,
+            departure_airport: seg.departure,
+            arrival_airport: seg.arrival,
+            departure_time: seg.departure_time,
+            arrival_time: seg.arrival_time,
+          });
+        }
+        for (const seg of (details.return_segments || [])) {
+          legs.push({
+            date: seg.date,
+            airline_code: seg.airline,
+            airline_name: seg.airline_name,
+            flight_number: seg.flight_number,
+            departure_airport: seg.departure,
+            arrival_airport: seg.arrival,
+            departure_time: seg.departure_time,
+            arrival_time: seg.arrival_time,
+          });
+        }
+        return legs;
+      }
+
+      // Format 2: simple outbound / return objects
+      if (details.outbound) {
+        legs.push({
+          date: service.start_date || undefined,
+          airline_code: details.outbound.airline,
+          airline_name: details.outbound.airline_name,
+          flight_number: details.outbound.flight_number,
+          departure_airport: details.outbound.departure,
+          arrival_airport: details.outbound.arrival,
+          departure_time: details.outbound.departure_time,
+          arrival_time: details.outbound.arrival_time,
+        });
+      }
+      if (details.return) {
+        legs.push({
+          date: service.end_date || undefined,
+          airline_code: details.return.airline,
+          airline_name: details.return.airline_name,
+          flight_number: details.return.flight_number,
+          departure_airport: details.return.departure,
+          arrival_airport: details.return.arrival,
+          departure_time: details.return.departure_time,
+          arrival_time: details.return.arrival_time,
+        });
+      }
+
+      // Format 3: segments array (generic)
+      if (details.segments) {
+        for (const seg of details.segments) {
+          legs.push({
+            date: seg.date,
+            airline_code: seg.airline,
+            airline_name: seg.airline_name,
+            flight_number: seg.flight_number,
+            departure_airport: seg.departure_airport || seg.departure,
+            arrival_airport: seg.arrival_airport || seg.arrival,
+            departure_time: seg.departure_time,
+            arrival_time: seg.arrival_time,
+          });
+        }
+      }
+
+      return legs;
+    };
+
+    // Format a flight leg into "DD.MM.YY • W64600 Wizz Air • PRG → LCA • Odlet: 18:25 • Přílet: 22:50"
+    const formatFlightLeg = (leg: ParsedFlightLeg): string => {
+      const parts: string[] = [];
+
+      // Date
+      if (leg.date) {
+        try {
+          parts.push(format(new Date(leg.date), "dd.MM.yy"));
+        } catch { parts.push(leg.date); }
+      }
+
+      // Flight number + airline name: "W64600 Wizz Air"
+      const flightId = [
+        leg.airline_code && leg.flight_number ? `${leg.airline_code}${leg.flight_number}` : (leg.flight_number || ''),
+        leg.airline_name || ''
+      ].filter(Boolean).join(' ');
+      if (flightId) parts.push(flightId);
+
+      // Route
+      if (leg.departure_airport || leg.arrival_airport) {
+        parts.push(`${leg.departure_airport || '?'} → ${leg.arrival_airport || '?'}`);
+      }
+
+      // Times
+      if (leg.departure_time) parts.push(`Odlet: ${leg.departure_time}`);
+      if (leg.arrival_time) parts.push(`Přílet: ${leg.arrival_time}`);
+
+      return parts.join(' • ');
     };
 
     // Shared cell styles
@@ -174,39 +278,22 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           <div style={{ marginBottom: '10px' }}>
             <h2 style={sectionTitle}>Itinerář cesty – letecká přeprava</h2>
             {flightServices.map((flight: any) => {
-              const segments = getFlightSegments(flight);
+              const legs = getFlightLegs(flight);
               return (
                 <div key={flight.id} style={{ marginBottom: '6px' }}>
-                  <p style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '3px' }}>{flight.service_name}</p>
-                  {segments.length > 0 ? (
-                    <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f0f4f8' }}>
-                          <th style={{ ...thStyle, fontSize: '8px' }}>Úsek</th>
-                          <th style={{ ...thStyle, fontSize: '8px' }}>Let</th>
-                          <th style={{ ...thStyle, fontSize: '8px' }}>Odlet</th>
-                          <th style={{ ...thStyle, fontSize: '8px' }}>Přílet</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {segments.map((seg: FlightSegment, idx: number) => (
-                          <tr key={idx}>
-                            <td style={tdStyle}>
-                              {seg.departure_airport || '?'} → {seg.arrival_airport || '?'}
-                            </td>
-                            <td style={tdStyle}>
-                              {[seg.airline, seg.flight_number].filter(Boolean).join(' ') || '-'}
-                            </td>
-                            <td style={tdStyle}>{seg.departure_time || '-'}</td>
-                            <td style={tdStyle}>{seg.arrival_time || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  {legs.length > 0 ? (
+                    <div style={{ fontSize: '10px' }}>
+                      {legs.map((leg, idx) => (
+                        <p key={idx} style={{ margin: '2px 0', lineHeight: 1.4 }}>
+                          {formatFlightLeg(leg)}
+                        </p>
+                      ))}
+                    </div>
                   ) : (
-                    <p style={{ fontSize: '9px', color: '#888', margin: '2px 0' }}>
+                    <p style={{ fontSize: '10px', margin: '2px 0' }}>
+                      {flight.service_name}
                       {flight.start_date && flight.end_date
-                        ? `${format(new Date(flight.start_date), "d. M. yyyy")} – ${format(new Date(flight.end_date), "d. M. yyyy")}`
+                        ? ` · ${format(new Date(flight.start_date), "d. M. yyyy")} – ${format(new Date(flight.end_date), "d. M. yyyy")}`
                         : ''}
                       {flight.description ? ` · ${flight.description}` : ''}
                     </p>
