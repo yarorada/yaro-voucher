@@ -13,6 +13,16 @@ interface FlightSegment {
   arrival_time?: string;
 }
 
+interface PaymentRecord {
+  id: string;
+  payment_type: string;
+  amount: number;
+  due_date: string;
+  paid: boolean | null;
+  paid_at: string | null;
+  notes: string | null;
+}
+
 interface ContractPdfTemplateProps {
   contract: any;
 }
@@ -22,6 +32,9 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const deal = contract.deal;
     const travelers = deal?.travelers || [];
     const services = deal?.services || [];
+
+    const payments: PaymentRecord[] = (contract.payments || [])
+      .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
     // Extract flight services and their segments
     const flightServices = services.filter((s: any) => s.service_type === "flight");
@@ -268,6 +281,61 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={3} style={{ padding: '4px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '10px' }}>Celkem:</td>
                   <td style={{ padding: '4px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '12px' }}>{formatPrice(deal?.total_price)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ===== PLATEBNÍ KALENDÁŘ ===== */}
+        {payments.length > 0 && (
+          <div style={{ marginBottom: '10px' }}>
+            <h2 style={sectionTitle}>Platební kalendář</h2>
+            <table style={{ width: '100%', fontSize: '10px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Typ platby</th>
+                  <th style={{ ...thStyle, width: '22%' }}>Splatnost</th>
+                  <th style={{ ...thStyle, width: '20%', textAlign: 'right' }}>Částka</th>
+                  <th style={{ ...thStyle, width: '18%', textAlign: 'center' }}>Stav</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => {
+                  const typeLabels: Record<string, string> = {
+                    deposit: 'Záloha',
+                    deposit_1: '1. záloha',
+                    deposit_2: '2. záloha',
+                    deposit_3: '3. záloha',
+                    final: 'Doplatek',
+                    installment: 'Splátka',
+                  };
+                  return (
+                    <tr key={payment.id}>
+                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                        {typeLabels[payment.payment_type] || payment.payment_type}
+                        {payment.notes && <span style={{ display: 'block', fontSize: '8px', color: '#888' }}>{payment.notes}</span>}
+                      </td>
+                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                        {format(new Date(payment.due_date), "d. M. yyyy")}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
+                        {formatPrice(payment.amount)}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
+                        {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ backgroundColor: '#f0f4f8' }}>
+                  <td colSpan={2} style={{ padding: '4px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '10px' }}>Celkem k úhradě:</td>
+                  <td style={{ padding: '4px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '12px' }}>
+                    {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                  </td>
+                  <td style={{ padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#666' }}>
+                    {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
+                  </td>
                 </tr>
               </tbody>
             </table>

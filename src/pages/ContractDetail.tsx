@@ -34,6 +34,7 @@ const ContractDetail = () => {
         .select(`
           *,
           client:clients(*),
+          payments:contract_payments(*),
           deal:deals(
             id,
             *,
