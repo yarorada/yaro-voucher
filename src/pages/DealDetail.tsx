@@ -39,6 +39,7 @@ import { AirportCombobox } from "@/components/AirportCombobox";
 import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "@/components/FlightSegmentForm";
 import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
+import { FlightAiImport } from "@/components/FlightAiImport";
 import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DateInput } from "@/components/ui/date-input";
@@ -1913,10 +1914,17 @@ const DealDetail = () => {
 
                     {/* Flight-specific form */}
                     {serviceForm.service_type === "flight" ? (
-                      <FlightSegmentForm
-                        data={flightFormData}
-                        onChange={setFlightFormData}
-                      />
+                      <>
+                        <FlightSegmentForm
+                          data={flightFormData}
+                          onChange={setFlightFormData}
+                        />
+                        <FlightAiImport onImport={(data, price, personCount) => {
+                          setFlightFormData(data);
+                          if (price) setServiceForm(prev => ({ ...prev, price: price.toString() }));
+                          if (personCount) setServiceForm(prev => ({ ...prev, person_count: personCount.toString() }));
+                        }} />
+                      </>
                     ) : (
                       <>
                         <div className="space-y-2">
@@ -1958,7 +1966,7 @@ const DealDetail = () => {
                           </div>
                         )}
 
-                        {serviceForm.service_type === 'golf' && !serviceForm.id && (
+                        {serviceForm.service_type === 'golf' && (
                           <GolfAiImport onImport={handleGolfAiImport} />
                         )}
                       </>
