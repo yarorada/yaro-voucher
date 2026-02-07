@@ -1839,7 +1839,7 @@ const DealDetail = () => {
                   setServiceFormFuture([]);
                 }
               }}>
-                <DialogContent className="bg-background max-w-2xl">
+                <DialogContent className="bg-background max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
                       <div>
