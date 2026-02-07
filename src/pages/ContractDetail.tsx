@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,8 @@ import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { formatPrice } from "@/lib/utils";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
+
+const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 
 const ContractDetail = () => {
   const { id } = useParams();
@@ -62,6 +64,58 @@ const ContractDetail = () => {
       return data;
     },
   });
+
+  // Fetch service-traveler assignments
+  const { data: serviceAssignments = [] } = useQuery({
+    queryKey: ["contract_service_assignments", id],
+    queryFn: async () => {
+      // @ts-ignore
+      const { data, error } = await (supabase as any)
+        .from("contract_service_travelers")
+        .select("service_type, service_name, client_id")
+        .eq("contract_id", id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id && !!contract,
+  });
+
+  // Sort travelers: main client first, then build index map
+  const sortedTravelers = useMemo(() => {
+    if (!contract?.deal?.travelers) return [];
+    return [...contract.deal.travelers].sort((a: any, b: any) => {
+      const aIsMain = a.client?.id === contract.client_id;
+      const bIsMain = b.client?.id === contract.client_id;
+      if (aIsMain && !bIsMain) return -1;
+      if (!aIsMain && bIsMain) return 1;
+      return 0;
+    });
+  }, [contract]);
+
+  // Map client_id → circled number
+  const travelerNumberMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    sortedTravelers.forEach((t: any, idx: number) => {
+      if (t.client?.id) {
+        map[t.client.id] = CIRCLED_NUMBERS[idx] || `(${idx + 1})`;
+      }
+    });
+    return map;
+  }, [sortedTravelers]);
+
+  // Get circled numbers for a service
+  const getServiceTravelerNumbers = (serviceType: string, serviceName: string) => {
+    const assigned = serviceAssignments.filter(
+      (a: any) => a.service_type === serviceType && a.service_name === serviceName
+    );
+    if (assigned.length === 0) return null;
+    // If all travelers assigned, no need to show
+    if (assigned.length === sortedTravelers.length) return null;
+    return assigned
+      .map((a: any) => travelerNumberMap[a.client_id])
+      .filter(Boolean)
+      .join(' ');
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
@@ -269,13 +323,14 @@ const ContractDetail = () => {
           </div>
 
           {/* Cestující */}
-          {contract.deal?.travelers?.length > 0 && (
+          {sortedTravelers.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Cestující</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-center py-2 text-muted-foreground font-medium w-10">#</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Jméno</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Datum narození</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Číslo pasu</th>
@@ -283,16 +338,11 @@ const ContractDetail = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...contract.deal.travelers]
-                      .sort((a: any, b: any) => {
-                        const aIsMain = a.client?.id === contract.client_id;
-                        const bIsMain = b.client?.id === contract.client_id;
-                        if (aIsMain && !bIsMain) return -1;
-                        if (!aIsMain && bIsMain) return 1;
-                        return 0;
-                      })
-                      .map((t: any, idx: number) => (
+                    {sortedTravelers.map((t: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0">
+                        <td className="py-2 text-center text-lg font-semibold text-primary">
+                          {CIRCLED_NUMBERS[idx] || `(${idx + 1})`}
+                        </td>
                         <td className="py-2 font-medium text-foreground">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
                         </td>
@@ -320,32 +370,39 @@ const ContractDetail = () => {
                       <th className="text-left py-2 text-muted-foreground font-medium">Služba</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Termín</th>
                       <th className="text-center py-2 text-muted-foreground font-medium">Osoby</th>
+                      <th className="text-center py-2 text-muted-foreground font-medium">Cestující</th>
                       <th className="text-right py-2 text-muted-foreground font-medium">Cena</th>
                     </tr>
                   </thead>
                   <tbody>
                     {contract.deal.services
                       .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
-                      .map((service: any) => (
-                        <tr key={service.id} className="border-b last:border-0">
-                          <td className="py-2 text-foreground">
-                            <span className="font-medium">{service.service_name}</span>
-                            {service.description && (
-                              <span className="block text-xs text-muted-foreground">{service.description}</span>
-                            )}
-                          </td>
-                          <td className="py-2 text-foreground whitespace-nowrap">
-                            {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
-                            {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
-                          </td>
-                          <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
-                          <td className="py-2 text-right font-medium text-foreground">
-                            {formatPrice((service.price || 0) * (service.person_count || 1))}
-                          </td>
-                        </tr>
-                      ))}
+                      .map((service: any) => {
+                        const travelerNums = getServiceTravelerNumbers(service.service_type, service.service_name);
+                        return (
+                          <tr key={service.id} className="border-b last:border-0">
+                            <td className="py-2 text-foreground">
+                              <span className="font-medium">{service.service_name}</span>
+                              {service.description && (
+                                <span className="block text-xs text-muted-foreground">{service.description}</span>
+                              )}
+                            </td>
+                            <td className="py-2 text-foreground whitespace-nowrap">
+                              {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
+                              {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
+                            </td>
+                            <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
+                            <td className="py-2 text-center text-foreground text-base">
+                              {travelerNums || <span className="text-xs text-muted-foreground">všichni</span>}
+                            </td>
+                            <td className="py-2 text-right font-medium text-foreground">
+                              {formatPrice((service.price || 0) * (service.person_count || 1))}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     <tr className="bg-muted/50">
-                      <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
+                      <td colSpan={4} className="py-2 text-right font-bold text-foreground">Celkem:</td>
                       <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price)}</td>
                     </tr>
                   </tbody>
@@ -400,7 +457,7 @@ const ContractDetail = () => {
 
       {/* Hidden PDF content */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-        <ContractPdfTemplate ref={pdfContentRef} contract={contract} />
+        <ContractPdfTemplate ref={pdfContentRef} contract={contract} serviceAssignments={serviceAssignments} />
       </div>
 
       <EditContractDialog

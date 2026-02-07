@@ -1,9 +1,11 @@
-import { forwardRef, useState, useEffect } from "react";
+import { forwardRef, useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
 import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+
+const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 
 interface ParsedFlightLeg {
   date?: string;
@@ -26,15 +28,57 @@ interface PaymentRecord {
   notes: string | null;
 }
 
+interface ServiceAssignment {
+  service_type: string;
+  service_name: string;
+  client_id: string;
+}
+
 interface ContractPdfTemplateProps {
   contract: any;
+  serviceAssignments?: ServiceAssignment[];
 }
 
 export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplateProps>(
-  ({ contract }, ref) => {
+  ({ contract, serviceAssignments = [] }, ref) => {
     const deal = contract.deal;
-    const travelers = deal?.travelers || [];
     const services = deal?.services || [];
+
+    // Sort travelers: main client first
+    const sortedTravelers = useMemo(() => {
+      const travelers = deal?.travelers || [];
+      return [...travelers].sort((a: any, b: any) => {
+        const aIsMain = a.client?.id === contract.client_id;
+        const bIsMain = b.client?.id === contract.client_id;
+        if (aIsMain && !bIsMain) return -1;
+        if (!aIsMain && bIsMain) return 1;
+        return 0;
+      });
+    }, [deal?.travelers, contract.client_id]);
+
+    // Map client_id → circled number
+    const travelerNumberMap = useMemo(() => {
+      const map: Record<string, string> = {};
+      sortedTravelers.forEach((t: any, idx: number) => {
+        if (t.client?.id) {
+          map[t.client.id] = CIRCLED_NUMBERS[idx] || `(${idx + 1})`;
+        }
+      });
+      return map;
+    }, [sortedTravelers]);
+
+    // Get circled numbers for a service
+    const getServiceTravelerNumbers = (serviceType: string, serviceName: string) => {
+      const assigned = serviceAssignments.filter(
+        (a) => a.service_type === serviceType && a.service_name === serviceName
+      );
+      if (assigned.length === 0) return null;
+      if (assigned.length === sortedTravelers.length) return null;
+      return assigned
+        .map((a) => travelerNumberMap[a.client_id])
+        .filter(Boolean)
+        .join(' ');
+    };
 
     const payments: PaymentRecord[] = (contract.payments || [])
       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
@@ -247,28 +291,24 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         )}
 
         {/* ===== CESTUJÍCÍ ===== */}
-        {travelers.length > 0 && (
+        {sortedTravelers.length > 0 && (
           <div style={{ marginBottom: '6px' }}>
             <h2 style={sectionTitle}>Cestující</h2>
             <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
+                  <th style={{ ...thStyle, width: '5%', textAlign: 'center' }}>#</th>
                   <th style={thStyle}>Jméno</th>
                   <th style={thStyle}>Datum narození</th>
                   <th style={thStyle}>Číslo pasu</th>
                 </tr>
               </thead>
               <tbody>
-                {[...travelers]
-                  .sort((a: any, b: any) => {
-                    const aIsMain = a.client?.id === contract.client_id;
-                    const bIsMain = b.client?.id === contract.client_id;
-                    if (aIsMain && !bIsMain) return -1;
-                    if (!aIsMain && bIsMain) return 1;
-                    return 0;
-                  })
-                  .map((t: any, idx: number) => (
+                {sortedTravelers.map((t: any, idx: number) => (
                   <tr key={idx}>
+                    <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', fontWeight: 'bold', color: '#0066cc' }}>
+                      {CIRCLED_NUMBERS[idx] || `(${idx + 1})`}
+                    </td>
                     <td style={tdStyle}>{t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}</td>
                     <td style={tdStyle}>{t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}</td>
                     <td style={tdStyle}>{t.client?.passport_number || '-'}</td>
@@ -289,28 +329,35 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   <th style={thStyle}>Služba</th>
                   <th style={{ ...thStyle, width: '15%' }}>Termín</th>
                   <th style={{ ...thStyle, width: '8%', textAlign: 'center' }}>Osoby</th>
+                  <th style={{ ...thStyle, width: '10%', textAlign: 'center' }}>Cestující</th>
                   <th style={{ ...thStyle, width: '14%', textAlign: 'right' }}>Cena</th>
                 </tr>
               </thead>
               <tbody>
                 {services
                   .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
-                  .map((service: any) => (
-                    <tr key={service.id}>
-                      <td style={tdStyle}>
-                        {service.service_name}
-                        {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
-                      </td>
-                      <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
-                        {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
-                        {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
-                      </td>
-                      <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1))}</td>
-                    </tr>
-                  ))}
+                  .map((service: any) => {
+                    const travelerNums = getServiceTravelerNumbers(service.service_type, service.service_name);
+                    return (
+                      <tr key={service.id}>
+                        <td style={tdStyle}>
+                          {service.service_name}
+                          {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
+                        </td>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
+                          {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
+                          {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
+                        <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', color: '#0066cc' }}>
+                          {travelerNums || <span style={{ fontSize: '7px', color: '#888' }}>vš.</span>}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1))}</td>
+                      </tr>
+                    );
+                  })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
+                  <td colSpan={4} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
                   <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price)}</td>
                 </tr>
               </tbody>
