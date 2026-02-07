@@ -106,7 +106,7 @@ const ContractDetail = () => {
           format: 'a4' as const,
           orientation: 'portrait' as const
         },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['[data-pdf-section]'] }
       };
       await html2pdf().set(opt).from(element).save();
       toast.success('PDF úspěšně staženo');
