@@ -48,7 +48,15 @@ export const GolfAiImport = ({ onImport }: GolfAiImportProps) => {
         return;
       }
 
-      setParsedTeeTimes(data.tee_times);
+      const sorted = [...data.tee_times].sort((a: ParsedTeeTime, b: ParsedTeeTime) => {
+        const dateA = a.date || "";
+        const dateB = b.date || "";
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        const timeA = a.time || "";
+        const timeB = b.time || "";
+        return timeA.localeCompare(timeB);
+      });
+      setParsedTeeTimes(sorted);
       setSupplierName(data.supplier_name || "");
       setShowPreview(true);
       toast.success(`Extrahováno ${data.tee_times.length} tee times`);
