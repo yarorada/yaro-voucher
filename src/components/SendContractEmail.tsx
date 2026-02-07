@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,8 @@ import { Send, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
 
 interface SendContractEmailProps {
   contract: any;
@@ -21,11 +24,29 @@ interface SendContractEmailProps {
   onSent: () => void;
 }
 
+const buildDefaultEmailText = (contract: any) => {
+  const deal = contract?.deal;
+  const hotelService = deal?.services?.find((s: any) => s.service_type === "hotel");
+  const hotelName = hotelService?.service_name || deal?.destination?.name || "[Hotel]";
+
+  let dateRange = "[Termín zájezdu]";
+  if (deal?.start_date && deal?.end_date) {
+    const from = format(new Date(deal.start_date), "d. M. yyyy", { locale: cs });
+    const to = format(new Date(deal.end_date), "d. M. yyyy", { locale: cs });
+    dateRange = `${from} – ${to}`;
+  }
+
+  return `Vážený kliente,
+
+děkujeme Vám za důvěru projevenou naší společnosti a věříme, že s našimi službami budete spokojen. V příloze naleznete cestovní smlouvu na váš zájezd do ${hotelName} v termínu ${dateRange}, případně také další dokumenty týkající se Vaší dovolené.`;
+};
+
 export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContractEmailProps) => {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [ccSupplier, setCcSupplier] = useState(false);
   const [supplierEmail, setSupplierEmail] = useState("");
+  const [emailText, setEmailText] = useState("");
 
   const clientEmail = contract?.client?.email;
 
@@ -46,6 +67,7 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
     if (isOpen) {
       setCcSupplier(false);
       setSupplierEmail(supplierEmails.length > 0 ? supplierEmails[0].email : "");
+      setEmailText(buildDefaultEmailText(contract));
     }
     setOpen(isOpen);
   };
@@ -113,6 +135,7 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
           contractId: contract.id,
           pdfPath,
           ccSupplierEmail: ccSupplier && supplierEmail ? supplierEmail : null,
+          customEmailText: emailText.trim() || null,
         },
       });
 
@@ -142,7 +165,7 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
           <span className="hidden sm:inline">Odeslat</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md bg-background">
+      <DialogContent className="max-w-lg bg-background">
         <DialogHeader>
           <DialogTitle>Odeslat smlouvu e-mailem</DialogTitle>
         </DialogHeader>
@@ -157,6 +180,19 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
                 {clientEmail || <span className="text-destructive">E-mail zákazníka není vyplněn</span>}
               </span>
             </div>
+          </div>
+
+          {/* Email body text */}
+          <div className="space-y-2">
+            <Label htmlFor="email-text" className="text-sm font-medium">Text e-mailu</Label>
+            <Textarea
+              id="email-text"
+              value={emailText}
+              onChange={(e) => setEmailText(e.target.value)}
+              rows={6}
+              className="text-sm"
+              placeholder="Zadejte text e-mailu..."
+            />
           </div>
 
           {/* CC Supplier */}
