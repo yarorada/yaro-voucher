@@ -401,39 +401,42 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           </div>
         )}
 
-        {/* ===== PRÁVNÍ PODMÍNKY ===== */}
-        <div style={{ marginBottom: '6px' }}>
-          <h2 style={sectionTitle}>Právní podmínky</h2>
-          <div style={{ fontSize: '7px', color: '#444', lineHeight: 1.3 }}>
-            <p style={{ margin: '0 0 2px' }}>Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.</p>
-            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Storno podmínky (§2531-2533 OZ)</p>
-            <p style={{ margin: '0 0 2px' }}>Zákazník může od smlouvy odstoupit kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku, bez storno poplatku při podstatné změně podmínek zájezdu nebo při zrušení zájezdu cestovní kanceláří.</p>
-            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Pojištění (§2534 OZ)</p>
-            <p style={{ margin: '0 0 2px' }}>Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.</p>
-            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Reklamace (§2536 OZ)</p>
-            <p style={{ margin: 0 }}>Zákazník má právo reklamovat vady plnění. Reklamaci je nutné uplatnit bez zbytečného odkladu.</p>
+        {/* ===== PRÁVNÍ PODMÍNKY + PODPISY (drží pohromadě) ===== */}
+        <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          {/* PRÁVNÍ PODMÍNKY */}
+          <div style={{ marginBottom: '6px' }}>
+            <h2 style={sectionTitle}>Právní podmínky</h2>
+            <div style={{ fontSize: '7px', color: '#444', lineHeight: 1.3 }}>
+              <p style={{ margin: '0 0 2px' }}>Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.</p>
+              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Storno podmínky (§2531-2533 OZ)</p>
+              <p style={{ margin: '0 0 2px' }}>Zákazník může od smlouvy odstoupit kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku, bez storno poplatku při podstatné změně podmínek zájezdu nebo při zrušení zájezdu cestovní kanceláří.</p>
+              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Pojištění (§2534 OZ)</p>
+              <p style={{ margin: '0 0 2px' }}>Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.</p>
+              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Reklamace (§2536 OZ)</p>
+              <p style={{ margin: 0 }}>Zákazník má právo reklamovat vady plnění. Reklamaci je nutné uplatnit bez zbytečného odkladu.</p>
+            </div>
           </div>
-        </div>
 
-        {/* ===== PODPISY ===== */}
-        <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginTop: '14px', paddingTop: '6px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-          <div style={{ width: '44%', textAlign: 'center' }}>
-            <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
-              <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</p>
-              <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis a razítko)</p>
+          {/* PODPISY */}
+          <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginTop: '14px', paddingTop: '6px' }}>
+            <div style={{ width: '44%', textAlign: 'center' }}>
+              <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
+              <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
+                <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</p>
+                <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis a razítko)</p>
+              </div>
+            </div>
+            <div style={{ width: '44%', textAlign: 'center' }}>
+              <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Zákazník:</p>
+              <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
+                <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
+                <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis zákazníka)</p>
+              </div>
             </div>
           </div>
-          <div style={{ width: '44%', textAlign: 'center' }}>
-            <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Zákazník:</p>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
-              <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
-              <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis zákazníka)</p>
-            </div>
-          </div>
+          {/* Spacer to prevent footer clipping */}
+          <div style={{ height: '20px' }}></div>
         </div>
-        {/* Spacer to prevent footer clipping */}
-        <div style={{ height: '20px' }}></div>
       </div>
     );
   }
