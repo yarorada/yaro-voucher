@@ -444,7 +444,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         </div>
 
         {/* ===== PODPISY ===== */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '24px', pageBreakInside: 'avoid' }}>
+        <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '32px', paddingTop: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <div style={{ width: '44%', textAlign: 'center' }}>
             <p style={{ fontSize: '9px', color: '#666', margin: '0 0 4px' }}>Dodavatel:</p>
             <div style={{ borderTop: '1px solid #000', paddingTop: '6px', marginTop: '36px' }}>
@@ -460,6 +460,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             </div>
           </div>
         </div>
+        {/* Spacer to prevent footer clipping */}
+        <div style={{ height: '20px' }}></div>
       </div>
     );
   }
