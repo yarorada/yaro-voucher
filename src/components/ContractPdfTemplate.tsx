@@ -457,25 +457,19 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         )}
 
         {/* ===== OSTATNÍ INFORMACE A POŽADAVKY ===== */}
-        {services.some((s: any) => s.service_type === 'golf') && (
+        {(contract as any).tee_times?.length > 0 && (
           <div style={{ marginBottom: '6px' }}>
             <h2 style={sectionTitle}>Ostatní informace a požadavky</h2>
             <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#333', margin: '0 0 3px' }}>Startovací časy (Tee Times)</p>
             <div style={{ fontSize: '9px', lineHeight: '1.5' }}>
-              {services
-                .filter((s: any) => s.service_type === 'golf')
-                .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
-                .map((s: any, idx: number) => {
-                  const desc = s.description || '';
-                  const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-                  const dateStr = s.start_date ? format(new Date(s.start_date), "dd.MM.yy") : '-';
-                  const timeStr = timeMatch?.[1] || '-';
-                  return (
-                    <p key={idx} style={{ margin: '1px 0' }}>
-                      {dateStr} – {s.service_name} – {timeStr}
-                    </p>
-                  );
-                })}
+              {(contract as any).tee_times.map((tt: any, idx: number) => {
+                const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
+                return (
+                  <p key={idx} style={{ margin: '1px 0' }}>
+                    {dateStr} – {tt.club} – {tt.time || '-'}
+                  </p>
+                );
+              })}
             </div>
           </div>
         )}
