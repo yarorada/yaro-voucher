@@ -170,11 +170,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <h2 style={sectionTitle}>Dodavatel</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>Adresa: </span>{(contract as any).agency_address || '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>IČO: </span>{(contract as any).agency_ico || '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>E-mail: </span>radek@yarotravel.cz</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>Telefon: </span>+420 602 102 108</td></tr>
+                <tr><td style={{ ...valueStyle, fontWeight: 'bold', padding: '2px 0' }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Adresa: </span>{(contract as any).agency_address || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>IČO: </span>{(contract as any).agency_ico || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>E-mail: </span>radek@yarotravel.cz</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Telefon: </span>+420 602 102 108</td></tr>
               </tbody>
             </table>
           </div>
@@ -182,11 +182,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <h2 style={sectionTitle}>Zákazník</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>Adresa: </span>{contract.client?.address || '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>Datum narození: </span>{contract.client?.date_of_birth ? format(new Date(contract.client.date_of_birth), "d. M. yyyy") : '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>E-mail: </span>{contract.client?.email || '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}><span style={{ ...labelStyle, paddingLeft: 0, display: 'inline' }}>Telefon: </span>{contract.client?.phone || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, fontWeight: 'bold', padding: '2px 0' }}>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Adresa: </span>{contract.client?.address || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Datum narození: </span>{contract.client?.date_of_birth ? format(new Date(contract.client.date_of_birth), "d. M. yyyy") : '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>E-mail: </span>{contract.client?.email || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Telefon: </span>{contract.client?.phone || '-'}</td></tr>
               </tbody>
             </table>
           </div>
