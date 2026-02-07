@@ -125,11 +125,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     };
 
     // Shared cell styles
-    const labelStyle: React.CSSProperties = { padding: '4px 0', color: '#666', fontSize: '9px', verticalAlign: 'top', lineHeight: '1.5' };
-    const valueStyle: React.CSSProperties = { padding: '4px 0 4px 6px', fontSize: '9px', verticalAlign: 'top', lineHeight: '1.5' };
-    const sectionTitle: React.CSSProperties = { fontSize: '10px', fontWeight: 'bold', marginTop: '10px', marginBottom: '5px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '3px', lineHeight: '1.4' };
-    const thStyle: React.CSSProperties = { padding: '5px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '8px', fontWeight: 'bold', backgroundColor: '#f0f4f8', lineHeight: '1.4' };
-    const tdStyle: React.CSSProperties = { padding: '5px 6px', borderBottom: '1px solid #eee', fontSize: '9px', lineHeight: '1.5', verticalAlign: 'middle' };
+    const labelStyle: React.CSSProperties = { padding: '2px 0', color: '#666', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
+    const valueStyle: React.CSSProperties = { padding: '2px 0 2px 6px', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
+    const sectionTitle: React.CSSProperties = { fontSize: '10px', fontWeight: 'bold', marginTop: '8px', marginBottom: '3px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '2px', lineHeight: '1.2' };
+    const thStyle: React.CSSProperties = { padding: '3px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '7px', fontWeight: 'bold', backgroundColor: '#f0f4f8', lineHeight: '1.2' };
+    const tdStyle: React.CSSProperties = { padding: '3px 6px', borderBottom: '1px solid #eee', fontSize: '8px', lineHeight: '1.2', verticalAlign: 'middle' };
 
     return (
       <div
@@ -141,7 +141,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           fontFamily: 'Arial, Helvetica, sans-serif',
           backgroundColor: '#ffffff',
           color: '#000000',
-          lineHeight: 1.5,
+          lineHeight: 1.2,
         }}
       >
         {/* ===== HLAVIČKA ===== */}
@@ -223,7 +223,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {legs.length > 0 ? (
                     <div style={{ fontSize: '9px' }}>
                       {legs.map((leg, idx) => (
-                        <p key={idx} style={{ margin: '3px 0', lineHeight: 1.5 }}>{formatFlightLeg(leg)}</p>
+                        <p key={idx} style={{ margin: '2px 0', lineHeight: 1.2 }}>{formatFlightLeg(leg)}</p>
                       ))}
                     </div>
                   ) : (
@@ -284,7 +284,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     <tr key={service.id}>
                       <td style={tdStyle}>
                         {service.service_name}
-                        {service.description && <span style={{ display: 'block', fontSize: '8px', color: '#888', lineHeight: '1.4', marginTop: '2px' }}>{service.description}</span>}
+                        {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
                         {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
@@ -295,8 +295,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     </tr>
                   ))}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={3} style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem:</td>
-                  <td style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>{formatPrice(deal?.total_price)}</td>
+                  <td colSpan={3} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem:</td>
+                  <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>{formatPrice(deal?.total_price)}</td>
                 </tr>
               </tbody>
             </table>
@@ -333,7 +333,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         <tr key={payment.id}>
                           <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
                             {typeLabels[payment.payment_type] || payment.payment_type}
-                            {payment.notes && <span style={{ display: 'block', fontSize: '8px', color: '#888', lineHeight: '1.4', marginTop: '1px' }}>{payment.notes}</span>}
+                            {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{payment.notes}</span>}
                           </td>
                           <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
                             {format(new Date(payment.due_date), "d. M. yyyy")}
@@ -348,11 +348,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       );
                     })}
                     <tr style={{ backgroundColor: '#f0f4f8' }}>
-                      <td colSpan={2} style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
-                      <td style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
+                      <td colSpan={2} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
+                      <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
                         {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
                       </td>
-                      <td style={{ padding: '3px 5px', textAlign: 'center', fontSize: '8px', color: '#666' }}>
+                      <td style={{ padding: '2px 5px', textAlign: 'center', fontSize: '7px', color: '#666' }}>
                         {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
                       </td>
                     </tr>
@@ -360,8 +360,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </table>
 
                 {/* Platební údaje */}
-                <div style={{ marginTop: '6px', padding: '6px 8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
-                  <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '9px' }}>Platební údaje</p>
+                <div style={{ marginTop: '4px', padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
+                  <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
                   <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
                   <p style={{ margin: '1px 0' }}>IBAN: <strong>{iban}</strong></p>
                   <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
@@ -387,29 +387,29 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         {/* ===== PRÁVNÍ PODMÍNKY ===== */}
         <div style={{ marginBottom: '6px' }}>
           <h2 style={sectionTitle}>Právní podmínky</h2>
-          <div style={{ fontSize: '8px', color: '#444', lineHeight: 1.6 }}>
-            <p style={{ margin: '0 0 4px' }}>Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.</p>
-            <p style={{ fontWeight: 'bold', margin: '5px 0 2px' }}>Storno podmínky (§2531-2533 OZ)</p>
-            <p style={{ margin: '0 0 4px' }}>Zákazník může od smlouvy odstoupit kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku, bez storno poplatku při podstatné změně podmínek zájezdu nebo při zrušení zájezdu cestovní kanceláří.</p>
-            <p style={{ fontWeight: 'bold', margin: '5px 0 2px' }}>Pojištění (§2534 OZ)</p>
-            <p style={{ margin: '0 0 4px' }}>Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.</p>
-            <p style={{ fontWeight: 'bold', margin: '5px 0 2px' }}>Reklamace (§2536 OZ)</p>
+          <div style={{ fontSize: '7px', color: '#444', lineHeight: 1.3 }}>
+            <p style={{ margin: '0 0 2px' }}>Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.</p>
+            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Storno podmínky (§2531-2533 OZ)</p>
+            <p style={{ margin: '0 0 2px' }}>Zákazník může od smlouvy odstoupit kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku, bez storno poplatku při podstatné změně podmínek zájezdu nebo při zrušení zájezdu cestovní kanceláří.</p>
+            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Pojištění (§2534 OZ)</p>
+            <p style={{ margin: '0 0 2px' }}>Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.</p>
+            <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Reklamace (§2536 OZ)</p>
             <p style={{ margin: 0 }}>Zákazník má právo reklamovat vady plnění. Reklamaci je nutné uplatnit bez zbytečného odkladu.</p>
           </div>
         </div>
 
         {/* ===== PODPISY ===== */}
-        <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginTop: '20px', paddingTop: '10px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginTop: '14px', paddingTop: '6px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <div style={{ width: '44%', textAlign: 'center' }}>
             <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '28px' }}>
+            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
               <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</p>
               <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis a razítko)</p>
             </div>
           </div>
           <div style={{ width: '44%', textAlign: 'center' }}>
             <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Zákazník:</p>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '28px' }}>
+            <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
               <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
               <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis zákazníka)</p>
             </div>
