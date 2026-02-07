@@ -283,7 +283,15 @@ const ContractDetail = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {contract.deal.travelers.map((t: any, idx: number) => (
+                    {[...contract.deal.travelers]
+                      .sort((a: any, b: any) => {
+                        const aIsMain = a.client?.id === contract.client_id;
+                        const bIsMain = b.client?.id === contract.client_id;
+                        if (aIsMain && !bIsMain) return -1;
+                        if (!aIsMain && bIsMain) return 1;
+                        return 0;
+                      })
+                      .map((t: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0">
                         <td className="py-2 font-medium text-foreground">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}

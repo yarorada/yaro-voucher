@@ -259,7 +259,15 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </tr>
               </thead>
               <tbody>
-                {travelers.map((t: any, idx: number) => (
+                {[...travelers]
+                  .sort((a: any, b: any) => {
+                    const aIsMain = a.client?.id === contract.client_id;
+                    const bIsMain = b.client?.id === contract.client_id;
+                    if (aIsMain && !bIsMain) return -1;
+                    if (!aIsMain && bIsMain) return 1;
+                    return 0;
+                  })
+                  .map((t: any, idx: number) => (
                   <tr key={idx}>
                     <td style={tdStyle}>{t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}</td>
                     <td style={tdStyle}>{t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}</td>
