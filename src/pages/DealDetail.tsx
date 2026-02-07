@@ -33,6 +33,7 @@ import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
+import { HotelCombobox } from "@/components/HotelCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { AirportCombobox } from "@/components/AirportCombobox";
 import { AirlineCombobox } from "@/components/AirlineCombobox";
@@ -1920,11 +1921,18 @@ const DealDetail = () => {
                       <>
                         <div className="space-y-2">
                           <Label>{serviceForm.service_type === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
-                          <ServiceCombobox
-                            value={serviceForm.service_name}
-                            onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
-                            serviceType={serviceForm.service_type}
-                          />
+                          {serviceForm.service_type === 'hotel' ? (
+                            <HotelCombobox
+                              value={serviceForm.service_name}
+                              onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
+                            />
+                          ) : (
+                            <ServiceCombobox
+                              value={serviceForm.service_name}
+                              onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
+                              serviceType={serviceForm.service_type}
+                            />
+                          )}
                         </div>
 
                         {serviceForm.service_type === 'hotel' && (

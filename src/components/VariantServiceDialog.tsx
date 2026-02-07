@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { SupplierCombobox } from "./SupplierCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
+import { HotelCombobox } from "./HotelCombobox";
 import { CurrencySelect } from "./CurrencySelect";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
@@ -457,11 +458,18 @@ export const VariantServiceDialog = ({
             <>
               <div>
                 <Label htmlFor="service-name">{serviceType === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
-                <ServiceCombobox
-                  value={serviceName}
-                  onChange={setServiceName}
-                  serviceType={serviceType}
-                />
+                {serviceType === 'hotel' ? (
+                  <HotelCombobox
+                    value={serviceName}
+                    onChange={setServiceName}
+                  />
+                ) : (
+                  <ServiceCombobox
+                    value={serviceName}
+                    onChange={setServiceName}
+                    serviceType={serviceType}
+                  />
+                )}
               </div>
               {serviceType === 'hotel' ? (
                 <div>
