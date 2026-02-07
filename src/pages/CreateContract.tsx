@@ -89,7 +89,7 @@ const CreateContract = () => {
         : 0;
 
       // Use tee times stored directly on the deal
-      const teeTimes = (deal as any).tee_times?.length > 0 ? (deal as any).tee_times : null;
+      const teeTimes = deal.tee_times && Array.isArray(deal.tee_times) && (deal.tee_times as any[]).length > 0 ? deal.tee_times : null;
 
       const { data: contract, error } = await supabase
         .from("travel_contracts")

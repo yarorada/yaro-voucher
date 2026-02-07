@@ -42,6 +42,7 @@ import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 import { FlightAiImport } from "@/components/FlightAiImport";
 import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
+import { DealTeeTimesEditor } from "@/components/DealTeeTimesEditor";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -247,6 +248,7 @@ interface Deal {
   adjustment_amount: number | null;
   discount_note: string | null;
   adjustment_note: string | null;
+  tee_times: any;
   destination?: {
     id: string;
     name: string;
@@ -893,7 +895,7 @@ const DealDetail = () => {
         }));
 
       // Merge with existing tee times on the deal
-      const existingTeeTimes = (deal as any).tee_times || [];
+      const existingTeeTimes = deal.tee_times || [];
       const mergedTeeTimes = [...existingTeeTimes, ...structuredTeeTimes];
 
       // @ts-ignore
@@ -1274,7 +1276,7 @@ const DealDetail = () => {
         : 0;
 
       // Use tee times stored directly on the deal
-      const teeTimes = (deal as any).tee_times?.length > 0 ? (deal as any).tee_times : null;
+      const teeTimes = deal.tee_times?.length > 0 ? deal.tee_times : null;
 
       const { data: newContract, error } = await supabase
         .from("travel_contracts")
@@ -2152,6 +2154,15 @@ const DealDetail = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Tee Times Editor - show when golf services exist */}
+        {services.some(s => s.service_type === 'golf') && (
+          <DealTeeTimesEditor
+            dealId={deal.id}
+            teeTimes={deal.tee_times || []}
+            onUpdate={fetchDeal}
+          />
+        )}
         </div>
       </div>
     </div>
