@@ -401,24 +401,35 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           </div>
         )}
 
-        {/* ===== PRÁVNÍ PODMÍNKY + PODPISY (drží pohromadě) ===== */}
-        <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-          {/* PRÁVNÍ PODMÍNKY */}
-          <div style={{ marginBottom: '6px' }}>
-            <h2 style={sectionTitle}>Právní podmínky</h2>
-            <div style={{ fontSize: '7px', color: '#444', lineHeight: 1.3 }}>
-              <p style={{ margin: '0 0 2px' }}>Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.</p>
-              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Storno podmínky (§2531-2533 OZ)</p>
-              <p style={{ margin: '0 0 2px' }}>Zákazník může od smlouvy odstoupit kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku, bez storno poplatku při podstatné změně podmínek zájezdu nebo při zrušení zájezdu cestovní kanceláří.</p>
-              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Pojištění (§2534 OZ)</p>
-              <p style={{ margin: '0 0 2px' }}>Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.</p>
-              <p style={{ fontWeight: 'bold', margin: '3px 0 1px' }}>Reklamace (§2536 OZ)</p>
-              <p style={{ margin: 0 }}>Zákazník má právo reklamovat vady plnění. Reklamaci je nutné uplatnit bez zbytečného odkladu.</p>
-            </div>
+        {/* ===== PRÁVNÍ PODMÍNKY ===== */}
+        <div style={{ marginBottom: '6px' }}>
+          <h2 style={sectionTitle}>Právní podmínky</h2>
+          <div style={{ fontSize: '7px', color: '#444', lineHeight: 1.3, textAlign: 'justify' }}>
+            <p style={{ margin: '0 0 3px' }}>
+              Tato Smlouva o zájezdu má náležitosti a nahrazuje potvrzení o zájezdu ve smyslu ustanovení par. 2525 a násl. OZ. Pořadatel zájezdu se zavazuje, že zákazníkovi poskytne zájezd a zákazník se zavazuje zaplatit smluvenou cenu. Zákazník se zavazuje uhradit smluvenou cenu zájezdu na účet zprostředkovatele s tím, že zprostředkovatel je k tomu inkasu zmocněn pořadatelem zájezdu.
+            </p>
+            <p style={{ margin: '0 0 3px' }}>
+              Zákazník prohlašuje, že uzavírá tuto cestovní smlouvu i ve prospěch následujících osob (cestujících), které ho k jejich přihlášení a účasti pověřili. Zákazník se zavazuje zajistit, aby všichni cestující řádně dodržovali všechny povinnosti vyplývající pro ně z jejich účasti na zájezdu.
+            </p>
+            <p style={{ margin: '0 0 3px' }}>
+              Zákazník tímto potvrzuje, (a) že mu byly současně s návrhem této smlouvy zaslány všeobecné smluvní podmínky pořadatele zájezdu, s kterými se podrobně seznámil, bez výhrady s nimi souhlasí a bere na vědomí, že tyto podmínky tvoří nedílnou součást této smlouvy, (b) že mu byly před uzavřením této smlouvy předány informace (ve formě katalogu, katalogového listu, dodatečné nabídky či jiným vhodným způsobem) s podrobným vymezením zájezdu, zejména ohledně ubytování, jeho polohy, kategorie, stupně vybavenosti a hlavní charakteristické znaky, dále druhu, charakteristiky a kategorie dopravního prostředku a údajů o trase cesty, pasových a vízových požadavcích a zdravotních formalitách, které jsou nutné pro cestu a pobyt, a dále způsobu a rozsahu stravování (pokud je součástí zájezdu), případně ohledně dalších služeb, pokud jsou součástí zájezdu, a bere na vědomí, že tyto informace tvoří součást této smlouvy, (c) že mu byl předán doklad, který obsahuje informace o uzavřeném pojištění proti úpadku cestovní kanceláře, zejména označení pojišťovny, podmínky pojištění a způsob oznámení pojistné události, (d) že se seznámil s pojistnými podmínkami cestovního pojištění.
+            </p>
+            <p style={{ margin: '0 0 3px' }}>
+              Zákazník tímto uděluje souhlas pořadateli zájezdu a zprostředkovateli ke shromažďování, uchování a zpracování jeho osobních údajů a osobních údajů dalších cestujících. Tento souhlas uděluje pro všechny údaje uvedené v cestovní smlouvě a v dokumentech s ní souvisejících, a to výhradně za účelem zajištění cestovních služeb a dále nabízení výrobků a služeb.
+            </p>
+            <p style={{ margin: 0 }}>
+              Cestovní smlouva je uzavřena okamžikem, kdy zprostředkovatel oznámí zákazníkovi, že pořadatel akceptoval zákazníkem doručený a podepsaný návrh cestovní smlouvy. Podepsaný návrh cestovní smlouvy je zákazník povinen doručit zprostředkovateli na jeho shora uvedenou adresu. Doručení jiné osobě není přípustné.
+            </p>
           </div>
+        </div>
 
-          {/* PODPISY */}
-          <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginTop: '14px', paddingTop: '6px' }}>
+        {/* ===== DATUM + PODPISY (drží pohromadě) ===== */}
+        <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <p style={{ fontSize: '9px', margin: '8px 0 6px', color: '#333' }}>
+            V Pardubicích dne {format(new Date(contract.contract_date), "d. M. yyyy", { locale: cs })}
+          </p>
+
+          <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', paddingTop: '6px' }}>
             <div style={{ width: '44%', textAlign: 'center' }}>
               <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
               <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
