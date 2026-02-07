@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 
 interface TeeTime {
   date: string | null;
@@ -44,6 +44,17 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
     setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
   };
 
+  const handleAiImport = (parsedTeeTimes: ParsedTeeTime[]) => {
+    const newItems: TeeTime[] = parsedTeeTimes
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .map(tt => ({
+        date: tt.date || null,
+        club: tt.club || '',
+        time: tt.time || '',
+      }));
+    setItems(prev => [...prev, ...newItems]);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -73,15 +84,17 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
           Upravit tee times
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-background">
         <DialogHeader>
           <DialogTitle>Upravit startovací časy</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 mt-4">
+          <GolfAiImport onImport={handleAiImport} />
+
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Žádné startovací časy. Klikněte na tlačítko níže pro přidání.
+              Žádné startovací časy. Použijte AI import výše nebo přidejte ručně.
             </p>
           )}
 
