@@ -44,23 +44,29 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const contractNumber = contract.contract_number || '';
     const variableSymbol = extractVariableSymbol(contractNumber);
 
-    // QR code for total unpaid amount
-    const unpaidTotal = payments
-      .filter(p => !p.paid)
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    // QR codes for each unpaid payment
+    const unpaidPayments = payments.filter(p => !p.paid && (p.amount || 0) > 0);
 
-    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+    const [paymentQrUrls, setPaymentQrUrls] = useState<Record<string, string>>({});
 
     useEffect(() => {
-      if (unpaidTotal > 0 && contractNumber) {
-        generatePaymentQrDataUrl({
-          amount: unpaidTotal,
-          contractNumber,
-          bankAccount,
-          size: 200,
-        }).then(setQrDataUrl).catch(console.error);
-      }
-    }, [unpaidTotal, contractNumber, bankAccount]);
+      if (unpaidPayments.length === 0 || !contractNumber) return;
+      const generate = async () => {
+        const urls: Record<string, string> = {};
+        for (const p of unpaidPayments) {
+          try {
+            urls[p.id] = await generatePaymentQrDataUrl({
+              amount: p.amount,
+              contractNumber,
+              bankAccount,
+              size: 160,
+            });
+          } catch (e) { console.error(e); }
+        }
+        setPaymentQrUrls(urls);
+      };
+      generate();
+    }, [unpaidPayments.length, contractNumber, bankAccount]);
 
     // Extract flight services and their segments
     const flightServices = services.filter((s: any) => s.service_type === "flight");
@@ -368,16 +374,28 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </div>
               </div>
 
-              {/* QR kód */}
-              {qrDataUrl && unpaidTotal > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '110px' }}>
-                  <img src={qrDataUrl} alt="QR platba" style={{ width: '100px', height: '100px' }} />
-                  <p style={{ fontSize: '7px', color: '#666', marginTop: '3px', textAlign: 'center' }}>
-                    QR platba
-                  </p>
-                  <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#0066cc', marginTop: '1px', textAlign: 'center' }}>
-                    {formatPrice(unpaidTotal)}
-                  </p>
+              {/* QR kódy pro jednotlivé platby */}
+              {unpaidPayments.length > 0 && Object.keys(paymentQrUrls).length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: '8px', minWidth: '110px' }}>
+                  {unpaidPayments.map((p) => {
+                    const url = paymentQrUrls[p.id];
+                    if (!url) return null;
+                    const typeLabels: Record<string, string> = {
+                      deposit: 'Záloha', deposit_1: '1. záloha', deposit_2: '2. záloha', deposit_3: '3. záloha',
+                      final: 'Doplatek', installment: 'Splátka',
+                    };
+                    return (
+                      <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <img src={url} alt="QR platba" style={{ width: '80px', height: '80px' }} />
+                        <p style={{ fontSize: '7px', color: '#666', marginTop: '2px', textAlign: 'center', lineHeight: '1.2' }}>
+                          {typeLabels[p.payment_type] || p.payment_type}
+                        </p>
+                        <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#0066cc', margin: '0', textAlign: 'center' }}>
+                          {formatPrice(p.amount)}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
