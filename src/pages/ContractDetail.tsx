@@ -261,6 +261,46 @@ const ContractDetail = () => {
                 {getStatusBadge(contract.status)}
               </div>
               <div>
+                <p className="text-sm text-muted-foreground mb-1">Termín zájezdu</p>
+                <p className="font-medium text-foreground">
+                  {contract.deal?.start_date && contract.deal?.end_date
+                    ? `${format(new Date(contract.deal.start_date), "d. M. yyyy")} – ${format(new Date(contract.deal.end_date), "d. M. yyyy")}`
+                    : contract.deal?.start_date
+                      ? format(new Date(contract.deal.start_date), "d. M. yyyy")
+                      : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Destinace</p>
+                <p className="font-medium text-foreground">
+                  {contract.deal?.destination?.name
+                    ? `${contract.deal.destination.name}${contract.deal.destination.country?.name ? `, ${contract.deal.destination.country.name}` : ''}`
+                    : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Hotel</p>
+                <p className="font-medium text-foreground">
+                  {(() => {
+                    const hotelService = contract.deal?.services?.find((s: any) => s.service_type === 'hotel');
+                    return hotelService ? hotelService.service_name : '-';
+                  })()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Doprava</p>
+                <p className="font-medium text-foreground">
+                  {(() => {
+                    const hasFlights = contract.deal?.services?.some((s: any) => s.service_type === 'flight');
+                    const hasTransfer = contract.deal?.services?.some((s: any) => s.service_type === 'transfer');
+                    if (hasFlights && hasTransfer) return 'Letecky + transfer';
+                    if (hasFlights) return 'Letecky';
+                    if (hasTransfer) return 'Transfer';
+                    return 'Vlastní';
+                  })()}
+                </p>
+              </div>
+              <div>
                 <p className="text-sm text-muted-foreground mb-1">Vytvořeno</p>
                 <p className="font-medium text-foreground">
                   {format(new Date(contract.created_at), "d. MMMM yyyy", { locale: cs })}
