@@ -1,0 +1,1 @@
+ALTER TABLE public.travel_contracts ALTER COLUMN agency_contact SET DEFAULT 'radek@yarotravel.cz, +420 602 102 108';

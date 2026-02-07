@@ -36,7 +36,7 @@ const YARO_DEFAULTS = {
   name: "YARO s.r.o.",
   address: "Bratranců Veverkových 680, Pardubice, 530 02",
   ico: "07849290",
-  contact: "+420 602 102 108",
+  contact: "radek@yarotravel.cz, +420 602 102 108",
 };
 
 export function ContractAgencyInfo({
