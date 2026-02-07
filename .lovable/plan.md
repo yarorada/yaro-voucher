@@ -1,93 +1,69 @@
 
-## Dashboard s informačními dlaždicemi
 
-Přetvořím domovskou stránku na interaktivní dashboard s přehledovými dlaždicemi.
+## Platební kalendář, číslo účtu a QR kód v cestovní smlouvě
 
-### Nové komponenty a funkce
+Tento plán řeší tři věci najednou:
 
-#### 1. Hlavní dlaždice - Denní úkoly
-- Vytvoření nové databázové tabulky `tasks` pro správu úkolů
-- Zobrazení úkolů plánovaných na aktuální den
-- Možnost přidávat, označovat jako splněné a mazat úkoly
-- Barevné rozlišení podle priority (nízká, střední, vysoká)
+### 1. Oprava chybějícího platebního kalendáře
 
-#### 2. Dlaždice statistik prodeje (aktuální rok)
-- Celkový obrat v aktuálním roce
-- Celkový zisk
-- Počet obchodních případů
-- Meziroční srovnání (YoY)
+Aktuální smlouva CS-260009 nemá žádné platby v databázi -- byla vytvořena dříve, než se nasadil kód pro automatické kopírování plateb z obchodního případu. Platby je nutné ručně synchronizovat SQL příkazem pro všechny existující smlouvy, které nemají platby, ale jejich deal ano.
 
-#### 3. Dlaždice posledních obchodních případů
-- Seznam 5 nejnovějších obchodních případů
-- Zobrazení čísla, klienta, destinace a stavu
-- Rychlý odkaz na detail
+### 2. Číslo účtu 227993932/0600
 
-#### 4. Dlaždice posledních voucherů
-- Seznam 5 nejnovějších voucherů
-- Zobrazení kódu, klienta a hotelu
-- Rychlý odkaz na detail
+Číslo účtu se přidá:
+- Do PDF šablony smlouvy (sekce Platební kalendář)
+- Do webového zobrazení platebního kalendáře
+- Do výchozích údajů dodavatele (ContractAgencyInfo)
+- Volitelně do databáze jako nový sloupec `agency_bank_account` s výchozí hodnotou
 
-#### 5. Dlaždice posledních smluv
-- Seznam 5 nejnovějších smluv
-- Zobrazení čísla smlouvy, klienta a stavu
-- Rychlý odkaz na detail
+### 3. QR kód na platbu (formát SPAYD)
 
-### Rozložení na stránce
+QR kód bude generován ve formátu **SPAYD** (Short Payment Descriptor), což je český standard pro QR platby podporovaný všemi českými bankami. QR kód bude obsahovat:
+- IBAN účet (převedený z 227993932/0600)
+- Částku k úhradě
+- Variabilní symbol (číslo smlouvy)
+- Měnu (CZK)
+- Zprávu pro příjemce
 
-```text
-+------------------------------------------+
-|           Logo + Vítejte v YARO          |
-+------------------------------------------+
-|  [Denní úkoly]    |  [Statistiky roku]   |
-|  - úkol 1 ✓       |  Obrat: 2.5M Kč      |
-|  - úkol 2         |  Zisk: 450K Kč       |
-|  + Přidat úkol    |  Případy: 45         |
-+-------------------+----------------------+
-|  [Obch. případy]  | [Vouchery] |[Smlouvy]|
-|  - D-25001...     | - YT-25001 | - CS-01 |
-|  - D-25002...     | - YT-25002 | - CS-02 |
-+-------------------+------------+---------+
-```
+QR kód se zobrazí jak v PDF exportu, tak na webové stránce u platebního kalendáře.
+
+---
 
 ### Technické detaily
 
-#### Databáze - nová tabulka `tasks`
-```sql
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  title TEXT NOT NULL,
-  description TEXT,
-  due_date DATE NOT NULL,
-  priority TEXT DEFAULT 'medium',
-  completed BOOLEAN DEFAULT false,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+#### Databázové změny
+- Nový sloupec `agency_bank_account` v tabulce `travel_contracts` s výchozí hodnotou `'227993932/0600'`
+- SQL aktualizace existujících smluv, aby měly vyplněný účet
+- Synchronizace plateb z `deal_payments` do `contract_payments` pro smlouvy, které platby nemají
 
--- RLS policies pro tasks
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own tasks" ON tasks
-  FOR ALL USING (auth.uid() = user_id);
-```
+#### Nová závislost
+- NPM balíček `qrcode` -- knihovna pro generování QR kódů jako data URL (obrázek v base64)
 
-#### Soubory k úpravě/vytvoření
-1. `src/pages/Index.tsx` - kompletní přepracování na dashboard
-2. `src/components/dashboard/TasksCard.tsx` - komponenta pro denní úkoly
-3. `src/components/dashboard/StatsCard.tsx` - komponenta pro statistiky
-4. `src/components/dashboard/RecentDealsCard.tsx` - poslední obchodní případy
-5. `src/components/dashboard/RecentVouchersCard.tsx` - poslední vouchery
-6. `src/components/dashboard/RecentContractsCard.tsx` - poslední smlouvy
+#### Úpravy souborů
 
-#### Datové dotazy
-- Statistiky: využití existujícího view `deal_profitability`
-- Obchodní případy: `deals` s limitem 5, řazeno podle `created_at DESC`
-- Vouchery: `vouchers` s limitem 5, řazeno podle `created_at DESC`
-- Smlouvy: `travel_contracts` s limitem 5, řazeno podle `created_at DESC`
-- Úkoly: `tasks` filtrováno podle `due_date = today`
+**`src/components/ContractPdfTemplate.tsx`**
+- Do sekce "Platební kalendář" přidat řádek s číslem účtu pod tabulkou
+- Přidat komponentu pro QR kód vedle platebního kalendáře (generovaný pomocí `qrcode.toDataURL()`)
+- QR kód bude obsahovat SPAYD řetězec: `SPD*1.0*ACC:CZ6506000000000227993932*AM:{castka}*CC:CZK*X-VS:{cislo_smlouvy}*MSG:Platba za smlouvu {cislo}`
 
-#### Responsivní design
-- Na mobilu: dlaždice pod sebou v jednom sloupci
-- Na tabletu: 2 sloupce
-- Na desktopu: flexibilní grid s hlavní dlaždice úkolů vlevo
+**`src/components/ContractPaymentSchedule.tsx`**
+- Zobrazit číslo účtu v sekci platebního kalendáře na webu
+- Přidat malý QR kód pro každou nezaplacenou platbu (nebo souhrnný QR kód)
+
+**`src/components/ContractAgencyInfo.tsx`**
+- Přidat pole `agency_bank_account` do formuláře a zobrazení
+- Aktualizovat výchozí hodnoty YARO_DEFAULTS
+
+**`src/pages/CreateContract.tsx`**
+- Přidat `agency_bank_account` do výchozích hodnot při vytváření smlouvy
+
+**`src/pages/ContractDetail.tsx`**
+- Předat `agency_bank_account` do komponent, které ho potřebují
+
+#### Konverze českého účtu na IBAN
+Účet `227993932/0600` se převede na IBAN formát:
+- Kód banky: 0600 (MONETA Money Bank)
+- Předčíslí: 000000
+- Číslo účtu: 0227993932
+- IBAN: CZ6506000000000227993932 (kontrolní součet bude vypočítán)
+
