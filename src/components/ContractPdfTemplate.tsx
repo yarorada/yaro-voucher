@@ -161,11 +161,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     };
 
     // Shared cell styles
-    const labelStyle: React.CSSProperties = { padding: '2px 0', color: '#666', fontSize: '10px', verticalAlign: 'top' };
-    const valueStyle: React.CSSProperties = { padding: '2px 0 2px 6px', fontSize: '10px', verticalAlign: 'top' };
-    const sectionTitle: React.CSSProperties = { fontSize: '11px', fontWeight: 'bold', marginBottom: '4px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '2px' };
-    const thStyle: React.CSSProperties = { padding: '3px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '9px', fontWeight: 'bold', backgroundColor: '#f0f4f8' };
-    const tdStyle: React.CSSProperties = { padding: '3px 6px', borderBottom: '1px solid #eee', fontSize: '10px' };
+    const labelStyle: React.CSSProperties = { padding: '4px 0', color: '#666', fontSize: '10px', verticalAlign: 'top' };
+    const valueStyle: React.CSSProperties = { padding: '4px 0 4px 6px', fontSize: '10px', verticalAlign: 'top' };
+    const sectionTitle: React.CSSProperties = { fontSize: '11px', fontWeight: 'bold', marginTop: '10px', marginBottom: '6px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '3px' };
+    const thStyle: React.CSSProperties = { padding: '5px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '9px', fontWeight: 'bold', backgroundColor: '#f0f4f8' };
+    const tdStyle: React.CSSProperties = { padding: '5px 6px', borderBottom: '1px solid #eee', fontSize: '10px' };
 
     return (
       <div
@@ -284,7 +284,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {legs.length > 0 ? (
                     <div style={{ fontSize: '10px' }}>
                       {legs.map((leg, idx) => (
-                        <p key={idx} style={{ margin: '2px 0', lineHeight: 1.4 }}>
+                        <p key={idx} style={{ margin: '3px 0', lineHeight: 1.5 }}>
                           {formatFlightLeg(leg)}
                         </p>
                       ))}
