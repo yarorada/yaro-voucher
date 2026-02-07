@@ -955,6 +955,7 @@ export type Database = {
           sent_at: string | null
           signed_at: string | null
           status: Database["public"]["Enums"]["contract_status"]
+          tee_times: Json | null
           terms: string | null
           total_price: number
           updated_at: string
@@ -977,6 +978,7 @@ export type Database = {
           sent_at?: string | null
           signed_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
+          tee_times?: Json | null
           terms?: string | null
           total_price: number
           updated_at?: string
@@ -999,6 +1001,7 @@ export type Database = {
           sent_at?: string | null
           signed_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
+          tee_times?: Json | null
           terms?: string | null
           total_price?: number
           updated_at?: string

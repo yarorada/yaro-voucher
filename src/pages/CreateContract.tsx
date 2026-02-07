@@ -63,7 +63,7 @@ const CreateContract = () => {
           id,
           total_price,
           deal_travelers(client_id, is_lead_traveler),
-          deal_services(service_type, service_name)
+          deal_services(service_type, service_name, start_date, description)
         `)
         .eq("id", formData.deal_id)
         .single();
@@ -87,6 +87,22 @@ const CreateContract = () => {
         ? Number(deal.total_price) 
         : 0;
 
+      // Extract tee times from golf services
+      const golfServices = (deal.deal_services as any[])?.filter((s: any) => s.service_type === 'golf') || [];
+      const teeTimes = golfServices.length > 0
+        ? golfServices
+            .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
+            .map((s: any) => {
+              const desc = s.description || '';
+              const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
+              return {
+                date: s.start_date || null,
+                club: s.service_name || '',
+                time: timeMatch?.[1] || '',
+              };
+            })
+        : null;
+
       const { data: contract, error } = await supabase
         .from("travel_contracts")
         .insert([{
@@ -101,7 +117,8 @@ const CreateContract = () => {
           agency_ico: '07849290',
           agency_contact: 'radek@yarotravel.cz, +420 602 102 108',
           agency_bank_account: '227993932/0600',
-        }])
+          tee_times: teeTimes,
+        } as any])
         .select()
         .single();
 

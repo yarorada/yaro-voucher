@@ -429,25 +429,19 @@ const ContractDetail = () => {
           )}
 
           {/* Ostatní informace a požadavky - tee times */}
-          {contract.deal?.services?.some((s: any) => s.service_type === 'golf') && (
+          {(contract as any).tee_times?.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Ostatní informace a požadavky</h2>
               <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
               <div className="space-y-1">
-                {contract.deal.services
-                  .filter((s: any) => s.service_type === 'golf')
-                  .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
-                  .map((s: any) => {
-                    const desc = s.description || '';
-                    const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-                    const dateStr = s.start_date ? format(new Date(s.start_date), "dd.MM.yy") : '-';
-                    const timeStr = timeMatch?.[1] || '-';
-                    return (
-                      <p key={s.id} className="text-sm text-foreground">
-                        {dateStr} – {s.service_name} – {timeStr}
-                      </p>
-                    );
-                  })}
+                {(contract as any).tee_times.map((tt: any, idx: number) => {
+                  const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
+                  return (
+                    <p key={idx} className="text-sm text-foreground">
+                      {dateStr} – {tt.club} – {tt.time || '-'}
+                    </p>
+                  );
+                })}
               </div>
             </Card>
           )}
