@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Save } from "lucide-react";
+import { Save } from "lucide-react";
 
 interface Supplier {
   id: string;
@@ -140,21 +140,20 @@ export function ContractAgencyInfo({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-heading-2 flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Dodavatel služeb
-        </CardTitle>
+    <Card className="p-4 md:p-6">
+      <div className="flex flex-row items-center justify-between mb-4">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground">
+          Dodavatel
+        </h2>
         {!isEditing && (
           <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
             Upravit
           </Button>
         )}
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div>
         {isEditing ? (
-          <>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Vybrat dodavatele z databáze</Label>
               <Select
@@ -179,7 +178,7 @@ export function ContractAgencyInfo({
                 Údaje můžete dále upravit ručně:
               </p>
               <div className="space-y-2">
-                <Label htmlFor="agency_name">Název agentury</Label>
+                <Label htmlFor="agency_name">Název</Label>
                 <Input
                   id="agency_name"
                   value={formData.agency_name}
@@ -218,17 +217,6 @@ export function ContractAgencyInfo({
                   }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency_bank_account">Číslo účtu</Label>
-                <Input
-                  id="agency_bank_account"
-                  value={formData.agency_bank_account}
-                  onChange={(e) =>
-                    setFormData({ ...formData, agency_bank_account: e.target.value })
-                  }
-                  placeholder="227993932/0600"
-                />
-              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -252,39 +240,33 @@ export function ContractAgencyInfo({
                 Zrušit
               </Button>
             </div>
-          </>
+          </div>
         ) : (
           <div className="space-y-3">
             <div>
-              <p className="text-body font-semibold">{formData.agency_name}</p>
+              <p className="font-semibold text-foreground">{formData.agency_name}</p>
             </div>
             {formData.agency_address && (
               <div>
                 <p className="text-sm text-muted-foreground">Adresa</p>
-                <p className="text-body">{formData.agency_address}</p>
+                <p className="text-foreground">{formData.agency_address}</p>
               </div>
             )}
             {formData.agency_ico && (
               <div>
                 <p className="text-sm text-muted-foreground">IČO</p>
-                <p className="text-body">{formData.agency_ico}</p>
+                <p className="text-foreground">{formData.agency_ico}</p>
               </div>
             )}
             {formData.agency_contact && (
               <div>
                 <p className="text-sm text-muted-foreground">Kontakt</p>
-                <p className="text-body">{formData.agency_contact}</p>
-              </div>
-            )}
-            {formData.agency_bank_account && (
-              <div>
-                <p className="text-sm text-muted-foreground">Číslo účtu</p>
-                <p className="text-body font-mono">{formData.agency_bank_account}</p>
+                <p className="text-foreground">{formData.agency_contact}</p>
               </div>
             )}
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

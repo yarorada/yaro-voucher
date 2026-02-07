@@ -240,27 +240,28 @@ const ContractDetail = () => {
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Zákazník</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Jméno a příjmení</p>
-                  <p className="font-medium text-foreground">
+                  <p className="font-semibold text-foreground">
                     {contract.client?.first_name} {contract.client?.last_name}
                   </p>
                 </div>
+                {contract.client?.address && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Adresa</p>
+                    <p className="text-foreground">{contract.client.address}</p>
+                  </div>
+                )}
+                {contract.client?.date_of_birth && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Datum narození</p>
+                    <p className="text-foreground">
+                      {format(new Date(contract.client.date_of_birth), "d. MMMM yyyy", { locale: cs })}
+                    </p>
+                  </div>
+                )}
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Email</p>
-                  <p className="font-medium text-foreground">
-                    {contract.client?.email || '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Telefon</p>
-                  <p className="font-medium text-foreground">
-                    {contract.client?.phone || '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Adresa</p>
-                  <p className="font-medium text-foreground">
-                    {contract.client?.address || '-'}
+                  <p className="text-sm text-muted-foreground">Kontakt</p>
+                  <p className="text-foreground">
+                    {[contract.client?.email, contract.client?.phone].filter(Boolean).join(", ") || '-'}
                   </p>
                 </div>
               </div>
