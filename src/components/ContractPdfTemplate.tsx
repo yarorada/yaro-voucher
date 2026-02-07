@@ -461,36 +461,22 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           <div style={{ marginBottom: '6px' }}>
             <h2 style={sectionTitle}>Ostatní informace a požadavky</h2>
             <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#333', margin: '0 0 3px' }}>Startovací časy (Tee Times)</p>
-            <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ ...thStyle, width: '18%' }}>Datum</th>
-                  <th style={thStyle}>Golfový klub</th>
-                  <th style={{ ...thStyle, width: '12%' }}>Čas</th>
-                  <th style={{ ...thStyle, width: '12%', textAlign: 'center' }}>Golfisté</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services
-                  .filter((s: any) => s.service_type === 'golf')
-                  .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
-                  .map((s: any, idx: number) => {
-                    const desc = s.description || '';
-                    const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-                    const golfersMatch = desc.match(/Golfist[éy]:\s*([^\s,]+)/);
-                    return (
-                      <tr key={idx}>
-                        <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                          {s.start_date ? format(new Date(s.start_date), "d. M. yyyy") : '-'}
-                        </td>
-                        <td style={{ ...tdStyle, fontWeight: 'bold', verticalAlign: 'middle' }}>{s.service_name}</td>
-                        <td style={{ ...tdStyle, verticalAlign: 'middle' }}>{timeMatch?.[1] || '-'}</td>
-                        <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>{golfersMatch?.[1] || s.person_count || '-'}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
+            <div style={{ fontSize: '9px', lineHeight: '1.5' }}>
+              {services
+                .filter((s: any) => s.service_type === 'golf')
+                .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
+                .map((s: any, idx: number) => {
+                  const desc = s.description || '';
+                  const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
+                  const dateStr = s.start_date ? format(new Date(s.start_date), "dd.MM.yy") : '-';
+                  const timeStr = timeMatch?.[1] || '-';
+                  return (
+                    <p key={idx} style={{ margin: '1px 0' }}>
+                      {dateStr} – {s.service_name} – {timeStr}
+                    </p>
+                  );
+                })}
+            </div>
           </div>
         )}
 

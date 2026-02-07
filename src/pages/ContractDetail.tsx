@@ -433,37 +433,21 @@ const ContractDetail = () => {
             <Card className="p-4 md:p-6">
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Ostatní informace a požadavky</h2>
               <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 text-muted-foreground font-medium">Datum</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Golfový klub</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Čas</th>
-                      <th className="text-center py-2 text-muted-foreground font-medium">Golfisté</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contract.deal.services
-                      .filter((s: any) => s.service_type === 'golf')
-                      .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
-                      .map((s: any) => {
-                        const desc = s.description || '';
-                        const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-                        const golfersMatch = desc.match(/Golfist[éy]:\s*([^\s,]+)/);
-                        return (
-                          <tr key={s.id} className="border-b last:border-0">
-                            <td className="py-2 text-foreground">
-                              {s.start_date ? format(new Date(s.start_date), "d. M. yyyy") : '-'}
-                            </td>
-                            <td className="py-2 font-medium text-foreground">{s.service_name}</td>
-                            <td className="py-2 text-foreground">{timeMatch?.[1] || '-'}</td>
-                            <td className="py-2 text-center text-foreground">{golfersMatch?.[1] || s.person_count || '-'}</td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+              <div className="space-y-1">
+                {contract.deal.services
+                  .filter((s: any) => s.service_type === 'golf')
+                  .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
+                  .map((s: any) => {
+                    const desc = s.description || '';
+                    const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
+                    const dateStr = s.start_date ? format(new Date(s.start_date), "dd.MM.yy") : '-';
+                    const timeStr = timeMatch?.[1] || '-';
+                    return (
+                      <p key={s.id} className="text-sm text-foreground">
+                        {dateStr} – {s.service_name} – {timeStr}
+                      </p>
+                    );
+                  })}
               </div>
             </Card>
           )}
