@@ -127,7 +127,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     // Shared cell styles
     const labelStyle: React.CSSProperties = { padding: '2px 0', color: '#666', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
     const valueStyle: React.CSSProperties = { padding: '2px 0 2px 6px', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
-    const sectionTitle: React.CSSProperties = { fontSize: '10px', fontWeight: 'bold', marginTop: '8px', marginBottom: '3px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '2px', lineHeight: '1.2' };
+    const sectionTitle: React.CSSProperties = { fontSize: '10px', fontWeight: 'bold', marginTop: '10px', marginBottom: '5px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '4px', lineHeight: '1.4' };
     const thStyle: React.CSSProperties = { padding: '5px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '7px', fontWeight: 'bold', backgroundColor: '#f0f4f8', lineHeight: '1.2' };
     const tdStyle: React.CSSProperties = { padding: '5px 6px', borderBottom: '1px solid #eee', fontSize: '8px', lineHeight: '1.2', verticalAlign: 'middle' };
 
