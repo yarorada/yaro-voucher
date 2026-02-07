@@ -267,6 +267,84 @@ const ContractDetail = () => {
             </Card>
           </div>
 
+          {/* Cestující */}
+          {contract.deal?.travelers?.length > 0 && (
+            <Card className="p-4 md:p-6">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Cestující</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 text-muted-foreground font-medium">Jméno</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium">Datum narození</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium">Číslo pasu</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contract.deal.travelers.map((t: any, idx: number) => (
+                      <tr key={idx} className="border-b last:border-0">
+                        <td className="py-2 font-medium text-foreground">
+                          {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
+                        </td>
+                        <td className="py-2 text-foreground">
+                          {t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}
+                        </td>
+                        <td className="py-2 text-foreground">{t.client?.passport_number || '-'}</td>
+                        <td className="py-2 text-foreground">{t.client?.email || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* Služby */}
+          {contract.deal?.services?.length > 0 && (
+            <Card className="p-4 md:p-6">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Služby</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 text-muted-foreground font-medium">Služba</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium">Termín</th>
+                      <th className="text-center py-2 text-muted-foreground font-medium">Osoby</th>
+                      <th className="text-right py-2 text-muted-foreground font-medium">Cena</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contract.deal.services
+                      .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                      .map((service: any) => (
+                        <tr key={service.id} className="border-b last:border-0">
+                          <td className="py-2 text-foreground">
+                            <span className="font-medium">{service.service_name}</span>
+                            {service.description && (
+                              <span className="block text-xs text-muted-foreground">{service.description}</span>
+                            )}
+                          </td>
+                          <td className="py-2 text-foreground whitespace-nowrap">
+                            {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
+                            {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
+                          </td>
+                          <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
+                          <td className="py-2 text-right font-medium text-foreground">
+                            {formatPrice((service.price || 0) * (service.person_count || 1))}
+                          </td>
+                        </tr>
+                      ))}
+                    <tr className="bg-muted/50">
+                      <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
+                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
           {/* Platební kalendář */}
           <ContractPaymentSchedule 
             contractId={contract.id} 

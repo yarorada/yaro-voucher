@@ -291,7 +291,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice(service.price)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1))}</td>
                     </tr>
                   ))}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
