@@ -1862,7 +1862,7 @@ const DealDetail = () => {
                     ) : (
                       <>
                         <div className="space-y-2">
-                          <Label>Název služby *</Label>
+                          <Label>{serviceForm.service_type === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
                           <ServiceCombobox
                             value={serviceForm.service_name}
                             onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
@@ -1870,15 +1870,28 @@ const DealDetail = () => {
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>Popis</Label>
-                          <Textarea
-                            value={serviceForm.description}
-                            onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
-                            placeholder="Detaily služby..."
-                            rows={3}
-                          />
-                        </div>
+                        {serviceForm.service_type === 'hotel' && (
+                          <div className="space-y-2">
+                            <Label>Název a Typ pokoje</Label>
+                            <Input
+                              value={serviceForm.description}
+                              onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                              placeholder="např. Deluxe Double Room"
+                            />
+                          </div>
+                        )}
+
+                        {serviceForm.service_type !== 'hotel' && (
+                          <div className="space-y-2">
+                            <Label>Popis</Label>
+                            <Textarea
+                              value={serviceForm.description}
+                              onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                              placeholder="Detaily služby..."
+                              rows={3}
+                            />
+                          </div>
+                        )}
                       </>
                     )}
 

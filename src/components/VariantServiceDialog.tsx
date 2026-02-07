@@ -456,23 +456,35 @@ export const VariantServiceDialog = ({
           ) : (
             <>
               <div>
-                <Label htmlFor="service-name">Název služby *</Label>
+                <Label htmlFor="service-name">{serviceType === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
                 <ServiceCombobox
                   value={serviceName}
                   onChange={setServiceName}
                   serviceType={serviceType}
                 />
               </div>
-              <div>
-                <Label htmlFor="description">Popis</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Podrobnosti o službě..."
-                  rows={3}
-                />
-              </div>
+              {serviceType === 'hotel' ? (
+                <div>
+                  <Label htmlFor="description">Název a Typ pokoje</Label>
+                  <Input
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="např. Deluxe Double Room"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="description">Popis</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Podrobnosti o službě..."
+                    rows={3}
+                  />
+                </div>
+              )}
             </>
           )}
 
