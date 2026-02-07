@@ -1,11 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Save } from "lucide-react";
+
+interface Supplier {
+  id: string;
+  name: string;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  contact_person: string | null;
+}
 
 interface ContractAgencyInfoProps {
   contractId: string;
@@ -16,9 +32,11 @@ interface ContractAgencyInfoProps {
   onUpdate: () => void;
 }
 
+const YARO_SUPPLIER_NAME = "YARO s.r.o.";
+
 export function ContractAgencyInfo({
   contractId,
-  agencyName = "YARO Travel s.r.o.",
+  agencyName = YARO_SUPPLIER_NAME,
   agencyAddress = "",
   agencyIco = "",
   agencyContact = "",
@@ -33,12 +51,60 @@ export function ContractAgencyInfo({
     agency_contact: agencyContact,
   });
   const [loading, setLoading] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  const fetchSuppliers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .select("id, name, address, email, phone, contact_person")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setSuppliers(data || []);
+
+      // Try to match current agency to a supplier
+      if (data) {
+        const match = data.find(
+          (s) => s.name.toLowerCase() === agencyName.toLowerCase()
+        );
+        if (match) {
+          setSelectedSupplierId(match.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+    }
+  };
+
+  const handleSupplierChange = (supplierId: string) => {
+    setSelectedSupplierId(supplierId);
+    const supplier = suppliers.find((s) => s.id === supplierId);
+    if (supplier) {
+      const contactParts = [
+        supplier.contact_person,
+        supplier.email,
+        supplier.phone,
+      ].filter(Boolean);
+
+      setFormData({
+        agency_name: supplier.name,
+        agency_address: supplier.address || "",
+        agency_ico: "", // IČO isn't stored in suppliers, keep manual
+        agency_contact: contactParts.join(", "),
+      });
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      // @ts-ignore - Supabase types not updated after migration
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("travel_contracts")
         .update(formData)
         .eq("id", contractId);
@@ -80,45 +146,70 @@ export function ContractAgencyInfo({
         {isEditing ? (
           <>
             <div className="space-y-2">
-              <Label htmlFor="agency_name">Název agentury</Label>
-              <Input
-                id="agency_name"
-                value={formData.agency_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, agency_name: e.target.value })
-                }
-              />
+              <Label>Vybrat dodavatele z databáze</Label>
+              <Select
+                value={selectedSupplierId}
+                onValueChange={handleSupplierChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vyberte dodavatele..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="agency_address">Adresa</Label>
-              <Input
-                id="agency_address"
-                value={formData.agency_address}
-                onChange={(e) =>
-                  setFormData({ ...formData, agency_address: e.target.value })
-                }
-              />
+
+            <div className="border-t pt-4 space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Údaje můžete dále upravit ručně:
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="agency_name">Název agentury</Label>
+                <Input
+                  id="agency_name"
+                  value={formData.agency_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agency_name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency_address">Adresa</Label>
+                <Input
+                  id="agency_address"
+                  value={formData.agency_address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agency_address: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency_ico">IČO</Label>
+                <Input
+                  id="agency_ico"
+                  value={formData.agency_ico}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agency_ico: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency_contact">Kontakt</Label>
+                <Input
+                  id="agency_contact"
+                  value={formData.agency_contact}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agency_contact: e.target.value })
+                  }
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="agency_ico">IČO</Label>
-              <Input
-                id="agency_ico"
-                value={formData.agency_ico}
-                onChange={(e) =>
-                  setFormData({ ...formData, agency_ico: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="agency_contact">Kontakt</Label>
-              <Input
-                id="agency_contact"
-                value={formData.agency_contact}
-                onChange={(e) =>
-                  setFormData({ ...formData, agency_contact: e.target.value })
-                }
-              />
-            </div>
+
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} disabled={loading}>
                 <Save className="h-4 w-4 mr-2" />

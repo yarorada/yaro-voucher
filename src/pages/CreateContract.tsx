@@ -84,6 +84,18 @@ const CreateContract = () => {
         ? Number(deal.total_price) 
         : 0;
 
+      // Fetch YARO s.r.o. supplier data for default agency info
+      const { data: yaroSupplier } = await supabase
+        .from("suppliers")
+        .select("name, address, email, phone, contact_person")
+        .ilike("name", "%YARO%")
+        .limit(1)
+        .maybeSingle();
+
+      const contactParts = yaroSupplier
+        ? [yaroSupplier.contact_person, yaroSupplier.email, yaroSupplier.phone].filter(Boolean)
+        : [];
+
       const { data: contract, error } = await supabase
         .from("travel_contracts")
         .insert([{
@@ -93,6 +105,9 @@ const CreateContract = () => {
           total_price: totalPrice,
           status: 'draft',
           terms: formData.terms || null,
+          agency_name: yaroSupplier?.name || 'YARO s.r.o.',
+          agency_address: yaroSupplier?.address || null,
+          agency_contact: contactParts.length > 0 ? contactParts.join(', ') : null,
         }])
         .select()
         .single();
