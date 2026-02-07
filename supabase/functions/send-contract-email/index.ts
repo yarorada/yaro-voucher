@@ -10,6 +10,7 @@ interface SendContractEmailRequest {
   contractId: string;
   pdfPath?: string | null;
   ccSupplierEmail?: string | null;
+  customEmailText?: string | null;
 }
 
 // Czech email text for client
@@ -81,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { contractId, pdfPath, ccSupplierEmail }: SendContractEmailRequest = await req.json();
+    const { contractId, pdfPath, ccSupplierEmail, customEmailText }: SendContractEmailRequest = await req.json();
 
     // Validate contractId format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -163,8 +164,11 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
     const subject = `Cestovní smlouva ${contract.contract_number} - YARO Travel`;
 
-    // Send to CLIENT (Czech)
-    const clientEmailText = buildClientEmailText(clientLastName, dateFrom, dateTo, destination);
+    // Send to CLIENT (Czech) - use custom text if provided, otherwise use default
+    const signature = `\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
+    const clientEmailText = customEmailText
+      ? customEmailText + signature
+      : buildClientEmailText(clientLastName, dateFrom, dateTo, destination);
     console.log("Sending email to client:", clientEmail);
 
     const clientEmailPayload: any = {
