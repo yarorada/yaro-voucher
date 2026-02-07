@@ -1,0 +1,1 @@
+ALTER TABLE public.travel_contracts ALTER COLUMN agency_ico SET DEFAULT '07849290';

@@ -107,6 +107,7 @@ const CreateContract = () => {
           terms: formData.terms || null,
           agency_name: yaroSupplier?.name || 'YARO s.r.o.',
           agency_address: yaroSupplier?.address || null,
+          agency_ico: '07849290',
           agency_contact: contactParts.length > 0 ? contactParts.join(', ') : null,
         }])
         .select()
