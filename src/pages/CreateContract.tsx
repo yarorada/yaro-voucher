@@ -56,14 +56,15 @@ const CreateContract = () => {
     setLoading(true);
 
     try {
-      // Fetch deal details with travelers and services
+      // Fetch deal details with travelers, services and payments
       const { data: deal, error: dealError } = await supabase
         .from("deals")
         .select(`
           id,
           total_price,
           deal_travelers(client_id, is_lead_traveler),
-          deal_services(service_type, service_name)
+          deal_services(service_type, service_name),
+          deal_payments(payment_type, amount, due_date, notes, paid, paid_at)
         `)
         .eq("id", formData.deal_id)
         .single();
@@ -125,7 +126,28 @@ const CreateContract = () => {
 
         if (serviceTravelersError) {
           console.error("Error copying services to contract:", serviceTravelersError);
-          // Don't fail the whole operation, just log the error
+        }
+      }
+
+      // Copy deal payments to contract payments
+      const dealPayments = deal.deal_payments as any[];
+      if (dealPayments && dealPayments.length > 0) {
+        const contractPayments = dealPayments.map((payment: any) => ({
+          contract_id: contract.id,
+          payment_type: payment.payment_type,
+          amount: payment.amount,
+          due_date: payment.due_date,
+          notes: payment.notes || null,
+          paid: payment.paid || false,
+          paid_at: payment.paid_at || null,
+        }));
+
+        const { error: paymentsError } = await supabase
+          .from("contract_payments")
+          .insert(contractPayments);
+
+        if (paymentsError) {
+          console.error("Error copying payments to contract:", paymentsError);
         }
       }
 
