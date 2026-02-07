@@ -14,6 +14,7 @@ import { ContractServiceAssignment } from "@/components/ContractServiceAssignmen
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
 import { EditContractDialog } from "@/components/EditContractDialog";
 import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
+import { ContractTeeTimesEditor } from "@/components/ContractTeeTimesEditor";
 import { formatPrice } from "@/lib/utils";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
@@ -429,22 +430,33 @@ const ContractDetail = () => {
           )}
 
           {/* Ostatní informace a požadavky - tee times */}
-          {(contract as any).tee_times?.length > 0 && (
-            <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Ostatní informace a požadavky</h2>
-              <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
-              <div className="space-y-1">
-                {(contract as any).tee_times.map((tt: any, idx: number) => {
-                  const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
-                  return (
-                    <p key={idx} className="text-sm text-foreground">
-                      {dateStr} – {tt.club} – {tt.time || '-'}
-                    </p>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
+          <Card className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground">Ostatní informace a požadavky</h2>
+              <ContractTeeTimesEditor
+                contractId={contract.id}
+                teeTimes={(contract as any).tee_times || []}
+                onUpdate={refetch}
+              />
+            </div>
+            {(contract as any).tee_times?.length > 0 ? (
+              <>
+                <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
+                <div className="space-y-1">
+                  {(contract as any).tee_times.map((tt: any, idx: number) => {
+                    const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
+                    return (
+                      <p key={idx} className="text-sm text-foreground">
+                        {dateStr} – {tt.club} – {tt.time || '-'}
+                      </p>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Žádné startovací časy</p>
+            )}
+          </Card>
 
           {/* Právní podmínky */}
           <Card className="p-4 md:p-6">
