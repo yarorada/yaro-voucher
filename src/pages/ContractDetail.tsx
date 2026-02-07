@@ -12,6 +12,7 @@ import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
 import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
 import { ContractServiceAssignment } from "@/components/ContractServiceAssignment";
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
+import { SendContractEmail } from "@/components/SendContractEmail";
 import { EditContractDialog } from "@/components/EditContractDialog";
 import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { ContractTeeTimesEditor } from "@/components/ContractTeeTimesEditor";
@@ -232,10 +233,11 @@ const ContractDetail = () => {
             contractId={contract.id} 
             contractStatus={contract.status} 
           />
-          <Button variant="outline" size="sm" className="md:size-default">
-            <Send className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Odeslat</span>
-          </Button>
+          <SendContractEmail
+            contract={contract}
+            pdfContentRef={pdfContentRef}
+            onSent={refetch}
+          />
           <Button variant="outline" size="sm" className="md:size-default">
             <FileSignature className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Podepsat</span>
