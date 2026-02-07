@@ -183,7 +183,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         {/* ===== HLAVIČKA ===== */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', borderBottom: '2px solid #0066cc', paddingBottom: '8px' }}>
           <div>
-            <img src={yaroLogo} alt="YARO Travel" style={{ height: '32px', marginBottom: '4px' }} className="logo-dark-mode" />
+            <img src={yaroLogo} alt="YARO Travel" style={{ height: '42px', marginBottom: '4px' }} className="logo-dark-mode" />
           </div>
           <div style={{ textAlign: 'right' }}>
             <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0066cc' }}>CESTOVNÍ SMLOUVA</h1>
@@ -444,16 +444,18 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         </div>
 
         {/* ===== PODPISY ===== */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '24px', pageBreakInside: 'avoid' }}>
           <div style={{ width: '44%', textAlign: 'center' }}>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '6px', marginTop: '40px' }}>
-              <p style={{ fontWeight: 'bold', margin: 0 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</p>
+            <p style={{ fontSize: '9px', color: '#666', margin: '0 0 4px' }}>Dodavatel:</p>
+            <div style={{ borderTop: '1px solid #000', paddingTop: '6px', marginTop: '36px' }}>
+              <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.4 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</p>
               <p style={{ color: '#666', fontSize: '8px', margin: '2px 0 0' }}>(podpis a razítko)</p>
             </div>
           </div>
           <div style={{ width: '44%', textAlign: 'center' }}>
-            <div style={{ borderTop: '1px solid #000', paddingTop: '6px', marginTop: '40px' }}>
-              <p style={{ fontWeight: 'bold', margin: 0 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
+            <p style={{ fontSize: '9px', color: '#666', margin: '0 0 4px' }}>Zákazník:</p>
+            <div style={{ borderTop: '1px solid #000', paddingTop: '6px', marginTop: '36px' }}>
+              <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.4 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
               <p style={{ color: '#666', fontSize: '8px', margin: '2px 0 0' }}>(podpis zákazníka)</p>
             </div>
           </div>
