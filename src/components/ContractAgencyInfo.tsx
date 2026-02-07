@@ -32,14 +32,19 @@ interface ContractAgencyInfoProps {
   onUpdate: () => void;
 }
 
-const YARO_SUPPLIER_NAME = "YARO s.r.o.";
+const YARO_DEFAULTS = {
+  name: "YARO s.r.o.",
+  address: "Bratranců Veverkových 680, Pardubice, 530 02",
+  ico: "07849290",
+  contact: "+420 602 102 108",
+};
 
 export function ContractAgencyInfo({
   contractId,
-  agencyName = YARO_SUPPLIER_NAME,
-  agencyAddress = "",
-  agencyIco = "",
-  agencyContact = "",
+  agencyName = YARO_DEFAULTS.name,
+  agencyAddress = YARO_DEFAULTS.address,
+  agencyIco = YARO_DEFAULTS.ico,
+  agencyContact = YARO_DEFAULTS.contact,
   onUpdate,
 }: ContractAgencyInfoProps) {
   const { toast } = useToast();
