@@ -259,6 +259,16 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   <td style={valueStyle}>{getTransportationText()}</td>
                 </tr>
               )}
+              <tr>
+                <td style={labelStyle}>Hotel:</td>
+                <td style={valueStyle} colSpan={3}>
+                  {(() => {
+                    const hotelService = services.find((s: any) => s.service_type === 'hotel');
+                    if (!hotelService) return '-';
+                    return hotelService.service_name + (hotelService.description ? ` – ${hotelService.description}` : '');
+                  })()}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
