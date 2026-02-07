@@ -231,6 +231,7 @@ const ContractDetail = () => {
               agencyAddress={(contract as any).agency_address}
               agencyIco={(contract as any).agency_ico}
               agencyContact={(contract as any).agency_contact}
+              agencyBankAccount={(contract as any).agency_bank_account}
               onUpdate={refetch}
             />
 
@@ -271,6 +272,8 @@ const ContractDetail = () => {
             contractId={contract.id} 
             totalPrice={contract.deal?.total_price}
             departureDate={contract.deal?.start_date}
+            contractNumber={contract.contract_number}
+            bankAccount={(contract as any).agency_bank_account}
           />
 
           {/* Přiřazení cestujících ke službám */}

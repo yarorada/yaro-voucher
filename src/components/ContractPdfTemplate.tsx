@@ -1,7 +1,8 @@
-import { forwardRef } from "react";
+import { forwardRef, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
+import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 interface ParsedFlightLeg {
@@ -38,6 +39,29 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const payments: PaymentRecord[] = (contract.payments || [])
       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
+    const bankAccount = (contract as any).agency_bank_account || '227993932/0600';
+    const iban = bankAccountToIban(bankAccount);
+    const contractNumber = contract.contract_number || '';
+    const variableSymbol = extractVariableSymbol(contractNumber);
+
+    // QR code for total unpaid amount
+    const unpaidTotal = payments
+      .filter(p => !p.paid)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    const [qrDataUrl, setQrDataUrl] = useState<string>("");
+
+    useEffect(() => {
+      if (unpaidTotal > 0 && contractNumber) {
+        generatePaymentQrDataUrl({
+          amount: unpaidTotal,
+          contractNumber,
+          bankAccount,
+          size: 200,
+        }).then(setQrDataUrl).catch(console.error);
+      }
+    }, [unpaidTotal, contractNumber, bankAccount]);
+
     // Extract flight services and their segments
     const flightServices = services.filter((s: any) => s.service_type === "flight");
     const hasFlights = flightServices.length > 0;
@@ -56,107 +80,47 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
       const details = typeof service.details === "string" ? JSON.parse(service.details) : service.details;
       const legs: ParsedFlightLeg[] = [];
 
-      // Format 1: outbound_segments / return_segments (multi-segment with times)
       if (details.outbound_segments || details.return_segments) {
         for (const seg of (details.outbound_segments || [])) {
-          legs.push({
-            date: seg.date,
-            airline_code: seg.airline,
-            airline_name: seg.airline_name,
-            flight_number: seg.flight_number,
-            departure_airport: seg.departure,
-            arrival_airport: seg.arrival,
-            departure_time: seg.departure_time,
-            arrival_time: seg.arrival_time,
-          });
+          legs.push({ date: seg.date, airline_code: seg.airline, airline_name: seg.airline_name, flight_number: seg.flight_number, departure_airport: seg.departure, arrival_airport: seg.arrival, departure_time: seg.departure_time, arrival_time: seg.arrival_time });
         }
         for (const seg of (details.return_segments || [])) {
-          legs.push({
-            date: seg.date,
-            airline_code: seg.airline,
-            airline_name: seg.airline_name,
-            flight_number: seg.flight_number,
-            departure_airport: seg.departure,
-            arrival_airport: seg.arrival,
-            departure_time: seg.departure_time,
-            arrival_time: seg.arrival_time,
-          });
+          legs.push({ date: seg.date, airline_code: seg.airline, airline_name: seg.airline_name, flight_number: seg.flight_number, departure_airport: seg.departure, arrival_airport: seg.arrival, departure_time: seg.departure_time, arrival_time: seg.arrival_time });
         }
         return legs;
       }
 
-      // Format 2: simple outbound / return objects
       if (details.outbound) {
-        legs.push({
-          date: service.start_date || undefined,
-          airline_code: details.outbound.airline,
-          airline_name: details.outbound.airline_name,
-          flight_number: details.outbound.flight_number,
-          departure_airport: details.outbound.departure,
-          arrival_airport: details.outbound.arrival,
-          departure_time: details.outbound.departure_time,
-          arrival_time: details.outbound.arrival_time,
-        });
+        legs.push({ date: service.start_date || undefined, airline_code: details.outbound.airline, airline_name: details.outbound.airline_name, flight_number: details.outbound.flight_number, departure_airport: details.outbound.departure, arrival_airport: details.outbound.arrival, departure_time: details.outbound.departure_time, arrival_time: details.outbound.arrival_time });
       }
       if (details.return) {
-        legs.push({
-          date: service.end_date || undefined,
-          airline_code: details.return.airline,
-          airline_name: details.return.airline_name,
-          flight_number: details.return.flight_number,
-          departure_airport: details.return.departure,
-          arrival_airport: details.return.arrival,
-          departure_time: details.return.departure_time,
-          arrival_time: details.return.arrival_time,
-        });
+        legs.push({ date: service.end_date || undefined, airline_code: details.return.airline, airline_name: details.return.airline_name, flight_number: details.return.flight_number, departure_airport: details.return.departure, arrival_airport: details.return.arrival, departure_time: details.return.departure_time, arrival_time: details.return.arrival_time });
       }
 
-      // Format 3: segments array (generic)
       if (details.segments) {
         for (const seg of details.segments) {
-          legs.push({
-            date: seg.date,
-            airline_code: seg.airline,
-            airline_name: seg.airline_name,
-            flight_number: seg.flight_number,
-            departure_airport: seg.departure_airport || seg.departure,
-            arrival_airport: seg.arrival_airport || seg.arrival,
-            departure_time: seg.departure_time,
-            arrival_time: seg.arrival_time,
-          });
+          legs.push({ date: seg.date, airline_code: seg.airline, airline_name: seg.airline_name, flight_number: seg.flight_number, departure_airport: seg.departure_airport || seg.departure, arrival_airport: seg.arrival_airport || seg.arrival, departure_time: seg.departure_time, arrival_time: seg.arrival_time });
         }
       }
 
       return legs;
     };
 
-    // Format a flight leg into "DD.MM.YY • W64600 Wizz Air • PRG → LCA • Odlet: 18:25 • Přílet: 22:50"
     const formatFlightLeg = (leg: ParsedFlightLeg): string => {
       const parts: string[] = [];
-
-      // Date
       if (leg.date) {
-        try {
-          parts.push(format(new Date(leg.date), "dd.MM.yy"));
-        } catch { parts.push(leg.date); }
+        try { parts.push(format(new Date(leg.date), "dd.MM.yy")); } catch { parts.push(leg.date); }
       }
-
-      // Flight number + airline name: "W64600 Wizz Air"
       const flightId = [
         leg.airline_code && leg.flight_number ? `${leg.airline_code}${leg.flight_number}` : (leg.flight_number || ''),
         leg.airline_name || ''
       ].filter(Boolean).join(' ');
       if (flightId) parts.push(flightId);
-
-      // Route
       if (leg.departure_airport || leg.arrival_airport) {
         parts.push(`${leg.departure_airport || '?'} → ${leg.arrival_airport || '?'}`);
       }
-
-      // Times
       if (leg.departure_time) parts.push(`Odlet: ${leg.departure_time}`);
       if (leg.arrival_time) parts.push(`Přílet: ${leg.arrival_time}`);
-
       return parts.join(' • ');
     };
 
@@ -194,53 +158,28 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           </div>
         </div>
 
-        {/* ===== SMLUVNÍ STRANY – dvousloupcový layout ===== */}
+        {/* ===== SMLUVNÍ STRANY ===== */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-          {/* Dodavatel */}
           <div style={{ flex: 1 }}>
             <h2 style={sectionTitle}>Dodavatel</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                <tr>
-                  <td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>
-                    {(contract as any).agency_name || 'YARO Travel s.r.o.'}
-                  </td>
-                </tr>
-                {(contract as any).agency_address && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_address}</td></tr>
-                )}
-                {(contract as any).agency_ico && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>IČO: {(contract as any).agency_ico}</td></tr>
-                )}
-                {(contract as any).agency_contact && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Kontakt: {(contract as any).agency_contact}</td></tr>
-                )}
+                <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</td></tr>
+                {(contract as any).agency_address && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_address}</td></tr>}
+                {(contract as any).agency_ico && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>IČO: {(contract as any).agency_ico}</td></tr>}
+                {(contract as any).agency_contact && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Kontakt: {(contract as any).agency_contact}</td></tr>}
               </tbody>
             </table>
           </div>
-
-          {/* Zákazník */}
           <div style={{ flex: 1 }}>
             <h2 style={sectionTitle}>Zákazník</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                <tr>
-                  <td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>
-                    {contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}
-                  </td>
-                </tr>
-                {contract.client?.date_of_birth && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Nar.: {format(new Date(contract.client.date_of_birth), "d. M. yyyy")}</td></tr>
-                )}
-                {contract.client?.address && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.address}</td></tr>
-                )}
-                {contract.client?.email && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.email}</td></tr>
-                )}
-                {contract.client?.phone && (
-                  <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.phone}</td></tr>
-                )}
+                <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
+                {contract.client?.date_of_birth && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Nar.: {format(new Date(contract.client.date_of_birth), "d. M. yyyy")}</td></tr>}
+                {contract.client?.address && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.address}</td></tr>}
+                {contract.client?.email && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.email}</td></tr>}
+                {contract.client?.phone && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.phone}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -284,17 +223,13 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {legs.length > 0 ? (
                     <div style={{ fontSize: '9px' }}>
                       {legs.map((leg, idx) => (
-                        <p key={idx} style={{ margin: '2px 0', lineHeight: 1.3 }}>
-                          {formatFlightLeg(leg)}
-                        </p>
+                        <p key={idx} style={{ margin: '2px 0', lineHeight: 1.3 }}>{formatFlightLeg(leg)}</p>
                       ))}
                     </div>
                   ) : (
                     <p style={{ fontSize: '9px', margin: '2px 0' }}>
                       {flight.service_name}
-                      {flight.start_date && flight.end_date
-                        ? ` · ${format(new Date(flight.start_date), "d. M. yyyy")} – ${format(new Date(flight.end_date), "d. M. yyyy")}`
-                        : ''}
+                      {flight.start_date && flight.end_date ? ` · ${format(new Date(flight.start_date), "d. M. yyyy")} – ${format(new Date(flight.end_date), "d. M. yyyy")}` : ''}
                       {flight.description ? ` · ${flight.description}` : ''}
                     </p>
                   )}
@@ -319,12 +254,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               <tbody>
                 {travelers.map((t: any, idx: number) => (
                   <tr key={idx}>
-                    <td style={tdStyle}>
-                      {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
-                    </td>
-                    <td style={tdStyle}>
-                      {t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}
-                    </td>
+                    <td style={tdStyle}>{t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}</td>
+                    <td style={tdStyle}>{t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}</td>
                     <td style={tdStyle}>{t.client?.passport_number || '-'}</td>
                   </tr>
                 ))}
@@ -353,9 +284,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     <tr key={service.id}>
                       <td style={tdStyle}>
                         {service.service_name}
-                        {service.description && (
-                          <span style={{ display: 'block', fontSize: '7px', color: '#888' }}>{service.description}</span>
-                        )}
+                        {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888' }}>{service.description}</span>}
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
                         {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
@@ -374,58 +303,84 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           </div>
         )}
 
-        {/* ===== PLATEBNÍ KALENDÁŘ ===== */}
+        {/* ===== PLATEBNÍ KALENDÁŘ S QR KÓDEM ===== */}
         {payments.length > 0 && (
           <div style={{ marginBottom: '6px' }}>
             <h2 style={sectionTitle}>Platební kalendář</h2>
-            <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Typ platby</th>
-                  <th style={{ ...thStyle, width: '22%' }}>Splatnost</th>
-                  <th style={{ ...thStyle, width: '20%', textAlign: 'right' }}>Částka</th>
-                  <th style={{ ...thStyle, width: '18%', textAlign: 'center' }}>Stav</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((payment) => {
-                  const typeLabels: Record<string, string> = {
-                    deposit: 'Záloha',
-                    deposit_1: '1. záloha',
-                    deposit_2: '2. záloha',
-                    deposit_3: '3. záloha',
-                    final: 'Doplatek',
-                    installment: 'Splátka',
-                  };
-                  return (
-                    <tr key={payment.id}>
-                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                        {typeLabels[payment.payment_type] || payment.payment_type}
-                        {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888' }}>{payment.notes}</span>}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {/* Tabulka plateb */}
+              <div style={{ flex: 1 }}>
+                <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Typ platby</th>
+                      <th style={{ ...thStyle, width: '22%' }}>Splatnost</th>
+                      <th style={{ ...thStyle, width: '20%', textAlign: 'right' }}>Částka</th>
+                      <th style={{ ...thStyle, width: '18%', textAlign: 'center' }}>Stav</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((payment) => {
+                      const typeLabels: Record<string, string> = {
+                        deposit: 'Záloha',
+                        deposit_1: '1. záloha',
+                        deposit_2: '2. záloha',
+                        deposit_3: '3. záloha',
+                        final: 'Doplatek',
+                        installment: 'Splátka',
+                      };
+                      return (
+                        <tr key={payment.id}>
+                          <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                            {typeLabels[payment.payment_type] || payment.payment_type}
+                            {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888' }}>{payment.notes}</span>}
+                          </td>
+                          <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                            {format(new Date(payment.due_date), "d. M. yyyy")}
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
+                            {formatPrice(payment.amount)}
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
+                            {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{ backgroundColor: '#f0f4f8' }}>
+                      <td colSpan={2} style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
+                      <td style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
+                        {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
                       </td>
-                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                        {format(new Date(payment.due_date), "d. M. yyyy")}
-                      </td>
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
-                        {formatPrice(payment.amount)}
-                      </td>
-                      <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
-                        {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
+                      <td style={{ padding: '3px 5px', textAlign: 'center', fontSize: '8px', color: '#666' }}>
+                        {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
                       </td>
                     </tr>
-                  );
-                })}
-                <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={2} style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
-                  <td style={{ padding: '3px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
-                    {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
-                  </td>
-                  <td style={{ padding: '3px 5px', textAlign: 'center', fontSize: '8px', color: '#666' }}>
-                    {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </tbody>
+                </table>
+
+                {/* Platební údaje */}
+                <div style={{ marginTop: '6px', padding: '6px 8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
+                  <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '9px' }}>Platební údaje</p>
+                  <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
+                  <p style={{ margin: '1px 0' }}>IBAN: <strong>{iban}</strong></p>
+                  <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                </div>
+              </div>
+
+              {/* QR kód */}
+              {qrDataUrl && unpaidTotal > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '110px' }}>
+                  <img src={qrDataUrl} alt="QR platba" style={{ width: '100px', height: '100px' }} />
+                  <p style={{ fontSize: '7px', color: '#666', marginTop: '3px', textAlign: 'center' }}>
+                    QR platba
+                  </p>
+                  <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#0066cc', marginTop: '1px', textAlign: 'center' }}>
+                    {formatPrice(unpaidTotal)}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

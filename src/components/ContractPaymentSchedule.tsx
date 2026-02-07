@@ -26,10 +26,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn, formatPrice } from "@/lib/utils";
+import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
 
 interface Payment {
   id: string;
@@ -53,12 +54,15 @@ interface ContractPaymentScheduleProps {
   contractId: string;
   totalPrice?: number;
   departureDate?: string;
+  contractNumber?: string;
+  bankAccount?: string;
 }
 
-export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600' }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -287,6 +291,23 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
     .reduce((sum, p) => sum + p.amount, 0);
   const remainingPayment = Math.max(0, totalPrice - depositsSum);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
+  const unpaidTotal = payments.filter((p) => !p.paid).reduce((sum, p) => sum + p.amount, 0);
+
+  const iban = bankAccountToIban(bankAccount);
+  const variableSymbol = extractVariableSymbol(contractNumber);
+
+  // Generate QR code for unpaid total
+  useEffect(() => {
+    if (unpaidTotal > 0 && contractNumber) {
+      generatePaymentQrDataUrl({
+        amount: unpaidTotal,
+        contractNumber,
+        bankAccount,
+      }).then(setQrDataUrl).catch(console.error);
+    } else {
+      setQrDataUrl("");
+    }
+  }, [unpaidTotal, contractNumber, bankAccount]);
 
   // Calculate schedule totals
   const scheduleDepositsTotal = scheduleItems
@@ -386,27 +407,56 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                   })}
                 </TableBody>
               </Table>
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-body">
-                  <span>Celková cena zájezdu:</span>
-                  <span className="font-semibold">{formatPrice(totalPrice)}</span>
-                </div>
-                <div className="flex justify-between text-body">
-                  <span>Zálohy a splátky:</span>
-                  <span className="font-semibold">{formatPrice(depositsSum)}</span>
-                </div>
-                <div className="flex justify-between text-body font-medium">
-                  <span>Zbývá k doplacení:</span>
-                  <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
-                    {formatPrice(remainingPayment)}
-                  </span>
-                </div>
-                <div className="border-t mt-2 pt-2">
-                  <div className="flex justify-between text-body text-green-600">
-                    <span>Zaplaceno:</span>
-                    <span className="font-semibold">{formatPrice(paidAmount)}</span>
+              {/* Souhrn a platební údaje */}
+              <div className="border-t pt-4 grid md:grid-cols-[1fr,auto] gap-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-body">
+                    <span>Celková cena zájezdu:</span>
+                    <span className="font-semibold">{formatPrice(totalPrice)}</span>
+                  </div>
+                  <div className="flex justify-between text-body">
+                    <span>Zálohy a splátky:</span>
+                    <span className="font-semibold">{formatPrice(depositsSum)}</span>
+                  </div>
+                  <div className="flex justify-between text-body font-medium">
+                    <span>Zbývá k doplacení:</span>
+                    <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
+                      {formatPrice(remainingPayment)}
+                    </span>
+                  </div>
+                  <div className="border-t mt-2 pt-2">
+                    <div className="flex justify-between text-body text-green-600">
+                      <span>Zaplaceno:</span>
+                      <span className="font-semibold">{formatPrice(paidAmount)}</span>
+                    </div>
+                  </div>
+
+                  {/* Platební údaje */}
+                  <div className="border-t mt-2 pt-3 space-y-1">
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
+                      <QrCode className="h-4 w-4" />
+                      Platební údaje
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Číslo účtu: <span className="font-medium text-foreground">{bankAccount}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      IBAN: <span className="font-medium text-foreground">{iban}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
+                    </p>
                   </div>
                 </div>
+
+                {/* QR kód */}
+                {qrDataUrl && unpaidTotal > 0 && (
+                  <div className="flex flex-col items-center justify-center">
+                    <img src={qrDataUrl} alt="QR platba" className="w-[120px] h-[120px] rounded" />
+                    <p className="text-xs text-muted-foreground mt-1">QR platba</p>
+                    <p className="text-sm font-bold text-primary">{formatPrice(unpaidTotal)}</p>
+                  </div>
+                )}
               </div>
             </>
           )}
