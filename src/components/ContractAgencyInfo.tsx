@@ -29,6 +29,7 @@ interface ContractAgencyInfoProps {
   agencyAddress?: string;
   agencyIco?: string;
   agencyContact?: string;
+  agencyBankAccount?: string;
   onUpdate: () => void;
 }
 
@@ -37,6 +38,7 @@ const YARO_DEFAULTS = {
   address: "Bratranců Veverkových 680, Pardubice, 530 02",
   ico: "07849290",
   contact: "radek@yarotravel.cz, +420 602 102 108",
+  bank_account: "227993932/0600",
 };
 
 export function ContractAgencyInfo({
@@ -45,6 +47,7 @@ export function ContractAgencyInfo({
   agencyAddress = YARO_DEFAULTS.address,
   agencyIco = YARO_DEFAULTS.ico,
   agencyContact = YARO_DEFAULTS.contact,
+  agencyBankAccount = YARO_DEFAULTS.bank_account,
   onUpdate,
 }: ContractAgencyInfoProps) {
   const { toast } = useToast();
@@ -54,6 +57,7 @@ export function ContractAgencyInfo({
     agency_address: agencyAddress,
     agency_ico: agencyIco,
     agency_contact: agencyContact,
+    agency_bank_account: agencyBankAccount,
   });
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -102,6 +106,7 @@ export function ContractAgencyInfo({
         agency_address: supplier.address || "",
         agency_ico: "", // IČO isn't stored in suppliers, keep manual
         agency_contact: contactParts.join(", "),
+        agency_bank_account: formData.agency_bank_account, // keep current bank account
       });
     }
   };
@@ -213,6 +218,17 @@ export function ContractAgencyInfo({
                   }
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency_bank_account">Číslo účtu</Label>
+                <Input
+                  id="agency_bank_account"
+                  value={formData.agency_bank_account}
+                  onChange={(e) =>
+                    setFormData({ ...formData, agency_bank_account: e.target.value })
+                  }
+                  placeholder="227993932/0600"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -229,6 +245,7 @@ export function ContractAgencyInfo({
                     agency_address: agencyAddress,
                     agency_ico: agencyIco,
                     agency_contact: agencyContact,
+                    agency_bank_account: agencyBankAccount,
                   });
                 }}
               >
@@ -257,6 +274,12 @@ export function ContractAgencyInfo({
               <div>
                 <p className="text-sm text-muted-foreground">Kontakt</p>
                 <p className="text-body">{formData.agency_contact}</p>
+              </div>
+            )}
+            {formData.agency_bank_account && (
+              <div>
+                <p className="text-sm text-muted-foreground">Číslo účtu</p>
+                <p className="text-body font-mono">{formData.agency_bank_account}</p>
               </div>
             )}
           </div>

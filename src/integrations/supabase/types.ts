@@ -919,6 +919,7 @@ export type Database = {
       travel_contracts: {
         Row: {
           agency_address: string | null
+          agency_bank_account: string | null
           agency_contact: string | null
           agency_ico: string | null
           agency_name: string | null
@@ -940,6 +941,7 @@ export type Database = {
         }
         Insert: {
           agency_address?: string | null
+          agency_bank_account?: string | null
           agency_contact?: string | null
           agency_ico?: string | null
           agency_name?: string | null
@@ -961,6 +963,7 @@ export type Database = {
         }
         Update: {
           agency_address?: string | null
+          agency_bank_account?: string | null
           agency_contact?: string | null
           agency_ico?: string | null
           agency_name?: string | null

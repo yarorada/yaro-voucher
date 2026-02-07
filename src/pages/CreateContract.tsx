@@ -98,6 +98,7 @@ const CreateContract = () => {
           agency_address: 'Bratranců Veverkových 680, Pardubice, 530 02',
           agency_ico: '07849290',
           agency_contact: 'radek@yarotravel.cz, +420 602 102 108',
+          agency_bank_account: '227993932/0600',
         }])
         .select()
         .single();
