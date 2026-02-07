@@ -222,140 +222,49 @@ const ContractDetail = () => {
             </div>
           </Card>
 
-          {/* Klient */}
-          <Card className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Zákazník</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Jméno a příjmení</p>
-                <p className="font-medium text-foreground">
-                  {contract.client?.first_name} {contract.client?.last_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Email</p>
-                <p className="font-medium text-foreground">
-                  {contract.client?.email || '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Telefon</p>
-                <p className="font-medium text-foreground">
-                  {contract.client?.phone || '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Adresa</p>
-                <p className="font-medium text-foreground">
-                  {contract.client?.address || '-'}
-                </p>
-              </div>
-            </div>
-          </Card>
+          {/* Dodavatel + Zákazník vedle sebe */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Dodavatel služeb */}
+            <ContractAgencyInfo
+              contractId={contract.id}
+              agencyName={(contract as any).agency_name}
+              agencyAddress={(contract as any).agency_address}
+              agencyIco={(contract as any).agency_ico}
+              agencyContact={(contract as any).agency_contact}
+              onUpdate={refetch}
+            />
 
-          {/* Zájezd */}
-          <Card className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Předmět smlouvy - Zájezd</h2>
-            <div className="grid md:grid-cols-2 gap-3 md:gap-4 mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Destinace</p>
-                <p className="font-medium text-foreground">
-                  {contract.deal?.destination?.name}, {contract.deal?.destination?.country?.name}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Celková cena</p>
-                <p className="font-medium text-foreground text-xl">
-                  {formatPrice(contract.deal?.total_price)}
-                </p>
-              </div>
-              {contract.deal?.start_date && (
+            {/* Zákazník */}
+            <Card className="p-4 md:p-6">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Zákazník</h2>
+              <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Datum začátku</p>
+                  <p className="text-sm text-muted-foreground mb-1">Jméno a příjmení</p>
                   <p className="font-medium text-foreground">
-                    {format(new Date(contract.deal.start_date), "d. MMMM yyyy", { locale: cs })}
+                    {contract.client?.first_name} {contract.client?.last_name}
                   </p>
                 </div>
-              )}
-              {contract.deal?.end_date && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Datum konce</p>
+                  <p className="text-sm text-muted-foreground mb-1">Email</p>
                   <p className="font-medium text-foreground">
-                    {format(new Date(contract.deal.end_date), "d. MMMM yyyy", { locale: cs })}
+                    {contract.client?.email || '-'}
                   </p>
                 </div>
-              )}
-            </div>
-            {contract.deal?.notes && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Popis programu</p>
-                <p className="text-foreground">{contract.deal.notes}</p>
-              </div>
-            )}
-          </Card>
-
-          {/* Cestující */}
-          {contract.deal?.travelers && contract.deal.travelers.length > 0 && (
-            <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Cestující</h2>
-              <div className="space-y-3">
-                {contract.deal.travelers.map((traveler: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">
-                        {traveler.client?.first_name} {traveler.client?.last_name}
-                      </p>
-                      {traveler.client?.date_of_birth && (
-                        <p className="text-sm text-muted-foreground">
-                          Datum narození: {format(new Date(traveler.client.date_of_birth), "d. M. yyyy", { locale: cs })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Telefon</p>
+                  <p className="font-medium text-foreground">
+                    {contract.client?.phone || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Adresa</p>
+                  <p className="font-medium text-foreground">
+                    {contract.client?.address || '-'}
+                  </p>
+                </div>
               </div>
             </Card>
-          )}
-
-          {/* Služby */}
-          {contract.deal?.services && contract.deal.services.length > 0 && (
-            <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Poskytnuté služby</h2>
-              <div className="space-y-3">
-                {contract.deal.services.map((service: any) => (
-                  <div key={service.id} className="p-4 border border-border rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{service.service_name}</p>
-                        <div className="flex gap-3 mt-1 text-sm text-muted-foreground">
-                          {service.person_count && (
-                            <span>👥 {service.person_count} {service.person_count === 1 ? 'osoba' : service.person_count < 5 ? 'osoby' : 'osob'}</span>
-                          )}
-                          <span>Dodavatel: {service.supplier?.name || "-"}</span>
-                        </div>
-                      </div>
-                      <p className="font-bold text-foreground">
-                        {formatPrice(service.price)}
-                      </p>
-                    </div>
-                    {service.description && (
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Dodavatel služeb */}
-          <ContractAgencyInfo
-            contractId={contract.id}
-            agencyName={(contract as any).agency_name}
-            agencyAddress={(contract as any).agency_address}
-            agencyIco={(contract as any).agency_ico}
-            agencyContact={(contract as any).agency_contact}
-            onUpdate={refetch}
-          />
+          </div>
 
           {/* Platební kalendář */}
           <ContractPaymentSchedule 
