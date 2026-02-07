@@ -180,9 +180,13 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </tr>
                 <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_ico || '-'}</td></tr>
                 <tr>
-                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Kontakt</td>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>E-mail</td>
                 </tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_contact || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>radek@yarotravel.cz</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Telefon</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>+420 602 102 108</td></tr>
               </tbody>
             </table>
           </div>
@@ -200,9 +204,13 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </tr>
                 <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client?.date_of_birth ? format(new Date(contract.client.date_of_birth), "d. M. yyyy") : '-'}</td></tr>
                 <tr>
-                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Kontakt</td>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>E-mail</td>
                 </tr>
-                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{[contract.client?.email, contract.client?.phone].filter(Boolean).join(', ') || '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client?.email || '-'}</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Telefon</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client?.phone || '-'}</td></tr>
               </tbody>
             </table>
           </div>
