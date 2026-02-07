@@ -883,6 +883,26 @@ const DealDetail = () => {
       const { error } = await supabase.from("deal_services").insert(servicesToInsert);
       if (error) throw error;
 
+      // Save structured tee times to deal
+      const structuredTeeTimes = teeTimes
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        .map(tt => ({
+          date: tt.date || null,
+          club: tt.club || '',
+          time: tt.time || '',
+        }));
+
+      // Merge with existing tee times on the deal
+      const existingTeeTimes = (deal as any).tee_times || [];
+      const mergedTeeTimes = [...existingTeeTimes, ...structuredTeeTimes];
+
+      // @ts-ignore
+      const { error: dealError } = await supabase
+        .from("deals")
+        .update({ tee_times: mergedTeeTimes } as any)
+        .eq("id", deal.id);
+      if (dealError) console.error("Error saving tee times to deal:", dealError);
+
       toast({
         title: "Úspěch",
         description: `Vytvořeno ${teeTimes.length} Green Fee služeb`,
@@ -891,6 +911,7 @@ const DealDetail = () => {
       setServiceDialogOpen(false);
       resetServiceForm();
       await fetchServices();
+      await fetchDeal();
     } catch (error) {
       console.error("Error importing golf tee times:", error);
       toast({
@@ -1252,21 +1273,8 @@ const DealDetail = () => {
         ? Number(deal.total_price) 
         : 0;
 
-      // Extract tee times from golf services
-      const golfServices = services.filter(s => s.service_type === 'golf');
-      const teeTimes = golfServices.length > 0
-        ? golfServices
-            .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''))
-            .map(s => {
-              const desc = s.description || '';
-              const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-              return {
-                date: s.start_date || null,
-                club: s.service_name || '',
-                time: timeMatch?.[1] || '',
-              };
-            })
-        : null;
+      // Use tee times stored directly on the deal
+      const teeTimes = (deal as any).tee_times?.length > 0 ? (deal as any).tee_times : null;
 
       const { data: newContract, error } = await supabase
         .from("travel_contracts")

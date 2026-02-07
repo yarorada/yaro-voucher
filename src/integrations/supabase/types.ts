@@ -632,6 +632,7 @@ export type Database = {
           notes: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["deal_status"]
+          tee_times: Json | null
           total_price: number | null
           updated_at: string
           user_id: string
@@ -652,6 +653,7 @@ export type Database = {
           notes?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
+          tee_times?: Json | null
           total_price?: number | null
           updated_at?: string
           user_id?: string
@@ -672,6 +674,7 @@ export type Database = {
           notes?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
+          tee_times?: Json | null
           total_price?: number | null
           updated_at?: string
           user_id?: string

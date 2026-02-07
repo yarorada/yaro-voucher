@@ -62,6 +62,7 @@ const CreateContract = () => {
         .select(`
           id,
           total_price,
+          tee_times,
           deal_travelers(client_id, is_lead_traveler),
           deal_services(service_type, service_name, start_date, description)
         `)
@@ -87,21 +88,8 @@ const CreateContract = () => {
         ? Number(deal.total_price) 
         : 0;
 
-      // Extract tee times from golf services
-      const golfServices = (deal.deal_services as any[])?.filter((s: any) => s.service_type === 'golf') || [];
-      const teeTimes = golfServices.length > 0
-        ? golfServices
-            .sort((a: any, b: any) => (a.start_date || '').localeCompare(b.start_date || ''))
-            .map((s: any) => {
-              const desc = s.description || '';
-              const timeMatch = desc.match(/Čas:\s*([^\s,]+)/);
-              return {
-                date: s.start_date || null,
-                club: s.service_name || '',
-                time: timeMatch?.[1] || '',
-              };
-            })
-        : null;
+      // Use tee times stored directly on the deal
+      const teeTimes = (deal as any).tee_times?.length > 0 ? (deal as any).tee_times : null;
 
       const { data: contract, error } = await supabase
         .from("travel_contracts")
