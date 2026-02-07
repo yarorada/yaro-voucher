@@ -58,18 +58,23 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
   const handleSave = async () => {
     setSaving(true);
     try {
-      // @ts-ignore
-      const { error } = await (supabase as any)
+      const payload = items.length > 0 ? items : null;
+      console.log("Saving tee times:", { contractId, payload });
+      
+      const { data, error } = await supabase
         .from("travel_contracts")
-        .update({ tee_times: items.length > 0 ? items : null })
-        .eq("id", contractId);
+        .update({ tee_times: payload } as any)
+        .eq("id", contractId)
+        .select("tee_times")
+        .single();
 
+      console.log("Save result:", { data, error });
       if (error) throw error;
       toast.success("Startovací časy uloženy");
       setOpen(false);
-      onUpdate();
+      await onUpdate();
     } catch (err) {
-      console.error(err);
+      console.error("Error saving tee times:", err);
       toast.error("Chyba při ukládání");
     } finally {
       setSaving(false);
