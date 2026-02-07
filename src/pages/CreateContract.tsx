@@ -56,20 +56,29 @@ const CreateContract = () => {
     setLoading(true);
 
     try {
-      // Fetch deal details with travelers, services and payments
+      // Fetch deal details with travelers and services
       const { data: deal, error: dealError } = await supabase
         .from("deals")
         .select(`
           id,
           total_price,
           deal_travelers(client_id, is_lead_traveler),
-          deal_services(service_type, service_name),
-          deal_payments(payment_type, amount, due_date, notes, paid, paid_at)
+          deal_services(service_type, service_name)
         `)
         .eq("id", formData.deal_id)
         .single();
 
       if (dealError) throw dealError;
+
+      // Fetch deal payments separately (nested select can miss them due to RLS)
+      const { data: dealPaymentsData, error: paymentsQueryError } = await supabase
+        .from("deal_payments")
+        .select("payment_type, amount, due_date, notes, paid, paid_at")
+        .eq("deal_id", formData.deal_id);
+
+      if (paymentsQueryError) {
+        console.error("Error fetching deal payments:", paymentsQueryError);
+      }
 
       const travelers = deal.deal_travelers as any[];
       const leadTraveler = travelers?.find((t: any) => t.is_lead_traveler);
@@ -131,9 +140,9 @@ const CreateContract = () => {
       }
 
       // Copy deal payments to contract payments
-      const dealPayments = deal.deal_payments as any[];
-      if (dealPayments && dealPayments.length > 0) {
-        const contractPayments = dealPayments.map((payment: any) => ({
+      const dealPayments = dealPaymentsData || [];
+      if (dealPayments.length > 0) {
+        const contractPayments = dealPayments.map((payment) => ({
           contract_id: contract.id,
           payment_type: payment.payment_type,
           amount: payment.amount,
