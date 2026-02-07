@@ -70,15 +70,8 @@ const CreateContract = () => {
 
       if (dealError) throw dealError;
 
-      // Fetch deal payments separately (nested select can miss them due to RLS)
-      const { data: dealPaymentsData, error: paymentsQueryError } = await supabase
-        .from("deal_payments")
-        .select("payment_type, amount, due_date, notes, paid, paid_at")
-        .eq("deal_id", formData.deal_id);
 
-      if (paymentsQueryError) {
-        console.error("Error fetching deal payments:", paymentsQueryError);
-      }
+
 
       const travelers = deal.deal_travelers as any[];
       const leadTraveler = travelers?.find((t: any) => t.is_lead_traveler);
@@ -139,27 +132,7 @@ const CreateContract = () => {
         }
       }
 
-      // Copy deal payments to contract payments
-      const dealPayments = dealPaymentsData || [];
-      if (dealPayments.length > 0) {
-        const contractPayments = dealPayments.map((payment) => ({
-          contract_id: contract.id,
-          payment_type: payment.payment_type,
-          amount: payment.amount,
-          due_date: payment.due_date,
-          notes: payment.notes || null,
-          paid: payment.paid || false,
-          paid_at: payment.paid_at || null,
-        }));
-
-        const { error: paymentsError } = await supabase
-          .from("contract_payments")
-          .insert(contractPayments);
-
-        if (paymentsError) {
-          console.error("Error copying payments to contract:", paymentsError);
-        }
-      }
+      // Deal payments are now automatically copied by database trigger (copy_deal_payments_on_contract_insert)
 
       toast.success("Cestovní smlouva byla vytvořena");
       navigate(`/contracts/${contract.id}`);
