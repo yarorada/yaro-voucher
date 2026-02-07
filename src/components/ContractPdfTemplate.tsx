@@ -309,74 +309,72 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           </div>
         )}
 
-        {/* ===== PLATEBNÍ KALENDÁŘ S QR KÓDEM ===== */}
+        {/* ===== PLATEBNÍ KALENDÁŘ S QR KÓDY ===== */}
         {payments.length > 0 && (
           <div style={{ marginBottom: '6px' }}>
             <h2 style={sectionTitle}>Platební kalendář</h2>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {/* Tabulka plateb */}
-              <div style={{ flex: 1 }}>
-                <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={thStyle}>Typ platby</th>
-                      <th style={{ ...thStyle, width: '22%' }}>Splatnost</th>
-                      <th style={{ ...thStyle, width: '20%', textAlign: 'right' }}>Částka</th>
-                      <th style={{ ...thStyle, width: '18%', textAlign: 'center' }}>Stav</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((payment) => {
-                      const typeLabels: Record<string, string> = {
-                        deposit: 'Záloha',
-                        deposit_1: '1. záloha',
-                        deposit_2: '2. záloha',
-                        deposit_3: '3. záloha',
-                        final: 'Doplatek',
-                        installment: 'Splátka',
-                      };
-                      return (
-                        <tr key={payment.id}>
-                          <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                            {typeLabels[payment.payment_type] || payment.payment_type}
-                            {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{payment.notes}</span>}
-                          </td>
-                          <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                            {format(new Date(payment.due_date), "d. M. yyyy")}
-                          </td>
-                          <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
-                            {formatPrice(payment.amount)}
-                          </td>
-                          <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
-                            {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    <tr style={{ backgroundColor: '#f0f4f8' }}>
-                      <td colSpan={2} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
-                      <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
-                        {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+            {/* Tabulka plateb - plná šířka */}
+            <table style={{ width: '100%', fontSize: '9px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Typ platby</th>
+                  <th style={{ ...thStyle, width: '22%' }}>Splatnost</th>
+                  <th style={{ ...thStyle, width: '20%', textAlign: 'right' }}>Částka</th>
+                  <th style={{ ...thStyle, width: '18%', textAlign: 'center' }}>Stav</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => {
+                  const typeLabels: Record<string, string> = {
+                    deposit: 'Záloha',
+                    deposit_1: '1. záloha',
+                    deposit_2: '2. záloha',
+                    deposit_3: '3. záloha',
+                    final: 'Doplatek',
+                    installment: 'Splátka',
+                  };
+                  return (
+                    <tr key={payment.id}>
+                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                        {typeLabels[payment.payment_type] || payment.payment_type}
+                        {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{payment.notes}</span>}
                       </td>
-                      <td style={{ padding: '2px 5px', textAlign: 'center', fontSize: '7px', color: '#666' }}>
-                        {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
+                      <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
+                        {format(new Date(payment.due_date), "d. M. yyyy")}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
+                        {formatPrice(payment.amount)}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
+                        {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
                       </td>
                     </tr>
-                  </tbody>
-                </table>
+                  );
+                })}
+                <tr style={{ backgroundColor: '#f0f4f8' }}>
+                  <td colSpan={2} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
+                  <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
+                    {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                  </td>
+                  <td style={{ padding: '2px 5px', textAlign: 'center', fontSize: '7px', color: '#666' }}>
+                    {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-                {/* Platební údaje */}
-                <div style={{ marginTop: '4px', padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
-                  <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
-                  <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
-                  <p style={{ margin: '1px 0' }}>IBAN: <strong>{iban}</strong></p>
-                  <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
-                </div>
+            {/* Platební údaje + QR kódy vedle sebe */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '4px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
+                <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
+                <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
+                <p style={{ margin: '1px 0' }}>IBAN: <strong>{iban}</strong></p>
+                <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
               </div>
 
-              {/* QR kódy pro jednotlivé platby */}
+              {/* QR kódy vedle sebe */}
               {unpaidPayments.length > 0 && Object.keys(paymentQrUrls).length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: '8px', minWidth: '110px' }}>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   {unpaidPayments.map((p) => {
                     const url = paymentQrUrls[p.id];
                     if (!url) return null;
@@ -386,11 +384,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     };
                     return (
                       <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <img src={url} alt="QR platba" style={{ width: '80px', height: '80px' }} />
-                        <p style={{ fontSize: '7px', color: '#666', marginTop: '2px', textAlign: 'center', lineHeight: '1.2' }}>
+                        <img src={url} alt="QR platba" style={{ width: '70px', height: '70px' }} />
+                        <p style={{ fontSize: '6px', color: '#666', marginTop: '1px', textAlign: 'center', lineHeight: '1.2', margin: '1px 0 0' }}>
                           {typeLabels[p.payment_type] || p.payment_type}
                         </p>
-                        <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#0066cc', margin: '0', textAlign: 'center' }}>
+                        <p style={{ fontSize: '7px', fontWeight: 'bold', color: '#0066cc', margin: '0', textAlign: 'center' }}>
                           {formatPrice(p.amount)}
                         </p>
                       </div>
