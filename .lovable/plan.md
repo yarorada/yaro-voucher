@@ -1,69 +1,76 @@
 
 
-## Platební kalendář, číslo účtu a QR kód v cestovní smlouvě
+## Zhutneni PDF sablony smlouvy
 
-Tento plán řeší tři věci najednou:
+Snizeni radkovani, paddingu a fontu v cele PDF sablone pro kompaktnejsi rozlozeni na A4. Text bude oddeleny od cар pomoci `verticalAlign: 'middle'` a dostatecneho borderBottom, ale bez zbytecnych mezer.
 
-### 1. Oprava chybějícího platebního kalendáře
+### Zmeny v `src/components/ContractPdfTemplate.tsx`
 
-Aktuální smlouva CS-260009 nemá žádné platby v databázi -- byla vytvořena dříve, než se nasadil kód pro automatické kopírování plateb z obchodního případu. Platby je nutné ručně synchronizovat SQL příkazem pro všechny existující smlouvy, které nemají platby, ale jejich deal ano.
+#### 1. Sdilene styly (radky 127-132)
 
-### 2. Číslo účtu 227993932/0600
+| Styl | Aktualni | Novy |
+|------|----------|------|
+| `labelStyle` padding | `4px 0` | `2px 0` |
+| `labelStyle` lineHeight | `1.5` | `1.2` |
+| `labelStyle` verticalAlign | `top` | `middle` |
+| `valueStyle` padding | `4px 0 4px 6px` | `2px 0 2px 6px` |
+| `valueStyle` lineHeight | `1.5` | `1.2` |
+| `valueStyle` verticalAlign | `top` | `middle` |
+| `sectionTitle` marginTop | `10px` | `8px` |
+| `sectionTitle` marginBottom | `5px` | `3px` |
+| `sectionTitle` paddingBottom | `3px` | `2px` |
+| `sectionTitle` lineHeight | `1.4` | `1.2` |
+| `thStyle` padding | `5px 6px` | `3px 6px` |
+| `thStyle` lineHeight | `1.4` | `1.2` |
+| `thStyle` fontSize | `8px` | `7px` |
+| `tdStyle` padding | `5px 6px` | `3px 6px` |
+| `tdStyle` lineHeight | `1.5` | `1.2` |
+| `tdStyle` fontSize | `9px` | `8px` |
 
-Číslo účtu se přidá:
-- Do PDF šablony smlouvy (sekce Platební kalendář)
-- Do webového zobrazení platebního kalendáře
-- Do výchozích údajů dodavatele (ContractAgencyInfo)
-- Volitelně do databáze jako nový sloupec `agency_bank_account` s výchozí hodnotou
+#### 2. Hlavni kontejner (radek 144)
 
-### 3. QR kód na platbu (formát SPAYD)
+- `lineHeight` z `1.5` na `1.2`
 
-QR kód bude generován ve formátu **SPAYD** (Short Payment Descriptor), což je český standard pro QR platby podporovaný všemi českými bankami. QR kód bude obsahovat:
-- IBAN účet (převedený z 227993932/0600)
-- Částku k úhradě
-- Variabilní symbol (číslo smlouvy)
-- Měnu (CZK)
-- Zprávu pro příjemce
+#### 3. Itinerar letu (radek 226)
 
-QR kód se zobrazí jak v PDF exportu, tak na webové stránce u platebního kalendáře.
+- `lineHeight` u odstavcu z `1.5` na `1.2`
 
----
+#### 4. Popisky sluzeb (radek 287)
 
-### Technické detaily
+- `lineHeight` z `1.4` na `1.2`
+- `fontSize` z `8px` na `7px`
 
-#### Databázové změny
-- Nový sloupec `agency_bank_account` v tabulce `travel_contracts` s výchozí hodnotou `'227993932/0600'`
-- SQL aktualizace existujících smluv, aby měly vyplněný účet
-- Synchronizace plateb z `deal_payments` do `contract_payments` pro smlouvy, které platby nemají
+#### 5. Platebni kalendar -- poznamky (radek 336)
 
-#### Nová závislost
-- NPM balíček `qrcode` -- knihovna pro generování QR kódů jako data URL (obrázek v base64)
+- `lineHeight` z `1.4` na `1.2`
+- `fontSize` z `8px` na `7px`
 
-#### Úpravy souborů
+#### 6. Souhrnne radky tabulek (radky 298, 350-357)
 
-**`src/components/ContractPdfTemplate.tsx`**
-- Do sekce "Platební kalendář" přidat řádek s číslem účtu pod tabulkou
-- Přidat komponentu pro QR kód vedle platebního kalendáře (generovaný pomocí `qrcode.toDataURL()`)
-- QR kód bude obsahovat SPAYD řetězec: `SPD*1.0*ACC:CZ6506000000000227993932*AM:{castka}*CC:CZK*X-VS:{cislo_smlouvy}*MSG:Platba za smlouvu {cislo}`
+- `padding` z `3px 5px` na `2px 5px`
 
-**`src/components/ContractPaymentSchedule.tsx`**
-- Zobrazit číslo účtu v sekci platebního kalendáře na webu
-- Přidat malý QR kód pro každou nezaplacenou platbu (nebo souhrnný QR kód)
+#### 7. Platebni udaje box (radky 363-368)
 
-**`src/components/ContractAgencyInfo.tsx`**
-- Přidat pole `agency_bank_account` do formuláře a zobrazení
-- Aktualizovat výchozí hodnoty YARO_DEFAULTS
+- `padding` z `6px 8px` na `4px 6px`
+- `marginTop` z `6px` na `4px`
+- `fontSize` nadpisu z `9px` na `8px`
 
-**`src/pages/CreateContract.tsx`**
-- Přidat `agency_bank_account` do výchozích hodnot při vytváření smlouvy
+#### 8. Pravni podminky (radek 390)
 
-**`src/pages/ContractDetail.tsx`**
-- Předat `agency_bank_account` do komponent, které ho potřebují
+- `lineHeight` z `1.6` na `1.3`
+- `fontSize` z `8px` na `7px`
+- Mezery mezi odstavci (`margin`) zmenseny z `4px`/`5px` na `2px`/`3px`
 
-#### Konverze českého účtu na IBAN
-Účet `227993932/0600` se převede na IBAN formát:
-- Kód banky: 0600 (MONETA Money Bank)
-- Předčíslí: 000000
-- Číslo účtu: 0227993932
-- IBAN: CZ6506000000000227993932 (kontrolní součet bude vypočítán)
+#### 9. Podpisy (radky 402-416)
+
+- `marginTop` z `20px` na `14px`
+- `paddingTop` z `10px` na `6px`
+- `marginTop` u podpisove cary z `28px` na `22px`
+
+#### Co zustava
+
+- `verticalAlign: 'middle'` na vsech tabulkovych bunkach -- text zustane vertikalne vycentrovany a nebude se lepit na spodni hranu
+- `borderBottom` na bunkach zustava -- vizualne oddeluje radky od textu
+- Fonty hlavicek (`16px` nadpis, `12px` cislo smlouvy, `11px` celkova cena) se nemeni
+- QR kod a jeho popisky zustavaji beze zmeny
 
