@@ -134,8 +134,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const labelStyle: React.CSSProperties = { padding: '2px 0', color: '#666', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
     const valueStyle: React.CSSProperties = { padding: '2px 0 2px 6px', fontSize: '9px', verticalAlign: 'middle', lineHeight: '1.2' };
     const sectionTitle: React.CSSProperties = { fontSize: '10px', fontWeight: 'bold', marginTop: '10px', marginBottom: '5px', color: '#0066cc', textTransform: 'uppercase', borderBottom: '1px solid #0066cc', paddingBottom: '4px', lineHeight: '1.4' };
-    const thStyle: React.CSSProperties = { padding: '5px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '7px', fontWeight: 'bold', backgroundColor: '#f0f4f8', lineHeight: '1.2' };
-    const tdStyle: React.CSSProperties = { padding: '5px 6px', borderBottom: '1px solid #eee', fontSize: '8px', lineHeight: '1.2', verticalAlign: 'middle' };
+    const thStyle: React.CSSProperties = { padding: '6px 6px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '7px', fontWeight: 'bold', backgroundColor: '#f0f4f8', lineHeight: '1.3', verticalAlign: 'middle' };
+    const tdStyle: React.CSSProperties = { padding: '6px 6px', borderBottom: '1px solid #eee', fontSize: '8px', lineHeight: '1.3', verticalAlign: 'middle' };
 
     return (
       <div
@@ -301,8 +301,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     </tr>
                   ))}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={3} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem:</td>
-                  <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>{formatPrice(deal?.total_price)}</td>
+                  <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
+                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price)}</td>
                 </tr>
               </tbody>
             </table>
@@ -352,11 +352,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   );
                 })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={2} style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px' }}>Celkem k úhradě:</td>
-                  <td style={{ padding: '2px 5px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px' }}>
+                  <td colSpan={2} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem k úhradě:</td>
+                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>
                     {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
                   </td>
-                  <td style={{ padding: '2px 5px', textAlign: 'center', fontSize: '7px', color: '#666' }}>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontSize: '7px', color: '#666', verticalAlign: 'middle' }}>
                     {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
                   </td>
                 </tr>
