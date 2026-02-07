@@ -171,9 +171,18 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{(contract as any).agency_name || 'YARO Travel s.r.o.'}</td></tr>
-                {(contract as any).agency_address && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_address}</td></tr>}
-                {(contract as any).agency_ico && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>IČO: {(contract as any).agency_ico}</td></tr>}
-                {(contract as any).agency_contact && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Kontakt: {(contract as any).agency_contact}</td></tr>}
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Adresa</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_address || '-'}</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>IČO</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_ico || '-'}</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Kontakt</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{(contract as any).agency_contact || '-'}</td></tr>
               </tbody>
             </table>
           </div>
@@ -182,10 +191,18 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 <tr><td style={{ ...valueStyle, fontWeight: 'bold', paddingLeft: 0 }}>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
-                {contract.client?.date_of_birth && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>Nar.: {format(new Date(contract.client.date_of_birth), "d. M. yyyy")}</td></tr>}
-                {contract.client?.address && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.address}</td></tr>}
-                {contract.client?.email && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.email}</td></tr>}
-                {contract.client?.phone && <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client.phone}</td></tr>}
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Adresa</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client?.address || '-'}</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Datum narození</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{contract.client?.date_of_birth ? format(new Date(contract.client.date_of_birth), "d. M. yyyy") : '-'}</td></tr>
+                <tr>
+                  <td style={{ ...labelStyle, paddingLeft: 0 }}>Kontakt</td>
+                </tr>
+                <tr><td style={{ ...valueStyle, paddingLeft: 0 }}>{[contract.client?.email, contract.client?.phone].filter(Boolean).join(', ') || '-'}</td></tr>
               </tbody>
             </table>
           </div>
