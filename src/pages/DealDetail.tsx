@@ -1888,8 +1888,8 @@ const DealDetail = () => {
                         <DateRangePicker
                           dateFrom={serviceForm.start_date}
                           dateTo={serviceForm.end_date}
-                          onDateFromChange={(date) => setServiceForm({ ...serviceForm, start_date: date })}
-                          onDateToChange={(date) => setServiceForm({ ...serviceForm, end_date: date })}
+                          onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
+                          onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
                         />
                       </div>
                       <div className="space-y-2">
