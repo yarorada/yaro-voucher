@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
@@ -45,6 +45,9 @@ interface VoucherTraveler {
     first_name: string;
     last_name: string;
     title: string | null;
+    date_of_birth: string | null;
+    passport_number: string | null;
+    passport_expiry: string | null;
   };
 }
 
@@ -63,6 +66,44 @@ const VoucherDetail = () => {
     notes: string | null;
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}.${d.getFullYear()}`;
+  };
+
+  const calculateIssueDate = (expiryStr: string | null) => {
+    if (!expiryStr) return "";
+    const d = new Date(expiryStr);
+    d.setFullYear(d.getFullYear() - 10);
+    return formatDate(d.toISOString());
+  };
+
+  const exportTravelersCsv = () => {
+    if (travelers.length === 0) return;
+    const header = "Jméno;Příjmení;Datum narození;Číslo pasu;Datum vydání pasu;Platnost pasu do";
+    const rows = travelers.map((t) => {
+      const c = t.clients;
+      return [
+        c.first_name,
+        c.last_name,
+        formatDate(c.date_of_birth),
+        c.passport_number || "",
+        calculateIssueDate(c.passport_expiry),
+        formatDate(c.passport_expiry),
+      ].join(";");
+    });
+    const csv = "\uFEFF" + [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cestujici-${voucher?.voucher_code || "export"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportováno");
+  };
 
   useEffect(() => {
     if (id) {
@@ -123,7 +164,7 @@ const VoucherDetail = () => {
       // Fetch travelers
       const { data: travelersData, error: travelersError } = await supabase
         .from('voucher_travelers')
-        .select('client_id, is_main_client, clients(first_name, last_name, title)')
+        .select('client_id, is_main_client, clients(first_name, last_name, title, date_of_birth, passport_number, passport_expiry)')
         .eq('voucher_id', id)
         .order('is_main_client', { ascending: false });
 
@@ -155,6 +196,15 @@ const VoucherDetail = () => {
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <header className="mb-8 print:hidden">
           <div className="flex items-center justify-end gap-2 md:gap-4 mb-4">
+            <Button
+              variant="outline"
+              onClick={exportTravelersCsv}
+              className="gap-2 text-sm md:text-base"
+              disabled={travelers.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
             <Button
               variant="outline"
               onClick={() => navigate(`/edit/${id}`)}
