@@ -42,28 +42,30 @@ serve(async (req) => {
       prompt = `Analyze this passport image and extract the following information in JSON format. Be very precise with dates:
 {
   "passport_number": "passport number (string)",
-  "passport_expiry": "expiry date in DD.MM.YY format (string)",
+  "passport_expiry": "expiry date in DD.MM.YYYY format with 4-digit year (string)",
   "first_name": "first name (string)",
   "last_name": "last name (string)",
-  "date_of_birth": "date of birth in DD.MM.YY format (string)"
+  "date_of_birth": "date of birth in DD.MM.YYYY format with 4-digit year (string)"
 }
 
 Important:
-- For passport_expiry and date_of_birth, format them as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- For passport_expiry and date_of_birth, format them as DD.MM.YYYY (2 digits for day, 2 for month, 4 digits for year)
+- ALWAYS use 4-digit year (e.g. 2034, not 34; 1964, not 64)
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
     } else if (documentType === "id_card") {
       prompt = `Analyze this ID card image and extract the following information in JSON format. Be very precise with dates:
 {
   "id_card_number": "ID card number (string)",
-  "id_card_expiry": "expiry date in DD.MM.YY format (string)",
+  "id_card_expiry": "expiry date in DD.MM.YYYY format with 4-digit year (string)",
   "first_name": "first name (string)",
   "last_name": "last name (string)",
-  "date_of_birth": "date of birth in DD.MM.YY format (string)"
+  "date_of_birth": "date of birth in DD.MM.YYYY format with 4-digit year (string)"
 }
 
 Important:
-- For id_card_expiry and date_of_birth, format them as DD.MM.YY (2 digits for day, 2 for month, 2 for year)
+- For id_card_expiry and date_of_birth, format them as DD.MM.YYYY (2 digits for day, 2 for month, 4 digits for year)
+- ALWAYS use 4-digit year (e.g. 2034, not 34; 1964, not 64)
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
     } else {

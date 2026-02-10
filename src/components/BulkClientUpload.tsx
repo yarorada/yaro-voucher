@@ -66,7 +66,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     blob: null
   });
 
-  // Helper function to parse DD.MM.YY dates safely
+  // Helper function to parse DD.MM.YY or DD.MM.YYYY dates safely
   const parseDateDDMMYY = (dateStr: string | null | undefined): Date | null => {
     if (!dateStr || typeof dateStr !== 'string') return null;
     try {
@@ -82,8 +82,9 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       if (day < 1 || day > 31 || month < 1 || month > 12) return null;
       
       // Convert 2-digit year to 4-digit year
-      // Assume 00-29 is 2000-2029, 30-99 is 1930-1999
       if (year < 100) {
+        // For birth dates (past): 00-29 → 2000-2029, 30-99 → 1930-1999
+        // But this is ambiguous, so we rely on OCR returning 4-digit years now
         year += year < 30 ? 2000 : 1900;
       }
       
