@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { formatDateForDB, parseDateSafe } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -160,11 +161,11 @@ const Clients = () => {
             phone: formData.phone.trim() || null,
             address: formData.address.trim() || null,
             notes: formData.notes.trim() || null,
-            date_of_birth: formData.date_of_birth?.toISOString().split('T')[0] || null,
+            date_of_birth: formatDateForDB(formData.date_of_birth),
             passport_number: formData.passport_number.trim() || null,
-            passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
+            passport_expiry: formatDateForDB(formData.passport_expiry),
             id_card_number: formData.id_card_number.trim() || null,
-            id_card_expiry: formData.id_card_expiry?.toISOString().split('T')[0] || null,
+            id_card_expiry: formatDateForDB(formData.id_card_expiry),
           })
           .eq("id", editingClient.id);
 
@@ -193,11 +194,11 @@ const Clients = () => {
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
           address: formData.address.trim() || null,
-          date_of_birth: formData.date_of_birth?.toISOString().split('T')[0] || null,
+          date_of_birth: formatDateForDB(formData.date_of_birth),
           passport_number: formData.passport_number.trim() || null,
-          passport_expiry: formData.passport_expiry?.toISOString().split('T')[0] || null,
+          passport_expiry: formatDateForDB(formData.passport_expiry),
           id_card_number: formData.id_card_number.trim() || null,
-          id_card_expiry: formData.id_card_expiry?.toISOString().split('T')[0] || null,
+          id_card_expiry: formatDateForDB(formData.id_card_expiry),
           notes: formData.notes.trim() || null,
         });
 
@@ -237,11 +238,11 @@ const Clients = () => {
       phone: client.phone || "",
       address: client.address || "",
       notes: client.notes || "",
-      date_of_birth: client.date_of_birth ? new Date(client.date_of_birth) : undefined,
+      date_of_birth: client.date_of_birth ? parseDateSafe(client.date_of_birth) || undefined : undefined,
       passport_number: client.passport_number || "",
-      passport_expiry: client.passport_expiry ? new Date(client.passport_expiry) : undefined,
+      passport_expiry: client.passport_expiry ? parseDateSafe(client.passport_expiry) || undefined : undefined,
       id_card_number: client.id_card_number || "",
-      id_card_expiry: client.id_card_expiry ? new Date(client.id_card_expiry) : undefined,
+      id_card_expiry: client.id_card_expiry ? parseDateSafe(client.id_card_expiry) || undefined : undefined,
     });
     setIsDialogOpen(true);
   };
@@ -731,7 +732,7 @@ const Clients = () => {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData(prev => ({ ...prev, passport_expiry: new Date(Date.UTC(year, month - 1, day)) }));
+                                setFormData(prev => ({ ...prev, passport_expiry: new Date(year, month - 1, day) }));
                                 newFilledFields.add("passport_expiry");
                               }
                             }
@@ -743,7 +744,7 @@ const Clients = () => {
                                 let year = parseInt(parts[2]);
                                 // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
                                 year += year < 30 ? 2000 : 1900;
-                                setFormData(prev => ({ ...prev, date_of_birth: new Date(Date.UTC(year, month - 1, day)) }));
+                                setFormData(prev => ({ ...prev, date_of_birth: new Date(year, month - 1, day) }));
                                 newFilledFields.add("date_of_birth");
                               }
                             }
@@ -781,7 +782,7 @@ const Clients = () => {
                                 const day = parseInt(parts[0]);
                                 const month = parseInt(parts[1]);
                                 const year = 2000 + parseInt(parts[2]);
-                                setFormData(prev => ({ ...prev, id_card_expiry: new Date(Date.UTC(year, month - 1, day)) }));
+                                setFormData(prev => ({ ...prev, id_card_expiry: new Date(year, month - 1, day) }));
                                 newFilledFields.add("id_card_expiry");
                               }
                             }
@@ -793,7 +794,7 @@ const Clients = () => {
                                 let year = parseInt(parts[2]);
                                 // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
                                 year += year < 30 ? 2000 : 1900;
-                                setFormData(prev => ({ ...prev, date_of_birth: new Date(Date.UTC(year, month - 1, day)) }));
+                                setFormData(prev => ({ ...prev, date_of_birth: new Date(year, month - 1, day) }));
                                 newFilledFields.add("date_of_birth");
                               }
                             }

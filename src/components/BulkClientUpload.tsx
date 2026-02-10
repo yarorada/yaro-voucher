@@ -263,7 +263,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
   const updateExistingClient = async (clientId: string, extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
     // Parse dates - handle both formats DD.MM.YY and DD.MM.YYYY
-    const parseDateDDMMYY = (dateStr: string | undefined) => {
+    const parseDateToDBFormat = (dateStr: string | undefined): string | null => {
       if (!dateStr) return null;
       
       const cleaned = dateStr.replace(/[^\d.]/g, '');
@@ -271,18 +271,17 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
       
       if (parts.length !== 3) return null;
       
-      const day = parts[0];
-      const month = parts[1];
-      let year = parts[2];
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      let year = parseInt(parts[2], 10);
       
-      if (!day || !month || !year) return null;
+      if (isNaN(year)) return null;
       
-      if (year.length === 2) {
-        const yearNum = parseInt(year);
-        year = yearNum < 50 ? `20${year}` : `19${year}`;
+      if (year < 100) {
+        year = year < 50 ? 2000 + year : 1900 + year;
       }
       
-      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))).toISOString().split('T')[0];
+      return `${year}-${month}-${day}`;
     };
 
     // Get existing client data
@@ -302,7 +301,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     }
     
     if (extractedData.date_of_birth && !existingClient.date_of_birth) {
-      updateData.date_of_birth = parseDateDDMMYY(extractedData.date_of_birth);
+      updateData.date_of_birth = parseDateToDBFormat(extractedData.date_of_birth);
     }
     
     if (extractedData.passport_number && !existingClient.passport_number) {
@@ -310,7 +309,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     }
     
     if (extractedData.passport_expiry && !existingClient.passport_expiry) {
-      updateData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
+      updateData.passport_expiry = parseDateToDBFormat(extractedData.passport_expiry);
     }
     
     if (extractedData.id_card_number && !existingClient.id_card_number) {
@@ -318,7 +317,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
     }
     
     if (extractedData.id_card_expiry && !existingClient.id_card_expiry) {
-      updateData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
+      updateData.id_card_expiry = parseDateToDBFormat(extractedData.id_card_expiry);
     }
 
     // Update client if there are changes
@@ -381,34 +380,31 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
   const createClient = async (extractedData: ExtractedData, file: File, compressedBlob: Blob) => {
     // Parse dates - handle both formats DD.MM.YY and DD.MM.YYYY
-    const parseDateDDMMYY = (dateStr: string | undefined) => {
+    const parseDateToDBFormat2 = (dateStr: string | undefined): string | null => {
       if (!dateStr) return null;
       
-      // Remove any non-digit and non-dot characters
       const cleaned = dateStr.replace(/[^\d.]/g, '');
       const parts = cleaned.split('.');
       
       if (parts.length !== 3) return null;
       
-      const day = parts[0];
-      const month = parts[1];
-      let year = parts[2];
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      let year = parseInt(parts[2], 10);
       
-      if (!day || !month || !year) return null;
+      if (isNaN(year)) return null;
       
-      // Handle 2-digit year
-      if (year.length === 2) {
-        const yearNum = parseInt(year);
-        year = yearNum < 50 ? `20${year}` : `19${year}`;
+      if (year < 100) {
+        year = year < 50 ? 2000 + year : 1900 + year;
       }
       
-      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))).toISOString().split('T')[0];
+      return `${year}-${month}-${day}`;
     };
 
     const clientData: any = {
       first_name: extractedData.first_name || '',
       last_name: extractedData.last_name || '',
-      date_of_birth: parseDateDDMMYY(extractedData.date_of_birth),
+      date_of_birth: parseDateToDBFormat2(extractedData.date_of_birth),
       title: extractedData.title || null,
     };
 
@@ -421,7 +417,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
         clientData.passport_number = extractedData.passport_number;
       }
       if (extractedData.passport_expiry) {
-        clientData.passport_expiry = parseDateDDMMYY(extractedData.passport_expiry);
+        clientData.passport_expiry = parseDateToDBFormat2(extractedData.passport_expiry);
       }
     }
 
@@ -432,7 +428,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
         clientData.id_card_number = extractedData.id_card_number;
       }
       if (extractedData.id_card_expiry) {
-        clientData.id_card_expiry = parseDateDDMMYY(extractedData.id_card_expiry);
+        clientData.id_card_expiry = parseDateToDBFormat2(extractedData.id_card_expiry);
       }
     }
 

@@ -1,7 +1,7 @@
 import { forwardRef, useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, parseDateSafe } from "@/lib/utils";
 import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 
@@ -159,7 +159,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const formatFlightLeg = (leg: ParsedFlightLeg): string => {
       const parts: string[] = [];
       if (leg.date) {
-        try { parts.push(format(new Date(leg.date), "dd.MM.yy")); } catch { parts.push(leg.date); }
+        try { const d = parseDateSafe(leg.date); parts.push(d ? format(d, "dd.MM.yy") : leg.date); } catch { parts.push(leg.date); }
       }
       const flightId = [
         leg.airline_code && leg.flight_number ? `${leg.airline_code}${leg.flight_number}` : (leg.flight_number || ''),
@@ -203,7 +203,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <h1 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#0066cc' }}>CESTOVNÍ SMLOUVA</h1>
             <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '1px 0 0' }}>{contract.contract_number}</p>
             <p style={{ fontSize: '8px', color: '#666', margin: 0 }}>
-              Datum: {format(new Date(contract.contract_date), "d. MMMM yyyy", { locale: cs })}
+              Datum: {(() => { const d = parseDateSafe(contract.contract_date); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : contract.contract_date; })()}
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               <tbody>
                 <tr><td style={{ ...valueStyle, fontWeight: 'bold', padding: '2px 0' }}>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
                 <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Adresa: </span>{contract.client?.address || '-'}</td></tr>
-                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Datum narození: </span>{contract.client?.date_of_birth ? format(new Date(contract.client.date_of_birth), "d. M. yyyy") : '-'}</td></tr>
+                <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Datum narození: </span>{contract.client?.date_of_birth ? (() => { const d = parseDateSafe(contract.client.date_of_birth); return d ? format(d, "d. M. yyyy") : '-'; })() : '-'}</td></tr>
                 <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>E-mail: </span>{contract.client?.email || '-'}</td></tr>
                 <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Telefon: </span>{contract.client?.phone || '-'}</td></tr>
               </tbody>
@@ -253,7 +253,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 <tr>
                   <td style={labelStyle}>Termín:</td>
                   <td style={valueStyle}>
-                    {format(new Date(deal.start_date), "d. M. yyyy")} – {format(new Date(deal.end_date), "d. M. yyyy")}
+                    {(() => { const ds = parseDateSafe(deal.start_date); const de = parseDateSafe(deal.end_date); return `${ds ? format(ds, "d. M. yyyy") : ''} – ${de ? format(de, "d. M. yyyy") : ''}`; })()}
                   </td>
                   <td style={labelStyle}>Způsob přepravy:</td>
                   <td style={valueStyle}>{getTransportationText()}</td>
@@ -290,7 +290,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   ) : (
                     <p style={{ fontSize: '9px', margin: '2px 0' }}>
                       {flight.service_name}
-                      {flight.start_date && flight.end_date ? ` · ${format(new Date(flight.start_date), "d. M. yyyy")} – ${format(new Date(flight.end_date), "d. M. yyyy")}` : ''}
+                      {flight.start_date && flight.end_date ? ` · ${(() => { const ds = parseDateSafe(flight.start_date); const de = parseDateSafe(flight.end_date); return `${ds ? format(ds, "d. M. yyyy") : ''} – ${de ? format(de, "d. M. yyyy") : ''}`; })()}` : ''}
                       {flight.description ? ` · ${flight.description}` : ''}
                     </p>
                   )}
@@ -320,7 +320,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {CIRCLED_NUMBERS[idx] || `(${idx + 1})`}
                     </td>
                     <td style={tdStyle}>{t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}</td>
-                    <td style={tdStyle}>{t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}</td>
+                    <td style={tdStyle}>{t.client?.date_of_birth ? (() => { const d = parseDateSafe(t.client.date_of_birth); return d ? format(d, "d. M. yyyy") : '-'; })() : '-'}</td>
                     <td style={tdStyle}>{t.client?.passport_number || '-'}</td>
                   </tr>
                 ))}
@@ -355,8 +355,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
                         </td>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
-                          {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
-                          {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
+                          {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
+                          {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
                         <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', color: '#0066cc' }}>
@@ -406,7 +406,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         {payment.notes && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{payment.notes}</span>}
                       </td>
                       <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
-                        {format(new Date(payment.due_date), "d. M. yyyy")}
+                        {(() => { const d = parseDateSafe(payment.due_date); return d ? format(d, "d. M. yyyy") : payment.due_date; })()}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
                         {formatPrice(payment.amount)}
@@ -473,7 +473,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <p style={{ fontSize: '8px', fontWeight: 'bold', color: '#333', margin: '0 0 3px' }}>Startovací časy (Tee Times)</p>
             <div style={{ fontSize: '9px', lineHeight: '1.5' }}>
               {(contract as any).tee_times.map((tt: any, idx: number) => {
-                const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
+                const dateStr = tt.date ? (() => { const d = parseDateSafe(tt.date); return d ? format(d, "dd.MM.yy") : tt.date; })() : '-';
                 return (
                   <p key={idx} style={{ margin: '1px 0' }}>
                     {dateStr} – {tt.club} – {tt.time || '-'}
@@ -509,7 +509,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         {/* ===== DATUM + PODPISY (drží pohromadě) ===== */}
         <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <p style={{ fontSize: '9px', margin: '8px 0 6px', color: '#333' }}>
-            V Pardubicích dne {format(new Date(contract.contract_date), "d. M. yyyy", { locale: cs })}
+            V Pardubicích dne {(() => { const d = parseDateSafe(contract.contract_date); return d ? format(d, "d. M. yyyy", { locale: cs }) : contract.contract_date; })()}
           </p>
 
           <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', paddingTop: '6px' }}>

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { format } from "date-fns";
+import { formatDateDisplay } from "@/lib/utils";
 import { cs } from "date-fns/locale";
 import { formatPriceCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -129,7 +130,7 @@ const Deals = () => {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return format(new Date(dateString), "dd.MM.yyyy", { locale: cs });
+    return formatDateDisplay(dateString);
   };
 
   const formatPrice = (price: number | null) => formatPriceCurrency(price);
