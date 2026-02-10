@@ -179,7 +179,7 @@ const SortableServiceRow = ({
         </div>
       </TableCell>
       <TableCell className="text-xs whitespace-nowrap">
-        {service.start_date && new Date(service.start_date).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })}
+        {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
       </TableCell>
       <TableCell className="text-center text-sm">
         {service.person_count}

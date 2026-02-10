@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Contact } from "lucide-react";
-import { cn, removeDiacritics } from "@/lib/utils";
+import { cn, removeDiacritics, formatDateForDB } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -123,9 +123,9 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
           address: newClientAddress.trim() || null,
           notes: newClientNotes.trim() || null,
           passport_number: newClientPassportNumber.trim() || null,
-          passport_expiry: newClientPassportExpiry?.toISOString().split('T')[0] || null,
+          passport_expiry: formatDateForDB(newClientPassportExpiry),
           id_card_number: newClientIdCardNumber.trim() || null,
-          id_card_expiry: newClientIdCardExpiry?.toISOString().split('T')[0] || null,
+          id_card_expiry: formatDateForDB(newClientIdCardExpiry),
         })
         .select()
         .single();

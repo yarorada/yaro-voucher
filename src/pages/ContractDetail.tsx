@@ -16,7 +16,7 @@ import { SendContractEmail } from "@/components/SendContractEmail";
 import { EditContractDialog } from "@/components/EditContractDialog";
 import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { ContractTeeTimesEditor } from "@/components/ContractTeeTimesEditor";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, parseDateSafe } from "@/lib/utils";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
 
@@ -266,9 +266,9 @@ const ContractDetail = () => {
                 <p className="text-sm text-muted-foreground mb-1">Termín zájezdu</p>
                 <p className="font-medium text-foreground">
                   {contract.deal?.start_date && contract.deal?.end_date
-                    ? `${format(new Date(contract.deal.start_date), "d. M. yyyy")} – ${format(new Date(contract.deal.end_date), "d. M. yyyy")}`
+                    ? `${(() => { const d = parseDateSafe(contract.deal.start_date); return d ? format(d, "d. M. yyyy") : ''; })()} – ${(() => { const d = parseDateSafe(contract.deal.end_date); return d ? format(d, "d. M. yyyy") : ''; })()}`
                     : contract.deal?.start_date
-                      ? format(new Date(contract.deal.start_date), "d. M. yyyy")
+                      ? (() => { const d = parseDateSafe(contract.deal.start_date); return d ? format(d, "d. M. yyyy") : '-'; })()
                       : '-'}
                 </p>
               </div>
@@ -305,14 +305,14 @@ const ContractDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Vytvořeno</p>
                 <p className="font-medium text-foreground">
-                  {format(new Date(contract.created_at), "d. MMMM yyyy", { locale: cs })}
+                  {(() => { const d = parseDateSafe(contract.created_at); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : contract.created_at; })()}
                 </p>
               </div>
               {contract.signed_at && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Podepsáno</p>
                   <p className="font-medium text-foreground">
-                    {format(new Date(contract.signed_at), "d. MMMM yyyy", { locale: cs })}
+                    {(() => { const d = parseDateSafe(contract.signed_at); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : contract.signed_at; })()}
                   </p>
                 </div>
               )}
@@ -351,7 +351,7 @@ const ContractDetail = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Datum narození</p>
                     <p className="text-foreground">
-                      {format(new Date(contract.client.date_of_birth), "d. MMMM yyyy", { locale: cs })}
+                      {(() => { const d = parseDateSafe(contract.client.date_of_birth); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : '-'; })()}
                     </p>
                   </div>
                 )}
@@ -390,7 +390,7 @@ const ContractDetail = () => {
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
                         </td>
                         <td className="py-2 text-foreground">
-                          {t.client?.date_of_birth ? format(new Date(t.client.date_of_birth), "d. M. yyyy") : '-'}
+                          {t.client?.date_of_birth ? (() => { const d = parseDateSafe(t.client.date_of_birth); return d ? format(d, "d. M. yyyy") : '-'; })() : '-'}
                         </td>
                         <td className="py-2 text-foreground">{t.client?.passport_number || '-'}</td>
                         <td className="py-2 text-foreground">{t.client?.email || '-'}</td>
@@ -431,8 +431,8 @@ const ContractDetail = () => {
                               )}
                             </td>
                             <td className="py-2 text-foreground whitespace-nowrap">
-                              {service.start_date ? format(new Date(service.start_date), "d.M.") : ''}
-                              {service.end_date ? ` – ${format(new Date(service.end_date), "d.M.")}` : ''}
+                              {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
+                              {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                             </td>
                             <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
                             <td className="py-2 text-center text-foreground text-base">
@@ -486,7 +486,7 @@ const ContractDetail = () => {
                 <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
                 <div className="space-y-1">
                   {(contract as any).tee_times.map((tt: any, idx: number) => {
-                    const dateStr = tt.date ? format(new Date(tt.date), "dd.MM.yy") : '-';
+                    const dateStr = tt.date ? (() => { const d = parseDateSafe(tt.date); return d ? format(d, "dd.MM.yy") : tt.date; })() : '-';
                     return (
                       <p key={idx} className="text-sm text-foreground">
                         {dateStr} – {tt.club} – {tt.time || '-'}

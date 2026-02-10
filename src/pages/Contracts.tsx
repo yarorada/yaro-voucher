@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, FileText, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { parseDateSafe } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -167,9 +168,9 @@ const Contracts = () => {
                         Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
                       </p>
                       <div className="flex flex-wrap gap-2 md:gap-4 mt-3 text-xs md:text-sm text-muted-foreground">
-                        <span>Vytvořeno: {format(new Date(contract.created_at), "d. M. yyyy", { locale: cs })}</span>
+                        <span>Vytvořeno: {(() => { const d = parseDateSafe(contract.created_at); return d ? format(d, "d. M. yyyy", { locale: cs }) : ''; })()}</span>
                         {contract.signed_at && (
-                          <span>Podepsáno: {format(new Date(contract.signed_at), "d. M. yyyy", { locale: cs })}</span>
+                          <span>Podepsáno: {(() => { const d = parseDateSafe(contract.signed_at); return d ? format(d, "d. M. yyyy", { locale: cs }) : ''; })()}</span>
                         )}
                       </div>
                     </div>

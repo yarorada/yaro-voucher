@@ -69,15 +69,26 @@ const VoucherDetail = () => {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}.${d.getFullYear()}`;
+    // Parse YYYY-MM-DD safely to avoid timezone shifts
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const day = parts[2].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      return `${day}.${month}.${parts[0]}`;
+    }
+    return dateStr;
   };
 
   const calculateIssueDate = (expiryStr: string | null) => {
     if (!expiryStr) return "";
-    const d = new Date(expiryStr);
-    d.setFullYear(d.getFullYear() - 10);
-    return formatDate(d.toISOString());
+    const parts = expiryStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10) - 10;
+      const month = parts[1].padStart(2, '0');
+      const day = parts[2].padStart(2, '0');
+      return `${day}.${month}.${year}`;
+    }
+    return "";
   };
 
   const exportTravelersCsv = () => {

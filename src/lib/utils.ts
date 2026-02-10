@@ -58,3 +58,32 @@ export function capitalizeWords(str: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+
+/**
+ * Safely parses a "YYYY-MM-DD" date string from the database into a local Date object.
+ * Avoids UTC interpretation that can shift dates in negative-offset timezones.
+ */
+export function parseDateSafe(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+  return null;
+}
+
+/**
+ * Formats a "YYYY-MM-DD" database date string as "DD.MM.YYYY" for display.
+ * Uses local date parsing to avoid timezone shifts.
+ */
+export function formatDateDisplay(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = parseDateSafe(dateStr);
+  if (!date) return "-";
+  return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+}
