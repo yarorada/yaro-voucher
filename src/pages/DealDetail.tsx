@@ -119,6 +119,8 @@ interface DealService {
   end_date: string | null;
   price: number | null;
   cost_price: number | null;
+  cost_currency: string | null;
+  cost_price_original: number | null;
   supplier_id: string | null;
   person_count: number | null;
   details?: FlightDetails | null;
@@ -1383,12 +1385,13 @@ const DealDetail = () => {
           end_date: service.end_date,
           price: service.price,
           cost_price: service.cost_price,
+          cost_currency: service.cost_currency,
+          cost_price_original: service.cost_price_original,
           supplier_id: service.supplier_id,
           person_count: personCount,
           details: service.details as any,
           order_index: index,
         }));
-        
         const { error: servicesError } = await supabase
           .from("deal_services")
           .insert(newServices);

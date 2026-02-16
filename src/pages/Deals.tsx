@@ -196,12 +196,13 @@ const Deals = () => {
           end_date: service.end_date,
           price: service.price,
           cost_price: service.cost_price,
+          cost_currency: service.cost_currency,
+          cost_price_original: service.cost_price_original,
           supplier_id: service.supplier_id,
           person_count: personCount,
           details: service.details as any,
           order_index: index,
         }));
-        
         const { error: servicesError } = await supabase
           .from("deal_services")
           .insert(newServices);
