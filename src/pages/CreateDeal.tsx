@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { formatDateForDB } from "@/lib/utils";
+import { useUnsavedChangesWarning } from "@/hooks/useAutoSaveOnLeave";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,12 @@ const CreateDeal = () => {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "completed" | "cancelled">("inquiry");
   const [leadTravelerId, setLeadTravelerId] = useState("");
+
+  const hasUnsavedChanges = useCallback(() => {
+    return !!(dealName || startDate || endDate || notes || leadTravelerId);
+  }, [dealName, startDate, endDate, notes, leadTravelerId]);
+
+  useUnsavedChangesWarning(hasUnsavedChanges);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

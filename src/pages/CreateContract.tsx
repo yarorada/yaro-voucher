@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
+import { useUnsavedChangesWarning } from "@/hooks/useAutoSaveOnLeave";
 
 const CreateContract = () => {
   const navigate = useNavigate();
@@ -24,6 +25,11 @@ const CreateContract = () => {
     terms: "",
   });
 
+  const hasUnsavedChanges = useCallback(() => {
+    return !!(formData.deal_id || formData.terms);
+  }, [formData]);
+
+  useUnsavedChangesWarning(hasUnsavedChanges);
   const { data: deals } = useQuery({
     queryKey: ["deals"],
     queryFn: async () => {
