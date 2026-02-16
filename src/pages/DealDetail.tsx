@@ -42,6 +42,7 @@ import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 import { FlightAiImport } from "@/components/FlightAiImport";
 import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
+import { DealBulkTravelerImport } from "@/components/DealBulkTravelerImport";
 import { DealTeeTimesEditor } from "@/components/DealTeeTimesEditor";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -1661,13 +1662,19 @@ const DealDetail = () => {
                   <CardTitle>Cestující</CardTitle>
                   <CardDescription>Správa cestujících v obchodním případu</CardDescription>
                 </div>
-                <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" onClick={() => setNewTravelerId("")}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Přidat</span>
-                    </Button>
-                  </DialogTrigger>
+                <div className="flex gap-2">
+                  <DealBulkTravelerImport
+                    dealId={deal.id}
+                    existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
+                    onComplete={fetchDeal}
+                  />
+                  <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" onClick={() => setNewTravelerId("")}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Přidat</span>
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="bg-background">
                     <DialogHeader>
                       <DialogTitle>Přidat cestujícího</DialogTitle>
@@ -1694,6 +1701,7 @@ const DealDetail = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
