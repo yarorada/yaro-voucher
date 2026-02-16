@@ -36,7 +36,7 @@ serve(async (req: Request) => {
           },
           {
             role: "user",
-            content: `Extrahuj informace o klientech z následujícího textu. Pro každého klienta najdi: jméno, příjmení, email, datum narození (ve formátu YYYY-MM-DD), číslo pasu, číslo občanského průkazu a automaticky přiřaď titul (Pan/Paní):\n\n${text}`
+            content: `Extrahuj informace o klientech z následujícího textu. Pro každého klienta najdi: jméno, příjmení, email, datum narození (ve formátu YYYY-MM-DD), číslo pasu, platnost pasu (ve formátu YYYY-MM-DD), číslo občanského průkazu, platnost OP (ve formátu YYYY-MM-DD) a automaticky přiřaď titul (Pan/Paní):\n\n${text}`
           }
         ],
         tools: [
@@ -63,7 +63,9 @@ serve(async (req: Request) => {
                         email: { type: "string", description: "Emailová adresa (pokud je uvedena)" },
                         date_of_birth: { type: "string", description: "Datum narození ve formátu YYYY-MM-DD (pokud je uvedeno)" },
                         passport_number: { type: "string", description: "Číslo pasu (pokud je uvedeno)" },
-                        id_card_number: { type: "string", description: "Číslo občanského průkazu (pokud je uvedeno)" }
+                        passport_expiry: { type: "string", description: "Platnost pasu do ve formátu YYYY-MM-DD (pokud je uvedena)" },
+                        id_card_number: { type: "string", description: "Číslo občanského průkazu (pokud je uvedeno)" },
+                        id_card_expiry: { type: "string", description: "Platnost občanského průkazu do ve formátu YYYY-MM-DD (pokud je uvedena)" }
                       },
                       required: ["title", "first_name", "last_name"],
                       additionalProperties: false
