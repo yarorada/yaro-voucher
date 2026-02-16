@@ -75,6 +75,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
 
 interface DealTraveler {
   id: string;
@@ -456,6 +457,67 @@ const DealDetail = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Track loaded deal state for auto-save change detection
+  const loadedDealRef = useRef<{
+    name: string; status: string; destinationId: string;
+    startDate: string | null; endDate: string | null;
+    depositAmount: string; depositPaid: boolean; notes: string;
+    discountAmount: string; adjustmentAmount: string;
+    discountNote: string; adjustmentNote: string;
+  } | null>(null);
+
+  const hasUnsavedChanges = useCallback(() => {
+    if (!loadedDealRef.current || !deal) return false;
+    const l = loadedDealRef.current;
+    return (
+      dealName !== l.name ||
+      status !== l.status ||
+      destinationId !== l.destinationId ||
+      formatDateForDB(startDate) !== l.startDate ||
+      formatDateForDB(endDate) !== l.endDate ||
+      depositAmount !== l.depositAmount ||
+      depositPaid !== l.depositPaid ||
+      notes !== l.notes ||
+      discountAmount !== l.discountAmount ||
+      adjustmentAmount !== l.adjustmentAmount ||
+      discountNote !== l.discountNote ||
+      adjustmentNote !== l.adjustmentNote
+    );
+  }, [deal, dealName, status, destinationId, startDate, endDate, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+
+  const silentSave = useCallback(async () => {
+    if (!deal || saving) return;
+    try {
+      await supabase
+        .from("deals")
+        .update({
+          name: dealName || null,
+          status,
+          destination_id: destinationId || null,
+          start_date: formatDateForDB(startDate),
+          end_date: formatDateForDB(endDate),
+          total_price: totalPrice ? parseFloat(totalPrice) : null,
+          deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
+          deposit_paid: depositPaid,
+          notes: notes || null,
+          discount_amount: discountAmount ? parseFloat(discountAmount) : 0,
+          adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
+          discount_note: discountNote || null,
+          adjustment_note: adjustmentNote || null,
+        })
+        .eq("id", deal.id);
+      console.log("Auto-saved deal on leave");
+    } catch (e) {
+      console.error("Auto-save failed:", e);
+    }
+  }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+
+  useAutoSaveOnLeave({
+    hasUnsavedChanges,
+    onSave: silentSave,
+    enabled: !!deal && !loading,
+  });
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -513,6 +575,22 @@ const DealDetail = () => {
       setDiscountNote(data.discount_note || "");
       setAdjustmentNote(data.adjustment_note || "");
       setDealName(data.name || "");
+      
+      // Store initial state for auto-save change detection
+      loadedDealRef.current = {
+        name: data.name || "",
+        status: data.status,
+        destinationId: data.destination_id || "",
+        startDate: data.start_date || null,
+        endDate: data.end_date || null,
+        depositAmount: data.deposit_amount?.toString() || "",
+        depositPaid: data.deposit_paid || false,
+        notes: data.notes || "",
+        discountAmount: data.discount_amount?.toString() || "",
+        adjustmentAmount: data.adjustment_amount?.toString() || "",
+        discountNote: data.discount_note || "",
+        adjustmentNote: data.adjustment_note || "",
+      };
       
       const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
       if (leadTraveler) {
