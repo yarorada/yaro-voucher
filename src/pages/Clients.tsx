@@ -368,7 +368,9 @@ const Clients = () => {
           if (clientData.email) clientRecord.email = clientData.email.trim();
           if (clientData.date_of_birth) clientRecord.date_of_birth = clientData.date_of_birth;
           if (clientData.passport_number) clientRecord.passport_number = clientData.passport_number;
+          if (clientData.passport_expiry) clientRecord.passport_expiry = clientData.passport_expiry;
           if (clientData.id_card_number) clientRecord.id_card_number = clientData.id_card_number;
+          if (clientData.id_card_expiry) clientRecord.id_card_expiry = clientData.id_card_expiry;
 
           if (existingClient) {
             // Aktualizovat existujícího klienta
