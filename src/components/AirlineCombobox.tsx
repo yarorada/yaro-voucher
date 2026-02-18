@@ -156,8 +156,10 @@ export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce.
                     key={airline.code}
                     value={`${airline.code} ${airline.name}`}
                     onSelect={() => {
-                      onSelect(airline.code, airline.name);
+                      const code = airline.code;
+                      const name = airline.name;
                       setOpen(false);
+                      setTimeout(() => onSelect(code, name), 0);
                     }}
                   >
                     <Check
