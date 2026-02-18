@@ -32,10 +32,11 @@ interface FlightSegmentRowProps {
   index: number;
   canRemove: boolean;
   onUpdate: (index: number, field: keyof FlightSegment, value: string) => void;
+  onBatchUpdate: (index: number, fields: Partial<FlightSegment>) => void;
   onRemove: (index: number) => void;
 }
 
-const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onRemove }: FlightSegmentRowProps) => (
+const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onBatchUpdate, onRemove }: FlightSegmentRowProps) => (
   <div className="space-y-2 p-3 border rounded bg-background/50 relative">
     {canRemove && (
       <Button
@@ -72,10 +73,7 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onRemove }: Fli
         <AirlineCombobox
           value={segment.airline}
           onSelect={(code, name) => {
-            // Batch both fields in a single callback cycle
-            onUpdate(index, "airline", code);
-            // Use setTimeout to ensure first update is processed
-            setTimeout(() => onUpdate(index, "airline_name", name), 0);
+            onBatchUpdate(index, { airline: code, airline_name: name });
           }}
           placeholder="Vyberte..."
         />
@@ -127,37 +125,53 @@ interface FlightSegmentFormProps {
 export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: FlightSegmentFormProps) => {
   const { outbound_segments, return_segments, is_one_way } = data;
 
+  const applyAutoFill = (newData: FlightFormData, index: number, fields: Partial<FlightSegment>) => {
+    if (autoFillReturn && index === 0 && !is_one_way) {
+      if (fields.departure && !return_segments[return_segments.length - 1]?.arrival) {
+        const lastReturn = { ...return_segments[return_segments.length - 1], arrival: fields.departure };
+        newData.return_segments = return_segments.map((s, i) => i === return_segments.length - 1 ? lastReturn : s);
+      }
+      if (fields.arrival && !return_segments[0]?.departure) {
+        const firstReturn = { ...return_segments[0], departure: fields.arrival };
+        newData.return_segments = return_segments.map((s, i) => i === 0 ? firstReturn : s);
+      }
+      if (fields.airline && !return_segments[0]?.airline) {
+        const returnFields: Partial<FlightSegment> = { airline: fields.airline };
+        if (fields.airline_name) returnFields.airline_name = fields.airline_name;
+        const firstReturn = { ...return_segments[0], ...returnFields };
+        newData.return_segments = return_segments.map((s, i) => i === 0 ? firstReturn : s);
+      }
+    }
+  };
+
   const updateOutbound = (index: number, field: keyof FlightSegment, value: string) => {
     const updated = outbound_segments.map((seg, i) =>
       i === index ? { ...seg, [field]: value } : seg
     );
     const newData: FlightFormData = { ...data, outbound_segments: updated };
+    applyAutoFill(newData, index, { [field]: value });
+    onChange(newData);
+  };
 
-    // Auto-fill return fields from first outbound segment
-    if (autoFillReturn && index === 0 && !is_one_way) {
-      if (field === "departure" && !return_segments[return_segments.length - 1]?.arrival) {
-        const lastReturn = { ...return_segments[return_segments.length - 1], arrival: value };
-        newData.return_segments = return_segments.map((s, i) => i === return_segments.length - 1 ? lastReturn : s);
-      }
-      if (field === "arrival" && !return_segments[0]?.departure) {
-        const firstReturn = { ...return_segments[0], departure: value };
-        newData.return_segments = return_segments.map((s, i) => i === 0 ? firstReturn : s);
-      }
-      if (field === "airline" && !return_segments[0]?.airline) {
-        const firstReturn = { ...return_segments[0], airline: value };
-        newData.return_segments = return_segments.map((s, i) => i === 0 ? firstReturn : s);
-      }
-      if (field === "airline_name" && !return_segments[0]?.airline_name) {
-        const firstReturn = { ...return_segments[0], airline_name: value };
-        newData.return_segments = return_segments.map((s, i) => i === 0 ? firstReturn : s);
-      }
-    }
+  const batchUpdateOutbound = (index: number, fields: Partial<FlightSegment>) => {
+    const updated = outbound_segments.map((seg, i) =>
+      i === index ? { ...seg, ...fields } : seg
+    );
+    const newData: FlightFormData = { ...data, outbound_segments: updated };
+    applyAutoFill(newData, index, fields);
     onChange(newData);
   };
 
   const updateReturn = (index: number, field: keyof FlightSegment, value: string) => {
     const updated = return_segments.map((seg, i) =>
       i === index ? { ...seg, [field]: value } : seg
+    );
+    onChange({ ...data, return_segments: updated });
+  };
+
+  const batchUpdateReturn = (index: number, fields: Partial<FlightSegment>) => {
+    const updated = return_segments.map((seg, i) =>
+      i === index ? { ...seg, ...fields } : seg
     );
     onChange({ ...data, return_segments: updated });
   };
@@ -204,6 +218,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
             index={idx}
             canRemove={outbound_segments.length > 1}
             onUpdate={updateOutbound}
+            onBatchUpdate={batchUpdateOutbound}
             onRemove={removeOutbound}
           />
         ))}
@@ -240,6 +255,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
               index={idx}
               canRemove={return_segments.length > 1}
               onUpdate={updateReturn}
+              onBatchUpdate={batchUpdateReturn}
               onRemove={removeReturn}
             />
           ))}
