@@ -72,8 +72,10 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onRemove }: Fli
         <AirlineCombobox
           value={segment.airline}
           onSelect={(code, name) => {
+            // Batch both fields in a single callback cycle
             onUpdate(index, "airline", code);
-            onUpdate(index, "airline_name", name);
+            // Use setTimeout to ensure first update is processed
+            setTimeout(() => onUpdate(index, "airline_name", name), 0);
           }}
           placeholder="Vyberte..."
         />
