@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, ListTodo, Users } from "lucide-react";
+import { Plus, Trash2, ListTodo, Users, Pencil, Check, X, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, isBefore, parseISO } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
   Select,
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 interface Task {
   id: string;
@@ -42,10 +43,131 @@ const priorityLabels: Record<string, string> = {
   high: "Vysoká",
 };
 
+interface EditingState {
+  id: string;
+  title: string;
+  priority: string;
+}
+
+const TaskRow = ({
+  task,
+  showAll,
+  currentUserId,
+  profilesMap,
+  editing,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onEditChange,
+  onToggle,
+  onDelete,
+}: {
+  task: Task;
+  showAll: boolean;
+  currentUserId?: string;
+  profilesMap: Record<string, string>;
+  editing: EditingState | null;
+  onStartEdit: (task: Task) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onEditChange: (field: "title" | "priority", value: string) => void;
+  onToggle: (id: string, completed: boolean) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const isEditing = editing?.id === task.id;
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${
+        task.completed ? "bg-muted/50 opacity-60" : "bg-background"
+      }`}
+    >
+      <Checkbox
+        checked={task.completed}
+        onCheckedChange={(checked) => onToggle(task.id, !!checked)}
+      />
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editing.title}
+              onChange={(e) => onEditChange("title", e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSaveEdit();
+                if (e.key === "Escape") onCancelEdit();
+              }}
+              className="h-7 text-sm"
+              autoFocus
+            />
+            <Select
+              value={editing.priority}
+              onValueChange={(v) => onEditChange("priority", v)}
+            >
+              <SelectTrigger className="w-24 h-7 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Nízká</SelectItem>
+                <SelectItem value="medium">Střední</SelectItem>
+                <SelectItem value="high">Vysoká</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
+              <Check className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCancelEdit}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <span
+              className={`text-sm ${
+                task.completed ? "line-through text-muted-foreground" : ""
+              }`}
+            >
+              {task.title}
+            </span>
+            {showAll && task.user_id !== currentUserId && (
+              <span className="text-xs text-muted-foreground ml-1">
+                ({profilesMap[task.user_id] || "?"})
+              </span>
+            )}
+          </>
+        )}
+      </div>
+      {!isEditing && (
+        <>
+          <Badge className={priorityColors[task.priority]} variant="outline">
+            {priorityLabels[task.priority]}
+          </Badge>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => onStartEdit(task)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(task.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const TasksCard = () => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
   const [showAll, setShowAll] = useState(false);
+  const [editing, setEditing] = useState<EditingState | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
@@ -60,7 +182,6 @@ export const TasksCard = () => {
 
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
 
-  // Profiles map for displaying user names
   const { data: profilesMap = {} } = useQuery({
     queryKey: ["profiles-map"],
     enabled: isAdmin && showAll,
@@ -75,6 +196,7 @@ export const TasksCard = () => {
     },
   });
 
+  // Today's tasks
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks", today, showAll],
     queryFn: async () => {
@@ -85,6 +207,30 @@ export const TasksCard = () => {
         .order("completed", { ascending: true })
         .order("priority", { ascending: false })
         .order("created_at", { ascending: false });
+
+      if (!showAll) {
+        query = query.eq("user_id", currentUser?.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Task[];
+    },
+    enabled: !!currentUser?.id,
+  });
+
+  // Upcoming tasks (future + overdue, not today)
+  const { data: upcomingTasks = [] } = useQuery({
+    queryKey: ["tasks-upcoming", today, showAll],
+    queryFn: async () => {
+      let query = supabase
+        .from("tasks")
+        .select("*")
+        .neq("due_date", today)
+        .eq("completed", false)
+        .order("due_date", { ascending: true })
+        .order("priority", { ascending: false })
+        .limit(20);
 
       if (!showAll) {
         query = query.eq("user_id", currentUser?.id);
@@ -120,15 +266,30 @@ export const TasksCard = () => {
     mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ 
-          completed, 
-          completed_at: completed ? new Date().toISOString() : null 
+        .update({
+          completed,
+          completed_at: completed ? new Date().toISOString() : null,
         })
         .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ id, title, priority }: { id: string; title: string; priority: string }) => {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ title, priority })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setEditing(null);
+      toast({ title: "Úkol upraven" });
     },
   });
 
@@ -148,7 +309,50 @@ export const TasksCard = () => {
     addTaskMutation.mutate({ title: newTaskTitle.trim(), priority: newTaskPriority });
   };
 
+  const handleStartEdit = (task: Task) => {
+    setEditing({ id: task.id, title: task.title, priority: task.priority });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editing || !editing.title.trim()) return;
+    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority });
+  };
+
+  const handleEditChange = (field: "title" | "priority", value: string) => {
+    if (!editing) return;
+    setEditing({ ...editing, [field]: value });
+  };
+
   const completedCount = tasks.filter((t) => t.completed).length;
+
+  const formatUpcomingDate = (dateStr: string) => {
+    const date = parseISO(dateStr);
+    const isOverdue = isBefore(date, parseISO(today));
+    return {
+      label: format(date, "EEE d.M.", { locale: cs }),
+      isOverdue,
+    };
+  };
+
+  // Group upcoming by date
+  const groupedUpcoming = upcomingTasks.reduce<Record<string, Task[]>>((acc, task) => {
+    if (!acc[task.due_date]) acc[task.due_date] = [];
+    acc[task.due_date].push(task);
+    return acc;
+  }, {});
+
+  const taskRowProps = {
+    showAll,
+    currentUserId: currentUser?.id,
+    profilesMap,
+    editing,
+    onStartEdit: handleStartEdit,
+    onCancelEdit: () => setEditing(null),
+    onSaveEdit: handleSaveEdit,
+    onEditChange: handleEditChange,
+    onToggle: (id: string, completed: boolean) => toggleTaskMutation.mutate({ id, completed }),
+    onDelete: (id: string) => deleteTaskMutation.mutate(id),
+  };
 
   return (
     <Card className="h-full">
@@ -212,46 +416,37 @@ export const TasksCard = () => {
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${
-                  task.completed ? "bg-muted/50 opacity-60" : "bg-background"
-                }`}
-              >
-                <Checkbox
-                  checked={task.completed}
-                  onCheckedChange={(checked) =>
-                    toggleTaskMutation.mutate({ id: task.id, completed: !!checked })
-                  }
-                />
-                <div className="flex-1 min-w-0">
-                  <span
-                    className={`text-sm ${
-                      task.completed ? "line-through text-muted-foreground" : ""
-                    }`}
-                  >
-                    {task.title}
-                  </span>
-                  {showAll && task.user_id !== currentUser?.id && (
-                    <span className="text-xs text-muted-foreground ml-1">
-                      ({profilesMap[task.user_id] || "?"})
-                    </span>
-                  )}
-                </div>
-                <Badge className={priorityColors[task.priority]} variant="outline">
-                  {priorityLabels[task.priority]}
-                </Badge>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => deleteTaskMutation.mutate(task.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <TaskRow key={task.id} task={task} {...taskRowProps} />
             ))}
           </div>
+        )}
+
+        {/* Upcoming / overdue tasks */}
+        {Object.keys(groupedUpcoming).length > 0 && (
+          <>
+            <Separator />
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <CalendarDays className="h-4 w-4" />
+              Nadcházející úkoly
+            </div>
+            <div className="space-y-3 max-h-48 overflow-y-auto">
+              {Object.entries(groupedUpcoming).map(([date, dateTasks]) => {
+                const { label, isOverdue } = formatUpcomingDate(date);
+                return (
+                  <div key={date}>
+                    <p className={`text-xs font-medium mb-1 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                      {isOverdue && "⚠ "}{label}
+                    </p>
+                    <div className="space-y-1.5">
+                      {dateTasks.map((task) => (
+                        <TaskRow key={task.id} task={task} {...taskRowProps} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
