@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, CheckCircle2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
-import { formatPriceCurrency } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 
 interface DealVariant {
   id: string;
@@ -20,6 +20,12 @@ interface DealVariant {
   destination?: {
     name: string;
   };
+  deal_variant_services?: Array<{
+    price: number | null;
+    cost_price: number | null;
+    quantity: number;
+    person_count: number | null;
+  }>;
 }
 
 interface DealVariantsProps {
@@ -85,7 +91,8 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         .from("deal_variants")
         .select(`
           *,
-          destination:destinations(name)
+          destination:destinations(name),
+          deal_variant_services(price, cost_price, quantity, person_count)
         `)
         .eq("deal_id", dealId)
         .order("created_at", { ascending: false });
@@ -252,7 +259,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     return new Date(dateString).toLocaleDateString("cs-CZ");
   };
 
-  const formatPrice = (price: number | null) => formatPriceCurrency(price);
+  
 
   if (loading) {
     return <div>Načítám varianty...</div>;
@@ -333,10 +340,30 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   </div>
                 </div>
                 
-                <div>
-                  <p className="text-sm text-muted-foreground">Celková cena</p>
-                  <p className="text-lg font-semibold">{formatPrice(variant.total_price)}</p>
-                </div>
+                {(() => {
+                  const services = variant.deal_variant_services || [];
+                  const revenue = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+                  const costs = services.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
+                  const profit = revenue - costs;
+                  return (
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Obrat</p>
+                        <p className="font-semibold">{formatPrice(revenue || variant.total_price)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Náklady</p>
+                        <p className="font-semibold">{formatPrice(costs || null)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Zisk</p>
+                        <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
+                          {services.length > 0 ? formatPrice(profit) : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {variant.notes && (
                   <div>
