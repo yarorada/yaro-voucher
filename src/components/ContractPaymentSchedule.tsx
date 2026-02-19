@@ -26,8 +26,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode, Mail } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
+import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";
 import { cn, formatPrice } from "@/lib/utils";
 import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
@@ -63,6 +64,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [emailMatchOpen, setEmailMatchOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -324,10 +326,16 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <Wallet className="h-5 w-5" />
             Platební kalendář
           </CardTitle>
-          <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Přidat platbu
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setEmailMatchOpen(true)} size="sm" variant="outline">
+              <Mail className="h-4 w-4 mr-2" />
+              Z emailu
+            </Button>
+            <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Přidat platbu
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -681,6 +689,13 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
           </div>
         </DialogContent>
       </Dialog>
+
+      <PaymentEmailMatchDialog
+        open={emailMatchOpen}
+        onOpenChange={setEmailMatchOpen}
+        context={{ contract_id: contractId }}
+        onPaymentMatched={fetchPayments}
+      />
     </>
   );
 }
