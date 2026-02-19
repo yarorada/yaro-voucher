@@ -394,17 +394,34 @@ function FlightInfo({ details }: { details: any }) {
 
   if (segments.length === 0 && returnSegments.length === 0) return null;
 
+  const formatSegment = (s: any) => {
+    const route = `${s.departure || "?"} → ${s.arrival || "?"}`;
+    const parts: string[] = [route];
+    if (s.departure_time || s.arrival_time) {
+      parts.push(`${s.departure_time || ""} – ${s.arrival_time || ""}`);
+    }
+    if (s.date) {
+      parts.push(formatDateShort(s.date));
+    }
+    if (s.airline && s.flight_number) {
+      parts.push(`${s.airline}${s.flight_number}`);
+    }
+    return parts.join(" · ");
+  };
+
   return (
-    <div className="text-xs text-slate-400 mt-0.5">
+    <div className="text-xs text-slate-400 mt-1 space-y-0.5">
       {segments.length > 0 && (
-        <span>
-          {segments.map((s: any) => `${s.departure || "?"} → ${s.arrival || "?"}`).join(" → ")}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-slate-500 font-medium">→</span>
+          <span>{segments.map(formatSegment).join(" ✈ ")}</span>
+        </div>
       )}
       {returnSegments.length > 0 && (
-        <span className="ml-2">
-          | {returnSegments.map((s: any) => `${s.departure || "?"} → ${s.arrival || "?"}`).join(" → ")}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-slate-500 font-medium">←</span>
+          <span>{returnSegments.map(formatSegment).join(" ✈ ")}</span>
+        </div>
       )}
     </div>
   );
