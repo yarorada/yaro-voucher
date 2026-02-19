@@ -324,7 +324,8 @@ async function serveOgHtml(supabase: any, token: string, requestUrl: URL) {
 </body>
 </html>`;
 
-  return new Response(html, {
+  const encoder = new TextEncoder();
+  return new Response(encoder.encode(html), {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, max-age=300',
