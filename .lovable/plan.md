@@ -1,98 +1,95 @@
 
 
-# Public Deal Offer Sharing
+# Pridani sloupce "Pocet" (quantity) do tabulky sluzeb
 
-## Overview
-Add a "Share offer" button to the Deal Detail page that generates a unique public link. The link opens a beautifully designed public page showing the deal's variants (or just the selected one if finalized), each with a hero hotel photo and 2 smaller gallery photos.
+## Souhrn
 
-## What needs to happen
+Pridame novy sloupec `quantity` (Pocet) do tabulek `deal_services` a `deal_variant_services`. Tento sloupec bude nasobit cenu sluzby. Stavajici `person_count` se prejmenuje na "Pocet osob" a bude slouzit vyhradne pro vypocet ceny na osobu a generovani voucheru.
 
-### 1. Database changes
+## Zmeny v databazi
 
-**New columns on `hotel_templates`:**
-- `image_url` (text, nullable) -- main/hero photo
-- `image_url_2` (text, nullable) -- room or secondary photo  
-- `image_url_3` (text, nullable) -- golf course / beach / signature photo
+Pridame sloupec `quantity` (integer, default 1, NOT NULL) do obou tabulek:
+- `deal_services`
+- `deal_variant_services`
 
-**New column on `deals`:**
-- `share_token` (text, nullable, unique) -- random token for public access
+## Zmeny v logice vypoctu ceny
 
-**New storage bucket:**
-- `hotel-images` (public) for uploading hotel photos
+Vsude, kde se nyni nasobi `price * person_count`, se zmeni na `price * quantity`. Konkretne:
 
-**New RLS policy:**
-- Anonymous SELECT on `deals`, `deal_variants`, `deal_variant_services`, `deal_services`, `hotel_templates`, `destinations`, `countries` where `share_token` matches -- achieved via a database function with SECURITY DEFINER to avoid complex RLS changes.
+| Misto | Stara logika | Nova logika |
+|-------|-------------|-------------|
+| DealDetail - SortableServiceRow | `price * person_count` | `price * quantity` |
+| DealDetail - calculateTotalPrice | `price * person_count` | `price * quantity` |
+| DealDetail - totalCostPrice | `cost_price * person_count` | `cost_price * quantity` |
+| DealDetail - celkova cena dole | `price * person_count` | `price * quantity` |
+| PublicOffer - VariantCard | `price * person_count` | `price * quantity` |
+| send-offer-email - vPrice | `price * person_count` | `price * quantity` |
 
-### 2. Backend function (Edge Function)
-- `get-public-offer` -- accepts `token` query param, fetches all deal data (variants with services, destination, hotel images) and returns JSON. This avoids needing anon RLS on all tables.
+## Zmeny v UI
 
-### 3. New pages and components
+### Formular sluzby (DealDetail.tsx)
+- Pole "Pocet *" se prepoji na novy sloupec `quantity` (misto `person_count`)
+- Pole "Pocet osob" zustane napojene na `person_count_unit` v details (beze zmeny)
+- `person_count` se presune do formulare jako "Pocet osob" -- nebo se pouzije stavajici pole `person_count_unit`. Nutno sjednotit: `person_count` bude pocet osob, `quantity` bude nasobitel ceny.
 
-**`src/pages/PublicOffer.tsx`** -- public page (no auth required):
-- Fetches data via the edge function
-- Displays YARO branding header
-- If a variant is selected as final: shows only that variant
-- Otherwise: shows all variants as cards
-- Each variant card shows:
-  - Hero hotel image (large, full-width)
-  - 2 smaller images in a row below (room + golf/beach)
-  - Destination name, dates, services list, total price
-- Responsive, modern design with gradient accents
+### Formular sluzby (VariantServiceDialog.tsx)
+- Stejna uprava -- pridani pole `quantity`, prepojeni cenoveho nasobitele
 
-**`src/components/HotelImageUpload.tsx`** -- image upload component:
-- Used in HotelCombobox or a separate hotel edit dialog
-- Allows uploading 3 images (main, room, golf/beach)
-- Stores in `hotel-images` bucket, saves URLs to `hotel_templates`
+### Tabulka sluzeb (DealDetail.tsx)
+- Sloupec "Osoby" se prejmenuje na "Pocet"
+- Zobrazi hodnotu `quantity`
+- Pod cenou se zobrazi `cena x quantity` pokud quantity > 1
 
-**`src/components/ShareOfferButton.tsx`** -- button for DealDetail:
-- Generates a `share_token` if not present
-- Copies the public URL to clipboard
-- Shows the shareable link
+### Verejne stranky a emaily
+- `get-public-offer` a `send-offer-email` - fetchuji novy sloupec `quantity`, pouziji ho pro nasobeni ceny
+- `person_count` zustane dostupny pro budouci rekapitulaci ceny na osobu
 
-### 4. Routing
-- Add `/offer/:token` route in App.tsx (outside ProtectedRoute)
+## Migrace dat
 
-## Design of the public page
+Existujici data: stavajici `person_count` obsahuje hodnoty, ktere se pouzivaly jako nasobitel. Pri migraci zkopirujeme `person_count` do noveho `quantity` a `person_count` nastavime na 1 (nebo ponechame, protoze puvodni vyznam byl smiseny). Bezpecnejsi varianta: `quantity = person_count`, `person_count` ponechat beze zmeny -- uzivatel muze pozdeji upravit rucne.
 
-```text
-+------------------------------------------+
-|  YARO Travel logo          Nabidka       |
-+------------------------------------------+
-|                                          |
-|  [========= HERO HOTEL IMAGE =========]  |
-|                                          |
-|  [  Room Photo  ]  [  Golf/Beach Photo ] |
-|                                          |
-|  Destination Name, Country               |
-|  DD.MM.YYYY - DD.MM.YYYY                 |
-|                                          |
-|  Services:                               |
-|  - Flight: PRG -> FAO                    |
-|  - Hotel: Pine Cliffs 5*                 |
-|  - Golf: Monte Rei Golf                  |
-|  - Transfer: Airport transfer            |
-|                                          |
-|  Total: 85 000 CZK                       |
-+------------------------------------------+
+## Technicke detaily
+
+### SQL migrace
+
+```sql
+ALTER TABLE deal_services ADD COLUMN quantity integer NOT NULL DEFAULT 1;
+ALTER TABLE deal_variant_services ADD COLUMN quantity integer NOT NULL DEFAULT 1;
+
+-- Zkopirovat stavajici person_count do quantity
+UPDATE deal_services SET quantity = COALESCE(person_count, 1);
+UPDATE deal_variant_services SET quantity = COALESCE(person_count, 1);
 ```
 
-Multiple variant cards shown side-by-side on desktop, stacked on mobile. Selected variant highlighted.
+### Soubory k uprave
 
-## Technical details
+1. **`src/pages/DealDetail.tsx`**
+   - serviceForm: pridat pole `quantity` (default "1")
+   - SortableServiceRow: zobrazit `quantity`, nasobit `price * quantity`
+   - calculateTotalPrice: `price * quantity`
+   - totalCostPrice: `cost_price * quantity`
+   - Celkova cena: `price * quantity`
+   - Editace sluzby: nacist/ulozit `quantity`
+   - Tabulka: hlavicka "Pocet" misto "Osoby"
+   - Formular: pole "Pocet" pro quantity, pole "Pocet osob" pro person_count (pouzit primo DB sloupec `person_count`, ne `person_count_unit` z details)
 
-- Share token: 12-char random alphanumeric string
-- Edge function queries all needed data server-side (no anon RLS changes needed)
-- Hotel images uploaded to Supabase Storage `hotel-images` bucket
-- Images compressed client-side before upload (reuse existing `imageCompression.ts`)
-- Public page uses minimal dependencies (no sidebar, no auth check)
+2. **`src/components/VariantServiceDialog.tsx`**
+   - Pridat stav `quantity`, napojit na formular
+   - Ukladat `quantity` do DB
+   - Pole "Pocet" a "Pocet osob" vedle sebe
 
-## Files to create/modify
-- **Migration**: Add columns + storage bucket
-- **New**: `supabase/functions/get-public-offer/index.ts`
-- **New**: `src/pages/PublicOffer.tsx`
-- **New**: `src/components/ShareOfferButton.tsx`  
-- **New**: `src/components/HotelImageUpload.tsx`
-- **Modify**: `src/App.tsx` (add public route)
-- **Modify**: `src/pages/DealDetail.tsx` (add ShareOfferButton)
-- **Modify**: `src/components/HotelCombobox.tsx` (add image upload trigger)
+3. **`src/pages/PublicOffer.tsx`**
+   - Fetchovat `quantity`
+   - Pouzit `price * quantity` pro celkovou cenu varianty
+   - `person_count` pouzit pro rekapitulaci ceny na osobu
+
+4. **`supabase/functions/get-public-offer/index.ts`**
+   - Pridat `quantity` do select dotazu
+
+5. **`supabase/functions/send-offer-email/index.ts`**
+   - Pridat `quantity` do select dotazu
+   - Pouzit `price * quantity` pro celkovou cenu
+
+6. **`src/components/DealVariants.tsx`**
+   - Zkontrolovat, zda se zde pocita cena -- pokud ano, prepojit na `quantity`
 
