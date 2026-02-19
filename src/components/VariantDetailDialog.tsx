@@ -314,6 +314,44 @@ export const VariantDetailDialog = ({
     }
   };
 
+  const recalcDatesFromServices = async (variantId: string) => {
+    try {
+      const { data: svcData } = await supabase
+        .from("deal_variant_services")
+        .select("start_date, end_date")
+        .eq("variant_id", variantId);
+
+      if (!svcData || svcData.length === 0) return;
+
+      const startDates = svcData.map(s => s.start_date).filter(Boolean).sort();
+      const endDates = svcData.map(s => s.end_date).filter(Boolean).sort();
+      const newStart = startDates[0] || null;
+      const newEnd = endDates[endDates.length - 1] || null;
+
+      // Update variant dates in DB
+      await supabase.from("deal_variants").update({
+        start_date: newStart,
+        end_date: newEnd,
+      }).eq("id", variantId);
+
+      // Update local state
+      setStartDate(newStart ? new Date(newStart) : undefined);
+      setEndDate(newEnd ? new Date(newEnd) : undefined);
+
+      // If this variant is selected, propagate to deal
+      if (variant?.is_selected) {
+        const updateData: Record<string, string | null> = {};
+        if (newStart) updateData.start_date = newStart;
+        if (newEnd) updateData.end_date = newEnd;
+        if (Object.keys(updateData).length > 0) {
+          await supabase.from("deals").update(updateData).eq("id", dealId);
+        }
+      }
+    } catch (error) {
+      console.error("Error recalculating dates:", error);
+    }
+  };
+
   const handleDeleteService = async (serviceId: string) => {
     if (!confirm("Opravdu chcete smazat tuto službu?")) return;
 
@@ -331,7 +369,8 @@ export const VariantDetailDialog = ({
       });
 
       if (variant) {
-        fetchServices(variant.id);
+        await fetchServices(variant.id);
+        await recalcDatesFromServices(variant.id);
       }
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -343,9 +382,10 @@ export const VariantDetailDialog = ({
     }
   };
 
-  const handleServiceSaved = () => {
+  const handleServiceSaved = async () => {
     if (variant) {
-      fetchServices(variant.id);
+      await fetchServices(variant.id);
+      await recalcDatesFromServices(variant.id);
     }
   };
 
