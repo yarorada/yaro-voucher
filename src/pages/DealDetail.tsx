@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2 } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw } from "lucide-react";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
@@ -285,6 +285,11 @@ const DealDetail = () => {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
   const [duplicating, setDuplicating] = useState(false);
+
+  // Contract sync dialog state
+  const [contractSyncDialogOpen, setContractSyncDialogOpen] = useState(false);
+  const [linkedContracts, setLinkedContracts] = useState<Array<{ id: string; contract_number: string; status: string }>>([]);
+  const [syncingContract, setSyncingContract] = useState(false);
   
   // Service form state
   const [serviceForm, setServiceForm] = useState({
@@ -1489,6 +1494,9 @@ const DealDetail = () => {
       });
 
       fetchDeal();
+      
+      // Check for linked contracts and offer sync
+      await checkAndOfferContractSync();
     } catch (error) {
       console.error("Error updating deal:", error);
       toast({
@@ -1498,6 +1506,123 @@ const DealDetail = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const checkAndOfferContractSync = async () => {
+    if (!deal) return;
+    try {
+      const { data: contracts, error } = await supabase
+        .from("travel_contracts")
+        .select("id, contract_number, status")
+        .eq("deal_id", deal.id);
+      
+      if (error || !contracts || contracts.length === 0) return;
+      
+      // Only offer sync for non-cancelled contracts
+      const activeContracts = contracts.filter(c => c.status !== "cancelled");
+      if (activeContracts.length > 0) {
+        setLinkedContracts(activeContracts);
+        setContractSyncDialogOpen(true);
+      }
+    } catch (e) {
+      console.error("Error checking linked contracts:", e);
+    }
+  };
+
+  const handleSyncToContracts = async () => {
+    if (!deal || linkedContracts.length === 0) return;
+    setSyncingContract(true);
+    
+    try {
+      for (const contract of linkedContracts) {
+        // 1. Update contract total_price, deposit_amount, tee_times
+        await supabase
+          .from("travel_contracts")
+          .update({
+            total_price: totalPrice ? parseFloat(totalPrice) : 0,
+            deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
+            tee_times: deal.tee_times || null,
+          })
+          .eq("id", contract.id);
+
+        // 2. Sync services: delete old contract_service_travelers and recreate
+        // First get all travelers on the contract
+        const { data: contractData } = await supabase
+          .from("travel_contracts")
+          .select("client_id")
+          .eq("id", contract.id)
+          .single();
+        
+        // Get all deal travelers
+        const allTravelerIds = deal.deal_travelers.map(t => t.client_id);
+        const travelerIds = allTravelerIds.length > 0 ? allTravelerIds : (contractData?.client_id ? [contractData.client_id] : []);
+        
+        // Delete existing service assignments
+        await supabase
+          .from("contract_service_travelers")
+          .delete()
+          .eq("contract_id", contract.id);
+        
+        // Create new assignments from current deal services
+        if (services.length > 0 && travelerIds.length > 0) {
+          const serviceAssignments = services.flatMap(service => 
+            travelerIds.map(clientId => ({
+              contract_id: contract.id,
+              client_id: clientId,
+              service_type: service.service_type,
+              service_name: service.service_name,
+              notes: service.description || null,
+            }))
+          );
+          
+          await supabase
+            .from("contract_service_travelers")
+            .insert(serviceAssignments);
+        }
+
+        // 3. Sync payments: delete old and recreate from deal_payments
+        await supabase
+          .from("contract_payments")
+          .delete()
+          .eq("contract_id", contract.id);
+        
+        const { data: dealPayments } = await supabase
+          .from("deal_payments")
+          .select("*")
+          .eq("deal_id", deal.id);
+        
+        if (dealPayments && dealPayments.length > 0) {
+          const contractPayments = dealPayments.map(dp => ({
+            contract_id: contract.id,
+            payment_type: dp.payment_type,
+            amount: dp.amount,
+            due_date: dp.due_date,
+            notes: dp.notes,
+            paid: dp.paid,
+            paid_at: dp.paid_at,
+          }));
+          
+          await supabase
+            .from("contract_payments")
+            .insert(contractPayments);
+        }
+      }
+
+      toast({
+        title: "Synchronizováno",
+        description: `Změny byly propagovány do ${linkedContracts.length} smluv${linkedContracts.length > 1 ? 'y' : ''}`,
+      });
+    } catch (error) {
+      console.error("Error syncing to contracts:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se synchronizovat změny do smlouvy",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingContract(false);
+      setContractSyncDialogOpen(false);
     }
   };
 
@@ -2450,6 +2575,52 @@ const DealDetail = () => {
         )}
         </div>
       </div>
+
+      {/* Contract Sync Confirmation Dialog */}
+      <Dialog open={contractSyncDialogOpen} onOpenChange={setContractSyncDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Propagovat změny do smlouvy?
+            </DialogTitle>
+            <DialogDescription>
+              Tento obchodní případ má {linkedContracts.length === 1 ? 'vystavenu cestovní smlouvu' : `${linkedContracts.length} vystavených smluv`}. 
+              Chcete propagovat aktuální změny (služby, platební kalendář, celkovou cenu a tee times) do {linkedContracts.length === 1 ? 'smlouvy' : 'smluv'}?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {linkedContracts.map(c => (
+              <div key={c.id} className="flex items-center gap-2 p-2 rounded bg-muted text-sm">
+                <FileSignature className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{c.contract_number}</span>
+                <span className="text-muted-foreground capitalize">({c.status === 'draft' ? 'koncept' : c.status === 'sent' ? 'odeslána' : c.status === 'signed' ? 'podepsána' : c.status})</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded p-3">
+            ⚠️ Tato akce přepíše stávající služby a platby ve smlouvě. Změny nelze vrátit zpět.
+          </div>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setContractSyncDialogOpen(false)} disabled={syncingContract}>
+              Přeskočit
+            </Button>
+            <Button onClick={handleSyncToContracts} disabled={syncingContract}>
+              {syncingContract ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Synchronizuji...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Propagovat změny
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
