@@ -51,6 +51,11 @@ const MfaSetup = () => {
       });
 
       if (error) {
+        // If factor already exists, user already has 2FA - redirect to verify
+        if (error.code === 'mfa_factor_name_conflict') {
+          navigate("/mfa-verify");
+          return;
+        }
         throw error;
       }
 
