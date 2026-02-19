@@ -1343,11 +1343,48 @@ const DealDetail = () => {
 
     setSaving(true);
     try {
+      // Build auto-generated deal name
+      let autoName = "";
+      
+      // Lead traveler name
+      const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler) 
+        || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
+      if (leadTraveler?.clients) {
+        autoName += `${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name}`;
+      }
+      
+      // Country code from destination
+      if (destinationId) {
+        const { data: destData } = await supabase
+          .from("destinations")
+          .select("country_id, countries(iso_code)")
+          .eq("id", destinationId)
+          .single();
+        if (destData?.countries) {
+          const cc = (destData.countries as any).iso_code;
+          if (cc) autoName += ` ${cc}`;
+        }
+      }
+      
+      // Hotel name from services
+      const hotelService = services.find(s => s.service_type === "hotel");
+      if (hotelService?.service_name) {
+        autoName += ` ${hotelService.service_name}`;
+      }
+      
+      // Start date in DD-MM-YY format
+      if (startDate) {
+        autoName += ` ${format(startDate, "dd-MM-yy")}`;
+      }
+      
+      const finalName = autoName.trim() || dealName || null;
+      setDealName(finalName || "");
+
       // Update deal
       const { error: dealError } = await supabase
         .from("deals")
         .update({
-          name: dealName || null,
+          name: finalName,
           status,
           destination_id: destinationId || null,
           start_date: formatDateForDB(startDate),
