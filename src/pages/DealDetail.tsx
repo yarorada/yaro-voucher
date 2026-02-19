@@ -2000,7 +2000,7 @@ const DealDetail = () => {
 
         <Card>
           <CardContent className="pt-6">
-            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); }} />
+            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
           </CardContent>
         </Card>
 
