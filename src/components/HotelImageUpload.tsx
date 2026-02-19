@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, X, Loader2, Search, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ImagePlus, X, Loader2, Search, Check, Link } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -19,6 +22,7 @@ interface HotelImageUploadProps {
   imageUrl: string | null;
   imageUrl2: string | null;
   imageUrl3: string | null;
+  description: string | null;
   onUpdate: () => void;
 }
 
@@ -30,13 +34,17 @@ const IMAGE_LABELS = [
 
 type ImageSlot = "image_url" | "image_url_2" | "image_url_3";
 
-export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, onUpdate }: HotelImageUploadProps) {
+export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, description, onUpdate }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[] } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<ImageSlot | null>(null);
   const [savingUrl, setSavingUrl] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState(description || "");
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [urlInputs, setUrlInputs] = useState<Record<string, string>>({});
+  const [savingUrlInput, setSavingUrlInput] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const images: Record<string, string | null> = {
@@ -99,6 +107,79 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     }
   };
 
+  const handleSaveFromUrl = async (field: string, url: string) => {
+    if (!url.trim()) return;
+    
+    setSavingUrlInput(field);
+    try {
+      // Download via proxy to avoid CORS
+      const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-image", {
+        body: { url: url.trim() },
+      });
+
+      if (proxyError || !proxyData?.base64) {
+        throw new Error(proxyError?.message || "Proxy download failed");
+      }
+
+      const byteString = atob(proxyData.base64);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
+      const file = new File([blob], "downloaded.jpg", { type: blob.type });
+
+      const compressed = await compressImage(file, 1920, 1080, 0.85);
+      const fileName = `${hotelId}/${field}_${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("hotel-images")
+        .upload(fileName, compressed.blob, { contentType: "image/jpeg", upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("hotel-images")
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from("hotel_templates")
+        .update({ [field]: publicUrlData.publicUrl } as any)
+        .eq("id", hotelId);
+
+      if (updateError) throw updateError;
+
+      toast.success("Foto uloženo z URL");
+      setUrlInputs((prev) => ({ ...prev, [field]: "" }));
+      onUpdate();
+    } catch (error) {
+      console.error("URL save error:", error);
+      toast.error("Nepodařilo se uložit foto z URL");
+    } finally {
+      setSavingUrlInput(null);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    setSavingDescription(true);
+    try {
+      const { error } = await supabase
+        .from("hotel_templates")
+        .update({ description: editDescription.trim() || null } as any)
+        .eq("id", hotelId);
+
+      if (error) throw error;
+      toast.success("Popis hotelu uložen");
+      onUpdate();
+    } catch (error) {
+      console.error("Description save error:", error);
+      toast.error("Nepodařilo se uložit popis");
+    } finally {
+      setSavingDescription(false);
+    }
+  };
+
   const handleScrape = async () => {
     if (!hotelName) {
       toast.error("Nejdříve vyberte hotel");
@@ -123,6 +204,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             .from("hotel_templates")
             .update({ description: data.hotelDescription } as any)
             .eq("id", hotelId);
+          setEditDescription(data.hotelDescription);
         }
         
         if (hotelImgs.length === 0 && golfImgs.length === 0) {
@@ -146,7 +228,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const handleSelectImage = async (url: string, slot: ImageSlot) => {
     setSavingUrl(url);
     try {
-      // Download the image via edge function proxy to avoid CORS issues
       const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-image", {
         body: { url },
       });
@@ -155,7 +236,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         throw new Error(proxyError?.message || "Proxy download failed");
       }
 
-      // Convert base64 back to blob
       const byteString = atob(proxyData.base64);
       const ab = new ArrayBuffer(byteString.length);
       const ia = new Uint8Array(ab);
@@ -212,9 +292,33 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           ) : (
             <Search className="h-4 w-4" />
           )}
-          {scraping ? "Hledám fotky..." : "Najít fotky z webu hotelu"}
+          {scraping ? "Hledám fotky..." : "Najít fotky a popis z webu hotelu"}
         </Button>
       )}
+
+      {/* Hotel description */}
+      <div className="space-y-1">
+        <Label className="text-xs">Popis hotelu</Label>
+        <Textarea
+          value={editDescription}
+          onChange={(e) => setEditDescription(e.target.value)}
+          placeholder="Popis hotelu..."
+          rows={3}
+          className="text-xs"
+        />
+        {editDescription !== (description || "") && (
+          <Button
+            type="button"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={handleSaveDescription}
+            disabled={savingDescription}
+          >
+            {savingDescription ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+            Uložit popis
+          </Button>
+        )}
+      </div>
 
       {/* Manual upload grid */}
       <div className="grid grid-cols-3 gap-3">
@@ -265,6 +369,29 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                     </span>
                   </button>
                 )}
+              </div>
+              {/* URL input */}
+              <div className="flex gap-1">
+                <Input
+                  value={urlInputs[key] || ""}
+                  onChange={(e) => setUrlInputs((prev) => ({ ...prev, [key]: e.target.value }))}
+                  placeholder="URL obrázku"
+                  className="h-7 text-xs"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 w-7 p-0 shrink-0"
+                  disabled={!urlInputs[key]?.trim() || savingUrlInput === key}
+                  onClick={() => handleSaveFromUrl(key, urlInputs[key] || "")}
+                >
+                  {savingUrlInput === key ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Link className="h-3 w-3" />
+                  )}
+                </Button>
               </div>
               <input
                 ref={(el) => { fileInputRefs.current[key] = el; }}
