@@ -183,6 +183,9 @@ export default function PublicOffer() {
               {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
             </p>
           )}
+          <p className="text-sm text-slate-400 mt-2">
+            📞 +420 602 102 108 &nbsp;|&nbsp; ✉️ radek@yarotravel.cz
+          </p>
         </div>
 
         {/* Variants */}
