@@ -21,7 +21,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Pencil, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "yaro-dashboard-order";
 
@@ -64,7 +65,7 @@ function loadOrder(): string[] {
   return DEFAULT_ORDER;
 }
 
-function SortableTile({ id, children }: { id: string; children: ReactNode }) {
+function SortableTile({ id, children, editing }: { id: string; children: ReactNode; editing: boolean }) {
   const {
     attributes,
     listeners,
@@ -72,7 +73,7 @@ function SortableTile({ id, children }: { id: string; children: ReactNode }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: !editing });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -82,15 +83,17 @@ function SortableTile({ id, children }: { id: string; children: ReactNode }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
-      <button
-        {...attributes}
-        {...listeners}
-        className="absolute top-2 right-2 z-10 p-1 rounded-md bg-muted/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-        aria-label="Přesunout dlaždici"
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </button>
+    <div ref={setNodeRef} style={style} className={`relative ${editing ? "ring-2 ring-primary/30 rounded-lg" : ""}`}>
+      {editing && (
+        <button
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 right-2 z-10 p-1 rounded-md bg-muted/80 cursor-grab active:cursor-grabbing"
+          aria-label="Přesunout dlaždici"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      )}
       {children}
     </div>
   );
@@ -98,6 +101,7 @@ function SortableTile({ id, children }: { id: string; children: ReactNode }) {
 
 const Index = () => {
   const [order, setOrder] = useState<string[]>(loadOrder);
+  const [editing, setEditing] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -120,7 +124,7 @@ const Index = () => {
     <div className="min-h-full bg-[var(--gradient-subtle)]">
       <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
         {/* Header */}
-        <div className="text-center pb-2">
+        <div className="text-center pb-2 relative">
           <img
             src={yaroLogo}
             alt="YARO Travel"
@@ -129,6 +133,15 @@ const Index = () => {
           <h1 className="text-xl md:text-2xl font-semibold text-foreground">
             Vítejte v systému YARO
           </h1>
+          <Button
+            variant={editing ? "default" : "outline"}
+            size="sm"
+            className="absolute top-0 right-0"
+            onClick={() => setEditing((e) => !e)}
+          >
+            {editing ? <Check className="h-4 w-4 mr-1" /> : <Pencil className="h-4 w-4 mr-1" />}
+            {editing ? "Hotovo" : "Upravit plochu"}
+          </Button>
         </div>
 
         {/* Draggable tiles */}
@@ -140,7 +153,7 @@ const Index = () => {
           <SortableContext items={order} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {order.map((id) => (
-                <SortableTile key={id} id={id}>
+                <SortableTile key={id} id={id} editing={editing}>
                   {TILE_COMPONENTS[id]}
                 </SortableTile>
               ))}
