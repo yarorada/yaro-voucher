@@ -148,28 +148,29 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
   };
 
   const updateDealDatesFromVariant = async (variantId: string) => {
-    const { data: services } = await supabase
-      .from("deal_variant_services")
-      .select("start_date, end_date")
-      .eq("variant_id", variantId);
+    // Fetch variant info (destination) and its services (dates)
+    const [{ data: variant }, { data: services }] = await Promise.all([
+      supabase.from("deal_variants").select("destination_id").eq("id", variantId).single(),
+      supabase.from("deal_variant_services").select("start_date, end_date").eq("variant_id", variantId),
+    ]);
 
-    if (!services || services.length === 0) return;
+    const updateData: Record<string, string | null> = {};
 
-    const startDates = services.map(s => s.start_date).filter(Boolean).sort();
-    const endDates = services.map(s => s.end_date).filter(Boolean).sort();
+    // Propagate destination
+    if (variant?.destination_id) {
+      updateData.destination_id = variant.destination_id;
+    }
 
-    const earliestStart = startDates[0] || null;
-    const latestEnd = endDates[endDates.length - 1] || null;
+    // Propagate earliest start_date and latest end_date
+    if (services && services.length > 0) {
+      const startDates = services.map(s => s.start_date).filter(Boolean).sort();
+      const endDates = services.map(s => s.end_date).filter(Boolean).sort();
+      if (startDates[0]) updateData.start_date = startDates[0];
+      if (endDates[endDates.length - 1]) updateData.end_date = endDates[endDates.length - 1];
+    }
 
-    if (earliestStart || latestEnd) {
-      const updateData: Record<string, string | null> = {};
-      if (earliestStart) updateData.start_date = earliestStart;
-      if (latestEnd) updateData.end_date = latestEnd;
-
-      await supabase
-        .from("deals")
-        .update(updateData)
-        .eq("id", dealId);
+    if (Object.keys(updateData).length > 0) {
+      await supabase.from("deals").update(updateData).eq("id", dealId);
     }
   };
 
