@@ -2253,7 +2253,7 @@ const DealDetail = () => {
                       </>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 items-end">
                       <div className="space-y-2">
                         <Label>Datum</Label>
                         <DateRangePicker
@@ -2264,7 +2264,7 @@ const DealDetail = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Počet *</Label>
+                        <Label>Počet</Label>
                         <Input
                           type="number"
                           min="1"
@@ -2275,7 +2275,7 @@ const DealDetail = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Počet osob</Label>
+                        <Label>Osoby</Label>
                         <Input
                           type="number"
                           min="1"
