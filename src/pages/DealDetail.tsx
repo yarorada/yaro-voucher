@@ -294,6 +294,7 @@ const DealDetail = () => {
     start_date: undefined as Date | undefined,
     end_date: undefined as Date | undefined,
     price: "",
+    price_currency: "CZK",
     cost_price: "",
     cost_currency: "CZK",
     cost_price_original: "",
@@ -944,13 +945,14 @@ const DealDetail = () => {
         // Update existing service
         const { error } = await supabase
           .from("deal_services")
-          .update({
+        .update({
             service_type: serviceForm.service_type,
             service_name: finalServiceName,
             description: serviceForm.description || null,
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
@@ -967,7 +969,7 @@ const DealDetail = () => {
         // Create new service
         const { error } = await supabase
           .from("deal_services")
-          .insert([{
+        .insert([{
             deal_id: deal.id,
             service_type: serviceForm.service_type,
             service_name: finalServiceName,
@@ -975,6 +977,7 @@ const DealDetail = () => {
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
             price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
@@ -1237,6 +1240,7 @@ const DealDetail = () => {
     start_date: startDate,
     end_date: endDate,
     price: "",
+    price_currency: "CZK",
     cost_price: "",
     cost_currency: "CZK",
     cost_price_original: "",
@@ -1256,6 +1260,7 @@ const DealDetail = () => {
       start_date: undefined,
       end_date: undefined,
       price: "",
+      price_currency: "CZK",
       cost_price: "",
       cost_currency: "CZK",
       cost_price_original: "",
@@ -1346,6 +1351,7 @@ const DealDetail = () => {
       start_date: service.start_date ? new Date(service.start_date) : undefined,
       end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
+      price_currency: serviceAny.price_currency || "CZK",
       cost_price: service.cost_price?.toString() || "",
       cost_currency: serviceAny.cost_currency || "CZK",
       cost_price_original: serviceAny.cost_price_original?.toString() || "",
@@ -2300,13 +2306,21 @@ const DealDetail = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Prodejní cena (Kč)</Label>
-                        <Input
-                          type="number"
-                          value={serviceForm.price}
-                          onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
-                          placeholder="0"
-                        />
+                        <Label>Prodejní cena</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={serviceForm.price}
+                            onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
+                            placeholder="0"
+                            className="flex-1"
+                          />
+                          <CurrencySelect
+                            value={serviceForm.price_currency}
+                            onChange={(value) => setServiceForm({ ...serviceForm, price_currency: value })}
+                            className="w-20 shrink-0"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Nákupní cena</Label>

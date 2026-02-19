@@ -65,6 +65,7 @@ export const VariantServiceDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [price, setPrice] = useState("");
+  const [priceCurrency, setPriceCurrency] = useState("CZK");
   const [costPrice, setCostPrice] = useState("");
   const [costCurrency, setCostCurrency] = useState("CZK");
   const [costPriceOriginal, setCostPriceOriginal] = useState("");
@@ -91,6 +92,7 @@ export const VariantServiceDialog = ({
       setStartDate(service.start_date ? new Date(service.start_date) : undefined);
       setEndDate(service.end_date ? new Date(service.end_date) : undefined);
       setPrice(service.price?.toString() || "");
+      setPriceCurrency((service as any).price_currency || "CZK");
       setCostPrice(service.cost_price?.toString() || "");
       setCostCurrency((service as any).cost_currency || "CZK");
       setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
@@ -148,6 +150,7 @@ export const VariantServiceDialog = ({
     setStartDate(variantStartDate ? new Date(variantStartDate) : undefined);
     setEndDate(variantEndDate ? new Date(variantEndDate) : undefined);
     setPrice("");
+    setPriceCurrency("CZK");
     setCostPrice("");
     setCostCurrency("CZK");
     setCostPriceOriginal("");
@@ -327,6 +330,7 @@ export const VariantServiceDialog = ({
         start_date: formatDateForDB(startDate),
         end_date: formatDateForDB(endDate),
         price: price ? parseFloat(price) : null,
+        price_currency: priceCurrency,
         cost_price: costPriceCzk,
         cost_currency: costCurrency,
         cost_price_original: costPriceOrig,
@@ -548,15 +552,23 @@ export const VariantServiceDialog = ({
               />
             </div>
             <div>
-              <Label htmlFor="price">Cena za osobu (Kč)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-              />
+              <Label htmlFor="price">Prodejní cena</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1"
+                />
+                <CurrencySelect
+                  value={priceCurrency}
+                  onChange={setPriceCurrency}
+                  className="w-28"
+                />
+              </div>
             </div>
           </div>
 
