@@ -82,12 +82,12 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Fetch hotel images
-    let hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null }> = {};
+    // Fetch hotel images and descriptions
+    let hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')
-        .select('name, image_url, image_url_2, image_url_3')
+        .select('name, image_url, image_url_2, image_url_3, description')
         .in('name', Array.from(hotelNames));
 
       (hotels || []).forEach((h: any) => {
@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
           image_url: h.image_url,
           image_url_2: h.image_url_2,
           image_url_3: h.image_url_3,
+          description: h.description,
         };
       });
     }
