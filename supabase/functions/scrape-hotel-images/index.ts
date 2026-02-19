@@ -164,7 +164,17 @@ Deno.serve(async (req) => {
       // Get a meaningful paragraph (skip short lines, headers, nav items)
       const paragraphs = markdown
         .split(/\n\n+/)
-        .map((p: string) => p.replace(/[#*\[\]()!]/g, "").trim())
+        .map((p: string) => p
+          // Remove markdown image syntax ![alt](url)
+          .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+          // Remove markdown links but keep text [text](url) -> text
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+          // Remove remaining URLs
+          .replace(/https?:\/\/\S+/g, "")
+          // Remove markdown formatting chars
+          .replace(/[#*!]/g, "")
+          .trim()
+        )
         .filter((p: string) => p.length > 80 && !p.includes("|") && !/^[-–•]/.test(p));
       
       if (paragraphs.length > 0) {
