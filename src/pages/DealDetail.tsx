@@ -295,6 +295,7 @@ const DealDetail = () => {
     cost_price_original: "",
     supplier_id: "",
     person_count: "1",
+    person_count_unit: "os.",
   });
   
   // Flight segments state (separate from form to avoid serialization issues)
@@ -951,7 +952,7 @@ const DealDetail = () => {
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: flightDetails as any,
+            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
           } as any)
           .eq("id", serviceForm.id);
 
@@ -974,7 +975,7 @@ const DealDetail = () => {
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: flightDetails as any,
+            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
           } as any]);
 
         if (error) throw error;
@@ -1233,6 +1234,7 @@ const DealDetail = () => {
     cost_price_original: "",
     supplier_id: "",
     person_count: (deal?.deal_travelers?.length || 1).toString(),
+    person_count_unit: "os.",
     ...overrides,
   });
 
@@ -1250,6 +1252,7 @@ const DealDetail = () => {
       cost_price_original: "",
       supplier_id: "",
       person_count: "1",
+      person_count_unit: "os.",
     });
     resetFlightForm();
     setOriginalFlightDetails(null);
@@ -1338,6 +1341,7 @@ const DealDetail = () => {
       cost_price_original: serviceAny.cost_price_original?.toString() || "",
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
+      person_count_unit: (service.details as any)?.person_count_unit || "os.",
     });
     setServiceDialogOpen(true);
   };
@@ -2248,15 +2252,26 @@ const DealDetail = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Počet osob *</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={serviceForm.person_count}
-                          onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
-                          placeholder="1"
-                          className="w-20"
-                        />
+                        <Label>Počet *</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={serviceForm.person_count}
+                            onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
+                            placeholder="1"
+                            className="w-20"
+                          />
+                          <Select value={serviceForm.person_count_unit} onValueChange={(value) => setServiceForm({ ...serviceForm, person_count_unit: value })}>
+                            <SelectTrigger className="w-20 shrink-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="os.">os.</SelectItem>
+                              <SelectItem value="ks.">ks.</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
 

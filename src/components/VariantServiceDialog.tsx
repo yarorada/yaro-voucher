@@ -69,6 +69,7 @@ export const VariantServiceDialog = ({
   const [costCurrency, setCostCurrency] = useState("CZK");
   const [costPriceOriginal, setCostPriceOriginal] = useState("");
   const [personCount, setPersonCount] = useState("1");
+  const [personCountUnit, setPersonCountUnit] = useState("os.");
   const [supplierId, setSupplierId] = useState("");
 
   // Flight-specific fields - multi-segment support
@@ -93,6 +94,7 @@ export const VariantServiceDialog = ({
       setCostCurrency((service as any).cost_currency || "CZK");
       setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
+      setPersonCountUnit((service.details as any)?.person_count_unit || "os.");
       setSupplierId(service.supplier_id || "");
 
       // Load flight details if exists
@@ -148,6 +150,7 @@ export const VariantServiceDialog = ({
     setCostCurrency("CZK");
     setCostPriceOriginal("");
     setPersonCount(defaultTravelerCount.toString());
+    setPersonCountUnit("os.");
     setSupplierId("");
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
@@ -326,7 +329,7 @@ export const VariantServiceDialog = ({
         cost_price_original: costPriceOrig,
         person_count: personCount ? parseInt(personCount) : 1,
         supplier_id: supplierId || null,
-        details: flightDetails as any,
+        details: { ...(flightDetails || {}), person_count_unit: personCountUnit } as any,
       };
 
       if (service) {
@@ -516,14 +519,26 @@ export const VariantServiceDialog = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="person-count">Počet osob</Label>
-              <Input
-                id="person-count"
-                type="number"
-                min="1"
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
-              />
+              <Label htmlFor="person-count">Počet</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="person-count"
+                  type="number"
+                  min="1"
+                  value={personCount}
+                  onChange={(e) => setPersonCount(e.target.value)}
+                  className="flex-1"
+                />
+                <Select value={personCountUnit} onValueChange={setPersonCountUnit}>
+                  <SelectTrigger className="w-20 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="os.">os.</SelectItem>
+                    <SelectItem value="ks.">ks.</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label htmlFor="price">Cena za osobu (Kč)</Label>
