@@ -157,7 +157,6 @@ const Index = () => {
                   <div className="aspect-square [&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
                     {TILE_COMPONENTS[id]}
                   </div>
-                  {TILE_COMPONENTS[id]}
                 </SortableTile>
               ))}
             </div>
