@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Send, FileSignature, Pencil, Loader2 } from "lucide-react";
+import { Download, Send, FileSignature, Pencil, Loader2, Copy, ExternalLink, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
@@ -238,10 +238,29 @@ const ContractDetail = () => {
             pdfContentRef={pdfContentRef}
             onSent={refetch}
           />
-          <Button variant="outline" size="sm" className="md:size-default">
-            <FileSignature className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Podepsat</span>
+          <Button variant="outline" size="sm" className="md:size-default" onClick={() => {
+              const signToken = (contract as any).sign_token;
+              if (signToken) {
+                const url = `${window.location.origin}/sign-contract?token=${signToken}`;
+                navigator.clipboard.writeText(url);
+                toast.success("Odkaz pro podpis zkopírován");
+              } else {
+                toast.error("Smlouva nemá podpisový token");
+              }
+            }}>
+            {contract.status === 'signed' ? (
+              <><CheckCircle2 className="h-4 w-4 mr-2 text-primary" /><span className="hidden sm:inline">Podepsáno</span></>
+            ) : (
+              <><Copy className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Kopírovat odkaz pro podpis</span></>
+            )}
           </Button>
+          {contract.status === 'signed' && (contract as any).signature_url && (
+            <Button variant="ghost" size="sm" asChild>
+              <a href={(contract as any).signature_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" /> Zobrazit podpis
+              </a>
+            </Button>
+          )}
           <Button size="sm" className="md:size-default" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
             {isGeneratingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             <span className="hidden sm:inline">{isGeneratingPdf ? 'Generuji...' : 'Stáhnout PDF'}</span>
@@ -312,8 +331,11 @@ const ContractDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Podepsáno</p>
                   <p className="font-medium text-foreground">
-                    {(() => { const d = parseDateSafe(contract.signed_at); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : contract.signed_at; })()}
+                    {(() => { const d = parseDateSafe(contract.signed_at); return d ? format(d, "d. MMMM yyyy HH:mm", { locale: cs }) : contract.signed_at; })()}
                   </p>
+                  {(contract as any).signed_ip && (
+                    <p className="text-xs text-muted-foreground">IP: {(contract as any).signed_ip}</p>
+                  )}
                 </div>
               )}
             </div>

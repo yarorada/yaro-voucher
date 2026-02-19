@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.bank-webhook]
 verify_jwt = false
+
+[functions.sign-contract]
+verify_jwt = false
