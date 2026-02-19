@@ -106,6 +106,63 @@ export type Database = {
           },
         ]
       }
+      bank_notifications: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          matched_contract_id: string | null
+          matched_payment_id: string | null
+          notes: string | null
+          parsed_amount: number | null
+          parsed_date: string | null
+          parsed_vs: string | null
+          raw_text: string
+          status: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          matched_contract_id?: string | null
+          matched_payment_id?: string | null
+          notes?: string | null
+          parsed_amount?: number | null
+          parsed_date?: string | null
+          parsed_vs?: string | null
+          raw_text: string
+          status?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          matched_contract_id?: string | null
+          matched_payment_id?: string | null
+          notes?: string | null
+          parsed_amount?: number | null
+          parsed_date?: string | null
+          parsed_vs?: string | null
+          raw_text?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_notifications_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_notifications_matched_payment_id_fkey"
+            columns: ["matched_payment_id"]
+            isOneToOne: false
+            referencedRelation: "contract_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
