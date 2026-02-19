@@ -215,10 +215,8 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     let payments;
 
     if (daysUntilDeparture < 45) {
-      // Less than 45 days — single full payment (doplatek)
-      const dueDateStr = startDate
-        ? new Date(startDate.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-        : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      // Less than 45 days — single full payment (doplatek) due in 2 days
+      const dueDateStr = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
       payments = [
         {
