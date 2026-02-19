@@ -25,6 +25,7 @@ interface DealVariant {
     cost_price: number | null;
     quantity: number;
     person_count: number | null;
+    price_currency: string | null;
   }>;
 }
 
@@ -92,7 +93,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         .select(`
           *,
           destination:destinations(name),
-          deal_variant_services(price, cost_price, quantity, person_count)
+          deal_variant_services(price, cost_price, quantity, person_count, price_currency)
         `)
         .eq("deal_id", dealId)
         .order("created_at", { ascending: false });
@@ -443,6 +444,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                 
                 {(() => {
                   const services = variant.deal_variant_services || [];
+                  const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
                   const revenue = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
                   const costs = services.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
                   const profit = revenue - costs;
@@ -450,16 +452,16 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
                          <p className="text-muted-foreground">Prodejní cena</p>
-                         <p className="font-semibold">{formatPrice(revenue || variant.total_price)}</p>
+                         <p className="font-semibold">{formatPrice(revenue || variant.total_price, true, currency)}</p>
                        </div>
                        <div>
                          <p className="text-muted-foreground">Nákupní cena</p>
-                         <p className="font-semibold">{formatPrice(costs || null)}</p>
+                         <p className="font-semibold">{formatPrice(costs || null, true, currency)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Zisk</p>
                         <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
-                          {services.length > 0 ? formatPrice(profit) : '-'}
+                          {services.length > 0 ? formatPrice(profit, true, currency) : '-'}
                         </p>
                       </div>
                     </div>
