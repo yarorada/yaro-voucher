@@ -251,7 +251,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
 
       {/* Small images */}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-px">
+        <div className="grid grid-cols-2 gap-1 mt-1">
           {images?.image_url_2 && (
             <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
@@ -351,7 +351,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         </div>
       )}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-px">
+        <div className="grid grid-cols-2 gap-1 mt-1">
           {images?.image_url_2 && (
             <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
