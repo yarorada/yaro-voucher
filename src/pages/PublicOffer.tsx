@@ -233,7 +233,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
   const dest = variant.destination;
 
   const totalPrice = variant.total_price || variant.deal_variant_services.reduce(
-    (sum, s) => sum + (s.price || 0) * (s.person_count || 1), 0
+    (sum, s) => sum + (s.price || 0) * ((s as any).quantity || 1), 0
   );
 
   return (
