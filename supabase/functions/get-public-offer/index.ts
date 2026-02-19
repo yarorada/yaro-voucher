@@ -44,15 +44,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Check if this is a crawler/bot or explicit JSON request
-    const userAgent = req.headers.get('user-agent') || '';
-    const acceptHeader = req.headers.get('accept') || '';
+    // Serve JSON only when explicitly requested (format=json or has API key/auth header)
     const hasApiKey = req.headers.get('apikey') || req.headers.get('authorization');
     const wantsJson = format === 'json' || hasApiKey;
-    const isBotRequest = isCrawler(userAgent);
 
-    // If it's a bot/crawler and not explicitly requesting JSON, serve OG HTML
-    if (isBotRequest && !wantsJson) {
+    // Default: serve OG HTML (for crawlers, email clients, browsers opening the link)
+    if (!wantsJson) {
       return await serveOgHtml(supabase, token, url);
     }
 
