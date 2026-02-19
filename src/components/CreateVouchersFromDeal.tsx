@@ -1,0 +1,290 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { FileText, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const YARO_SUPPLIER_NAME = "YARO s.r.o.";
+
+interface DealService {
+  id: string;
+  service_type: string;
+  service_name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  price: number | null;
+  person_count: number | null;
+  supplier_id: string | null;
+  suppliers?: { name: string } | null;
+}
+
+interface SupplierGroup {
+  supplierId: string | null;
+  supplierName: string;
+  services: DealService[];
+  isYaro: boolean;
+}
+
+interface CreateVouchersFromDealProps {
+  dealId: string;
+  services: DealService[];
+  clientId: string | null;
+  clientName: string;
+  onComplete?: () => void;
+}
+
+export function CreateVouchersFromDeal({
+  dealId,
+  services,
+  clientId,
+  clientName,
+  onComplete,
+}: CreateVouchersFromDealProps) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<{ supplierName: string; success: boolean; voucherId?: string; isYaro?: boolean }[]>([]);
+
+  // Group services by supplier
+  const supplierGroups: SupplierGroup[] = (() => {
+    const groups = new Map<string, SupplierGroup>();
+    
+    for (const service of services) {
+      const key = service.supplier_id || "__none__";
+      const supplierName = service.suppliers?.name || "Bez dodavatele";
+      const isYaro = supplierName.toLowerCase().includes("yaro");
+      
+      if (!groups.has(key)) {
+        groups.set(key, {
+          supplierId: service.supplier_id,
+          supplierName,
+          services: [],
+          isYaro,
+        });
+      }
+      groups.get(key)!.services.push(service);
+    }
+    
+    return Array.from(groups.values());
+  })();
+
+  const yaroGroups = supplierGroups.filter(g => g.isYaro);
+  const nonYaroGroups = supplierGroups.filter(g => !g.isYaro);
+
+  const handleCreateVouchers = async () => {
+    setLoading(true);
+    setResults([]);
+    const newResults: typeof results = [];
+
+    try {
+      for (const group of nonYaroGroups) {
+        try {
+          // Prepare services for translation
+          const servicesForTranslation = group.services.map(s => ({
+            czech_name: s.service_name,
+            pax: String(s.person_count || 1),
+            qty: "1",
+            dateFrom: s.start_date || "",
+            dateTo: s.end_date || s.start_date || "",
+          }));
+
+          // Translate each service name
+          const translatedServices = [];
+          for (const s of servicesForTranslation) {
+            let translatedName = s.czech_name;
+            try {
+              const { data: trData, error: trError } = await supabase.functions.invoke(
+                "translate-service-name",
+                { body: { czechName: s.czech_name } }
+              );
+              if (!trError && trData?.englishName) {
+                translatedName = trData.englishName;
+              }
+            } catch { /* use original */ }
+            
+            translatedServices.push({
+              name: translatedName,
+              pax: s.pax,
+              qty: s.qty,
+              dateFrom: s.dateFrom,
+              dateTo: s.dateTo,
+            });
+          }
+
+          // Create voucher
+          const { data: voucher, error: voucherError } = await supabase
+            .from("vouchers")
+            .insert({
+              deal_id: dealId,
+              client_id: clientId,
+              client_name: clientName,
+              supplier_id: group.supplierId,
+              services: translatedServices,
+              issue_date: new Date().toISOString().split("T")[0],
+              voucher_number: Math.floor(Math.random() * 10000),
+            } as any)
+            .select()
+            .single();
+
+          if (voucherError) throw voucherError;
+
+          newResults.push({
+            supplierName: group.supplierName,
+            success: true,
+            voucherId: voucher.id,
+          });
+        } catch (err) {
+          console.error(`Error creating voucher for ${group.supplierName}:`, err);
+          newResults.push({
+            supplierName: group.supplierName,
+            success: false,
+          });
+        }
+      }
+
+      // For YARO groups, just note that documents are expected
+      for (const group of yaroGroups) {
+        newResults.push({
+          supplierName: group.supplierName,
+          success: true,
+          isYaro: true,
+        });
+      }
+
+      setResults(newResults);
+
+      const successCount = newResults.filter(r => r.success && !r.isYaro).length;
+      if (successCount > 0) {
+        toast({
+          title: "Vouchery vytvořeny",
+          description: `Vytvořeno ${successCount} voucher${successCount > 1 ? "ů" : ""} pro externích dodavatelů.${yaroGroups.length > 0 ? " Pro služby YARO vložte cestovní dokumenty níže." : ""}`,
+        });
+      }
+
+      onComplete?.();
+    } catch (error) {
+      console.error("Error creating vouchers:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se vytvořit vouchery",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (services.length === 0) return null;
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => { setOpen(true); setResults([]); }}
+        className="gap-2 md:size-default"
+      >
+        <FileText className="h-4 w-4" />
+        <span className="hidden sm:inline">Vytvořit vouchery</span>
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Vytvořit vouchery ze služeb</DialogTitle>
+            <DialogDescription>
+              Systém vytvoří voucher pro každého externího dodavatele s přeloženými službami.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Supplier groups preview */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Skupiny podle dodavatelů:</p>
+              {nonYaroGroups.map((group, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted text-sm">
+                  <div>
+                    <p className="font-medium">{group.supplierName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {group.services.length} služb{group.services.length === 1 ? "a" : group.services.length < 5 ? "y" : ""}
+                    </p>
+                  </div>
+                  <Badge variant="outline">Voucher</Badge>
+                </div>
+              ))}
+              {yaroGroups.map((group, i) => (
+                <div key={`yaro-${i}`} className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-sm">
+                  <div>
+                    <p className="font-medium">{group.supplierName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {group.services.length} služb{group.services.length === 1 ? "a" : group.services.length < 5 ? "y" : ""} — vložte cestovní dokumenty
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Dokumenty
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            {/* Results */}
+            {results.length > 0 && (
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-medium">Výsledky:</p>
+                {results.map((result, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    {result.isYaro ? (
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                    ) : result.success ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <span>{result.supplierName}</span>
+                    {result.isYaro && (
+                      <span className="text-xs text-muted-foreground">— vyžaduje cestovní dokumenty</span>
+                    )}
+                    {result.voucherId && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => navigate(`/vouchers/${result.voucherId}`)}
+                      >
+                        Otevřít
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+                {results.length > 0 ? "Zavřít" : "Zrušit"}
+              </Button>
+              {results.length === 0 && (
+                <Button onClick={handleCreateVouchers} disabled={loading}>
+                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Vytvořit vouchery ({nonYaroGroups.length})
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

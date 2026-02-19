@@ -46,6 +46,8 @@ import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DealBulkTravelerImport } from "@/components/DealBulkTravelerImport";
 import { DealTeeTimesEditor } from "@/components/DealTeeTimesEditor";
 import { ShareOfferButton } from "@/components/ShareOfferButton";
+import { CreateVouchersFromDeal } from "@/components/CreateVouchersFromDeal";
+import { DealDocumentsSection } from "@/components/DealDocumentsSection";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -1908,6 +1910,16 @@ const DealDetail = () => {
               <FileSignature className="h-4 w-4" />
               <span className="hidden sm:inline">Vytvořit smlouvu</span>
             </Button>
+            <CreateVouchersFromDeal
+              dealId={deal.id}
+              services={services}
+              clientId={deal.deal_travelers.find(t => t.is_lead_traveler)?.client_id || null}
+              clientName={(() => {
+                const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
+                return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : "";
+              })()}
+              onComplete={fetchDeal}
+            />
             <ShareOfferButton
               dealId={deal.id}
               shareToken={shareToken}
@@ -2614,6 +2626,9 @@ const DealDetail = () => {
             onUpdate={fetchDeal}
           />
         )}
+
+        {/* Cestovní dokumenty section */}
+        <DealDocumentsSection dealId={deal.id} />
         </div>
       </div>
 
