@@ -43,6 +43,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch lead client name
+    const { data: leadTraveler } = await supabase
+      .from('deal_travelers')
+      .select('client:clients(first_name, last_name)')
+      .eq('deal_id', deal.id)
+      .eq('is_lead_traveler', true)
+      .maybeSingle();
+
+    const leadClientName = leadTraveler?.client
+      ? `${(leadTraveler.client as any).first_name} ${(leadTraveler.client as any).last_name}`
+      : null;
+
     // Fetch variants with services
     const { data: variants } = await supabase
       .from('deal_variants')
@@ -113,6 +125,7 @@ Deno.serve(async (req) => {
         end_date: deal.end_date,
         total_price: deal.total_price,
         destination: deal.destination,
+        lead_client_name: leadClientName,
       },
       variants: displayVariants.map((v: any) => ({
         ...v,
