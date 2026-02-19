@@ -325,7 +325,10 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         person_count: vs.person_count,
         quantity: (vs as any).quantity || 1,
         price: vs.price,
+        price_currency: (vs as any).price_currency || "CZK",
         cost_price: vs.cost_price,
+        cost_currency: (vs as any).cost_currency || "CZK",
+        cost_price_original: (vs as any).cost_price_original,
         details: vs.details,
         order_index: vs.order_index,
       }));
