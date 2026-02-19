@@ -768,59 +768,82 @@ const DealDetail = () => {
 
   const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
     try {
-      // Check if payments already exist
+      // Fetch all existing payments for this deal
       const { data: existingPayments, error: checkError } = await supabase
         .from("deal_payments")
-        .select("id")
-        .eq("deal_id", dealId)
-        .limit(1);
+        .select("*")
+        .eq("deal_id", dealId);
       
       if (checkError) throw checkError;
       
-      // If payments already exist, just update them with new amounts
-      if (existingPayments && existingPayments.length > 0) {
-        // Delete existing auto-generated payments and recreate
-        await supabase
+      // If no payments exist yet, create default schedule
+      if (!existingPayments || existingPayments.length === 0) {
+        const tomorrow = addDays(new Date(), 1);
+        const depositAmount = Math.round(totalPrice * 0.5);
+        const finalAmount = totalPrice - depositAmount;
+        
+        const paymentsToInsert: any[] = [
+          {
+            deal_id: dealId,
+            payment_type: "deposit",
+            amount: depositAmount,
+            due_date: format(tomorrow, "yyyy-MM-dd"),
+            notes: "1. záloha (50%)",
+          },
+        ];
+        
+        if (finalAmount > 0) {
+          const departureDate = startDate;
+          const finalDueDate = departureDate 
+            ? addMonths(departureDate, -1) 
+            : addMonths(new Date(), 2);
+          
+          paymentsToInsert.push({
+            deal_id: dealId,
+            payment_type: "final",
+            amount: finalAmount,
+            due_date: format(finalDueDate, "yyyy-MM-dd"),
+            notes: "Doplatek",
+          });
+        }
+        
+        const { error } = await supabase
           .from("deal_payments")
-          .delete()
-          .eq("deal_id", dealId);
+          .insert(paymentsToInsert);
+        if (error) throw error;
+        return;
       }
       
-      const tomorrow = addDays(new Date(), 1);
-      const depositAmount = Math.round(totalPrice * 0.5);
-      const finalAmount = totalPrice - depositAmount;
+      // Payments exist — preserve all deposits/installments, only update the final payment
+      const depositsTotal = existingPayments
+        .filter(p => p.payment_type !== "final")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
       
-      const paymentsToInsert: any[] = [
-        {
-          deal_id: dealId,
-          payment_type: "deposit",
-          amount: depositAmount,
-          due_date: format(tomorrow, "yyyy-MM-dd"),
-          notes: "1. záloha (50%)",
-        },
-      ];
+      const newFinalAmount = Math.max(0, totalPrice - depositsTotal);
       
-      // Final payment 1 month before departure
-      if (finalAmount > 0) {
+      const finalPayment = existingPayments.find(p => p.payment_type === "final");
+      if (finalPayment) {
+        await supabase
+          .from("deal_payments")
+          .update({ amount: newFinalAmount })
+          .eq("id", finalPayment.id);
+      } else if (newFinalAmount > 0) {
+        // No final payment exists yet — create one
         const departureDate = startDate;
         const finalDueDate = departureDate 
           ? addMonths(departureDate, -1) 
           : addMonths(new Date(), 2);
         
-        paymentsToInsert.push({
-          deal_id: dealId,
-          payment_type: "final",
-          amount: finalAmount,
-          due_date: format(finalDueDate, "yyyy-MM-dd"),
-          notes: "Doplatek",
-        });
+        await supabase
+          .from("deal_payments")
+          .insert({
+            deal_id: dealId,
+            payment_type: "final",
+            amount: newFinalAmount,
+            due_date: format(finalDueDate, "yyyy-MM-dd"),
+            notes: "Doplatek",
+          });
       }
-      
-      const { error } = await supabase
-        .from("deal_payments")
-        .insert(paymentsToInsert);
-      
-      if (error) throw error;
     } catch (error) {
       console.error("Error auto-generating payments:", error);
     }
