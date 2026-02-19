@@ -29,6 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
+import { format, addDays, addMonths } from "date-fns";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { SupplierCombobox } from "@/components/SupplierCombobox";
@@ -764,6 +765,66 @@ const DealDetail = () => {
     }
   };
 
+  const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
+    try {
+      // Check if payments already exist
+      const { data: existingPayments, error: checkError } = await supabase
+        .from("deal_payments")
+        .select("id")
+        .eq("deal_id", dealId)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      // If payments already exist, just update them with new amounts
+      if (existingPayments && existingPayments.length > 0) {
+        // Delete existing auto-generated payments and recreate
+        await supabase
+          .from("deal_payments")
+          .delete()
+          .eq("deal_id", dealId);
+      }
+      
+      const tomorrow = addDays(new Date(), 1);
+      const depositAmount = Math.round(totalPrice * 0.5);
+      const finalAmount = totalPrice - depositAmount;
+      
+      const paymentsToInsert: any[] = [
+        {
+          deal_id: dealId,
+          payment_type: "deposit",
+          amount: depositAmount,
+          due_date: format(tomorrow, "yyyy-MM-dd"),
+          notes: "1. záloha (50%)",
+        },
+      ];
+      
+      // Final payment 1 month before departure
+      if (finalAmount > 0) {
+        const departureDate = startDate;
+        const finalDueDate = departureDate 
+          ? addMonths(departureDate, -1) 
+          : addMonths(new Date(), 2);
+        
+        paymentsToInsert.push({
+          deal_id: dealId,
+          payment_type: "final",
+          amount: finalAmount,
+          due_date: format(finalDueDate, "yyyy-MM-dd"),
+          notes: "Doplatek",
+        });
+      }
+      
+      const { error } = await supabase
+        .from("deal_payments")
+        .insert(paymentsToInsert);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error auto-generating payments:", error);
+    }
+  };
+
   const handleSaveService = async () => {
     if (!deal) return;
     
@@ -917,6 +978,11 @@ const DealDetail = () => {
           .from("deals")
           .update({ total_price: newTotal })
           .eq("id", deal.id);
+        
+        // Auto-generate payment schedule if no payments exist yet and total > 0
+        if (newTotal > 0) {
+          await autoGeneratePayments(deal.id, newTotal);
+        }
       }
     } catch (error) {
       console.error("Error saving service:", error);
