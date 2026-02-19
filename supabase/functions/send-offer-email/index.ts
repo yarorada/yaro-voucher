@@ -537,6 +537,15 @@ Deno.serve(async (req) => {
     const result = await resendResponse.json();
     console.log('Offer email sent to', client.email, 'result:', result);
 
+    // Update deal status to "quote" after successful send
+    const { error: statusError } = await supabase
+      .from('deals')
+      .update({ status: 'quote' })
+      .eq('id', dealId);
+    if (statusError) {
+      console.error('Failed to update deal status:', statusError);
+    }
+
     return new Response(JSON.stringify({ success: true, recipient: client.email }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
