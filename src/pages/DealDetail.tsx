@@ -270,6 +270,7 @@ const DealDetail = () => {
   const [deal, setDeal] = useState<Deal | null>(null);
   const [services, setServices] = useState<DealService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
+  const [paymentRefreshKey, setPaymentRefreshKey] = useState(0);
 
   // Dialog states
   const [travelerDialogOpen, setTravelerDialogOpen] = useState(false);
@@ -960,17 +961,26 @@ const DealDetail = () => {
 
       setServiceDialogOpen(false);
       resetServiceForm();
-      await fetchServices();
       
-      // Recalculate total price
+      // Re-fetch services to get fresh data
+      const { data: freshServices, error: fetchErr } = await supabase
+        .from("deal_services")
+        .select(`*, suppliers(name)`)
+        .eq("deal_id", deal.id)
+        .order("order_index", { ascending: true })
+        .order("created_at", { ascending: true });
+      
+      if (!fetchErr && freshServices) {
+        setServices(freshServices.map(s => ({ ...s, details: s.details as FlightDetails | null })));
+      }
+      
+      // Recalculate total price from fresh data
+      const servicesForCalc = freshServices || services;
       const discount = parseFloat(discountAmount) || 0;
       const adjustment = parseFloat(adjustmentAmount) || 0;
-      const newTotal = calculateTotalPrice(serviceForm.id 
-        ? services.map(s => s.id === serviceForm.id ? { ...s, price: parseFloat(serviceForm.price) || null } : s)
-        : [...services, { price: parseFloat(serviceForm.price) || 0 } as any], 
-        discount, 
-        adjustment
-      );
+      const servicesTotal = servicesForCalc.reduce((sum, s: any) => sum + ((s.price || 0) * (s.person_count || 1)), 0);
+      const newTotal = servicesTotal - discount + adjustment;
+      setTotalPrice(newTotal.toString());
       
       // Update in database
       if (deal?.id) {
@@ -979,10 +989,14 @@ const DealDetail = () => {
           .update({ total_price: newTotal })
           .eq("id", deal.id);
         
-        // Auto-generate payment schedule if no payments exist yet and total > 0
+        // Auto-generate payment schedule and refresh
         if (newTotal > 0) {
           await autoGeneratePayments(deal.id, newTotal);
+          setPaymentRefreshKey(k => k + 1);
         }
+        
+        // Re-fetch deal to sync all state
+        fetchDeal();
       }
     } catch (error) {
       console.error("Error saving service:", error);
@@ -1893,8 +1907,9 @@ const DealDetail = () => {
           </Card>
 
           <DealPaymentSchedule 
+            key={paymentRefreshKey}
             dealId={deal.id} 
-            totalPrice={deal.total_price || 0}
+            totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
             departureDate={deal.start_date || undefined}
           />
         </div>
