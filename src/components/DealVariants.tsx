@@ -154,7 +154,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     // Fetch variant info (destination) and its services (dates, prices)
     const [{ data: variant }, { data: services }] = await Promise.all([
       supabase.from("deal_variants").select("destination_id").eq("id", variantId).single(),
-      supabase.from("deal_variant_services").select("start_date, end_date, price, cost_price, quantity").eq("variant_id", variantId),
+      supabase.from("deal_variant_services").select("start_date, end_date, price, cost_price, quantity, price_currency").eq("variant_id", variantId),
     ]);
 
     const updateData: Record<string, any> = {};
@@ -171,9 +171,11 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       if (startDates[0]) updateData.start_date = startDates[0];
       if (endDates[endDates.length - 1]) updateData.end_date = endDates[endDates.length - 1];
 
-      // Propagate total_price
+      // Propagate total_price and currency
       const totalPrice = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
       if (totalPrice > 0) updateData.total_price = totalPrice;
+      const serviceCurrency = services.find(s => (s as any).price_currency)?.price_currency;
+      if (serviceCurrency) updateData.currency = serviceCurrency;
     }
 
     if (Object.keys(updateData).length > 0) {
