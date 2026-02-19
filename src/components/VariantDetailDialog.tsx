@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DestinationCombobox } from "./DestinationCombobox";
 import { VariantServiceDialog } from "./VariantServiceDialog";
-import { Plus, Edit, Trash2, Plane, Hotel, Navigation, Car, Shield, FileText, ChevronDown, Utensils, HeadphonesIcon } from "lucide-react";
+import { Plus, Edit, Trash2, Plane, Hotel, Navigation, Car, Shield, FileText, ChevronDown, GripVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface FlightSegment {
   departure: string;
@@ -67,12 +84,83 @@ interface VariantService {
   price: number | null;
   person_count: number | null;
   supplier_id: string | null;
+  order_index: number | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any;
   suppliers?: {
     name: string;
   };
 }
+
+interface SortableServiceRowProps {
+  service: VariantService;
+  getServiceIcon: (type: VariantService["service_type"]) => React.ReactNode;
+  getServiceTypeLabel: (type: VariantService["service_type"]) => string;
+  formatDate: (d: string | null) => string;
+  formatPrice: (p: number | null) => string;
+  renderFlightSegments: (s: VariantService) => React.ReactNode;
+  onEdit: (s: VariantService) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableServiceRow = ({
+  service,
+  getServiceIcon,
+  getServiceTypeLabel,
+  formatDate,
+  formatPrice,
+  renderFlightSegments,
+  onEdit,
+  onDelete,
+}: SortableServiceRowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="w-[40px] cursor-grab" {...attributes} {...listeners}>
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {getServiceIcon(service.service_type)}
+          <span className="text-sm">{getServiceTypeLabel(service.service_type)}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div>
+          <div className="font-medium">{service.service_name}</div>
+          {service.service_type === "flight" && renderFlightSegments(service)}
+          {service.suppliers && (
+            <div className="text-sm text-muted-foreground">{service.suppliers.name}</div>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="text-sm">
+        {formatDate(service.start_date)}
+        {service.end_date && ` - ${formatDate(service.end_date)}`}
+      </TableCell>
+      <TableCell>{service.person_count || 1}</TableCell>
+      <TableCell className="font-medium">
+        {formatPrice((service.price || 0) * (service.person_count || 1))}
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          <Button onClick={() => onEdit(service)} size="sm" variant="ghost">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button onClick={() => onDelete(service.id)} size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 interface VariantDetailDialogProps {
   dealId: string;
@@ -136,7 +224,8 @@ export const VariantDetailDialog = ({
           *,
           suppliers(name)
         `)
-        .eq("variant_id", variantId);
+        .eq("variant_id", variantId)
+        .order("order_index", { ascending: true });
 
       if (error) throw error;
       setServices(data || []);
@@ -376,6 +465,30 @@ export const VariantDetailDialog = ({
     return null;
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = services.findIndex((s) => s.id === active.id);
+    const newIndex = services.findIndex((s) => s.id === over.id);
+    const reordered = arrayMove(services, oldIndex, newIndex);
+    setServices(reordered);
+
+    // Persist new order
+    const updates = reordered.map((s, i) => ({ id: s.id, order_index: i }));
+    for (const u of updates) {
+      await supabase
+        .from("deal_variant_services")
+        .update({ order_index: u.order_index })
+        .eq("id", u.id);
+    }
+  }, [services]);
+
   return (
     <>
       <Dialog open={open} onOpenChange={() => onClose()}>
@@ -500,7 +613,7 @@ export const VariantDetailDialog = ({
                         setPreselectedServiceName("Strava");
                         setServiceDialogOpen(true);
                       }}>
-                        <Utensils className="h-4 w-4 mr-2" />
+                        <FileText className="h-4 w-4 mr-2" />
                         Strava
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
@@ -509,7 +622,7 @@ export const VariantDetailDialog = ({
                         setPreselectedServiceName("Asistence");
                         setServiceDialogOpen(true);
                       }}>
-                        <HeadphonesIcon className="h-4 w-4 mr-2" />
+                        <FileText className="h-4 w-4 mr-2" />
                         Asistence
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
@@ -539,73 +652,41 @@ export const VariantDetailDialog = ({
                     Zatím nejsou přidány žádné služby
                   </p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Typ</TableHead>
-                        <TableHead>Název</TableHead>
-                        <TableHead>Datum</TableHead>
-                        <TableHead>Počet osob</TableHead>
-                        <TableHead>Cena</TableHead>
-                        <TableHead className="w-[100px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services.map((service) => (
-                        <TableRow key={service.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getServiceIcon(service.service_type)}
-                              <span className="text-sm">
-                                {getServiceTypeLabel(service.service_type)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{service.service_name}</div>
-                              {service.service_type === "flight" && renderFlightSegments(service)}
-                              {service.suppliers && (
-                                <div className="text-sm text-muted-foreground">
-                                  {service.suppliers.name}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {formatDate(service.start_date)}
-                            {service.end_date && ` - ${formatDate(service.end_date)}`}
-                          </TableCell>
-                          <TableCell>{service.person_count || 1}</TableCell>
-                          <TableCell className="font-medium">
-                            {formatPrice((service.price || 0) * (service.person_count || 1))}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                onClick={() => {
-                                  setEditingService(service);
-                                  setServiceDialogOpen(true);
-                                }}
-                                size="sm"
-                                variant="ghost"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                onClick={() => handleDeleteService(service.id)}
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]"></TableHead>
+                          <TableHead>Typ</TableHead>
+                          <TableHead>Název</TableHead>
+                          <TableHead>Datum</TableHead>
+                          <TableHead>Počet osob</TableHead>
+                          <TableHead>Cena</TableHead>
+                          <TableHead className="w-[100px]"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        <SortableContext items={services.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                          {services.map((service) => (
+                            <SortableServiceRow
+                              key={service.id}
+                              service={service}
+                              getServiceIcon={getServiceIcon}
+                              getServiceTypeLabel={getServiceTypeLabel}
+                              formatDate={formatDate}
+                              formatPrice={formatPrice}
+                              renderFlightSegments={renderFlightSegments}
+                              onEdit={(s) => {
+                                setEditingService(s);
+                                setServiceDialogOpen(true);
+                              }}
+                              onDelete={handleDeleteService}
+                            />
+                          ))}
+                        </SortableContext>
+                      </TableBody>
+                    </Table>
+                  </DndContext>
                 )}
               </div>
             )}
