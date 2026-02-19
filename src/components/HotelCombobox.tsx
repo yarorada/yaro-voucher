@@ -344,6 +344,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                 <div className="mt-2">
                   <HotelImageUpload
                     hotelId={editingHotel.id}
+                    hotelName={editingHotel.name}
                     imageUrl={editingHotel.image_url || null}
                     imageUrl2={editingHotel.image_url_2 || null}
                     imageUrl3={editingHotel.image_url_3 || null}
