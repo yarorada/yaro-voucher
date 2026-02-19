@@ -5,6 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function isCrawler(userAgent: string): boolean {
+  const bots = [
+    'bot', 'crawler', 'spider', 'slurp', 'facebookexternalhit', 'linkedinbot',
+    'twitterbot', 'whatsapp', 'telegrambot', 'skypeuripreview', 'embedly',
+    'quora link preview', 'outbrain', 'pinterest', 'slack', 'vkshare',
+    'w3c_validator', 'redditbot', 'applebot', 'yandex', 'baiduspider',
+    'googlebot', 'preview', 'fetcher', 'curl', 'wget',
+    'outlook', 'thunderbird', 'mailchimp', 'postfix',
+  ];
+  const ua = userAgent.toLowerCase();
+  return bots.some(b => ua.includes(b));
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,6 +30,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
+    const format = url.searchParams.get('format'); // 'json' or empty
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'Token is required' }), {
@@ -25,6 +43,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+
+    // Check if this is a crawler/bot or explicit JSON request
+    const userAgent = req.headers.get('user-agent') || '';
+    const acceptHeader = req.headers.get('accept') || '';
+    const hasApiKey = req.headers.get('apikey') || req.headers.get('authorization');
+    const wantsJson = format === 'json' || hasApiKey;
+    const isBotRequest = isCrawler(userAgent);
+
+    // If it's a bot/crawler and not explicitly requesting JSON, serve OG HTML
+    if (isBotRequest && !wantsJson) {
+      return await serveOgHtml(supabase, token, url);
+    }
+
+    // --- Normal JSON API response below ---
 
     // Fetch deal by share_token
     const { data: deal, error: dealError } = await supabase
@@ -180,3 +212,125 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+async function serveOgHtml(supabase: any, token: string, requestUrl: URL) {
+  // Fetch minimal data for OG tags
+  const { data: deal } = await supabase
+    .from('deals')
+    .select(`
+      id, name, start_date, end_date,
+      destination:destinations(name, country:countries(name))
+    `)
+    .eq('share_token', token)
+    .single();
+
+  if (!deal) {
+    return new Response('<html><body>Nabídka nenalezena</body></html>', {
+      status: 404,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
+
+  // Get lead client name
+  const { data: leadTraveler } = await supabase
+    .from('deal_travelers')
+    .select('client:clients(first_name, last_name)')
+    .eq('deal_id', deal.id)
+    .eq('is_lead_traveler', true)
+    .maybeSingle();
+
+  const clientName = leadTraveler?.client
+    ? `${(leadTraveler.client as any).first_name} ${(leadTraveler.client as any).last_name}`
+    : null;
+
+  // Find hotel image - check variants first, then direct services
+  let hotelImageUrl: string | null = null;
+  let hotelName: string | null = null;
+
+  // Check variant services
+  const { data: variantServices } = await supabase
+    .from('deal_variant_services')
+    .select('service_name, variant:deal_variants!inner(deal_id, is_selected)')
+    .eq('service_type', 'hotel')
+    .eq('variant.deal_id', deal.id);
+
+  const selectedHotel = (variantServices || []).find((s: any) => s.variant?.is_selected);
+  hotelName = selectedHotel?.service_name || (variantServices || [])[0]?.service_name || null;
+
+  // If no variant hotel, check direct services
+  if (!hotelName) {
+    const { data: directHotel } = await supabase
+      .from('deal_services')
+      .select('service_name')
+      .eq('deal_id', deal.id)
+      .eq('service_type', 'hotel')
+      .limit(1)
+      .maybeSingle();
+    hotelName = directHotel?.service_name || null;
+  }
+
+  // Fetch hotel image
+  if (hotelName) {
+    const { data: hotel } = await supabase
+      .from('hotel_templates')
+      .select('image_url')
+      .eq('name', hotelName)
+      .maybeSingle();
+    hotelImageUrl = hotel?.image_url || null;
+  }
+
+  // Build OG data
+  const destination = deal.destination;
+  const destText = destination ? `${(destination as any).name}, ${(destination as any).country?.name}` : '';
+  
+  const title = clientName
+    ? `Nabídka zájezdu pro ${clientName}`
+    : `Nabídka zájezdu${destText ? ' – ' + destText : ''}`;
+  
+  const descParts: string[] = [];
+  if (destText) descParts.push(destText);
+  if (deal.start_date && deal.end_date) {
+    descParts.push(`${deal.start_date} – ${deal.end_date}`);
+  }
+  descParts.push('YARO Travel');
+  const description = descParts.join(' · ');
+
+  // The canonical URL should point to the SPA page
+  const spaOrigin = requestUrl.origin.replace(/\.supabase\.co.*/, '');
+  // We'll use a meta refresh to redirect browsers to the SPA
+  const spaUrl = `https://yarogolf-crm.lovable.app/offer/${token}`;
+
+  const fallbackImage = 'https://storage.googleapis.com/gpt-engineer-file-uploads/386hx2FuXMMAPj884A4UlCzLrkf1/social-images/social-1770319524255-e3c320dd-9bb9-495f-8168-f3a847fd03da.jpeg';
+  const ogImage = hotelImageUrl || fallbackImage;
+
+  const html = `<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:image" content="${escapeHtml(ogImage)}">
+  <meta property="og:url" content="${escapeHtml(spaUrl)}">
+  <meta property="og:site_name" content="YARO Travel">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(ogImage)}">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(spaUrl)}">
+</head>
+<body>
+  <p>Přesměrování na <a href="${escapeHtml(spaUrl)}">${escapeHtml(title)}</a>...</p>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+    },
+  });
+}
