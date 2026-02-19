@@ -391,10 +391,10 @@ Deno.serve(async (req) => {
       variantsHtml += renderVariantCard(variant, displayVariants.length > 1);
     }
 
-    // Build direct services section
+    // Build direct services section (only if no variants are displayed, to avoid duplication)
     const sortedDirectServices = (directServices || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
     let directServicesHtml = '';
-    if (sortedDirectServices.length > 0) {
+    if (sortedDirectServices.length > 0 && displayVariants.length === 0) {
       const dHotelSvc = sortedDirectServices.find((s: any) => s.service_type === 'hotel');
       const dImages = dHotelSvc ? hotelData[dHotelSvc.service_name] : null;
       let dImagesHtml = '';
