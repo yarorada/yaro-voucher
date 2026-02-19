@@ -1,37 +1,84 @@
 
 
-# Vylepšení párování plateb: smlouva -> obchodní případ
+# Propojení Fintable (Google Sheets) s webhook endpointem
 
-## Co se změní
+## Shrnutí
 
-Aktuální systém hledá platby v kontextu, odkud byl dialog otevřen. Nový systém bude fungovat takto:
+Fintable synchronizuje bankovní transakce do Google Sheets. Upravíme `bank-webhook` endpoint tak, aby kromě raw textu emailu umel prijmout i strukturovana data (amount, variable_symbol, date, sender_name). Navic dodame hotovy Google Apps Script, ktery se vlozi primo do Google Sheets a automaticky odeslane novy radek na webhook.
 
-1. Uživatel vloží text emailové notifikace z banky
-2. AI extrahuje částku, datum, variabilní symbol (VS)
-3. Systém hledá **vždy v cestovních smlouvách** (travel_contracts) podle VS z čísla smlouvy
-4. Najde odpovídající nezaplacenou platbu v contract_payments a označí ji jako zaplacenou
-5. **Automaticky propíše stav platby do deal_payments** -- najde propojenou smlouvu (deal_id), vyhledá odpovídající platbu ve stejné výši/typu a označí ji rovněž jako zaplacenou
+## Co se zmeni
 
-## Technické změny
+### 1. Uprava `bank-webhook` Edge funkce
 
-### 1. Edge funkce `parse-payment-email`
-- Zjednodušení: vždy hledat pouze v `travel_contracts` podle VS (bez kontextu deal_id/contract_id)
-- Odebrat vyhledávání v deal_payments -- VS je vždy ze smlouvy
-- Pokud VS chybí, zkusit hledat jen podle částky napříč všemi nezaplacenými contract_payments
+Aktualne funkce ocekava `emailText` a pouziva AI k extrakci dat. Nova verze bude:
 
-### 2. Edge funkce `confirm-payment-match`
-- Po označení platby v `contract_payments` jako zaplacené:
-  - Najít `deal_id` ze smlouvy (`travel_contracts.deal_id`)
-  - Pokud existuje deal_id, najít odpovídající platbu v `deal_payments` (podle payment_type + amount s tolerancí +/- 1)
-  - Označit ji rovněž jako `paid = true, paid_at = datum`
-- Vrátit info o tom, že byla propagována i do obchodního případu
+- **Detekce strukturovanych dat**: Pokud payload obsahuje pole `amount` (cislo), preskoci AI parsing a pouzije data primo
+- **Zachovani zpetne kompatibility**: Pokud payload obsahuje `emailText`, pouzije se stavajici AI parsing
+- Ocekavany format ze Sheets:
+  ```text
+  {
+    "amount": 15000,
+    "variable_symbol": "260012",
+    "date": "2026-02-19",
+    "sender_name": "Jan Novak",
+    "note": "Doplatek zajezd"
+  }
+  ```
+- Zbytek logiky (parovani podle VS, fallback podle castky, ulozeni do `bank_notifications`) zustava beze zmeny
 
-### 3. UI komponenta `PaymentEmailMatchDialog`
-- Odebrat parametr `context` (deal_id/contract_id) -- už není potřeba, vyhledávání je globální
-- Po úspěšném spárování zobrazit toast s informací o propagaci do dealu
-- Zajistit refresh dat jak na stránce smlouvy, tak na stránce dealu
+### 2. Google Apps Script pro automaticke odesilani
 
-### 4. Úprava volání v komponentách
-- `ContractPaymentSchedule.tsx`: odebrat `context` prop z PaymentEmailMatchDialog
-- `DealPaymentSchedule.tsx`: odebrat `context` prop z PaymentEmailMatchDialog (dialog bude fungovat stejně -- hledá vždy ve smlouvách)
+Dodame hotovy skript, ktery uzivateli staci vlozit do Google Sheets (Extensions > Apps Script). Skript:
+
+- Reaguje na udalost `onEdit` nebo `onChange` pri pridani noveho radku
+- Precte sloupce (nazvy sloupcu se nakonfigurují podle toho, jak je Fintable pojmenoval)
+- Odesle POST request na `bank-webhook?token=XXX`
+- Zapise do posledniho sloupce "Odesláno" jako potvrzeni
+
+## Technicky detail
+
+### Edge funkce `bank-webhook/index.ts`
+
+```
+// Na zacatku po nacteni body:
+if (typeof body.amount === 'number' && body.amount > 0) {
+  // Strukturovana data - preskocit AI parsing
+  parsed = {
+    amount: body.amount,
+    variable_symbol: body.variable_symbol || null,
+    date: body.date || null,
+    sender_name: body.sender_name || null,
+    note: body.note || null,
+  };
+} else {
+  // Stavajici AI parsing z emailText
+  ...
+}
+```
+
+### Google Apps Script (dodany jako navod)
+
+```
+function onNewRow(e) {
+  var sheet = e.source.getActiveSheet();
+  var row = e.range.getRow();
+  // Cteni sloupcu: Castka, VS, Datum, Odesilatel
+  var amount = sheet.getRange(row, SLOUPEC_CASTKA).getValue();
+  var vs = sheet.getRange(row, SLOUPEC_VS).getValue();
+  // ... POST na webhook URL
+}
+```
+
+## Postup implementace
+
+1. Upravit `bank-webhook` aby prijiml strukturovana data
+2. Poskytnout Google Apps Script navod s konfigurovatelnymi nazvy sloupcu
+3. Otestovat webhook s ukazkovym payloadem
+
+## Co se NEMENI
+
+- Tabulka `bank_notifications` - zadne schema zmeny
+- Dashboard `BankNotificationsCard` - funguje stejne
+- `confirm-payment-match` - beze zmeny
+- Manualni parsovani emailu v `PaymentEmailMatchDialog` - funguje dale
 
