@@ -523,6 +523,21 @@ export const VariantServiceDialog = ({
 
           <div className="grid grid-cols-3 gap-4">
             <div>
+              <Label htmlFor="persons">Počet osob</Label>
+              <Input
+                id="persons"
+                type="number"
+                min="1"
+                value={personCount}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPersonCount(val);
+                  setQuantity(val);
+                }}
+                placeholder="1"
+              />
+            </div>
+            <div>
               <Label htmlFor="quantity">Počet</Label>
               <Input
                 id="quantity"
@@ -530,17 +545,6 @@ export const VariantServiceDialog = ({
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="persons">Počet osob</Label>
-              <Input
-                id="persons"
-                type="number"
-                min="1"
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
-                placeholder="1"
               />
             </div>
             <div>

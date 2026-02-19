@@ -189,10 +189,10 @@ const SortableServiceRow = ({
         {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
       </TableCell>
       <TableCell className="text-center text-sm">
-        {service.quantity || 1}
+        {service.person_count || 1}
       </TableCell>
       <TableCell className="text-center text-sm">
-        {service.person_count || 1}
+        {service.quantity || 1}
       </TableCell>
       <TableCell className="text-xs truncate max-w-[100px]">
         {service.suppliers?.name || '-'}
@@ -2264,23 +2264,26 @@ const DealDetail = () => {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label>Osoby</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={serviceForm.person_count}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setServiceForm(prev => ({ ...prev, person_count: val, quantity: val }));
+                          }}
+                          placeholder="1"
+                          className="w-20"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label>Počet</Label>
                         <Input
                           type="number"
                           min="1"
                           value={serviceForm.quantity}
                           onChange={(e) => setServiceForm({ ...serviceForm, quantity: e.target.value })}
-                          placeholder="1"
-                          className="w-20"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Osoby</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={serviceForm.person_count}
-                          onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
                           placeholder="1"
                           className="w-20"
                         />
@@ -2379,8 +2382,8 @@ const DealDetail = () => {
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
                           <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Počet</TableHead>
                           <TableHead className="text-center">Osoby</TableHead>
+                          <TableHead className="text-center">Počet</TableHead>
                           <TableHead>Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
