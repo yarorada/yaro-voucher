@@ -52,6 +52,7 @@ interface Deal {
   destinations: { name: string } | null;
   deal_travelers: { clients: { first_name: string; last_name: string } }[];
   created_at: string;
+  updated_at: string;
 }
 
 const Deals = () => {
@@ -62,6 +63,7 @@ const Deals = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("updated_at");
   
   // Duplicate dialog state
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -75,7 +77,7 @@ const Deals = () => {
 
   useEffect(() => {
     filterDeals();
-  }, [searchQuery, statusFilter, deals]);
+  }, [searchQuery, statusFilter, deals, sortBy]);
 
   const fetchDeals = async () => {
     try {
@@ -96,6 +98,7 @@ const Deals = () => {
           adjustment_note,
           notes,
           created_at,
+          updated_at,
           destinations:destination_id (name),
           deal_travelers (
             is_lead_traveler,
@@ -139,6 +142,27 @@ const Deals = () => {
           )
       );
     }
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "departure_asc": {
+          if (!a.start_date && !b.start_date) return 0;
+          if (!a.start_date) return 1;
+          if (!b.start_date) return -1;
+          return a.start_date.localeCompare(b.start_date);
+        }
+        case "return_asc": {
+          if (!a.end_date && !b.end_date) return 0;
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return a.end_date.localeCompare(b.end_date);
+        }
+        case "updated_at":
+        default:
+          return (b as any).updated_at?.localeCompare((a as any).updated_at) || 0;
+      }
+    });
 
     setFilteredDeals(filtered);
   };
@@ -313,6 +337,16 @@ const Deals = () => {
                     <SelectItem value="cancelled">Zrušeno</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[200px] h-9">
+                    <SelectValue placeholder="Řazení" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="updated_at">Poslední změna</SelectItem>
+                    <SelectItem value="departure_asc">Nejbližší odjezd</SelectItem>
+                    <SelectItem value="return_asc">Datum návratu</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -349,7 +383,12 @@ const Deals = () => {
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
                           {mainTravelers && (
                             <span>
-                              <span className="font-semibold text-foreground">Cestující:</span> {mainTravelers}
+                              <span className="font-semibold text-foreground">Klient:</span> {mainTravelers}
+                            </span>
+                          )}
+                          {deal.destinations?.name && (
+                            <span>
+                              <span className="font-semibold text-foreground">Destinace:</span> {deal.destinations.name}
                             </span>
                           )}
                           {deal.start_date && (
@@ -363,9 +402,6 @@ const Deals = () => {
                               <span className="font-semibold text-foreground">Cena:</span> {formatPrice(deal.total_price)}
                             </span>
                           )}
-                          <span>
-                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(deal.created_at)}
-                          </span>
                         </div>
                       </div>
                       <DropdownMenu>

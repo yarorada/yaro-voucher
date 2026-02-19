@@ -164,9 +164,11 @@ const Contracts = () => {
                           return `${client.first_name} ${client.last_name}`;
                         })()}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
-                      </p>
+                      {contract.deal?.destination?.name && (
+                        <p className="text-sm text-muted-foreground">
+                          Destinace: {contract.deal.destination.name}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-2 md:gap-4 mt-3 text-xs md:text-sm text-muted-foreground">
                         <span>Vytvořeno: {(() => { const d = parseDateSafe(contract.created_at); return d ? format(d, "d. M. yyyy", { locale: cs }) : ''; })()}</span>
                         {contract.signed_at && (

@@ -75,6 +75,9 @@ const VouchersList = () => {
           clients:client_id (
             first_name,
             last_name
+          ),
+          deals:deal_id (
+            destinations:destination_id (name)
           )
         `,
         )
@@ -373,7 +376,12 @@ const VouchersList = () => {
                 const displayName = voucher.clients
                   ? `${voucher.clients.first_name} ${voucher.clients.last_name}`
                   : voucher.client_name;
-                const title = voucher.hotel_name ? `${displayName} - ${voucher.hotel_name}` : displayName;
+                const destination = (voucher as any).deals?.destinations?.name;
+                const title = voucher.hotel_name 
+                  ? `${displayName} • ${voucher.hotel_name}` 
+                  : destination 
+                    ? `${displayName} • ${destination}`
+                    : displayName;
                 
                 // Check if voucher is expired
                 const isExpired = voucher.expiration_date 
