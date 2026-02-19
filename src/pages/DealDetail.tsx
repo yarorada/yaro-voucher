@@ -121,6 +121,7 @@ interface DealService {
   start_date: string | null;
   end_date: string | null;
   price: number | null;
+  price_currency: string | null;
   cost_price: number | null;
   cost_currency: string | null;
   cost_price_original: number | null;
@@ -199,11 +200,11 @@ const SortableServiceRow = ({
       </TableCell>
       <TableCell className="text-right">
         <div className="text-sm font-medium">
-        {service.price ? formatPriceCurrency(service.price * (service.quantity || 1)) : '-'}
+        {service.price ? formatPriceCurrency(service.price * (service.quantity || 1), service.price_currency || "CZK") : '-'}
         </div>
         {service.price && (service.quantity || 1) > 1 && (
           <div className="text-xs text-muted-foreground">
-            {formatPriceCurrency(service.price)} × {service.quantity}
+            {formatPriceCurrency(service.price, service.price_currency || "CZK")} × {service.quantity}
           </div>
         )}
       </TableCell>
@@ -1351,7 +1352,7 @@ const DealDetail = () => {
       start_date: service.start_date ? new Date(service.start_date) : undefined,
       end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
-      price_currency: serviceAny.price_currency || "CZK",
+      price_currency: service.price_currency || "CZK",
       cost_price: service.cost_price?.toString() || "",
       cost_currency: serviceAny.cost_currency || "CZK",
       cost_price_original: serviceAny.cost_price_original?.toString() || "",
@@ -1883,21 +1884,21 @@ const DealDetail = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
                   <div className="text-lg font-bold text-primary">
-                    {formatPriceCurrency(parseFloat(totalPrice) || 0)}
+                    {formatPriceCurrency(parseFloat(totalPrice) || 0, services[0]?.price_currency || "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
                   <div className="text-lg font-semibold text-muted-foreground">
-                    {formatPriceCurrency(totalCostPrice)}
+                    {formatPriceCurrency(totalCostPrice, services[0]?.price_currency || "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Zisk</Label>
                   <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatPriceCurrency(profit)}
+                    {formatPriceCurrency(profit, services[0]?.price_currency || "CZK")}
                   </div>
                 </div>
               </div>
@@ -2429,7 +2430,8 @@ const DealDetail = () => {
                   <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
                   <span className="font-bold text-base sm:text-lg text-primary">
                     {formatPriceCurrency(
-                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0)
+                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0),
+                      services[0]?.price_currency || "CZK"
                     )}
                   </span>
                 </div>
