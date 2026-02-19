@@ -442,46 +442,43 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     </div>
                   </div>
 
-                  {/* Platební údaje */}
-                  <div className="border-t mt-2 pt-3 space-y-1">
-                    <p className="text-sm font-semibold flex items-center gap-1.5">
-                      <QrCode className="h-4 w-4" />
-                      Platební údaje CZK
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Číslo účtu: <span className="font-medium text-foreground">{bankAccount}</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      IBAN: <span className="font-medium text-foreground">{iban}</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
-                    </p>
-                  </div>
-                  <div className="border-t mt-2 pt-3 space-y-1">
-                    <p className="text-sm font-semibold flex items-center gap-1.5">
-                      <Wallet className="h-4 w-4" />
-                      Platební údaje EUR
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Příjemce: <span className="font-medium text-foreground">YARO s.r.o.</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      IBAN: <span className="font-medium text-foreground">DE89202208000051200891</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      SWIFT: <span className="font-medium text-foreground">SXPYDEHH</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Banka: <span className="font-medium text-foreground">BANKING CIRCLE S.A.</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Maximilanstr 54, München, 80538, Germany
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
-                    </p>
-                  </div>
+                  {/* Platební údaje – only relevant currency */}
+                  {isCzk ? (
+                    <div className="border-t mt-2 pt-3 space-y-1">
+                      <p className="text-sm font-semibold flex items-center gap-1.5">
+                        <QrCode className="h-4 w-4" />
+                        Platební údaje
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Číslo účtu: <span className="font-medium text-foreground">{bankAccount}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        IBAN: <span className="font-medium text-foreground">{iban}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border-t mt-2 pt-3 space-y-1">
+                      <p className="text-sm font-semibold flex items-center gap-1.5">
+                        <Wallet className="h-4 w-4" />
+                        Platební údaje
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Příjemce: <span className="font-medium text-foreground">YARO s.r.o.</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        IBAN: <span className="font-medium text-foreground">DE89202208000051200891</span> · SWIFT: <span className="font-medium text-foreground">SXPYDEHH</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Banka: <span className="font-medium text-foreground">BANKING CIRCLE S.A.</span> <span className="text-xs">(Maximilanstr 54, München, 80538, Germany)</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* QR kód */}
