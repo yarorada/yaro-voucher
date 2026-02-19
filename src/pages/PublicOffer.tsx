@@ -163,6 +163,11 @@ export default function PublicOffer() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <img src={yaroLogoWide} alt="YARO Travel" className="h-8" />
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            <a href="tel:+420602102108" className="hover:text-slate-700 transition-colors">📞 +420 602 102 108</a>
+            <span>|</span>
+            <a href="mailto:radek@yarotravel.cz" className="hover:text-slate-700 transition-colors">✉️ radek@yarotravel.cz</a>
+          </div>
           <span className="text-sm font-medium text-slate-500 tracking-wide uppercase">Nabídka</span>
         </div>
       </header>
@@ -183,9 +188,6 @@ export default function PublicOffer() {
               {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
             </p>
           )}
-          <p className="text-sm text-slate-400 mt-2">
-            📞 +420 602 102 108 &nbsp;|&nbsp; ✉️ radek@yarotravel.cz
-          </p>
         </div>
 
         {/* Variants */}
