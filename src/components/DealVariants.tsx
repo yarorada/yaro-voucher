@@ -333,12 +333,12 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   return (
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Obrat</p>
-                        <p className="font-semibold">{formatPrice(revenue || variant.total_price)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Náklady</p>
-                        <p className="font-semibold">{formatPrice(costs || null)}</p>
+                         <p className="text-muted-foreground">Prodejní cena</p>
+                         <p className="font-semibold">{formatPrice(revenue || variant.total_price)}</p>
+                       </div>
+                       <div>
+                         <p className="text-muted-foreground">Nákupní cena</p>
+                         <p className="font-semibold">{formatPrice(costs || null)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Zisk</p>
