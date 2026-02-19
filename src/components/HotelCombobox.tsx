@@ -44,6 +44,7 @@ interface HotelTemplate {
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
+  description?: string | null;
 }
 
 interface HotelComboboxProps {
@@ -348,6 +349,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                     imageUrl={editingHotel.image_url || null}
                     imageUrl2={editingHotel.image_url_2 || null}
                     imageUrl3={editingHotel.image_url_3 || null}
+                    description={editingHotel.description || null}
                     onUpdate={() => fetchHotels()}
                   />
                 </div>
