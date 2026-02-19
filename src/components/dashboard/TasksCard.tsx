@@ -289,6 +289,7 @@ export const TasksCard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks-upcoming"] });
     },
   });
 
@@ -302,6 +303,7 @@ export const TasksCard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks-upcoming"] });
       setEditing(null);
       toast({ title: "Úkol upraven" });
     },
@@ -314,6 +316,7 @@ export const TasksCard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks-upcoming"] });
       toast({ title: "Úkol smazán" });
     },
   });
