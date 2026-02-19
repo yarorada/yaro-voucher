@@ -2655,7 +2655,7 @@ const DealDetail = () => {
               ) : (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Propagovat změny
+                  Akceptovat změny
                 </>
               )}
             </Button>
