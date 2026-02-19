@@ -45,6 +45,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const [savingDescription, setSavingDescription] = useState(false);
   const [urlInputs, setUrlInputs] = useState<Record<string, string>>({});
   const [savingUrlInput, setSavingUrlInput] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const images: Record<string, string | null> = {
@@ -329,7 +330,19 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           return (
             <div key={key} className="space-y-1">
               <p className="text-xs text-muted-foreground truncate">{label}</p>
-              <div className="relative aspect-[4/3] rounded-lg border-2 border-dashed border-border bg-muted/30 overflow-hidden group">
+              <div
+                className={`relative aspect-[4/3] rounded-lg border-2 border-dashed bg-muted/30 overflow-hidden group transition-colors ${
+                  dragOver === key ? "border-primary bg-primary/10" : "border-border"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(key); }}
+                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(key); }}
+                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(null); }}
+                onDrop={(e) => {
+                  e.preventDefault(); e.stopPropagation(); setDragOver(null);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleUpload(key, file);
+                }}
+              >
                 {url ? (
                   <>
                     <img src={url} alt={label} className="w-full h-full object-cover" />
@@ -361,11 +374,13 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                   >
                     {isUploading ? (
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : dragOver === key ? (
+                      <ImagePlus className="h-6 w-6 text-primary" />
                     ) : (
                       <ImagePlus className="h-5 w-5 text-muted-foreground" />
                     )}
                     <span className="text-[10px] text-muted-foreground">
-                      {isUploading ? "Nahrávám..." : "Nahrát"}
+                      {isUploading ? "Nahrávám..." : dragOver === key ? "Pusťte zde" : "Nahrát / přetáhnout"}
                     </span>
                   </button>
                 )}
