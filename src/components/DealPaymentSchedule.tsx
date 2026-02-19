@@ -26,8 +26,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, Mail } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
+import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";
 import { cn, formatPrice } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [emailMatchOpen, setEmailMatchOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editSelectedDate, setEditSelectedDate] = useState<Date | undefined>(undefined);
@@ -283,10 +285,16 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
             <Wallet className="h-5 w-5" />
             Platební kalendář
           </CardTitle>
-          <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Přidat</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setEmailMatchOpen(true)} size="sm" variant="outline">
+              <Mail className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Z emailu</span>
+            </Button>
+            <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Přidat</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -547,6 +555,13 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
           </div>
         </DialogContent>
       </Dialog>
+
+      <PaymentEmailMatchDialog
+        open={emailMatchOpen}
+        onOpenChange={setEmailMatchOpen}
+        context={{ deal_id: dealId }}
+        onPaymentMatched={fetchPayments}
+      />
     </>
   );
 }
