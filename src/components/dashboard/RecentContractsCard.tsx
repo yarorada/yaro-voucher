@@ -12,6 +12,7 @@ interface Contract {
   status: "draft" | "sent" | "signed" | "cancelled";
   created_at: string;
   clients: { first_name: string; last_name: string } | null;
+  deals: { destinations: { name: string } | null } | null;
 }
 
 const statusConfig = {
@@ -32,7 +33,8 @@ export const RecentContractsCard = () => {
           contract_number,
           status,
           created_at,
-          clients(first_name, last_name)
+          clients(first_name, last_name),
+          deals(destinations(name))
         `)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -73,6 +75,7 @@ export const RecentContractsCard = () => {
                     {contract.clients
                       ? `${contract.clients.first_name} ${contract.clients.last_name}`
                       : "—"}
+                    {contract.deals?.destinations?.name && ` • ${contract.deals.destinations.name}`}
                   </p>
                 </div>
                 <Badge variant={statusConfig[contract.status].variant} className="text-xs">
