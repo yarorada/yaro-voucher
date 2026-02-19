@@ -630,6 +630,7 @@ export type Database = {
           id: string
           name: string | null
           notes: string | null
+          share_token: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["deal_status"]
           tee_times: Json | null
@@ -651,6 +652,7 @@ export type Database = {
           id?: string
           name?: string | null
           notes?: string | null
+          share_token?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           tee_times?: Json | null
@@ -672,6 +674,7 @@ export type Database = {
           id?: string
           name?: string | null
           notes?: string | null
+          share_token?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
           tee_times?: Json | null
@@ -797,18 +800,27 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
+          image_url_2: string | null
+          image_url_3: string | null
           name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           name: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           name?: string
           updated_at?: string
         }

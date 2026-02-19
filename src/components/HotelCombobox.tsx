@@ -36,10 +36,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HotelImageUpload } from "@/components/HotelImageUpload";
 
 interface HotelTemplate {
   id: string;
   name: string;
+  image_url?: string | null;
+  image_url_2?: string | null;
+  image_url_3?: string | null;
 }
 
 interface HotelComboboxProps {
@@ -322,7 +326,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Upravit hotel</DialogTitle>
-            <DialogDescription>Změňte název hotelu</DialogDescription>
+            <DialogDescription>Změňte název hotelu nebo nahrajte fotky</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -334,6 +338,20 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                 placeholder="např. Marriott Resort & Spa"
               />
             </div>
+            {editingHotel && (
+              <div>
+                <Label>Fotky hotelu</Label>
+                <div className="mt-2">
+                  <HotelImageUpload
+                    hotelId={editingHotel.id}
+                    imageUrl={editingHotel.image_url || null}
+                    imageUrl2={editingHotel.image_url_2 || null}
+                    imageUrl3={editingHotel.image_url_3 || null}
+                    onUpdate={() => fetchHotels()}
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setEditDialogOpen(false); setNewHotelName(""); setEditingHotel(null); }}>
                 Zrušit

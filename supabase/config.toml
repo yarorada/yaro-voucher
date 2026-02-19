@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.translate-service-name]
 verify_jwt = true
+
+[functions.get-public-offer]
+verify_jwt = false
