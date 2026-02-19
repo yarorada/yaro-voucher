@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: "Převeď české jméno a příjmení do 4. pádu (akuzativu). Vrať POUZE skloňované jméno, nic jiného. Pokud jméno nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Jan Novák → Jana Nováka, Petra Svobodová → Petru Svobodovou.",
+                content: "Převeď české jméno a příjmení do 5. pádu (vokativu). Vrať POUZE skloňované jméno, nic jiného. Pokud jméno nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Jan Novák → Jane Nováku, Petra Svobodová → Petro Svobodová, Jaroslav Rokos → Jaroslave Rokosi, Martin Dvořák → Martine Dvořáku.",
               },
               { role: "user", content: clientFullName },
             ],
@@ -144,8 +144,7 @@ Deno.serve(async (req) => {
     const salutation = isFemale ? 'paní' : 'pane';
 
     // Build public URL
-    const projectId = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
-    const publicUrl = `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(deal.share_token)}`;
+    const publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}`;
 
     // Fetch variants with services for the email body
     const { data: variants } = await supabase
