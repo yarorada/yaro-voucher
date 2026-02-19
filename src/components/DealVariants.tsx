@@ -121,8 +121,11 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
 
       if (error) throw error;
 
-      // Also copy services to main deal
+      // Copy services to main deal
       await copyServicesToMain(variantId);
+
+      // Update deal dates from variant services
+      await updateDealDatesFromVariant(variantId);
 
       toast({
         title: "Úspěch",
@@ -138,6 +141,32 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         description: "Nepodařilo se vybrat variantu",
         variant: "destructive",
       });
+    }
+  };
+
+  const updateDealDatesFromVariant = async (variantId: string) => {
+    const { data: services } = await supabase
+      .from("deal_variant_services")
+      .select("start_date, end_date")
+      .eq("variant_id", variantId);
+
+    if (!services || services.length === 0) return;
+
+    const startDates = services.map(s => s.start_date).filter(Boolean).sort();
+    const endDates = services.map(s => s.end_date).filter(Boolean).sort();
+
+    const earliestStart = startDates[0] || null;
+    const latestEnd = endDates[endDates.length - 1] || null;
+
+    if (earliestStart || latestEnd) {
+      const updateData: Record<string, string | null> = {};
+      if (earliestStart) updateData.start_date = earliestStart;
+      if (latestEnd) updateData.end_date = latestEnd;
+
+      await supabase
+        .from("deals")
+        .update(updateData)
+        .eq("id", dealId);
     }
   };
 
