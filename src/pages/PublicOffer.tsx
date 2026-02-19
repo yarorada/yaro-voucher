@@ -82,6 +82,15 @@ function formatDate(dateStr: string | null): string {
   }
 }
 
+function isValidDescription(text: string | null): boolean {
+  if (!text) return false;
+  // Filter out descriptions that are mostly URLs or garbage
+  const urlPattern = /https?:\/\/\S+/g;
+  const cleaned = text.replace(urlPattern, "").trim();
+  // If after removing URLs less than 30 chars remain, it's not a real description
+  return cleaned.length >= 30;
+}
+
 function formatDateShort(dateStr: string | null): string {
   if (!dateStr) return "";
   try {
@@ -291,8 +300,8 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
         )}
 
         {/* Hotel description from website */}
-        {images?.description && (
-          <p className="text-sm text-slate-500 leading-relaxed">{images.description}</p>
+        {isValidDescription(images?.description ?? null) && (
+          <p className="text-sm text-slate-500 leading-relaxed">{images!.description}</p>
         )}
 
         {/* Services */}
@@ -366,7 +375,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
       )}
       <div className="p-5 space-y-4">
         {/* Hotel description */}
-        {hotelService && hotelImages[hotelService.service_name]?.description && (
+        {hotelService && isValidDescription(hotelImages[hotelService.service_name]?.description ?? null) && (
           <p className="text-sm text-slate-500 leading-relaxed">
             {hotelImages[hotelService.service_name].description}
           </p>
