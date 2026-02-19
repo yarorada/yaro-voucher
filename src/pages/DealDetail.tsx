@@ -126,6 +126,7 @@ interface DealService {
   cost_price_original: number | null;
   supplier_id: string | null;
   person_count: number | null;
+  quantity: number | null;
   details?: FlightDetails | null;
   order_index?: number;
   suppliers?: {
@@ -188,18 +189,18 @@ const SortableServiceRow = ({
         {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
       </TableCell>
       <TableCell className="text-center text-sm">
-        {service.person_count}
+        {service.quantity || 1}
       </TableCell>
       <TableCell className="text-xs truncate max-w-[100px]">
         {service.suppliers?.name || '-'}
       </TableCell>
       <TableCell className="text-right">
         <div className="text-sm font-medium">
-        {service.price ? formatPriceCurrency(service.price * (service.person_count || 1)) : '-'}
+        {service.price ? formatPriceCurrency(service.price * (service.quantity || 1)) : '-'}
         </div>
-        {service.price && service.person_count && service.person_count > 1 && (
+        {service.price && (service.quantity || 1) > 1 && (
           <div className="text-xs text-muted-foreground">
-            {formatPriceCurrency(service.price)} × {service.person_count}
+            {formatPriceCurrency(service.price)} × {service.quantity}
           </div>
         )}
       </TableCell>
@@ -296,6 +297,7 @@ const DealDetail = () => {
     supplier_id: "",
     person_count: "1",
     person_count_unit: "",
+    quantity: "1",
   });
   
   // Flight segments state (separate from form to avoid serialization issues)
@@ -616,7 +618,7 @@ const DealDetail = () => {
 
   const calculateTotalPrice = (servicesList: DealService[], discount: number, adjustment: number) => {
     const servicesTotal = servicesList.reduce((sum, service) => {
-      const servicePrice = (service.price || 0) * (service.person_count || 1);
+      const servicePrice = (service.price || 0) * (service.quantity || 1);
       return sum + servicePrice;
     }, 0);
     
@@ -627,7 +629,7 @@ const DealDetail = () => {
 
   // Calculate total cost price from services
   const totalCostPrice = services.reduce((sum, service) => {
-    const serviceCost = (service.cost_price || 0) * (service.person_count || 1);
+    const serviceCost = (service.cost_price || 0) * (service.quantity || 1);
     return sum + serviceCost;
   }, 0);
 
@@ -951,6 +953,7 @@ const DealDetail = () => {
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
           } as any)
@@ -974,6 +977,7 @@ const DealDetail = () => {
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
           } as any]);
@@ -1005,7 +1009,7 @@ const DealDetail = () => {
       const servicesForCalc = freshServices || services;
       const discount = parseFloat(discountAmount) || 0;
       const adjustment = parseFloat(adjustmentAmount) || 0;
-      const servicesTotal = servicesForCalc.reduce((sum, s: any) => sum + ((s.price || 0) * (s.person_count || 1)), 0);
+      const servicesTotal = servicesForCalc.reduce((sum, s: any) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
       const newTotal = servicesTotal - discount + adjustment;
       setTotalPrice(newTotal.toString());
       
@@ -1170,6 +1174,7 @@ const DealDetail = () => {
           cost_price: service.cost_price,
           supplier_id: service.supplier_id || null,
           person_count: service.person_count || 1,
+          quantity: service.quantity || 1,
           details: service.details as any,
           order_index: services.length,
         }]);
@@ -1221,7 +1226,7 @@ const DealDetail = () => {
     serviceType: DealService["service_type"],
     serviceName: string = "",
     overrides: Partial<typeof serviceForm> = {}
-  ) => ({
+  ): typeof serviceForm => ({
     id: "",
     service_type: serviceType,
     service_name: serviceName,
@@ -1235,6 +1240,7 @@ const DealDetail = () => {
     supplier_id: "",
     person_count: (deal?.deal_travelers?.length || 1).toString(),
     person_count_unit: "",
+    quantity: "1",
     ...overrides,
   });
 
@@ -1253,6 +1259,7 @@ const DealDetail = () => {
       supplier_id: "",
       person_count: "1",
       person_count_unit: "",
+      quantity: "1",
     });
     resetFlightForm();
     setOriginalFlightDetails(null);
@@ -1342,6 +1349,7 @@ const DealDetail = () => {
       supplier_id: service.supplier_id || "",
       person_count: service.person_count?.toString() || "1",
       person_count_unit: (service.details as any)?.person_count_unit?.toString() || "",
+      quantity: (service.quantity || 1).toString(),
     });
     setServiceDialogOpen(true);
   };
@@ -1614,6 +1622,7 @@ const DealDetail = () => {
           cost_price_original: service.cost_price_original,
           supplier_id: service.supplier_id,
           person_count: personCount,
+          quantity: service.quantity || 1,
           details: service.details as any,
           order_index: index,
         }));
@@ -1626,7 +1635,7 @@ const DealDetail = () => {
       
       // Calculate and update total price
       const servicesTotal = services.reduce((sum, service) => {
-        const servicePrice = (service.price || 0) * personCount;
+        const servicePrice = (service.price || 0) * (service.quantity || 1);
         return sum + servicePrice;
       }, 0);
       const finalTotal = servicesTotal - (deal.discount_amount || 0) + (deal.adjustment_amount || 0);
@@ -2256,8 +2265,8 @@ const DealDetail = () => {
                         <Input
                           type="number"
                           min="1"
-                          value={serviceForm.person_count}
-                          onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
+                          value={serviceForm.quantity}
+                          onChange={(e) => setServiceForm({ ...serviceForm, quantity: e.target.value })}
                           placeholder="1"
                           className="w-20"
                         />
@@ -2267,8 +2276,8 @@ const DealDetail = () => {
                         <Input
                           type="number"
                           min="1"
-                          value={serviceForm.person_count_unit}
-                          onChange={(e) => setServiceForm({ ...serviceForm, person_count_unit: e.target.value })}
+                          value={serviceForm.person_count}
+                          onChange={(e) => setServiceForm({ ...serviceForm, person_count: e.target.value })}
                           placeholder="1"
                           className="w-20"
                         />
@@ -2367,7 +2376,7 @@ const DealDetail = () => {
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
                           <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Osoby</TableHead>
+                          <TableHead className="text-center">Počet</TableHead>
                           <TableHead>Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
@@ -2399,7 +2408,7 @@ const DealDetail = () => {
                   <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
                   <span className="font-bold text-base sm:text-lg text-primary">
                     {formatPriceCurrency(
-                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.person_count || 1)), 0)
+                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0)
                     )}
                   </span>
                 </div>

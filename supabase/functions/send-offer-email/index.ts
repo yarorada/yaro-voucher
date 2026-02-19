@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       .select(`
         id, variant_name, start_date, end_date, total_price, is_selected, notes,
         destination:destinations(name, country:countries(name)),
-        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, person_count, order_index, details)
+        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, order_index, details)
       `)
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
     // Fetch direct services (non-variant)
     const { data: directServices } = await supabase
       .from('deal_services')
-      .select('id, service_type, service_name, description, start_date, end_date, price, person_count, order_index, details')
+      .select('id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, order_index, details')
       .eq('deal_id', dealId)
       .order('order_index', { ascending: true });
 
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
         .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
       const vDest = v.destination;
       const vPrice = v.total_price || vServices.reduce(
-        (sum: number, s: any) => sum + (s.price || 0) * (s.person_count || 1), 0
+        (sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0
       );
 
       variantsHtml += `

@@ -359,6 +359,7 @@ export type Database = {
           order_index: number | null
           person_count: number | null
           price: number | null
+          quantity: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
           start_date: string | null
@@ -378,6 +379,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          quantity?: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
           start_date?: string | null
@@ -397,6 +399,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          quantity?: number
           service_name?: string
           service_type?: Database["public"]["Enums"]["service_type"]
           start_date?: string | null
@@ -486,6 +489,7 @@ export type Database = {
           order_index: number | null
           person_count: number | null
           price: number | null
+          quantity: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
           start_date: string | null
@@ -505,6 +509,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          quantity?: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
           start_date?: string | null
@@ -524,6 +529,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          quantity?: number
           service_name?: string
           service_type?: Database["public"]["Enums"]["service_type"]
           start_date?: string | null

@@ -199,6 +199,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
           start_date: vs.start_date,
           end_date: vs.end_date,
           person_count: vs.person_count,
+          quantity: (vs as any).quantity || 1,
           price: vs.price,
           cost_price: vs.cost_price,
           details: vs.details,

@@ -70,6 +70,7 @@ export const VariantServiceDialog = ({
   const [costPriceOriginal, setCostPriceOriginal] = useState("");
   const [personCount, setPersonCount] = useState("1");
   const [personCountUnit, setPersonCountUnit] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [supplierId, setSupplierId] = useState("");
 
   // Flight-specific fields - multi-segment support
@@ -95,6 +96,7 @@ export const VariantServiceDialog = ({
       setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
       setPersonCount(service.person_count?.toString() || "1");
       setPersonCountUnit((service.details as any)?.person_count_unit?.toString() || "");
+      setQuantity((service as any).quantity?.toString() || "1");
       setSupplierId(service.supplier_id || "");
 
       // Load flight details if exists
@@ -151,6 +153,7 @@ export const VariantServiceDialog = ({
     setCostPriceOriginal("");
     setPersonCount(defaultTravelerCount.toString());
     setPersonCountUnit("");
+    setQuantity("1");
     setSupplierId("");
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
@@ -328,6 +331,7 @@ export const VariantServiceDialog = ({
         cost_currency: costCurrency,
         cost_price_original: costPriceOrig,
         person_count: personCount ? parseInt(personCount) : 1,
+        quantity: quantity ? parseInt(quantity) : 1,
         supplier_id: supplierId || null,
         details: { ...(flightDetails || {}), person_count_unit: personCountUnit } as any,
       };
@@ -519,13 +523,13 @@ export const VariantServiceDialog = ({
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="person-count">Počet</Label>
+              <Label htmlFor="quantity">Počet</Label>
               <Input
-                id="person-count"
+                id="quantity"
                 type="number"
                 min="1"
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
               />
             </div>
             <div>
@@ -534,8 +538,8 @@ export const VariantServiceDialog = ({
                 id="persons"
                 type="number"
                 min="1"
-                value={personCountUnit}
-                onChange={(e) => setPersonCountUnit(e.target.value)}
+                value={personCount}
+                onChange={(e) => setPersonCount(e.target.value)}
                 placeholder="1"
               />
             </div>
@@ -581,10 +585,10 @@ export const VariantServiceDialog = ({
             )}
           </div>
 
-          {price && personCount && (
+          {price && quantity && (
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm font-medium">
-                Celková cena: {formatPriceCurrency(parseFloat(price) * parseInt(personCount))}
+                Celková cena: {formatPriceCurrency(parseFloat(price) * parseInt(quantity))}
               </p>
             </div>
           )}
