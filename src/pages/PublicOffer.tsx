@@ -14,6 +14,7 @@ interface OfferData {
     end_date: string | null;
     total_price: number | null;
     destination: { id: string; name: string; country: { name: string; iso_code: string } } | null;
+    lead_client_name: string | null;
   };
   variants: Array<{
     id: string;
@@ -168,8 +169,16 @@ export default function PublicOffer() {
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Deal header */}
         <div className="text-center space-y-2">
-          {deal.name && (
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">{deal.name}</h1>
+          {deal.name ? (
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+              Nabídka pro {deal.name}
+            </h1>
+          ) : deal.lead_client_name ? (
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+              Nabídka pro {deal.lead_client_name}
+            </h1>
+          ) : (
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">Nabídka</h1>
           )}
           {hasSelectedVariant && destination && (
             <p className="text-lg text-slate-500">
