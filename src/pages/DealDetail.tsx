@@ -191,6 +191,9 @@ const SortableServiceRow = ({
       <TableCell className="text-center text-sm">
         {service.quantity || 1}
       </TableCell>
+      <TableCell className="text-center text-sm">
+        {service.person_count || 1}
+      </TableCell>
       <TableCell className="text-xs truncate max-w-[100px]">
         {service.suppliers?.name || '-'}
       </TableCell>
@@ -2377,6 +2380,7 @@ const DealDetail = () => {
                           <TableHead>Služba</TableHead>
                           <TableHead>Datum</TableHead>
                           <TableHead className="text-center">Počet</TableHead>
+                          <TableHead className="text-center">Osoby</TableHead>
                           <TableHead>Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
