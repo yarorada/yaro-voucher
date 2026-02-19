@@ -608,7 +608,6 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
       <PaymentEmailMatchDialog
         open={emailMatchOpen}
         onOpenChange={setEmailMatchOpen}
-        context={{ deal_id: dealId }}
         onPaymentMatched={fetchPayments}
       />
     </>

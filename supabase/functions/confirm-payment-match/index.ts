@@ -19,7 +19,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify the user is authenticated
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -42,18 +41,29 @@ serve(async (req) => {
       });
     }
 
-    if (table !== 'contract_payments' && table !== 'deal_payments') {
-      return new Response(JSON.stringify({ error: 'Neplatná tabulka' }), {
+    if (table !== 'contract_payments') {
+      return new Response(JSON.stringify({ error: 'Neplatná tabulka — párování probíhá vždy přes smlouvy' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
-
     const paidAtValue = paid_at || new Date().toISOString();
 
+    // 1. Get the contract payment details before updating
+    const { data: contractPayment, error: fetchError } = await serviceClient
+      .from('contract_payments')
+      .select('id, contract_id, amount, payment_type')
+      .eq('id', payment_id)
+      .single();
+
+    if (fetchError || !contractPayment) {
+      throw new Error("Platba nebyla nalezena");
+    }
+
+    // 2. Mark contract_payment as paid
     const { error: updateError } = await serviceClient
-      .from(table)
+      .from('contract_payments')
       .update({ paid: true, paid_at: paidAtValue })
       .eq('id', payment_id);
 
@@ -62,7 +72,52 @@ serve(async (req) => {
       throw new Error("Nepodařilo se aktualizovat platbu");
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    // 3. Propagate to deal_payments if contract has a deal_id
+    let dealPropagated = false;
+    let dealId: string | null = null;
+
+    const { data: contract } = await serviceClient
+      .from('travel_contracts')
+      .select('deal_id')
+      .eq('id', contractPayment.contract_id)
+      .single();
+
+    if (contract?.deal_id) {
+      dealId = contract.deal_id;
+
+      // Find matching unpaid deal_payment by payment_type + amount (tolerance ±1)
+      const { data: dealPayments } = await serviceClient
+        .from('deal_payments')
+        .select('id, amount, payment_type')
+        .eq('deal_id', contract.deal_id)
+        .eq('paid', false)
+        .eq('payment_type', contractPayment.payment_type);
+
+      if (dealPayments) {
+        const matchingDealPayment = dealPayments.find(
+          dp => Math.abs(dp.amount - contractPayment.amount) <= 1
+        );
+
+        if (matchingDealPayment) {
+          const { error: dealUpdateError } = await serviceClient
+            .from('deal_payments')
+            .update({ paid: true, paid_at: paidAtValue })
+            .eq('id', matchingDealPayment.id);
+
+          if (dealUpdateError) {
+            console.error("Deal payment update error:", dealUpdateError);
+          } else {
+            dealPropagated = true;
+          }
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      deal_propagated: dealPropagated,
+      deal_id: dealId,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

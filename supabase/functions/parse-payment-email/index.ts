@@ -19,7 +19,7 @@ serve(async (req) => {
       });
     }
 
-    const { emailText, context } = await req.json();
+    const { emailText } = await req.json();
     if (!emailText || typeof emailText !== 'string' || emailText.trim().length < 10) {
       return new Response(JSON.stringify({ error: 'Vložte text emailové notifikace' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,21 +108,21 @@ serve(async (req) => {
       });
     }
 
-    // Search for matching unpaid payments
+    // Search for matching unpaid payments — always in travel_contracts
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const matches: any[] = [];
 
-    // Search contract_payments via variable symbol
+    // Strategy 1: Search by variable symbol in contract_number
     if (parsed.variable_symbol) {
       const vs = parsed.variable_symbol.replace(/\D/g, '');
-      
+
       // Find contracts where contract_number ends with this VS
       const { data: contracts } = await supabaseClient
         .from('travel_contracts')
-        .select('id, contract_number, total_price, client_id')
+        .select('id, contract_number, total_price, deal_id')
         .or(`contract_number.ilike.%${vs}`);
 
       if (contracts && contracts.length > 0) {
@@ -136,7 +136,6 @@ serve(async (req) => {
 
           if (payments) {
             for (const payment of payments) {
-              // Match by amount with tolerance +/- 1 CZK
               if (Math.abs(payment.amount - parsed.amount) <= 1) {
                 matches.push({
                   table: 'contract_payments',
@@ -155,44 +154,24 @@ serve(async (req) => {
       }
     }
 
-    // Also search deal_payments if context specifies deal
-    if (context?.deal_id) {
-      const { data: dealPayments } = await supabaseClient
-        .from('deal_payments')
-        .select('id, amount, due_date, payment_type, notes, paid')
-        .eq('deal_id', context.deal_id)
-        .eq('paid', false)
-        .order('due_date', { ascending: true });
-
-      if (dealPayments) {
-        for (const payment of dealPayments) {
-          if (Math.abs(payment.amount - parsed.amount) <= 1) {
-            matches.push({
-              table: 'deal_payments',
-              payment_id: payment.id,
-              payment_type: payment.payment_type,
-              payment_notes: payment.notes,
-              amount: payment.amount,
-              due_date: payment.due_date,
-              deal_id: context.deal_id,
-            });
-          }
-        }
-      }
-    }
-
-    // If no VS match, try amount-only match across all unpaid contract payments
-    if (matches.length === 0 && context?.contract_id) {
-      const { data: payments } = await supabaseClient
+    // Strategy 2: If no VS match, search by amount across all unpaid contract_payments
+    if (matches.length === 0) {
+      const { data: allUnpaid } = await supabaseClient
         .from('contract_payments')
         .select('id, amount, due_date, payment_type, notes, paid, contract_id')
-        .eq('contract_id', context.contract_id)
         .eq('paid', false)
         .order('due_date', { ascending: true });
 
-      if (payments) {
-        for (const payment of payments) {
+      if (allUnpaid) {
+        for (const payment of allUnpaid) {
           if (Math.abs(payment.amount - parsed.amount) <= 1) {
+            // Get contract info
+            const { data: contract } = await supabaseClient
+              .from('travel_contracts')
+              .select('contract_number, deal_id')
+              .eq('id', payment.contract_id)
+              .single();
+
             matches.push({
               table: 'contract_payments',
               payment_id: payment.id,
@@ -200,7 +179,8 @@ serve(async (req) => {
               payment_notes: payment.notes,
               amount: payment.amount,
               due_date: payment.due_date,
-              contract_id: context.contract_id,
+              contract_number: contract?.contract_number,
+              contract_id: payment.contract_id,
             });
           }
         }

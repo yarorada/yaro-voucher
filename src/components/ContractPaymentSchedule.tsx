@@ -717,7 +717,6 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
       <PaymentEmailMatchDialog
         open={emailMatchOpen}
         onOpenChange={setEmailMatchOpen}
-        context={{ contract_id: contractId }}
         onPaymentMatched={fetchPayments}
       />
     </>
