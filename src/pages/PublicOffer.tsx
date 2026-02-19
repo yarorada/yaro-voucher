@@ -154,7 +154,8 @@ export default function PublicOffer() {
   }
 
   const { deal, variants, directServices, hotelImages, hasSelectedVariant } = data;
-  const destination = deal.destination;
+  const selectedVariant = variants.find((v: any) => v.is_selected);
+  const destination = deal.destination || selectedVariant?.destination;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -172,7 +173,7 @@ export default function PublicOffer() {
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
             Nabídka pro {deal.lead_client_name || deal.name || "klienta"}
           </h1>
-          {hasSelectedVariant && destination && (
+          {destination && (
             <p className="text-base text-slate-500">
               {destination.country?.name} – {destination.name}
             </p>
