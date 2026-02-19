@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, ListTodo, Users, Pencil, Check, X, CalendarDays } from "lucide-react";
+import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, parseISO } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -51,7 +50,7 @@ interface EditingState {
 
 const TaskRow = ({
   task,
-  showAll,
+  showOwner,
   currentUserId,
   profilesMap,
   editing,
@@ -63,7 +62,7 @@ const TaskRow = ({
   onDelete,
 }: {
   task: Task;
-  showAll: boolean;
+  showOwner: boolean;
   currentUserId?: string;
   profilesMap: Record<string, string>;
   editing: EditingState | null;
@@ -128,7 +127,7 @@ const TaskRow = ({
             >
               {task.title}
             </span>
-            {showAll && task.user_id !== currentUserId && (
+            {showOwner && task.user_id !== currentUserId && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({profilesMap[task.user_id] || "?"})
               </span>
@@ -166,7 +165,8 @@ const TaskRow = ({
 export const TasksCard = () => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
-  const [showAll, setShowAll] = useState(false);
+  // "mine" = current user, "all" = everyone, or a specific user_id
+  const [viewMode, setViewMode] = useState<string>("mine");
   const [editing, setEditing] = useState<EditingState | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -182,23 +182,38 @@ export const TasksCard = () => {
 
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
 
-  const { data: profilesMap = {} } = useQuery({
-    queryKey: ["profiles-map"],
-    enabled: isAdmin && showAll,
+  // Profiles for admin user selector
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles-list"],
+    enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, email");
+      const { data, error } = await supabase.from("profiles").select("id, email").order("email");
       if (error) throw error;
-      const map: Record<string, string> = {};
-      for (const p of data || []) {
-        map[p.id] = p.email.split("@")[0];
-      }
-      return map;
+      return data;
     },
   });
 
+  const profilesMap: Record<string, string> = {};
+  for (const p of profiles) {
+    profilesMap[p.id] = p.email.split("@")[0];
+  }
+
+  const emailLabel = (email: string) => {
+    const name = email.split("@")[0];
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
+
+  // Determine the effective user_id filter
+  const filterUserId =
+    viewMode === "mine" ? currentUser?.id :
+    viewMode === "all" ? undefined :
+    viewMode; // specific user_id
+
+  const showOwner = viewMode === "all";
+
   // Today's tasks
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["tasks", today, showAll],
+    queryKey: ["tasks", today, viewMode],
     queryFn: async () => {
       let query = supabase
         .from("tasks")
@@ -208,8 +223,8 @@ export const TasksCard = () => {
         .order("priority", { ascending: false })
         .order("created_at", { ascending: false });
 
-      if (!showAll) {
-        query = query.eq("user_id", currentUser?.id);
+      if (filterUserId) {
+        query = query.eq("user_id", filterUserId);
       }
 
       const { data, error } = await query;
@@ -219,9 +234,9 @@ export const TasksCard = () => {
     enabled: !!currentUser?.id,
   });
 
-  // Upcoming tasks (future + overdue, not today)
+  // Upcoming tasks
   const { data: upcomingTasks = [] } = useQuery({
-    queryKey: ["tasks-upcoming", today, showAll],
+    queryKey: ["tasks-upcoming", today, viewMode],
     queryFn: async () => {
       let query = supabase
         .from("tasks")
@@ -232,8 +247,8 @@ export const TasksCard = () => {
         .order("priority", { ascending: false })
         .limit(20);
 
-      if (!showAll) {
-        query = query.eq("user_id", currentUser?.id);
+      if (filterUserId) {
+        query = query.eq("user_id", filterUserId);
       }
 
       const { data, error } = await query;
@@ -334,7 +349,6 @@ export const TasksCard = () => {
     };
   };
 
-  // Group upcoming by date
   const groupedUpcoming = upcomingTasks.reduce<Record<string, Task[]>>((acc, task) => {
     if (!acc[task.due_date]) acc[task.due_date] = [];
     acc[task.due_date].push(task);
@@ -342,7 +356,7 @@ export const TasksCard = () => {
   }, {});
 
   const taskRowProps = {
-    showAll,
+    showOwner,
     currentUserId: currentUser?.id,
     profilesMap,
     editing,
@@ -353,6 +367,12 @@ export const TasksCard = () => {
     onToggle: (id: string, completed: boolean) => toggleTaskMutation.mutate({ id, completed }),
     onDelete: (id: string) => deleteTaskMutation.mutate(id),
   };
+
+  // Label for subtitle
+  const viewLabel =
+    viewMode === "mine" ? "" :
+    viewMode === "all" ? " • Všichni uživatelé" :
+    ` • ${emailLabel(profiles.find((p) => p.id === viewMode)?.email || "")}`;
 
   return (
     <Card className="h-full">
@@ -368,19 +388,27 @@ export const TasksCard = () => {
             )}
           </CardTitle>
           {isAdmin && (
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <Switch
-                checked={showAll}
-                onCheckedChange={setShowAll}
-                aria-label="Zobrazit úkoly všech"
-              />
-            </div>
+            <Select value={viewMode} onValueChange={setViewMode}>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mine">Moje úkoly</SelectItem>
+                <SelectItem value="all">Všichni</SelectItem>
+                <Separator className="my-1" />
+                {profiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {emailLabel(p.email)}
+                    {p.id === currentUser?.id && " (já)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
         <p className="text-sm text-muted-foreground">
           {format(new Date(), "EEEE, d. MMMM yyyy", { locale: cs })}
-          {isAdmin && showAll && " • Všichni uživatelé"}
+          {isAdmin && viewLabel}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -421,7 +449,6 @@ export const TasksCard = () => {
           </div>
         )}
 
-        {/* Upcoming / overdue tasks */}
         {Object.keys(groupedUpcoming).length > 0 && (
           <>
             <Separator />
