@@ -23,6 +23,8 @@ interface DealVariant {
   deal_variant_services?: Array<{
     price: number | null;
     cost_price: number | null;
+    cost_price_original: number | null;
+    cost_currency: string | null;
     quantity: number;
     person_count: number | null;
     price_currency: string | null;
@@ -93,7 +95,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         .select(`
           *,
           destination:destinations(name),
-          deal_variant_services(price, cost_price, quantity, person_count, price_currency)
+          deal_variant_services(price, cost_price, cost_price_original, cost_currency, quantity, person_count, price_currency)
         `)
         .eq("deal_id", dealId)
         .order("created_at", { ascending: false });
@@ -449,8 +451,21 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   const services = variant.deal_variant_services || [];
                   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
                   const revenue = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
-                  const costs = services.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
-                  const profit = revenue - costs;
+                  // Use original cost prices in their native currency for display
+                  const costCurrency = services.find(s => s.cost_currency)?.cost_currency || "CZK";
+                  const costs = services.reduce((sum, s) => {
+                    const costVal = (costCurrency !== "CZK" && s.cost_price_original != null)
+                      ? s.cost_price_original
+                      : (s.cost_price || 0);
+                    return sum + (costVal * (s.quantity || 1));
+                  }, 0);
+                  // Profit: if currencies match, simple subtraction; if different, use CZK cost_price for profit
+                  const sameCurrency = currency === costCurrency;
+                  const costsForProfit = sameCurrency
+                    ? costs
+                    : services.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
+                  const profit = revenue - costsForProfit;
+                  const profitCurrency = sameCurrency ? currency : currency;
                   return (
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
@@ -459,12 +474,12 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                        </div>
                        <div>
                          <p className="text-muted-foreground">Nákupní cena</p>
-                         <p className="font-semibold">{formatPrice(costs || null, true, currency)}</p>
+                         <p className="font-semibold">{formatPrice(costs || null, true, costCurrency)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Zisk</p>
                         <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
-                          {services.length > 0 ? formatPrice(profit, true, currency) : '-'}
+                          {services.length > 0 ? formatPrice(profit, true, profitCurrency) : '-'}
                         </p>
                       </div>
                     </div>
