@@ -638,14 +638,51 @@ const DealDetail = () => {
     return finalTotal;
   };
 
-  // Calculate total cost price from services
+  // Calculate total cost price from services (already in CZK)
   const totalCostPrice = services.reduce((sum, service) => {
     const serviceCost = (service.cost_price || 0) * (service.quantity || 1);
     return sum + serviceCost;
   }, 0);
 
-  // Calculate profit
-  const profit = (parseFloat(totalPrice) || 0) - totalCostPrice;
+  // Derive CZK exchange rate from cost data for converting selling prices
+  const derivedCzkRate = (() => {
+    for (const s of services) {
+      if (s.cost_price_original && s.cost_price_original > 0 && s.cost_currency && s.cost_currency !== "CZK") {
+        return (s.cost_price || 0) / s.cost_price_original;
+      }
+    }
+    return null;
+  })();
+
+  // Calculate total selling price in CZK
+  const totalSellingPriceCzk = services.reduce((sum, service) => {
+    const unitPrice = service.price || 0;
+    const qty = service.quantity || 1;
+    const currency = service.price_currency || "CZK";
+    if (currency === "CZK" || !derivedCzkRate) {
+      return sum + unitPrice * qty;
+    }
+    return sum + unitPrice * qty * derivedCzkRate;
+  }, 0);
+
+  // Apply discount and adjustment in CZK
+  const discountCzk = (() => {
+    const d = parseFloat(discountAmount) || 0;
+    const currency = services[0]?.price_currency || "CZK";
+    if (currency === "CZK" || !derivedCzkRate) return d;
+    return d * derivedCzkRate;
+  })();
+  const adjustmentCzk = (() => {
+    const a = parseFloat(adjustmentAmount) || 0;
+    const currency = services[0]?.price_currency || "CZK";
+    if (currency === "CZK" || !derivedCzkRate) return a;
+    return a * derivedCzkRate;
+  })();
+
+  const totalSellingPriceCzkFinal = totalSellingPriceCzk - discountCzk + adjustmentCzk;
+
+  // Calculate profit in CZK
+  const profit = totalSellingPriceCzkFinal - totalCostPrice;
 
   const fetchServices = async () => {
     try {
@@ -2010,21 +2047,21 @@ const DealDetail = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
                   <div className="text-lg font-bold text-primary">
-                    {formatPriceCurrency(parseFloat(totalPrice) || 0, services[0]?.price_currency || "CZK")}
+                    {formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
                   <div className="text-lg font-semibold text-muted-foreground">
-                    {formatPriceCurrency(totalCostPrice, services[0]?.price_currency || "CZK")}
+                    {formatPriceCurrency(totalCostPrice, "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Zisk</Label>
                   <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatPriceCurrency(profit, services[0]?.price_currency || "CZK")}
+                    {formatPriceCurrency(profit, "CZK")}
                   </div>
                 </div>
               </div>
