@@ -1285,6 +1285,7 @@ export type Database = {
         Args: { p_issue_date: string }
         Returns: string
       }
+      is_task_admin: { Args: { _user_id: string }; Returns: boolean }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
       select_deal_variant: { Args: { p_variant_id: string }; Returns: boolean }
       update_deal_display_number: {

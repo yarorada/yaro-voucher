@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ListTodo } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, ListTodo, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -24,7 +25,10 @@ interface Task {
   due_date: string;
   priority: string;
   completed: boolean;
+  user_id: string;
 }
+
+const ADMIN_EMAIL = "radek@yarotravel.cz";
 
 const priorityColors: Record<string, string> = {
   low: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -41,14 +45,40 @@ const priorityLabels: Record<string, string> = {
 export const TasksCard = () => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
+  const [showAll, setShowAll] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["tasks", today],
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
+  const isAdmin = currentUser?.email === ADMIN_EMAIL;
+
+  // Profiles map for displaying user names
+  const { data: profilesMap = {} } = useQuery({
+    queryKey: ["profiles-map"],
+    enabled: isAdmin && showAll,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, email");
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const p of data || []) {
+        map[p.id] = p.email.split("@")[0];
+      }
+      return map;
+    },
+  });
+
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ["tasks", today, showAll],
+    queryFn: async () => {
+      let query = supabase
         .from("tasks")
         .select("*")
         .eq("due_date", today)
@@ -56,9 +86,15 @@ export const TasksCard = () => {
         .order("priority", { ascending: false })
         .order("created_at", { ascending: false });
 
+      if (!showAll) {
+        query = query.eq("user_id", currentUser?.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!currentUser?.id,
   });
 
   const addTaskMutation = useMutation({
@@ -117,17 +153,30 @@ export const TasksCard = () => {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <ListTodo className="h-5 w-5 text-primary" />
-          Dnešní úkoly
-          {tasks.length > 0 && (
-            <Badge variant="secondary" className="ml-auto">
-              {completedCount}/{tasks.length}
-            </Badge>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ListTodo className="h-5 w-5 text-primary" />
+            Dnešní úkoly
+            {tasks.length > 0 && (
+              <Badge variant="secondary">
+                {completedCount}/{tasks.length}
+              </Badge>
+            )}
+          </CardTitle>
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <Switch
+                checked={showAll}
+                onCheckedChange={setShowAll}
+                aria-label="Zobrazit úkoly všech"
+              />
+            </div>
           )}
-        </CardTitle>
+        </div>
         <p className="text-sm text-muted-foreground">
           {format(new Date(), "EEEE, d. MMMM yyyy", { locale: cs })}
+          {isAdmin && showAll && " • Všichni uživatelé"}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -175,13 +224,20 @@ export const TasksCard = () => {
                     toggleTaskMutation.mutate({ id: task.id, completed: !!checked })
                   }
                 />
-                <span
-                  className={`flex-1 text-sm ${
-                    task.completed ? "line-through text-muted-foreground" : ""
-                  }`}
-                >
-                  {task.title}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <span
+                    className={`text-sm ${
+                      task.completed ? "line-through text-muted-foreground" : ""
+                    }`}
+                  >
+                    {task.title}
+                  </span>
+                  {showAll && task.user_id !== currentUser?.id && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({profilesMap[task.user_id] || "?"})
+                    </span>
+                  )}
+                </div>
                 <Badge className={priorityColors[task.priority]} variant="outline">
                   {priorityLabels[task.priority]}
                 </Badge>

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { FloatingTaskButton } from "@/components/FloatingTaskButton";
 import { Menu } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
@@ -55,6 +56,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
         <main className="flex-1 overflow-auto">
           {children}
         </main>
+        <FloatingTaskButton />
       </div>
     </div>
   </SidebarProvider>
