@@ -33,6 +33,7 @@ interface OfferData {
       start_date: string | null;
       end_date: string | null;
       price: number | null;
+      price_currency: string | null;
       person_count: number | null;
       quantity: number | null;
       details: any;
@@ -44,6 +45,7 @@ interface OfferData {
     service_name: string;
     description: string | null;
     price: number | null;
+    price_currency: string | null;
     person_count: number | null;
     quantity: number | null;
     details: any;
@@ -72,8 +74,11 @@ const serviceLabels: Record<string, string> = {
   other: "Ostatní",
 };
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0 }).format(price);
+function formatPrice(price: number, currency?: string): string {
+  const formatted = new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0 }).format(price);
+  if (!currency || currency === "CZK") return `${formatted} CZK`;
+  const symbols: Record<string, string> = { EUR: "€", USD: "$", GBP: "£" };
+  return `${formatted} ${symbols[currency] || currency}`;
 }
 
 function formatDate(dateStr: string | null): string {
@@ -107,6 +112,7 @@ interface PerPersonLine {
   label: string;
   personCount: number;
   pricePerPerson: number;
+  currency: string;
 }
 
 function computePerPersonPrices(services: Array<{
@@ -114,6 +120,7 @@ function computePerPersonPrices(services: Array<{
   service_name: string;
   description: string | null;
   price: number | null;
+  price_currency?: string | null;
   person_count: number | null;
   quantity: number | null;
   details: any;
@@ -130,6 +137,7 @@ function computePerPersonPrices(services: Array<{
     const persons = s.person_count || 1;
     sharedPerPerson += total / persons;
   });
+  const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
   return hotels.map(h => {
     const persons = h.person_count || 1;
@@ -139,6 +147,7 @@ function computePerPersonPrices(services: Array<{
       label: h.description || h.service_name,
       personCount: persons,
       pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson),
+      currency,
     };
   });
 }
@@ -278,6 +287,8 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
     (sum, s) => sum + (s.price || 0) * ((s as any).quantity || 1), 0
   );
 
+  const currency = variant.deal_variant_services.find(s => s.price_currency)?.price_currency || "CZK";
+
   return (
     <div className={`rounded-2xl overflow-hidden bg-white shadow-lg border transition-all ${
       isSelected ? "ring-2 ring-blue-500 shadow-blue-100" : "border-slate-200"
@@ -392,7 +403,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
               {lines.map((line, i) => (
                 <div key={i} className="flex items-baseline justify-between text-sm">
                   <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
-                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson)} CZK</span>
+                   <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
                 </div>
               ))}
             </div>
@@ -404,7 +415,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
           <div className="border-t pt-4">
             <div className="flex justify-between items-baseline">
               <span className="text-sm text-slate-500">Celková cena</span>
-              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice)} CZK</span>
+               <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
             </div>
           </div>
         )}
@@ -420,6 +431,8 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
 }) {
   const hotelService = services.find(s => s.service_type === "hotel");
   const images = hotelService ? hotelImages[hotelService.service_name] : null;
+
+  const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-lg border border-slate-200 max-w-2xl mx-auto">
@@ -475,7 +488,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
           <div className="border-t pt-4">
             <div className="flex justify-between items-baseline">
               <span className="text-sm text-slate-500">Celková cena</span>
-              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice)} CZK</span>
+              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
             </div>
           </div>
         )}
@@ -489,7 +502,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
               {lines.map((line, i) => (
                 <div key={i} className="flex items-baseline justify-between text-sm">
                   <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
-                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson)} CZK</span>
+                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
                 </div>
               ))}
             </div>
