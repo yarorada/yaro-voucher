@@ -51,9 +51,44 @@ Deno.serve(async (req) => {
       .eq('is_lead_traveler', true)
       .maybeSingle();
 
-    const leadClientName = leadTraveler?.client
+    let leadClientName = leadTraveler?.client
       ? `${(leadTraveler.client as any).first_name} ${(leadTraveler.client as any).last_name}`
       : null;
+
+    // Decline the name to Czech accusative case (for "Nabídka pro ...")
+    if (leadClientName) {
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-lite",
+              messages: [
+                {
+                  role: "system",
+                  content: "Převeď české jméno a příjmení do 4. pádu (akuzativu). Vrať POUZE skloňované jméno, nic jiného. Pokud jméno nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Jan Novák → Jana Nováka, Petra Svobodová → Petru Svobodovou.",
+                },
+                { role: "user", content: leadClientName },
+              ],
+            }),
+          });
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            const declined = aiData.choices?.[0]?.message?.content?.trim();
+            if (declined && declined.length < 200) {
+              leadClientName = declined;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Name declension error:", e);
+      }
+    }
 
     // Fetch variants with services
     const { data: variants } = await supabase
