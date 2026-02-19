@@ -57,9 +57,10 @@ interface ContractPaymentScheduleProps {
   departureDate?: string;
   contractNumber?: string;
   bankAccount?: string;
+  currency?: string;
 }
 
-export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600' }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -378,7 +379,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                           {getPaymentTypeLabel(payment.payment_type)}
                         </TableCell>
                         <TableCell className="text-body font-semibold">
-                          {formatPrice(payment.amount)}
+                          {formatPrice(payment.amount, true, currency)}
                         </TableCell>
                         <TableCell className={cn("text-body", isOverdue && "text-red-600 font-semibold")}>
                           {format(new Date(payment.due_date), "d. M. yyyy", { locale: cs })}
@@ -420,22 +421,22 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                 <div className="space-y-2">
                   <div className="flex justify-between text-body">
                     <span>Celková cena zájezdu:</span>
-                    <span className="font-semibold">{formatPrice(totalPrice)}</span>
+                    <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
                   </div>
                   <div className="flex justify-between text-body">
                     <span>Zálohy a splátky:</span>
-                    <span className="font-semibold">{formatPrice(depositsSum)}</span>
+                    <span className="font-semibold">{formatPrice(depositsSum, true, currency)}</span>
                   </div>
                   <div className="flex justify-between text-body font-medium">
                     <span>Zbývá k doplacení:</span>
                     <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
-                      {formatPrice(remainingPayment)}
+                      {formatPrice(remainingPayment, true, currency)}
                     </span>
                   </div>
                   <div className="border-t mt-2 pt-2">
                     <div className="flex justify-between text-body text-green-600">
                       <span>Zaplaceno:</span>
-                      <span className="font-semibold">{formatPrice(paidAmount)}</span>
+                      <span className="font-semibold">{formatPrice(paidAmount, true, currency)}</span>
                     </div>
                   </div>
 
@@ -486,7 +487,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                   <div className="flex flex-col items-center justify-center">
                     <img src={qrDataUrl} alt="QR platba" className="w-[120px] h-[120px] rounded" />
                     <p className="text-xs text-muted-foreground mt-1">QR platba</p>
-                    <p className="text-sm font-bold text-primary">{formatPrice(unpaidTotal)}</p>
+                    <p className="text-sm font-bold text-primary">{formatPrice(unpaidTotal, true, currency)}</p>
                   </div>
                 )}
               </div>
@@ -505,7 +506,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="bg-muted/50 p-3 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Celková cena zájezdu:</span>
-                <span className="font-semibold">{formatPrice(totalPrice)}</span>
+                <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
               </div>
             </div>
 
@@ -575,7 +576,7 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Doplatek (automaticky)</Label>
                       <div className="h-9 px-3 flex items-center bg-muted rounded-md font-semibold">
-                        {formatPrice(parseFloat(scheduleItems[3].amount || "0"))}
+                        {formatPrice(parseFloat(scheduleItems[3].amount || "0"), true, currency)}
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -616,18 +617,18 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             <div className="bg-muted/50 p-3 rounded-lg space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Zálohy celkem:</span>
-                <span className="font-medium">{formatPrice(scheduleDepositsTotal)}</span>
+                <span className="font-medium">{formatPrice(scheduleDepositsTotal, true, currency)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Doplatek:</span>
-                <span className="font-medium">{formatPrice(scheduleFinalAmount)}</span>
+                <span className="font-medium">{formatPrice(scheduleFinalAmount, true, currency)}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold border-t pt-1">
                 <span>Celkem:</span>
                 <span className={cn(
                   scheduleTotal === totalPrice ? "text-green-600" : "text-orange-600"
                 )}>
-                  {formatPrice(scheduleTotal)}
+                  {formatPrice(scheduleTotal, true, currency)}
                   {scheduleTotal !== totalPrice && " ⚠️"}
                 </span>
               </div>

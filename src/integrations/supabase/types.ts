@@ -984,6 +984,7 @@ export type Database = {
           contract_date: string
           contract_number: string
           created_at: string
+          currency: string | null
           deal_id: string | null
           deposit_amount: number | null
           id: string
@@ -1007,6 +1008,7 @@ export type Database = {
           contract_date?: string
           contract_number: string
           created_at?: string
+          currency?: string | null
           deal_id?: string | null
           deposit_amount?: number | null
           id?: string
@@ -1030,6 +1032,7 @@ export type Database = {
           contract_date?: string
           contract_number?: string
           created_at?: string
+          currency?: string | null
           deal_id?: string | null
           deposit_amount?: number | null
           id?: string
