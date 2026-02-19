@@ -127,9 +127,12 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       // Update deal dates from variant services
       await updateDealDatesFromVariant(variantId);
 
+      // Auto-create payment schedule (50% deposit + 50% final)
+      await createPaymentScheduleFromVariant(variantId);
+
       toast({
         title: "Úspěch",
-        description: "Varianta byla vybrána a služby byly zkopírovány",
+        description: "Varianta byla vybrána, služby zkopírovány a platební kalendář vytvořen",
       });
 
       fetchVariants();
@@ -168,6 +171,62 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         .update(updateData)
         .eq("id", dealId);
     }
+  };
+
+  const createPaymentScheduleFromVariant = async (variantId: string) => {
+    // Get variant total price
+    const { data: variantServices } = await supabase
+      .from("deal_variant_services")
+      .select("price, quantity")
+      .eq("variant_id", variantId);
+
+    if (!variantServices || variantServices.length === 0) return;
+
+    const totalPrice = variantServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+    if (totalPrice <= 0) return;
+
+    // Check if payments already exist for this deal
+    const { data: existingPayments } = await supabase
+      .from("deal_payments")
+      .select("id")
+      .eq("deal_id", dealId);
+
+    if (existingPayments && existingPayments.length > 0) return; // Don't overwrite existing payments
+
+    // Get deal start date for due dates
+    const { data: deal } = await supabase
+      .from("deals")
+      .select("start_date")
+      .eq("id", dealId)
+      .single();
+
+    const depositAmount = Math.round(totalPrice * 0.5);
+    const finalAmount = totalPrice - depositAmount;
+
+    const now = new Date();
+    const depositDue = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
+    const finalDue = deal?.start_date
+      ? new Date(new Date(deal.start_date).getTime() - 30 * 24 * 60 * 60 * 1000) // 30 days before trip
+      : new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // fallback +60 days
+
+    const payments = [
+      {
+        deal_id: dealId,
+        payment_type: "deposit",
+        amount: depositAmount,
+        due_date: depositDue.toISOString().split("T")[0],
+        notes: "Záloha 50%",
+      },
+      {
+        deal_id: dealId,
+        payment_type: "final",
+        amount: finalAmount,
+        due_date: finalDue.toISOString().split("T")[0],
+        notes: "Doplatek 50%",
+      },
+    ];
+
+    await supabase.from("deal_payments").insert(payments);
   };
 
   const handleDeleteVariant = async (variantId: string, isSelected: boolean) => {
