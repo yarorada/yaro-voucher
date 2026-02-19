@@ -32,8 +32,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: Share
   const [open, setOpen] = useState(false);
 
   const getPublicUrl = (token: string) => {
-    const base = window.location.origin;
-    return `${base}/offer/${token}`;
+    // Use edge function URL so crawlers (email clients, social media) get OG meta tags
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    return `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}`;
   };
 
   const handleShare = async () => {
