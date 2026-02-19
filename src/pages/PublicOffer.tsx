@@ -45,7 +45,7 @@ interface OfferData {
     person_count: number | null;
     details: any;
   }>;
-  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null }>;
+  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }>;
   hasSelectedVariant: boolean;
 }
 
@@ -249,7 +249,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
 
       {/* Small images */}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 px-1 -mt-1">
+        <div className="grid grid-cols-2 gap-1 px-1 pt-1">
           {images?.image_url_2 && (
             <div className="aspect-[16/10] overflow-hidden rounded-lg">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
@@ -286,6 +286,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
           <p className="text-sm text-slate-400">
             {formatDateShort(variant.start_date)} – {formatDateShort(variant.end_date)}
           </p>
+        )}
+
+        {/* Hotel description from website */}
+        {images?.description && (
+          <p className="text-sm text-slate-500 leading-relaxed">{images.description}</p>
         )}
 
         {/* Services */}
@@ -344,7 +349,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         </div>
       )}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 px-1 -mt-1">
+        <div className="grid grid-cols-2 gap-1 px-1 pt-1">
           {images?.image_url_2 && (
             <div className="aspect-[16/10] overflow-hidden rounded-lg">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
@@ -358,6 +363,12 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         </div>
       )}
       <div className="p-5 space-y-4">
+        {/* Hotel description */}
+        {hotelService && hotelImages[hotelService.service_name]?.description && (
+          <p className="text-sm text-slate-500 leading-relaxed">
+            {hotelImages[hotelService.service_name].description}
+          </p>
+        )}
         <div className="space-y-2">
           {services.map((service) => {
             const Icon = serviceIcons[service.service_type] || FileText;

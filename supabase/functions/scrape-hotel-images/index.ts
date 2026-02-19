@@ -157,13 +157,30 @@ Deno.serve(async (req) => {
     const uniqueHotelImages = [...new Set(hotelImages)].slice(0, 12);
     const uniqueGolfImages = [...new Set(golfImages)].slice(0, 8);
 
-    console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images`);
+    // Extract hotel description from markdown content
+    let hotelDescription = "";
+    if (searchData?.data && searchData.data.length > 0) {
+      const markdown = searchData.data[0].markdown || "";
+      // Get a meaningful paragraph (skip short lines, headers, nav items)
+      const paragraphs = markdown
+        .split(/\n\n+/)
+        .map((p: string) => p.replace(/[#*\[\]()!]/g, "").trim())
+        .filter((p: string) => p.length > 80 && !p.includes("|") && !/^[-–•]/.test(p));
+      
+      if (paragraphs.length > 0) {
+        // Take first 2 meaningful paragraphs, max 500 chars
+        hotelDescription = paragraphs.slice(0, 2).join("\n\n").substring(0, 500);
+      }
+    }
+
+    console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images, desc: ${hotelDescription.length} chars`);
 
     return new Response(
       JSON.stringify({
         success: true,
         hotelImages: uniqueHotelImages,
         golfImages: uniqueGolfImages,
+        hotelDescription,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

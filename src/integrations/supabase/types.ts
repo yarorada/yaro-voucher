@@ -799,6 +799,7 @@ export type Database = {
       hotel_templates: {
         Row: {
           created_at: string
+          description: string | null
           id: string
           image_url: string | null
           image_url_2: string | null
@@ -808,6 +809,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
           image_url?: string | null
           image_url_2?: string | null
@@ -817,6 +819,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
           image_url?: string | null
           image_url_2?: string | null

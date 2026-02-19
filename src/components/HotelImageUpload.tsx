@@ -116,6 +116,15 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       if (data?.success) {
         const hotelImgs = data.hotelImages || [];
         const golfImgs = data.golfImages || [];
+        
+        // Auto-save hotel description if found
+        if (data.hotelDescription && hotelId) {
+          await supabase
+            .from("hotel_templates")
+            .update({ description: data.hotelDescription } as any)
+            .eq("id", hotelId);
+        }
+        
         if (hotelImgs.length === 0 && golfImgs.length === 0) {
           toast.info("Nepodařilo se najít žádné fotky na oficiálních stránkách");
         } else {
