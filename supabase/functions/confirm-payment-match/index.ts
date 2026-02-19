@@ -111,6 +111,24 @@ serve(async (req) => {
           }
         }
       }
+
+      // Update deal status to "confirmed" when first payment arrives
+      const { data: currentDeal } = await serviceClient
+        .from('deals')
+        .select('status')
+        .eq('id', contract.deal_id)
+        .single();
+
+      if (currentDeal && (currentDeal.status === 'inquiry' || currentDeal.status === 'quote')) {
+        const { error: statusError } = await serviceClient
+          .from('deals')
+          .update({ status: 'confirmed' })
+          .eq('id', contract.deal_id);
+
+        if (statusError) {
+          console.error("Deal status update error:", statusError);
+        }
+      }
     }
 
     return new Response(JSON.stringify({
