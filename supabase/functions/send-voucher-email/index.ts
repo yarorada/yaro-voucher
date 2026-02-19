@@ -307,6 +307,45 @@ const handler = async (req: Request): Promise<Response> => {
     const allSuccessful = emailResults.every((r) => r.success);
     const recipients = emailResults.map((r) => r.recipient);
 
+    // If send was successful and voucher belongs to a deal, check if all deal vouchers are now sent
+    if (allSuccessful && voucher.deal_id) {
+      try {
+        // Mark this voucher as sent
+        await supabase
+          .from('vouchers')
+          .update({ sent_at: new Date().toISOString() })
+          .eq('id', voucherId)
+          .is('sent_at', null);
+
+        // Check if ALL vouchers for this deal now have sent_at
+        const { data: unsentVouchers } = await supabase
+          .from('vouchers')
+          .select('id')
+          .eq('deal_id', voucher.deal_id)
+          .is('sent_at', null)
+          .neq('id', voucherId);
+
+        if (!unsentVouchers || unsentVouchers.length === 0) {
+          // All vouchers sent — mark deal as dispatched
+          const { data: deal } = await supabase
+            .from('deals')
+            .select('status')
+            .eq('id', voucher.deal_id)
+            .single();
+
+          if (deal && deal.status !== 'completed' && deal.status !== 'cancelled') {
+            await supabase
+              .from('deals')
+              .update({ status: 'dispatched' })
+              .eq('id', voucher.deal_id);
+            console.log('Deal', voucher.deal_id, 'marked as dispatched — all vouchers sent');
+          }
+        }
+      } catch (e) {
+        console.error('Error checking deal dispatch status:', e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: allSuccessful,
