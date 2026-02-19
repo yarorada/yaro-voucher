@@ -45,6 +45,7 @@ import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DealBulkTravelerImport } from "@/components/DealBulkTravelerImport";
 import { DealTeeTimesEditor } from "@/components/DealTeeTimesEditor";
+import { ShareOfferButton } from "@/components/ShareOfferButton";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -457,6 +458,7 @@ const DealDetail = () => {
   const [discountNote, setDiscountNote] = useState("");
   const [adjustmentNote, setAdjustmentNote] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
 
   // Track loaded deal state for auto-save change detection
@@ -577,6 +579,7 @@ const DealDetail = () => {
       setDiscountNote(data.discount_note || "");
       setAdjustmentNote(data.adjustment_note || "");
       setDealName(data.name || "");
+      setShareToken((data as any).share_token || null);
       
       // Store initial state for auto-save change detection
       loadedDealRef.current = {
@@ -1717,6 +1720,11 @@ const DealDetail = () => {
               <FileSignature className="h-4 w-4" />
               <span className="hidden sm:inline">Vytvořit smlouvu</span>
             </Button>
+            <ShareOfferButton
+              dealId={deal.id}
+              shareToken={shareToken}
+              onTokenGenerated={setShareToken}
+            />
             <Button
               variant="outline"
               size="sm"
