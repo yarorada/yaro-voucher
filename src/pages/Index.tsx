@@ -1,6 +1,7 @@
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
 import { RecentDealsCard } from "@/components/dashboard/RecentDealsCard";
 import { RecentVouchersCard } from "@/components/dashboard/RecentVouchersCard";
 import { RecentContractsCard } from "@/components/dashboard/RecentContractsCard";
@@ -23,12 +24,12 @@ const Index = () => {
 
         {/* Main dashboard grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Tasks card - spans full width on mobile, left column on desktop */}
           <TasksCard />
-          
-          {/* Stats card */}
           <StatsCard />
         </div>
+
+        {/* Unpaid payments */}
+        <OverduePaymentsCard />
 
         {/* Recent items grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
