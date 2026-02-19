@@ -65,6 +65,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editSelectedDate, setEditSelectedDate] = useState<Date | undefined>(undefined);
+  const [editPaidDate, setEditPaidDate] = useState<Date | undefined>(undefined);
   const [editFormData, setEditFormData] = useState({
     payment_type: "deposit",
     amount: "",
@@ -142,6 +143,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
       notes: payment.notes || "",
     });
     setEditSelectedDate(new Date(payment.due_date));
+    setEditPaidDate(payment.paid_at ? new Date(payment.paid_at) : undefined);
     setEditDialogOpen(true);
   };
 
@@ -160,6 +162,8 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
           amount: parseFloat(editFormData.amount),
           due_date: format(editSelectedDate, "yyyy-MM-dd"),
           notes: editFormData.notes || null,
+          paid: !!editPaidDate,
+          paid_at: editPaidDate ? editPaidDate.toISOString() : null,
         })
         .eq("id", editingPayment.id);
 
@@ -553,6 +557,37 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>Zaplaceno dne</Label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("flex-1 justify-start text-left font-normal", !editPaidDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editPaidDate ? format(editPaidDate, "d.M.yyyy", { locale: cs }) : "Nezaplaceno"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editPaidDate}
+                      onSelect={setEditPaidDate}
+                      initialFocus
+                      locale={cs}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                {editPaidDate && (
+                  <Button variant="ghost" size="sm" onClick={() => setEditPaidDate(undefined)} className="text-destructive">
+                    ✕
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Poznámka</Label>
