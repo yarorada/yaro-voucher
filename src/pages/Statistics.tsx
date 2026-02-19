@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { StatsSummaryCards } from "@/components/statistics/StatsSummaryCards";
 import { StatsTimeChart } from "@/components/statistics/StatsTimeChart";
 import { StatsCountryChart } from "@/components/statistics/StatsCountryChart";
@@ -39,6 +41,12 @@ interface DealProfitability {
   status: string | null;
 }
 
+interface FlightCostPerDeal {
+  deal_id: string;
+  flightRevenue: number;
+  flightCost: number;
+}
+
 export interface StatsData {
   year: number;
   quarter?: number;
@@ -55,10 +63,12 @@ const Statistics = () => {
   const [loading, setLoading] = useState(true);
   const [deals, setDeals] = useState<DealWithDetails[]>([]);
   const [profitability, setProfitability] = useState<DealProfitability[]>([]);
+  const [flightCosts, setFlightCosts] = useState<FlightCostPerDeal[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [periodType, setPeriodType] = useState<PeriodType>("quarter");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [excludeFlights, setExcludeFlights] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -98,8 +108,31 @@ const Statistics = () => {
 
       if (profitError) throw profitError;
 
+      // Fetch flight services for exclude-flights toggle
+      const { data: flightData, error: flightError } = await supabase
+        .from("deal_services")
+        .select("deal_id, price, cost_price")
+        .eq("service_type", "flight");
+
+      if (flightError) throw flightError;
+
+      // Aggregate flight costs per deal
+      const flightMap = new Map<string, { revenue: number; cost: number }>();
+      (flightData || []).forEach((f) => {
+        const existing = flightMap.get(f.deal_id) || { revenue: 0, cost: 0 };
+        existing.revenue += f.price || 0;
+        existing.cost += f.cost_price || 0;
+        flightMap.set(f.deal_id, existing);
+      });
+      const flightCostsArr: FlightCostPerDeal[] = Array.from(flightMap.entries()).map(([deal_id, v]) => ({
+        deal_id,
+        flightRevenue: v.revenue,
+        flightCost: v.cost,
+      }));
+
       setDeals((dealsData as unknown as DealWithDetails[]) || []);
       setProfitability(profitData || []);
+      setFlightCosts(flightCostsArr);
 
       // Extract available years
       const years = new Set<number>();
@@ -159,9 +192,19 @@ const Statistics = () => {
 
       // Find profitability data for this deal
       const profitData = profitability.find((p) => p.deal_id === deal.id);
-      const revenue = profitData?.revenue || deal.total_price || 0;
-      const costs = profitData?.total_costs || 0;
-      const profit = profitData?.profit || revenue - costs;
+      let revenue = profitData?.revenue || deal.total_price || 0;
+      let costs = profitData?.total_costs || 0;
+
+      // Subtract flight costs if toggle is on
+      if (excludeFlights) {
+        const fc = flightCosts.find((f) => f.deal_id === deal.id);
+        if (fc) {
+          revenue -= fc.flightRevenue;
+          costs -= fc.flightCost;
+        }
+      }
+
+      const profit = revenue - costs;
 
       let key: string;
       let entry: Partial<StatsData>;
@@ -195,7 +238,7 @@ const Statistics = () => {
     });
 
     return Array.from(groupedData.values());
-  }, [filteredData, profitability, periodType]);
+  }, [filteredData, profitability, periodType, excludeFlights, flightCosts]);
 
   const summaryStats = useMemo(() => {
     const totalRevenue = statsData.reduce((sum, d) => sum + d.revenue, 0);
@@ -220,9 +263,15 @@ const Statistics = () => {
 
       prevYearDeals.forEach((deal) => {
         const profitData = profitability.find((p) => p.deal_id === deal.id);
-        prevYearStats.revenue += profitData?.revenue || deal.total_price || 0;
-        prevYearStats.costs += profitData?.total_costs || 0;
-        prevYearStats.profit += profitData?.profit || (profitData?.revenue || deal.total_price || 0) - (profitData?.total_costs || 0);
+        let rev = profitData?.revenue || deal.total_price || 0;
+        let cost = profitData?.total_costs || 0;
+        if (excludeFlights) {
+          const fc = flightCosts.find((f) => f.deal_id === deal.id);
+          if (fc) { rev -= fc.flightRevenue; cost -= fc.flightCost; }
+        }
+        prevYearStats.revenue += rev;
+        prevYearStats.costs += cost;
+        prevYearStats.profit += rev - cost;
       });
     }
 
@@ -245,7 +294,7 @@ const Statistics = () => {
       costsChange,
       profitChange,
     };
-  }, [statsData, deals, profitability, selectedYear, statusFilter]);
+  }, [statsData, deals, profitability, selectedYear, statusFilter, excludeFlights, flightCosts]);
 
   if (loading) {
     return (
@@ -296,6 +345,17 @@ const Statistics = () => {
               <SelectItem value="completed">Dokončené</SelectItem>
             </SelectContent>
           </Select>
+
+          <div className="flex items-center gap-2 border rounded-md px-3 py-1.5 h-9">
+            <Switch
+              id="exclude-flights"
+              checked={excludeFlights}
+              onCheckedChange={setExcludeFlights}
+            />
+            <Label htmlFor="exclude-flights" className="text-sm cursor-pointer whitespace-nowrap">
+              Bez letenek
+            </Label>
+          </div>
         </div>
       </div>
 
