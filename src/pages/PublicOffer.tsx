@@ -251,14 +251,14 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
 
       {/* Small images */}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 px-1 pt-1">
+        <div className="grid grid-cols-2 gap-px">
           {images?.image_url_2 && (
-            <div className="aspect-[16/10] overflow-hidden rounded-lg">
+            <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
             </div>
           )}
           {images?.image_url_3 && (
-            <div className="aspect-[16/10] overflow-hidden rounded-lg">
+            <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_3} alt="Golf / Pláž" className="w-full h-full object-cover" />
             </div>
           )}
@@ -351,14 +351,14 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         </div>
       )}
       {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 px-1 pt-1">
+        <div className="grid grid-cols-2 gap-px">
           {images?.image_url_2 && (
-            <div className="aspect-[16/10] overflow-hidden rounded-lg">
+            <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
             </div>
           )}
           {images?.image_url_3 && (
-            <div className="aspect-[16/10] overflow-hidden rounded-lg">
+            <div className="aspect-[16/10] overflow-hidden">
               <img src={images.image_url_3} alt="" className="w-full h-full object-cover" />
             </div>
           )}
