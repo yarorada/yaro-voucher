@@ -183,6 +183,47 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Translate description to Czech using Lovable AI
+    if (hotelDescription) {
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          console.log("Translating hotel description to Czech...");
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-lite",
+              messages: [
+                {
+                  role: "system",
+                  content: "Jsi překladatel. Přelož následující popis hotelu do češtiny. Vrať pouze přeložený text, nic jiného. Zachovej význam a styl původního textu.",
+                },
+                { role: "user", content: hotelDescription },
+              ],
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const translated = aiData.choices?.[0]?.message?.content?.trim();
+            if (translated) {
+              hotelDescription = translated;
+              console.log("Description translated to Czech successfully");
+            }
+          } else {
+            console.error("AI translation failed:", aiResponse.status);
+          }
+        }
+      } catch (translateError) {
+        console.error("Translation error:", translateError);
+        // Keep original description if translation fails
+      }
+    }
+
     console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images, desc: ${hotelDescription.length} chars`);
 
     return new Response(
