@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 interface Task {
   id: string;
   title: string;
+  description: string | null;
   due_date: string;
   priority: string;
   completed: boolean;
@@ -46,6 +48,7 @@ interface EditingState {
   id: string;
   title: string;
   priority: string;
+  description: string;
 }
 
 const TaskRow = ({
@@ -69,7 +72,7 @@ const TaskRow = ({
   onStartEdit: (task: Task) => void;
   onCancelEdit: () => void;
   onSaveEdit: () => void;
-  onEditChange: (field: "title" | "priority", value: string) => void;
+  onEditChange: (field: "title" | "priority" | "description", value: string) => void;
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
 }) => {
@@ -87,39 +90,48 @@ const TaskRow = ({
       />
       <div className="flex-1 min-w-0">
         {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={editing.title}
-              onChange={(e) => onEditChange("title", e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onSaveEdit();
-                if (e.key === "Escape") onCancelEdit();
-              }}
-              className="h-7 text-sm"
-              autoFocus
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={editing.title}
+                onChange={(e) => onEditChange("title", e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) onSaveEdit();
+                  if (e.key === "Escape") onCancelEdit();
+                }}
+                className="h-7 text-sm"
+                autoFocus
+              />
+              <Select
+                value={editing.priority}
+                onValueChange={(v) => onEditChange("priority", v)}
+              >
+                <SelectTrigger className="w-24 h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Nízká</SelectItem>
+                  <SelectItem value="medium">Střední</SelectItem>
+                  <SelectItem value="high">Vysoká</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
+                <Check className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCancelEdit}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <Textarea
+              value={editing.description}
+              onChange={(e) => onEditChange("description", e.target.value)}
+              placeholder="Poznámka..."
+              className="text-xs min-h-[40px] resize-none"
+              rows={2}
             />
-            <Select
-              value={editing.priority}
-              onValueChange={(v) => onEditChange("priority", v)}
-            >
-              <SelectTrigger className="w-24 h-7 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Nízká</SelectItem>
-                <SelectItem value="medium">Střední</SelectItem>
-                <SelectItem value="high">Vysoká</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
-              <Check className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onCancelEdit}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </div>
         ) : (
-          <>
+          <div>
             <span
               className={`text-sm ${
                 task.completed ? "line-through text-muted-foreground" : ""
@@ -132,7 +144,12 @@ const TaskRow = ({
                 ({profilesMap[task.user_id] || "?"})
               </span>
             )}
-          </>
+            {task.description && (
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                {task.description}
+              </p>
+            )}
+          </div>
         )}
       </div>
       {!isEditing && (
@@ -294,10 +311,10 @@ export const TasksCard = () => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, title, priority }: { id: string; title: string; priority: string }) => {
+    mutationFn: async ({ id, title, priority, description }: { id: string; title: string; priority: string; description?: string }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ title, priority })
+        .update({ title, priority, description: description ?? null })
         .eq("id", id);
       if (error) throw error;
     },
@@ -327,19 +344,19 @@ export const TasksCard = () => {
   };
 
   const handleStartEdit = (task: Task) => {
-    setEditing({ id: task.id, title: task.title, priority: task.priority });
+    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "" });
   };
 
   const handleSaveEdit = () => {
     if (!editing || !editing.title.trim()) return;
-    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority });
+    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description });
   };
 
-  const handleEditChange = (field: "title" | "priority", value: string) => {
+  const handleEditChange = (field: "title" | "priority" | "description", value: string) => {
     if (!editing) return;
     if (field === "priority") {
       // Auto-save priority change immediately
-      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value });
+      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description });
     } else {
       setEditing({ ...editing, [field]: value });
     }
