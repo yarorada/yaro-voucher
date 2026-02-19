@@ -350,7 +350,16 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                     imageUrl2={editingHotel.image_url_2 || null}
                     imageUrl3={editingHotel.image_url_3 || null}
                     description={editingHotel.description || null}
-                    onUpdate={() => fetchHotels()}
+                    onUpdate={async () => {
+                      await fetchHotels();
+                      // Refresh editingHotel from DB so image previews update immediately
+                      const { data } = await supabase
+                        .from("hotel_templates")
+                        .select("*")
+                        .eq("id", editingHotel.id)
+                        .single();
+                      if (data) setEditingHotel(data);
+                    }}
                   />
                 </div>
               </div>
