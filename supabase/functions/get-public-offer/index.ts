@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         id, variant_name, destination_id, start_date, end_date, total_price, is_selected, notes,
         destination:destinations(id, name, country:countries(id, name, iso_code)),
         deal_variant_services(
-          id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, details, order_index
+          id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, details, order_index
         )
       `)
       .eq('deal_id', deal.id)
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     // Fetch direct services (non-variant)
     const { data: directServices } = await supabase
       .from('deal_services')
-      .select('id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, details, order_index')
+      .select('id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, details, order_index')
       .eq('deal_id', deal.id)
       .order('order_index', { ascending: true });
 

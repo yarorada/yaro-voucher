@@ -19,6 +19,13 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 }).format(price);
 }
 
+function formatPriceWithCurrency(price: number, currency?: string): string {
+  const formatted = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 }).format(price);
+  if (!currency || currency === 'CZK') return `${formatted} CZK`;
+  const symbols: Record<string, string> = { EUR: '€', USD: '$', GBP: '£' };
+  return `${formatted} ${symbols[currency] || currency}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -152,7 +159,7 @@ Deno.serve(async (req) => {
       .select(`
         id, variant_name, start_date, end_date, total_price, is_selected, notes,
         destination:destinations(name, country:countries(name)),
-        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, order_index, details)
+        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, order_index, details)
       `)
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
@@ -160,7 +167,7 @@ Deno.serve(async (req) => {
     // Fetch direct services (non-variant)
     const { data: directServices } = await supabase
       .from('deal_services')
-      .select('id, service_type, service_name, description, start_date, end_date, price, person_count, quantity, order_index, details')
+      .select('id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, order_index, details')
       .eq('deal_id', dealId)
       .order('order_index', { ascending: true });
 
@@ -321,13 +328,14 @@ Deno.serve(async (req) => {
     function renderPerPersonHtml(services: any[]): string {
       const lines = computePerPersonLines(services);
       if (lines.length === 0) return '';
+      const cur = services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
       return `
         <div style="border-top:1px solid #e2e8f0; padding-top:12px; margin-top:4px;">
           <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Cena na osobu</div>
           ${lines.map(l => `
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-bottom:4px;"><tr>
               <td style="font-size:13px; color:#475569;">${escapeHtml(l.label)} <span style="color:#94a3b8;">(${l.personCount} os.)</span></td>
-              <td style="font-size:13px; font-weight:600; color:#1e293b; text-align:right; white-space:nowrap;">${formatPrice(l.pricePerPerson)} CZK</td>
+              <td style="font-size:13px; font-weight:600; color:#1e293b; text-align:right; white-space:nowrap;">${formatPriceWithCurrency(l.pricePerPerson, cur)}</td>
             </tr></table>
           `).join('')}
         </div>`;
@@ -340,6 +348,7 @@ Deno.serve(async (req) => {
       const images = hotelSvc ? hotelData[hotelSvc.service_name] : null;
       const vDest = v.destination;
       const vPrice = v.total_price || vServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0);
+      const vCurrency = vServices.find((s: any) => s.price_currency)?.price_currency || 'CZK';
 
       let imagesHtml = '';
       if (images?.image_url) {
@@ -378,7 +387,7 @@ Deno.serve(async (req) => {
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr>
                   <td style="font-size:14px; color:#64748b;">Celková cena</td>
-                  <td style="font-size:22px; font-weight:700; color:#1e293b; text-align:right;">${formatPrice(vPrice)} CZK</td>
+                  <td style="font-size:22px; font-weight:700; color:#1e293b; text-align:right;">${formatPriceWithCurrency(vPrice, vCurrency)}</td>
                 </tr></table>
               </div>` : ''}
           </div>
@@ -421,7 +430,7 @@ Deno.serve(async (req) => {
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr>
                   <td style="font-size:14px; color:#64748b;">Celková cena</td>
-                  <td style="font-size:22px; font-weight:700; color:#1e293b; text-align:right;">${formatPrice(deal.total_price)} CZK</td>
+                  <td style="font-size:22px; font-weight:700; color:#1e293b; text-align:right;">${formatPriceWithCurrency(deal.total_price, sortedDirectServices.find((s: any) => s.price_currency)?.price_currency || 'CZK')}</td>
                 </tr></table>
               </div>` : ''}
             ${renderPerPersonHtml(sortedDirectServices)}
