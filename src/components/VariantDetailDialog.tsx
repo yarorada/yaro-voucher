@@ -318,7 +318,7 @@ export const VariantDetailDialog = ({
     try {
       const { data: svcData } = await supabase
         .from("deal_variant_services")
-        .select("start_date, end_date")
+        .select("start_date, end_date, price, cost_price, quantity")
         .eq("variant_id", variantId);
 
       if (!svcData || svcData.length === 0) return;
@@ -327,11 +327,13 @@ export const VariantDetailDialog = ({
       const endDates = svcData.map(s => s.end_date).filter(Boolean).sort();
       const newStart = startDates[0] || null;
       const newEnd = endDates[endDates.length - 1] || null;
+      const totalPrice = svcData.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
 
-      // Update variant dates in DB
+      // Update variant dates and total_price in DB
       await supabase.from("deal_variants").update({
         start_date: newStart,
         end_date: newEnd,
+        total_price: totalPrice,
       }).eq("id", variantId);
 
       // Update local state
@@ -340,9 +342,10 @@ export const VariantDetailDialog = ({
 
       // If this variant is selected, propagate to deal
       if (variant?.is_selected) {
-        const updateData: Record<string, string | null> = {};
+        const updateData: Record<string, any> = {};
         if (newStart) updateData.start_date = newStart;
         if (newEnd) updateData.end_date = newEnd;
+        if (totalPrice > 0) updateData.total_price = totalPrice;
         if (Object.keys(updateData).length > 0) {
           await supabase.from("deals").update(updateData).eq("id", dealId);
         }

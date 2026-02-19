@@ -124,8 +124,8 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       // Copy services to main deal
       await copyServicesToMain(variantId);
 
-      // Update deal dates from variant services
-      await updateDealDatesFromVariant(variantId);
+      // Update deal dates, destination, and prices from variant
+      await updateDealFromVariant(variantId);
 
       // Auto-create payment schedule (50% deposit + 50% final)
       await createPaymentScheduleFromVariant(variantId);
@@ -147,26 +147,30 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     }
   };
 
-  const updateDealDatesFromVariant = async (variantId: string) => {
-    // Fetch variant info (destination) and its services (dates)
+  const updateDealFromVariant = async (variantId: string) => {
+    // Fetch variant info (destination) and its services (dates, prices)
     const [{ data: variant }, { data: services }] = await Promise.all([
       supabase.from("deal_variants").select("destination_id").eq("id", variantId).single(),
-      supabase.from("deal_variant_services").select("start_date, end_date").eq("variant_id", variantId),
+      supabase.from("deal_variant_services").select("start_date, end_date, price, cost_price, quantity").eq("variant_id", variantId),
     ]);
 
-    const updateData: Record<string, string | null> = {};
+    const updateData: Record<string, any> = {};
 
     // Propagate destination
     if (variant?.destination_id) {
       updateData.destination_id = variant.destination_id;
     }
 
-    // Propagate earliest start_date and latest end_date
     if (services && services.length > 0) {
+      // Propagate earliest start_date and latest end_date
       const startDates = services.map(s => s.start_date).filter(Boolean).sort();
       const endDates = services.map(s => s.end_date).filter(Boolean).sort();
       if (startDates[0]) updateData.start_date = startDates[0];
       if (endDates[endDates.length - 1]) updateData.end_date = endDates[endDates.length - 1];
+
+      // Propagate total_price
+      const totalPrice = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+      if (totalPrice > 0) updateData.total_price = totalPrice;
     }
 
     if (Object.keys(updateData).length > 0) {
@@ -186,13 +190,11 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     const totalPrice = variantServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
     if (totalPrice <= 0) return;
 
-    // Check if payments already exist for this deal
-    const { data: existingPayments } = await supabase
+    // Delete existing payments so we can recreate them for the new variant
+    await supabase
       .from("deal_payments")
-      .select("id")
+      .delete()
       .eq("deal_id", dealId);
-
-    if (existingPayments && existingPayments.length > 0) return; // Don't overwrite existing payments
 
     // Get deal start date for due dates
     const { data: deal } = await supabase
