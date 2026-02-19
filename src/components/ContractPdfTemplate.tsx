@@ -43,6 +43,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
   ({ contract, serviceAssignments = [] }, ref) => {
     const deal = contract.deal;
     const services = deal?.services || [];
+    const currency = deal?.currency || (contract as any).currency || "CZK";
 
     // Sort travelers: main client first
     const sortedTravelers = useMemo(() => {
@@ -247,7 +248,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {deal?.destination?.name}{deal?.destination?.country?.name ? `, ${deal.destination.country.name}` : ''}
                 </td>
                 <td style={{ ...labelStyle, width: '16%' }}>Celková cena:</td>
-                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(deal?.total_price)}</td>
+                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(deal?.total_price, true, currency)}</td>
               </tr>
               {deal?.start_date && deal?.end_date && (
                 <tr>
@@ -362,13 +363,13 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', color: '#0066cc' }}>
                           {travelerNums || <span style={{ fontSize: '7px', color: '#888' }}>vš.</span>}
                         </td>
-                        <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1))}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1), true, currency)}</td>
                       </tr>
                     );
                   })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={4} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
-                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price)}</td>
+                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price, true, currency)}</td>
                 </tr>
               </tbody>
             </table>
@@ -409,7 +410,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         {(() => { const d = parseDateSafe(payment.due_date); return d ? format(d, "d. M. yyyy") : payment.due_date; })()}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'middle' }}>
-                        {formatPrice(payment.amount)}
+                        {formatPrice(payment.amount, true, currency)}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle', color: payment.paid ? '#16a34a' : '#666' }}>
                         {payment.paid ? '✓ Zaplaceno' : 'Nezaplaceno'}
@@ -420,7 +421,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={2} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem k úhradě:</td>
                   <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>
-                    {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0))}
+                    {formatPrice(payments.reduce((sum, p) => sum + (p.amount || 0), 0), true, currency)}
                   </td>
                   <td style={{ padding: '6px 6px', textAlign: 'center', fontSize: '7px', color: '#666', verticalAlign: 'middle' }}>
                     {payments.filter(p => p.paid).length}/{payments.length} zaplaceno
@@ -466,7 +467,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {typeLabels[p.payment_type] || p.payment_type}
                         </p>
                         <p style={{ fontSize: '7px', fontWeight: 'bold', color: '#0066cc', margin: '0', textAlign: 'center' }}>
-                          {formatPrice(p.amount)}
+                          {formatPrice(p.amount, true, currency)}
                         </p>
                       </div>
                     );

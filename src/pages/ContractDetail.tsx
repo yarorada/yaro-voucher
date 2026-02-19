@@ -439,14 +439,14 @@ const ContractDetail = () => {
                               {travelerNums || <span className="text-xs text-muted-foreground">všichni</span>}
                             </td>
                             <td className="py-2 text-right font-medium text-foreground">
-                              {formatPrice((service.price || 0) * (service.person_count || 1))}
+                              {formatPrice((service.price || 0) * (service.person_count || 1), true, contract.deal?.currency || (contract as any).currency || "CZK")}
                             </td>
                           </tr>
                         );
                       })}
                     <tr className="bg-muted/50">
                       <td colSpan={4} className="py-2 text-right font-bold text-foreground">Celkem:</td>
-                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price)}</td>
+                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price, true, contract.deal?.currency || (contract as any).currency || "CZK")}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -461,6 +461,7 @@ const ContractDetail = () => {
             departureDate={contract.deal?.start_date}
             contractNumber={contract.contract_number}
             bankAccount={(contract as any).agency_bank_account}
+            currency={contract.deal?.currency || (contract as any).currency || "CZK"}
           />
 
           {/* Přiřazení cestujících ke službám */}
