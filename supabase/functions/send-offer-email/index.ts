@@ -335,6 +335,13 @@ Deno.serve(async (req) => {
 
       ${directServicesHtml}
 
+      ${deal.total_price && deal.total_price > 0 ? `
+        <div style="margin-bottom:24px; padding:20px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; text-align:right;">
+          <span style="font-size:15px; color:#475569;">Celková cena zájezdu:</span>
+          <span style="font-size:26px; font-weight:700; color:#166534; margin-left:12px;">${formatPrice(deal.total_price)} CZK</span>
+        </div>
+      ` : ''}
+
       <div style="text-align:center; margin-top:24px;">
         <a href="${escapeHtml(publicUrl)}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 32px; border-radius:8px; font-size:15px; font-weight:600;">
           Zobrazit kompletní nabídku online
