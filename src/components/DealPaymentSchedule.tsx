@@ -143,6 +143,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
     }
 
     try {
+      // Save the edited payment
       const { error } = await supabase
         .from("deal_payments")
         .update({
@@ -154,7 +155,29 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
         .eq("id", editingPayment.id);
 
       if (error) throw error;
-      toast({ title: "Uloženo", description: "Platba byla upravena" });
+
+      // Recalculate the final payment based on updated deposits
+      const editedAmount = parseFloat(editFormData.amount);
+      const otherDeposits = payments
+        .filter(p => p.id !== editingPayment.id && p.payment_type !== "final")
+        .reduce((sum, p) => sum + p.amount, 0);
+      const currentEditedIsDeposit = editFormData.payment_type !== "final";
+      const allDepositsTotal = currentEditedIsDeposit
+        ? otherDeposits + editedAmount
+        : payments.filter(p => p.payment_type !== "final").reduce((sum, p) => sum + p.amount, 0);
+      
+      const newFinalAmount = Math.max(0, totalPrice - allDepositsTotal);
+      
+      // Update the final payment if it exists
+      const finalPayment = payments.find(p => p.payment_type === "final" && p.id !== editingPayment.id);
+      if (finalPayment) {
+        await supabase
+          .from("deal_payments")
+          .update({ amount: newFinalAmount })
+          .eq("id", finalPayment.id);
+      }
+
+      toast({ title: "Uloženo", description: "Platba byla upravena a doplatek přepočítán" });
       setEditDialogOpen(false);
       setEditingPayment(null);
       fetchPayments();
