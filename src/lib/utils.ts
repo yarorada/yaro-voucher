@@ -17,20 +17,22 @@ export function translateTitleToEnglish(title: string | null): string {
   return title;
 }
 
-export function formatPrice(price: number | null | undefined, showCurrency = true): string {
+export function formatPrice(price: number | null | undefined, showCurrency = true, currencyCode = "CZK"): string {
   if (price === null || price === undefined) return "-";
   const formatted = new Intl.NumberFormat("cs-CZ", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
-  return showCurrency ? `${formatted} Kč` : formatted;
+  if (!showCurrency) return formatted;
+  const symbols: Record<string, string> = { CZK: "Kč", EUR: "€", USD: "$", GBP: "£" };
+  return `${formatted} ${symbols[currencyCode] || currencyCode}`;
 }
 
-export function formatPriceCurrency(price: number | null | undefined): string {
+export function formatPriceCurrency(price: number | null | undefined, currencyCode = "CZK"): string {
   if (price === null || price === undefined) return "-";
   return new Intl.NumberFormat("cs-CZ", {
     style: "currency",
-    currency: "CZK",
+    currency: currencyCode,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);

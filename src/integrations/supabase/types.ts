@@ -359,6 +359,7 @@ export type Database = {
           order_index: number | null
           person_count: number | null
           price: number | null
+          price_currency: string | null
           quantity: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -379,6 +380,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          price_currency?: string | null
           quantity?: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -399,6 +401,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          price_currency?: string | null
           quantity?: number
           service_name?: string
           service_type?: Database["public"]["Enums"]["service_type"]
@@ -489,6 +492,7 @@ export type Database = {
           order_index: number | null
           person_count: number | null
           price: number | null
+          price_currency: string | null
           quantity: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -509,6 +513,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          price_currency?: string | null
           quantity?: number
           service_name: string
           service_type: Database["public"]["Enums"]["service_type"]
@@ -529,6 +534,7 @@ export type Database = {
           order_index?: number | null
           person_count?: number | null
           price?: number | null
+          price_currency?: string | null
           quantity?: number
           service_name?: string
           service_type?: Database["public"]["Enums"]["service_type"]
@@ -626,6 +632,7 @@ export type Database = {
           adjustment_amount: number | null
           adjustment_note: string | null
           created_at: string
+          currency: string | null
           deal_number: string
           deposit_amount: number | null
           deposit_paid: boolean | null
@@ -648,6 +655,7 @@ export type Database = {
           adjustment_amount?: number | null
           adjustment_note?: string | null
           created_at?: string
+          currency?: string | null
           deal_number: string
           deposit_amount?: number | null
           deposit_paid?: boolean | null
@@ -670,6 +678,7 @@ export type Database = {
           adjustment_amount?: number | null
           adjustment_note?: string | null
           created_at?: string
+          currency?: string | null
           deal_number?: string
           deposit_amount?: number | null
           deposit_paid?: boolean | null

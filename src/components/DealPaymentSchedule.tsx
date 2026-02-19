@@ -54,9 +54,10 @@ interface DealPaymentScheduleProps {
   dealId: string;
   totalPrice?: number;
   departureDate?: string;
+  currency?: string;
 }
 
-export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: DealPaymentScheduleProps) {
+export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, currency = "CZK" }: DealPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
