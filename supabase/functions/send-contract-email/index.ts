@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { contractId, pdfPath, ccSupplierEmail, customEmailText }: SendContractEmailRequest = await req.json();
+    const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
 
     // Validate contractId format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -164,11 +164,17 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
     const subject = `Cestovní smlouva ${contract.contract_number} - YARO Travel`;
 
+    // Build signing link
+    const signToken = (contract as any).sign_token;
+    const baseUrl = siteUrl || "https://yarogolf-crm.lovable.app";
+    const signLink = signToken ? `${baseUrl}/sign-contract?token=${signToken}` : null;
+
     // Send to CLIENT (Czech) - use custom text if provided, otherwise use default
+    const signLinkText = signLink ? `\n\n📝 Smlouvu můžete podepsat online zde:\n${signLink}` : "";
     const signature = `\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
     const clientEmailText = customEmailText
-      ? customEmailText + signature
-      : buildClientEmailText(clientLastName, dateFrom, dateTo, destination);
+      ? customEmailText + signLinkText + signature
+      : buildClientEmailText(clientLastName, dateFrom, dateTo, destination) + signLinkText;
     console.log("Sending email to client:", clientEmail);
 
     const clientEmailPayload: any = {

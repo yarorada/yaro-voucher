@@ -25,6 +25,7 @@ import ContractDetail from "./pages/ContractDetail";
 import CreateContract from "./pages/CreateContract";
 import Statistics from "./pages/Statistics";
 import PublicOffer from "./pages/PublicOffer";
+import SignContract from "./pages/SignContract";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import MfaSetup from "./pages/MfaSetup";
@@ -224,6 +225,7 @@ const App = () => (
             }
           />
           <Route path="/offer/:token" element={<PublicOffer />} />
+          <Route path="/sign-contract" element={<SignContract />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

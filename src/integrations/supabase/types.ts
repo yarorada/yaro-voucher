@@ -1047,7 +1047,11 @@ export type Database = {
           id: string
           payment_schedule: Json | null
           sent_at: string | null
+          sign_token: string | null
+          signature_url: string | null
           signed_at: string | null
+          signed_ip: string | null
+          signed_user_agent: string | null
           status: Database["public"]["Enums"]["contract_status"]
           tee_times: Json | null
           terms: string | null
@@ -1071,7 +1075,11 @@ export type Database = {
           id?: string
           payment_schedule?: Json | null
           sent_at?: string | null
+          sign_token?: string | null
+          signature_url?: string | null
           signed_at?: string | null
+          signed_ip?: string | null
+          signed_user_agent?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           tee_times?: Json | null
           terms?: string | null
@@ -1095,7 +1103,11 @@ export type Database = {
           id?: string
           payment_schedule?: Json | null
           sent_at?: string | null
+          sign_token?: string | null
+          signature_url?: string | null
           signed_at?: string | null
+          signed_ip?: string | null
+          signed_user_agent?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           tee_times?: Json | null
           terms?: string | null
