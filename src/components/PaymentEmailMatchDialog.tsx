@@ -33,16 +33,11 @@ interface PaymentMatch {
   due_date: string;
   contract_number?: string;
   contract_id?: string;
-  deal_id?: string;
 }
 
 interface PaymentEmailMatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  context?: {
-    contract_id?: string;
-    deal_id?: string;
-  };
   onPaymentMatched: () => void;
 }
 
@@ -55,7 +50,6 @@ const paymentTypeLabels: Record<string, string> = {
 export function PaymentEmailMatchDialog({
   open,
   onOpenChange,
-  context,
   onPaymentMatched,
 }: PaymentEmailMatchDialogProps) {
   const { toast } = useToast();
@@ -82,7 +76,7 @@ export function PaymentEmailMatchDialog({
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("parse-payment-email", {
-        body: { emailText, context },
+        body: { emailText },
       });
 
       if (fnError) throw fnError;
@@ -118,9 +112,13 @@ export function PaymentEmailMatchDialog({
       if (fnError) throw fnError;
       if (data.error) throw new Error(data.error);
 
+      const description = data.deal_propagated
+        ? `${paymentTypeLabels[match.payment_type] || match.payment_type} ${formatPrice(match.amount)} byla označena jako zaplacená (včetně obchodního případu)`
+        : `${paymentTypeLabels[match.payment_type] || match.payment_type} ${formatPrice(match.amount)} byla označena jako zaplacená`;
+
       toast({
         title: "Platba spárována",
-        description: `${paymentTypeLabels[match.payment_type] || match.payment_type} ${formatPrice(match.amount)} byla označena jako zaplacená`,
+        description,
       });
 
       onPaymentMatched();
@@ -153,12 +151,11 @@ export function PaymentEmailMatchDialog({
             Spárovat platbu z emailu
           </DialogTitle>
           <DialogDescription>
-            Vložte text emailové notifikace z banky a systém automaticky najde odpovídající platbu.
+            Vložte text emailové notifikace z banky a systém automaticky najde odpovídající platbu ve smlouvách.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Email text input */}
           {!parsed && (
             <>
               <Textarea
@@ -185,7 +182,6 @@ export function PaymentEmailMatchDialog({
             </>
           )}
 
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
@@ -193,7 +189,6 @@ export function PaymentEmailMatchDialog({
             </div>
           )}
 
-          {/* Parsed data preview */}
           {parsed && (
             <div className="p-3 rounded-lg bg-muted/50 space-y-1.5 text-sm">
               <p className="font-semibold text-base">Rozpoznáno z emailu:</p>
@@ -222,7 +217,6 @@ export function PaymentEmailMatchDialog({
             </div>
           )}
 
-          {/* Matches */}
           {matches.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-semibold">
@@ -268,7 +262,6 @@ export function PaymentEmailMatchDialog({
             </div>
           )}
 
-          {/* Try again button */}
           {parsed && (
             <Button variant="outline" onClick={reset} className="w-full">
               Zkusit jiný email
