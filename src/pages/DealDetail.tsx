@@ -260,6 +260,7 @@ interface Deal {
   discount_note: string | null;
   adjustment_note: string | null;
   tee_times: any;
+  currency: string | null;
   destination?: {
     id: string;
     name: string;
@@ -2127,6 +2128,7 @@ const DealDetail = () => {
             dealId={deal.id} 
             totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
             departureDate={deal.start_date || undefined}
+            currency={deal.currency || "CZK"}
           />
         </div>
 

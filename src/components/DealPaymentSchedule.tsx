@@ -341,7 +341,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                           {payment.notes || getPaymentTypeLabel(payment.payment_type)}
                         </TableCell>
                         <TableCell className="text-sm font-semibold">
-                          {formatPrice(payment.amount)}
+                          {formatPrice(payment.amount, true, currency)}
                         </TableCell>
                         <TableCell className={cn("text-sm", isOverdue && "text-red-600 font-semibold")}>
                           {format(new Date(payment.due_date), "d.M.yyyy", { locale: cs })}
@@ -370,17 +370,17 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
               <div className="border-t pt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Celkem:</span>
-                  <span className="font-semibold">{formatPrice(totalPrice)}</span>
+                   <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Zbývá:</span>
                   <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
-                    {formatPrice(remainingPayment)}
-                  </span>
+                     {formatPrice(remainingPayment, true, currency)}
+                   </span>
                 </div>
                 <div className="flex justify-between text-green-600">
                   <span>Zaplaceno:</span>
-                  <span className="font-semibold">{formatPrice(paidAmount)}</span>
+                  <span className="font-semibold">{formatPrice(paidAmount, true, currency)}</span>
                 </div>
               </div>
             </>
@@ -398,7 +398,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
             <div className="bg-muted/50 p-3 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Celková cena:</span>
-                <span className="font-semibold">{formatPrice(totalPrice)}</span>
+                <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
               </div>
             </div>
 
@@ -498,16 +498,16 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
             <div className="border-t pt-3 space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Zálohy celkem:</span>
-                <span className="font-semibold">{formatPrice(scheduleDepositsTotal)}</span>
+                <span className="font-semibold">{formatPrice(scheduleDepositsTotal, true, currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Doplatek:</span>
-                <span className="font-semibold">{formatPrice(scheduleFinalAmount)}</span>
+                <span className="font-semibold">{formatPrice(scheduleFinalAmount, true, currency)}</span>
               </div>
               <div className="flex justify-between font-medium border-t pt-1">
                 <span>Celkem:</span>
                 <span className={cn("font-bold", scheduleTotal !== totalPrice && "text-orange-600")}>
-                  {formatPrice(scheduleTotal)}
+                  {formatPrice(scheduleTotal, true, currency)}
                 </span>
               </div>
             </div>
