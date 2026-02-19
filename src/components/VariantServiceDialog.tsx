@@ -525,32 +525,37 @@ export const VariantServiceDialog = ({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="persons">Počet osob</Label>
+          <div className="flex gap-4">
+            <div className="w-20">
+              <Label htmlFor="persons">Osoby</Label>
               <Input
                 id="persons"
-                type="number"
-                min="1"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={personCount}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  const val = e.target.value.replace(/\D/g, '') || '';
                   setPersonCount(val);
                   setQuantity(val);
                 }}
                 placeholder="1"
+                className="text-center"
               />
             </div>
-            <div>
+            <div className="w-20">
               <Label htmlFor="quantity">Počet</Label>
               <Input
                 id="quantity"
-                type="number"
-                min="1"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                onChange={(e) => setQuantity(e.target.value.replace(/\D/g, '') || '')}
+                className="text-center"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="price">Prodejní cena</Label>
               <div className="flex gap-2">
@@ -560,45 +565,44 @@ export const VariantServiceDialog = ({
                   step="0.01"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0.00"
+                  placeholder="0"
                   className="flex-1"
                 />
                 <CurrencySelect
                   value={priceCurrency}
                   onChange={setPriceCurrency}
-                  className="w-28"
+                  className="w-24"
                 />
               </div>
             </div>
-          </div>
-
-          <div>
-            <Label>Nákupní cena</Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                value={costPriceOriginal || costPrice}
-                onChange={(e) => {
-                  setCostPriceOriginal(e.target.value);
-                  if (costCurrency === "CZK") setCostPrice(e.target.value);
-                }}
-                placeholder="0"
-                className="flex-1"
-              />
-              <CurrencySelect
-                value={costCurrency}
-                onChange={(v) => {
-                  setCostCurrency(v);
-                  if (v === "CZK") setCostPrice(costPriceOriginal);
-                }}
-                className="w-28"
-              />
+            <div>
+              <Label>Nákupní cena</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={costPriceOriginal || costPrice}
+                  onChange={(e) => {
+                    setCostPriceOriginal(e.target.value);
+                    if (costCurrency === "CZK") setCostPrice(e.target.value);
+                  }}
+                  placeholder="0"
+                  className="flex-1"
+                />
+                <CurrencySelect
+                  value={costCurrency}
+                  onChange={(v) => {
+                    setCostCurrency(v);
+                    if (v === "CZK") setCostPrice(costPriceOriginal);
+                  }}
+                  className="w-24"
+                />
+              </div>
+              {costCurrency !== "CZK" && costPrice && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ≈ {formatPriceCurrency(parseFloat(costPrice))} (přepočteno)
+                </p>
+              )}
             </div>
-            {costCurrency !== "CZK" && costPrice && (
-              <p className="text-xs text-muted-foreground mt-1">
-                ≈ {formatPriceCurrency(parseFloat(costPrice))} (přepočteno)
-              </p>
-            )}
           </div>
 
           {price && quantity && (
