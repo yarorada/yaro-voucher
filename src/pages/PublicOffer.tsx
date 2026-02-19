@@ -162,12 +162,12 @@ export default function PublicOffer() {
           {deal.name && (
             <h1 className="text-3xl md:text-4xl font-bold text-slate-800">{deal.name}</h1>
           )}
-          {destination && (
+          {hasSelectedVariant && destination && (
             <p className="text-lg text-slate-500">
               {destination.name}, {destination.country?.name}
             </p>
           )}
-          {deal.start_date && deal.end_date && (
+          {hasSelectedVariant && deal.start_date && deal.end_date && (
             <p className="text-slate-400">
               {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
             </p>
