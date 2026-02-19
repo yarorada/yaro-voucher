@@ -168,25 +168,17 @@ export default function PublicOffer() {
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Deal header */}
-        <div className="text-center space-y-2">
-          {deal.name ? (
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
-              Nabídka pro {deal.name}
-            </h1>
-          ) : deal.lead_client_name ? (
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
-              Nabídka pro {deal.lead_client_name}
-            </h1>
-          ) : (
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">Nabídka</h1>
-          )}
+        <div className="text-center space-y-1">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+            Nabídka pro {deal.lead_client_name || deal.name || "klienta"}
+          </h1>
           {hasSelectedVariant && destination && (
-            <p className="text-lg text-slate-500">
-              {destination.name}, {destination.country?.name}
+            <p className="text-base text-slate-500">
+              {destination.country?.name} – {destination.name}
             </p>
           )}
-          {hasSelectedVariant && deal.start_date && deal.end_date && (
-            <p className="text-slate-400">
+          {deal.start_date && deal.end_date && (
+            <p className="text-base text-slate-400">
               {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
             </p>
           )}
