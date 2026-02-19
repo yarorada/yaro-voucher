@@ -337,7 +337,12 @@ export const TasksCard = () => {
 
   const handleEditChange = (field: "title" | "priority", value: string) => {
     if (!editing) return;
-    setEditing({ ...editing, [field]: value });
+    if (field === "priority") {
+      // Auto-save priority change immediately
+      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value });
+    } else {
+      setEditing({ ...editing, [field]: value });
+    }
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
