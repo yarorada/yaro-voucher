@@ -205,27 +205,54 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     const finalAmount = totalPrice - depositAmount;
 
     const now = new Date();
-    const depositDue = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
-    const finalDue = deal?.start_date
-      ? new Date(new Date(deal.start_date).getTime() - 30 * 24 * 60 * 60 * 1000) // 30 days before trip
-      : new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // fallback +60 days
+    const startDate = deal?.start_date ? new Date(deal.start_date + "T00:00:00") : null;
+    const daysUntilDeparture = startDate
+      ? Math.floor((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
 
-    const payments = [
-      {
-        deal_id: dealId,
-        payment_type: "deposit",
-        amount: depositAmount,
-        due_date: depositDue.toISOString().split("T")[0],
-        notes: "1. záloha",
-      },
-      {
-        deal_id: dealId,
-        payment_type: "final",
-        amount: finalAmount,
-        due_date: finalDue.toISOString().split("T")[0],
-        notes: "Doplatek",
-      },
-    ];
+    let payments;
+
+    if (daysUntilDeparture < 45) {
+      // Less than 45 days — single full payment (doplatek)
+      const dueDateStr = startDate
+        ? new Date(startDate.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+        : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      payments = [
+        {
+          deal_id: dealId,
+          payment_type: "final",
+          amount: totalPrice,
+          due_date: dueDateStr,
+          notes: "Doplatek (plná výše)",
+        },
+      ];
+    } else {
+      // 45+ days — 50% deposit + 50% final
+      const depositAmount = Math.round(totalPrice * 0.5);
+      const finalAmount = totalPrice - depositAmount;
+      const depositDue = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const finalDue = startDate
+        ? new Date(startDate.getTime() - 30 * 24 * 60 * 60 * 1000)
+        : new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+      payments = [
+        {
+          deal_id: dealId,
+          payment_type: "deposit",
+          amount: depositAmount,
+          due_date: depositDue.toISOString().split("T")[0],
+          notes: "1. záloha",
+        },
+        {
+          deal_id: dealId,
+          payment_type: "final",
+          amount: finalAmount,
+          due_date: finalDue.toISOString().split("T")[0],
+          notes: "Doplatek",
+        },
+      ];
+    }
 
     await supabase.from("deal_payments").insert(payments);
   };
