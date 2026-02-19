@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Copy, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Copy, MoreHorizontal, Filter } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
@@ -54,6 +61,7 @@ const Deals = () => {
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   
   // Duplicate dialog state
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -67,7 +75,7 @@ const Deals = () => {
 
   useEffect(() => {
     filterDeals();
-  }, [searchQuery, deals]);
+  }, [searchQuery, statusFilter, deals]);
 
   const fetchDeals = async () => {
     try {
@@ -110,22 +118,28 @@ const Deals = () => {
   };
 
   const filterDeals = () => {
-    if (!searchQuery.trim()) {
-      setFilteredDeals(deals);
-      return;
+    let filtered = deals;
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((deal) => deal.status === statusFilter);
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = deals.filter(
-      (deal) =>
-        deal.deal_number.toLowerCase().includes(query) ||
-        deal.destinations?.name.toLowerCase().includes(query) ||
-        deal.deal_travelers.some((dt: any) =>
-          dt.clients && `${dt.clients.first_name} ${dt.clients.last_name}`
-            .toLowerCase()
-            .includes(query)
-        )
-    );
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (deal) =>
+          deal.deal_number.toLowerCase().includes(query) ||
+          deal.destinations?.name.toLowerCase().includes(query) ||
+          deal.deal_travelers.some((dt: any) =>
+            dt.clients && `${dt.clients.first_name} ${dt.clients.last_name}`
+              .toLowerCase()
+              .includes(query)
+          )
+      );
+    }
+
     setFilteredDeals(filtered);
   };
 
@@ -275,14 +289,31 @@ const Deals = () => {
         ) : (
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Celkem případů: <span className="font-semibold text-foreground">{deals.length}</span>
-                {searchQuery && filteredDeals.length !== deals.length && (
-                  <span className="ml-2">
-                    (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
-                  </span>
-                )}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Celkem případů: <span className="font-semibold text-foreground">{deals.length}</span>
+                  {(searchQuery || statusFilter !== "all") && filteredDeals.length !== deals.length && (
+                    <span className="ml-2">
+                      (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
+                    </span>
+                  )}
+                </p>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Filtr statusu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Všechny statusy</SelectItem>
+                    <SelectItem value="inquiry">Poptávka</SelectItem>
+                    <SelectItem value="quote">Nabídka odeslána</SelectItem>
+                    <SelectItem value="confirmed">Potvrzeno</SelectItem>
+                    <SelectItem value="dispatched">Expedováno</SelectItem>
+                    <SelectItem value="completed">Dokončeno</SelectItem>
+                    <SelectItem value="cancelled">Zrušeno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
