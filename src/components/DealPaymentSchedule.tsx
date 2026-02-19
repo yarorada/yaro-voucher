@@ -317,7 +317,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
                           />
                         </TableCell>
                         <TableCell className="text-sm">
-                          {getPaymentTypeLabel(payment.payment_type)}
+                          {payment.notes || getPaymentTypeLabel(payment.payment_type)}
                         </TableCell>
                         <TableCell className="text-sm font-semibold">
                           {formatPrice(payment.amount)}
