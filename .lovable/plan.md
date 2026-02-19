@@ -1,76 +1,98 @@
 
 
-## Zhutneni PDF sablony smlouvy
+# Public Deal Offer Sharing
 
-Snizeni radkovani, paddingu a fontu v cele PDF sablone pro kompaktnejsi rozlozeni na A4. Text bude oddeleny od cар pomoci `verticalAlign: 'middle'` a dostatecneho borderBottom, ale bez zbytecnych mezer.
+## Overview
+Add a "Share offer" button to the Deal Detail page that generates a unique public link. The link opens a beautifully designed public page showing the deal's variants (or just the selected one if finalized), each with a hero hotel photo and 2 smaller gallery photos.
 
-### Zmeny v `src/components/ContractPdfTemplate.tsx`
+## What needs to happen
 
-#### 1. Sdilene styly (radky 127-132)
+### 1. Database changes
 
-| Styl | Aktualni | Novy |
-|------|----------|------|
-| `labelStyle` padding | `4px 0` | `2px 0` |
-| `labelStyle` lineHeight | `1.5` | `1.2` |
-| `labelStyle` verticalAlign | `top` | `middle` |
-| `valueStyle` padding | `4px 0 4px 6px` | `2px 0 2px 6px` |
-| `valueStyle` lineHeight | `1.5` | `1.2` |
-| `valueStyle` verticalAlign | `top` | `middle` |
-| `sectionTitle` marginTop | `10px` | `8px` |
-| `sectionTitle` marginBottom | `5px` | `3px` |
-| `sectionTitle` paddingBottom | `3px` | `2px` |
-| `sectionTitle` lineHeight | `1.4` | `1.2` |
-| `thStyle` padding | `5px 6px` | `3px 6px` |
-| `thStyle` lineHeight | `1.4` | `1.2` |
-| `thStyle` fontSize | `8px` | `7px` |
-| `tdStyle` padding | `5px 6px` | `3px 6px` |
-| `tdStyle` lineHeight | `1.5` | `1.2` |
-| `tdStyle` fontSize | `9px` | `8px` |
+**New columns on `hotel_templates`:**
+- `image_url` (text, nullable) -- main/hero photo
+- `image_url_2` (text, nullable) -- room or secondary photo  
+- `image_url_3` (text, nullable) -- golf course / beach / signature photo
 
-#### 2. Hlavni kontejner (radek 144)
+**New column on `deals`:**
+- `share_token` (text, nullable, unique) -- random token for public access
 
-- `lineHeight` z `1.5` na `1.2`
+**New storage bucket:**
+- `hotel-images` (public) for uploading hotel photos
 
-#### 3. Itinerar letu (radek 226)
+**New RLS policy:**
+- Anonymous SELECT on `deals`, `deal_variants`, `deal_variant_services`, `deal_services`, `hotel_templates`, `destinations`, `countries` where `share_token` matches -- achieved via a database function with SECURITY DEFINER to avoid complex RLS changes.
 
-- `lineHeight` u odstavcu z `1.5` na `1.2`
+### 2. Backend function (Edge Function)
+- `get-public-offer` -- accepts `token` query param, fetches all deal data (variants with services, destination, hotel images) and returns JSON. This avoids needing anon RLS on all tables.
 
-#### 4. Popisky sluzeb (radek 287)
+### 3. New pages and components
 
-- `lineHeight` z `1.4` na `1.2`
-- `fontSize` z `8px` na `7px`
+**`src/pages/PublicOffer.tsx`** -- public page (no auth required):
+- Fetches data via the edge function
+- Displays YARO branding header
+- If a variant is selected as final: shows only that variant
+- Otherwise: shows all variants as cards
+- Each variant card shows:
+  - Hero hotel image (large, full-width)
+  - 2 smaller images in a row below (room + golf/beach)
+  - Destination name, dates, services list, total price
+- Responsive, modern design with gradient accents
 
-#### 5. Platebni kalendar -- poznamky (radek 336)
+**`src/components/HotelImageUpload.tsx`** -- image upload component:
+- Used in HotelCombobox or a separate hotel edit dialog
+- Allows uploading 3 images (main, room, golf/beach)
+- Stores in `hotel-images` bucket, saves URLs to `hotel_templates`
 
-- `lineHeight` z `1.4` na `1.2`
-- `fontSize` z `8px` na `7px`
+**`src/components/ShareOfferButton.tsx`** -- button for DealDetail:
+- Generates a `share_token` if not present
+- Copies the public URL to clipboard
+- Shows the shareable link
 
-#### 6. Souhrnne radky tabulek (radky 298, 350-357)
+### 4. Routing
+- Add `/offer/:token` route in App.tsx (outside ProtectedRoute)
 
-- `padding` z `3px 5px` na `2px 5px`
+## Design of the public page
 
-#### 7. Platebni udaje box (radky 363-368)
+```text
++------------------------------------------+
+|  YARO Travel logo          Nabidka       |
++------------------------------------------+
+|                                          |
+|  [========= HERO HOTEL IMAGE =========]  |
+|                                          |
+|  [  Room Photo  ]  [  Golf/Beach Photo ] |
+|                                          |
+|  Destination Name, Country               |
+|  DD.MM.YYYY - DD.MM.YYYY                 |
+|                                          |
+|  Services:                               |
+|  - Flight: PRG -> FAO                    |
+|  - Hotel: Pine Cliffs 5*                 |
+|  - Golf: Monte Rei Golf                  |
+|  - Transfer: Airport transfer            |
+|                                          |
+|  Total: 85 000 CZK                       |
++------------------------------------------+
+```
 
-- `padding` z `6px 8px` na `4px 6px`
-- `marginTop` z `6px` na `4px`
-- `fontSize` nadpisu z `9px` na `8px`
+Multiple variant cards shown side-by-side on desktop, stacked on mobile. Selected variant highlighted.
 
-#### 8. Pravni podminky (radek 390)
+## Technical details
 
-- `lineHeight` z `1.6` na `1.3`
-- `fontSize` z `8px` na `7px`
-- Mezery mezi odstavci (`margin`) zmenseny z `4px`/`5px` na `2px`/`3px`
+- Share token: 12-char random alphanumeric string
+- Edge function queries all needed data server-side (no anon RLS changes needed)
+- Hotel images uploaded to Supabase Storage `hotel-images` bucket
+- Images compressed client-side before upload (reuse existing `imageCompression.ts`)
+- Public page uses minimal dependencies (no sidebar, no auth check)
 
-#### 9. Podpisy (radky 402-416)
-
-- `marginTop` z `20px` na `14px`
-- `paddingTop` z `10px` na `6px`
-- `marginTop` u podpisove cary z `28px` na `22px`
-
-#### Co zustava
-
-- `verticalAlign: 'middle'` na vsech tabulkovych bunkach -- text zustane vertikalne vycentrovany a nebude se lepit na spodni hranu
-- `borderBottom` na bunkach zustava -- vizualne oddeluje radky od textu
-- Fonty hlavicek (`16px` nadpis, `12px` cislo smlouvy, `11px` celkova cena) se nemeni
-- QR kod a jeho popisky zustavaji beze zmeny
+## Files to create/modify
+- **Migration**: Add columns + storage bucket
+- **New**: `supabase/functions/get-public-offer/index.ts`
+- **New**: `src/pages/PublicOffer.tsx`
+- **New**: `src/components/ShareOfferButton.tsx`  
+- **New**: `src/components/HotelImageUpload.tsx`
+- **Modify**: `src/App.tsx` (add public route)
+- **Modify**: `src/pages/DealDetail.tsx` (add ShareOfferButton)
+- **Modify**: `src/components/HotelCombobox.tsx` (add image upload trigger)
 
