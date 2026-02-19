@@ -44,6 +44,8 @@ interface OfferData {
     price: number | null;
     person_count: number | null;
     details: any;
+    start_date: string | null;
+    end_date: string | null;
   }>;
   hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }>;
   hasSelectedVariant: boolean;
@@ -375,10 +377,13 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
             return (
               <div key={service.id} className="flex items-start gap-3 text-sm">
                 <Icon className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <span className="font-medium text-slate-700">{service.service_name}</span>
                   {service.description && (
                     <span className="text-slate-400 ml-1">· {service.description}</span>
+                  )}
+                  {service.service_type === "flight" && service.details && (
+                    <FlightInfo details={service.details} />
                   )}
                 </div>
               </div>
