@@ -13,6 +13,7 @@ interface Voucher {
   hotel_name: string | null;
   sent_at: string | null;
   created_at: string;
+  deals: { destinations: { name: string } | null } | null;
 }
 
 export const RecentVouchersCard = () => {
@@ -21,7 +22,7 @@ export const RecentVouchersCard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vouchers")
-        .select("id, voucher_code, client_name, hotel_name, sent_at, created_at")
+        .select("id, voucher_code, client_name, hotel_name, sent_at, created_at, deals(destinations(name))")
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -59,7 +60,7 @@ export const RecentVouchersCard = () => {
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {voucher.client_name}
-                    {voucher.hotel_name && ` • ${voucher.hotel_name}`}
+                    {voucher.deals?.destinations?.name && ` • ${voucher.deals.destinations.name}`}
                   </p>
                 </div>
                 {voucher.sent_at ? (
