@@ -187,7 +187,7 @@ export const TasksCard = () => {
     queryKey: ["profiles-list"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, email").order("email");
+      const { data, error } = await supabase.from("profiles").select("id, email, name").order("email");
       if (error) throw error;
       return data;
     },
@@ -195,12 +195,11 @@ export const TasksCard = () => {
 
   const profilesMap: Record<string, string> = {};
   for (const p of profiles) {
-    profilesMap[p.id] = p.email.split("@")[0];
+    profilesMap[p.id] = p.name || p.email.split("@")[0];
   }
 
-  const emailLabel = (email: string) => {
-    const name = email.split("@")[0];
-    return name.charAt(0).toUpperCase() + name.slice(1);
+  const profileLabel = (p: { id: string; email: string; name?: string | null }) => {
+    return p.name || p.email.split("@")[0].charAt(0).toUpperCase() + p.email.split("@")[0].slice(1);
   };
 
   // Determine the effective user_id filter
@@ -372,7 +371,7 @@ export const TasksCard = () => {
   const viewLabel =
     viewMode === "mine" ? "" :
     viewMode === "all" ? " • Všichni uživatelé" :
-    ` • ${emailLabel(profiles.find((p) => p.id === viewMode)?.email || "")}`;
+    ` • ${profileLabel(profiles.find((p) => p.id === viewMode) || { id: "", email: "" })}`;
 
   return (
     <Card className="h-full">
@@ -398,7 +397,7 @@ export const TasksCard = () => {
                 <Separator className="my-1" />
                 {profiles.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {emailLabel(p.email)}
+                    {profileLabel(p)}
                     {p.id === currentUser?.id && " (já)"}
                   </SelectItem>
                 ))}

@@ -54,7 +54,7 @@ export const FloatingTaskButton = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email")
+        .select("id, email, name")
         .order("email");
       if (error) throw error;
       return data;
@@ -97,9 +97,8 @@ export const FloatingTaskButton = () => {
     addTaskMutation.mutate();
   };
 
-  const emailLabel = (email: string) => {
-    const name = email.split("@")[0];
-    return name.charAt(0).toUpperCase() + name.slice(1);
+  const profileLabel = (p: { email: string; name?: string | null }) => {
+    return p.name || p.email.split("@")[0].charAt(0).toUpperCase() + p.email.split("@")[0].slice(1);
   };
 
   return (
@@ -149,7 +148,7 @@ export const FloatingTaskButton = () => {
                 <SelectContent>
                   {profiles.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {emailLabel(p.email)}
+                      {profileLabel(p)}
                       {p.id === currentUser?.id && " (já)"}
                     </SelectItem>
                   ))}
