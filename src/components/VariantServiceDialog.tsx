@@ -534,8 +534,8 @@ export const VariantServiceDialog = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="os.">os.</SelectItem>
-                    <SelectItem value="ks.">ks.</SelectItem>
+                    <SelectItem value="os.">Počet osob</SelectItem>
+                    <SelectItem value="ks.">Počet ks.</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
