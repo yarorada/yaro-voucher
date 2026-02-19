@@ -150,32 +150,42 @@ Deno.serve(async (req) => {
     const { data: variants } = await supabase
       .from('deal_variants')
       .select(`
-        id, variant_name, start_date, end_date, total_price, is_selected,
+        id, variant_name, start_date, end_date, total_price, is_selected, notes,
         destination:destinations(name, country:countries(name)),
-        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, person_count, order_index)
+        deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, person_count, order_index, details)
       `)
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
 
+    // Fetch direct services (non-variant)
+    const { data: directServices } = await supabase
+      .from('deal_services')
+      .select('id, service_type, service_name, description, start_date, end_date, price, person_count, order_index, details')
+      .eq('deal_id', dealId)
+      .order('order_index', { ascending: true });
+
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
     const displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
 
-    // Collect hotel names for images
+    // Collect hotel names for images and descriptions
     const hotelNames = new Set<string>();
     (displayVariants || []).forEach((v: any) => {
       (v.deal_variant_services || []).forEach((s: any) => {
         if (s.service_type === 'hotel') hotelNames.add(s.service_name);
       });
     });
+    (directServices || []).forEach((s: any) => {
+      if (s.service_type === 'hotel') hotelNames.add(s.service_name);
+    });
 
-    let hotelImages: Record<string, string> = {};
+    let hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')
-        .select('name, image_url')
+        .select('name, image_url, image_url_2, image_url_3, description')
         .in('name', Array.from(hotelNames));
       (hotels || []).forEach((h: any) => {
-        if (h.image_url) hotelImages[h.name] = h.image_url;
+        hotelData[h.name] = { image_url: h.image_url, image_url_2: h.image_url_2, image_url_3: h.image_url_3, description: h.description };
       });
     }
 
@@ -186,44 +196,119 @@ Deno.serve(async (req) => {
       ? `${formatDate(deal.start_date)} – ${formatDate(deal.end_date)}`
       : '';
 
-    // Build HTML email
-    const serviceTypeLabels: Record<string, string> = {
-      flight: '✈️ Let', hotel: '🏨 Hotel', golf: '⛳ Golf',
-      transfer: '🚗 Transfer', insurance: '🛡️ Pojištění', other: '📋 Ostatní',
-    };
+    // Build HTML email - helper to render a single service row
+    function renderServiceHtml(s: any): string {
+      const details = s.details || {};
+      let content = '';
 
+      if (s.service_type === 'flight') {
+        const dep = details.departure_airport || '';
+        const arr = details.arrival_airport || '';
+        const depTime = details.departure_time || '';
+        const arrTime = details.arrival_time || '';
+        const airline = details.airline || '';
+        const flightNum = details.flight_number || '';
+        content = `
+          <tr>
+            <td style="padding:10px 12px; vertical-align:top;">
+              <div style="font-size:14px; font-weight:600; color:#1e293b;">✈️ ${escapeHtml(s.service_name)}</div>
+              ${dep || arr ? `<div style="font-size:13px; color:#475569; margin-top:4px;">${escapeHtml(dep)}${dep && arr ? ' → ' : ''}${escapeHtml(arr)}</div>` : ''}
+              ${depTime || arrTime ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">Odlet: ${escapeHtml(depTime)}${arrTime ? ' · Přílet: ' + escapeHtml(arrTime) : ''}</div>` : ''}
+              ${airline || flightNum ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${escapeHtml(airline)}${flightNum ? ' ' + escapeHtml(flightNum) : ''}</div>` : ''}
+              ${s.start_date ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${formatDate(s.start_date)}</div>` : ''}
+              ${s.description ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${escapeHtml(s.description)}</div>` : ''}
+            </td>
+          </tr>`;
+      } else if (s.service_type === 'hotel') {
+        const hotel = hotelData[s.service_name];
+        const nights = s.start_date && s.end_date ? Math.round((new Date(s.end_date).getTime() - new Date(s.start_date).getTime()) / 86400000) : null;
+        content = `
+          <tr>
+            <td style="padding:0;">
+              ${hotel?.image_url ? `<img src="${escapeHtml(hotel.image_url)}" alt="${escapeHtml(s.service_name)}" style="width:100%; max-height:280px; object-fit:cover; display:block;" />` : ''}
+              ${(hotel?.image_url_2 || hotel?.image_url_3) ? `
+                <table style="width:100%; border-collapse:collapse;"><tr>
+                  ${hotel?.image_url_2 ? `<td style="width:50%; padding:2px 1px 0 0;"><img src="${escapeHtml(hotel.image_url_2)}" style="width:100%; height:140px; object-fit:cover; display:block;" /></td>` : ''}
+                  ${hotel?.image_url_3 ? `<td style="width:50%; padding:2px 0 0 1px;"><img src="${escapeHtml(hotel.image_url_3)}" style="width:100%; height:140px; object-fit:cover; display:block;" /></td>` : ''}
+                </tr></table>
+              ` : ''}
+              <div style="padding:12px;">
+                <div style="font-size:14px; font-weight:600; color:#1e293b;">🏨 ${escapeHtml(s.service_name)}</div>
+                ${s.start_date && s.end_date ? `<div style="font-size:13px; color:#475569; margin-top:4px;">${formatDate(s.start_date)} – ${formatDate(s.end_date)}${nights ? ` (${nights} nocí)` : ''}</div>` : ''}
+                ${s.description ? `<div style="font-size:13px; color:#475569; margin-top:4px;">${escapeHtml(s.description)}</div>` : ''}
+                ${hotel?.description ? `<div style="font-size:12px; color:#64748b; margin-top:6px; line-height:1.5;">${escapeHtml(hotel.description)}</div>` : ''}
+                ${s.person_count && s.person_count > 1 ? `<div style="font-size:12px; color:#94a3b8; margin-top:4px;">${s.person_count} osob</div>` : ''}
+              </div>
+            </td>
+          </tr>`;
+      } else if (s.service_type === 'golf') {
+        content = `
+          <tr>
+            <td style="padding:10px 12px; vertical-align:top;">
+              <div style="font-size:14px; font-weight:600; color:#1e293b;">⛳ ${escapeHtml(s.service_name)}</div>
+              ${s.start_date ? `<div style="font-size:13px; color:#475569; margin-top:4px;">${formatDate(s.start_date)}${s.end_date && s.end_date !== s.start_date ? ' – ' + formatDate(s.end_date) : ''}</div>` : ''}
+              ${s.description ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${escapeHtml(s.description)}</div>` : ''}
+              ${s.person_count && s.person_count > 1 ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${s.person_count} hráčů</div>` : ''}
+            </td>
+          </tr>`;
+      } else {
+        const icon = s.service_type === 'transfer' ? '🚗' : s.service_type === 'insurance' ? '🛡️' : '📋';
+        const typeLabel = s.service_type === 'transfer' ? 'Transfer' : s.service_type === 'insurance' ? 'Pojištění' : 'Služba';
+        content = `
+          <tr>
+            <td style="padding:10px 12px; vertical-align:top;">
+              <div style="font-size:14px; font-weight:600; color:#1e293b;">${icon} ${escapeHtml(s.service_name)}</div>
+              ${s.start_date ? `<div style="font-size:13px; color:#475569; margin-top:4px;">${formatDate(s.start_date)}${s.end_date && s.end_date !== s.start_date ? ' – ' + formatDate(s.end_date) : ''}</div>` : ''}
+              ${s.description ? `<div style="font-size:12px; color:#94a3b8; margin-top:2px;">${escapeHtml(s.description)}</div>` : ''}
+            </td>
+          </tr>`;
+      }
+      return content;
+    }
+
+    // Build variant sections
     let variantsHtml = '';
     for (const variant of displayVariants) {
-      const vServices = ((variant as any).deal_variant_services || [])
+      const v = variant as any;
+      const vServices = (v.deal_variant_services || [])
         .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
-      const hotelService = vServices.find((s: any) => s.service_type === 'hotel');
-      const heroImage = hotelService ? hotelImages[hotelService.service_name] : null;
-      const vDest = (variant as any).destination;
-      const vPrice = (variant as any).total_price || vServices.reduce(
+      const vDest = v.destination;
+      const vPrice = v.total_price || vServices.reduce(
         (sum: number, s: any) => sum + (s.price || 0) * (s.person_count || 1), 0
       );
 
       variantsHtml += `
-        <div style="margin-bottom:24px; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
-          ${heroImage ? `<img src="${escapeHtml(heroImage)}" alt="${escapeHtml(hotelService?.service_name || 'Hotel')}" style="width:100%; max-height:300px; object-fit:cover; display:block;" />` : ''}
-          <div style="padding:20px;">
-            ${vDest ? `<h3 style="margin:0 0 4px; font-size:18px; color:#1e293b;">${escapeHtml(vDest.name)}, ${escapeHtml(vDest.country?.name || '')}</h3>` : ''}
-            ${(variant as any).start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate((variant as any).start_date)} – ${formatDate((variant as any).end_date || '')}</p>` : ''}
-            <table style="width:100%; border-collapse:collapse;">
-              ${vServices.map((s: any) => `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                  <td style="padding:8px 4px; font-size:13px; color:#64748b;">${serviceTypeLabels[s.service_type] || '📋'}</td>
-                  <td style="padding:8px 4px; font-size:13px; color:#1e293b; font-weight:500;">${escapeHtml(s.service_name)}${s.description ? ` <span style="color:#94a3b8;">· ${escapeHtml(s.description)}</span>` : ''}</td>
-                </tr>
-              `).join('')}
-            </table>
-            ${vPrice > 0 ? `
-              <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0; text-align:right;">
-                <span style="font-size:13px; color:#64748b;">Celková cena:</span>
-                <span style="font-size:20px; font-weight:700; color:#1e293b; margin-left:8px;">${formatPrice(vPrice)} CZK</span>
-              </div>
-            ` : ''}
-          </div>
+        <div style="margin-bottom:28px; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#ffffff;">
+          ${displayVariants.length > 1 ? `<div style="padding:12px 16px; background:#f1f5f9; border-bottom:1px solid #e2e8f0;">
+            <strong style="font-size:15px; color:#1e293b;">${escapeHtml(v.variant_name || 'Varianta')}</strong>
+          </div>` : ''}
+          ${vDest ? `<div style="padding:12px 16px 0;">
+            <h3 style="margin:0; font-size:18px; color:#1e293b;">${escapeHtml(vDest.name)}, ${escapeHtml(vDest.country?.name || '')}</h3>
+            ${v.start_date ? `<p style="margin:4px 0 0; color:#64748b; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : ''}
+          </div>` : ''}
+          <table style="width:100%; border-collapse:collapse;">
+            ${vServices.map((s: any) => renderServiceHtml(s)).join('')}
+          </table>
+          ${v.notes ? `<div style="padding:8px 16px; font-size:12px; color:#64748b; background:#fefce8; border-top:1px solid #e2e8f0;">📝 ${escapeHtml(v.notes)}</div>` : ''}
+          ${vPrice > 0 ? `
+            <div style="padding:16px; border-top:1px solid #e2e8f0; text-align:right;">
+              <span style="font-size:13px; color:#64748b;">Celková cena:</span>
+              <span style="font-size:22px; font-weight:700; color:#1e293b; margin-left:8px;">${formatPrice(vPrice)} CZK</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // Build direct services section (if any)
+    const sortedDirectServices = (directServices || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+    let directServicesHtml = '';
+    if (sortedDirectServices.length > 0) {
+      directServicesHtml = `
+        <div style="margin-bottom:28px; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#ffffff;">
+          <table style="width:100%; border-collapse:collapse;">
+            ${sortedDirectServices.map((s: any) => renderServiceHtml(s)).join('')}
+          </table>
         </div>
       `;
     }
@@ -248,10 +333,13 @@ Deno.serve(async (req) => {
 
       ${variantsHtml}
 
+      ${directServicesHtml}
+
       <div style="text-align:center; margin-top:24px;">
         <a href="${escapeHtml(publicUrl)}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 32px; border-radius:8px; font-size:15px; font-weight:600;">
-          Zobrazit nabídku online
+          Zobrazit kompletní nabídku online
         </a>
+        <p style="margin:8px 0 0; font-size:12px; color:#94a3b8;">Pro nejlepší zobrazení s interaktivními prvky</p>
       </div>
     </div>
 
