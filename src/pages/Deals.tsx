@@ -90,6 +90,7 @@ const Deals = () => {
           created_at,
           destinations:destination_id (name),
           deal_travelers (
+            is_lead_traveler,
             clients:client_id (
               first_name,
               last_name
@@ -299,8 +300,9 @@ const Deals = () => {
               </Card>
             ) : (
               filteredDeals.map((deal) => {
-                const mainTravelers = deal.deal_travelers
+                const mainTravelers = [...deal.deal_travelers]
                   .filter((dt: any) => dt.clients)
+                  .sort((a: any, b: any) => (b.is_lead_traveler ? 1 : 0) - (a.is_lead_traveler ? 1 : 0))
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
                 const displayName = deal.name || deal.destinations?.name || deal.deal_number;
