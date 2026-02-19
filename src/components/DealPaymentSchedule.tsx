@@ -87,7 +87,14 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      setPayments(data || []);
+      // Sort: deposits/installments first by due_date, then final last
+      const sorted = (data || []).sort((a, b) => {
+        const typeOrder = (t: string) => t === "final" ? 1 : 0;
+        const orderDiff = typeOrder(a.payment_type) - typeOrder(b.payment_type);
+        if (orderDiff !== 0) return orderDiff;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
+      setPayments(sorted);
     } catch (error) {
       console.error("Error fetching deal payments:", error);
     } finally {

@@ -215,14 +215,14 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         payment_type: "deposit",
         amount: depositAmount,
         due_date: depositDue.toISOString().split("T")[0],
-        notes: "Záloha 50%",
+        notes: "1. záloha",
       },
       {
         deal_id: dealId,
         payment_type: "final",
         amount: finalAmount,
         due_date: finalDue.toISOString().split("T")[0],
-        notes: "Doplatek 50%",
+        notes: "Doplatek",
       },
     ];
 
