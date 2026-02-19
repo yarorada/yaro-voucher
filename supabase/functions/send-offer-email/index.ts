@@ -268,6 +268,48 @@ Deno.serve(async (req) => {
 
     // Build variant sections
     let variantsHtml = '';
+    
+    // Helper: compute per-person price lines
+    function computePerPersonLines(services: any[]): Array<{label: string; personCount: number; pricePerPerson: number}> {
+      const hotels = services.filter((s: any) => s.service_type === 'hotel');
+      const shared = services.filter((s: any) => s.service_type !== 'hotel');
+      if (hotels.length === 0) return [];
+      
+      let sharedPerPerson = 0;
+      shared.forEach((s: any) => {
+        const total = (s.price || 0) * (s.quantity || 1);
+        const persons = s.person_count || 1;
+        sharedPerPerson += total / persons;
+      });
+      
+      return hotels.map((h: any) => {
+        const persons = h.person_count || 1;
+        const hotelTotal = (h.price || 0) * (h.quantity || 1);
+        const hotelPerPerson = hotelTotal / persons;
+        return {
+          label: h.description || h.service_name,
+          personCount: persons,
+          pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson),
+        };
+      });
+    }
+    
+    function renderPerPersonHtml(services: any[]): string {
+      const lines = computePerPersonLines(services);
+      if (lines.length === 0) return '';
+      return `
+        <div style="padding:12px 16px; border-top:1px solid #e2e8f0;">
+          <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Cena na osobu</div>
+          ${lines.map(l => `
+            <div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;">
+              <span style="color:#475569;">${escapeHtml(l.label)} <span style="color:#94a3b8;">(${l.personCount} os.)</span></span>
+              <span style="font-weight:600; color:#1e293b;">${formatPrice(l.pricePerPerson)} CZK</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    
     for (const variant of displayVariants) {
       const v = variant as any;
       const vServices = (v.deal_variant_services || [])
@@ -296,6 +338,7 @@ Deno.serve(async (req) => {
               <span style="font-size:22px; font-weight:700; color:#1e293b; margin-left:8px;">${formatPrice(vPrice)} CZK</span>
             </div>
           ` : ''}
+          ${renderPerPersonHtml(vServices)}
         </div>
       `;
     }
@@ -309,6 +352,7 @@ Deno.serve(async (req) => {
           <table style="width:100%; border-collapse:collapse;">
             ${sortedDirectServices.map((s: any) => renderServiceHtml(s)).join('')}
           </table>
+          ${renderPerPersonHtml(sortedDirectServices)}
         </div>
       `;
     }

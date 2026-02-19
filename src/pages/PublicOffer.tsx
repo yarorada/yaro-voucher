@@ -34,6 +34,7 @@ interface OfferData {
       end_date: string | null;
       price: number | null;
       person_count: number | null;
+      quantity: number | null;
       details: any;
     }>;
   }>;
@@ -44,6 +45,7 @@ interface OfferData {
     description: string | null;
     price: number | null;
     person_count: number | null;
+    quantity: number | null;
     details: any;
     start_date: string | null;
     end_date: string | null;
@@ -99,6 +101,46 @@ function formatDateShort(dateStr: string | null): string {
   } catch {
     return dateStr;
   }
+}
+
+interface PerPersonLine {
+  label: string;
+  personCount: number;
+  pricePerPerson: number;
+}
+
+function computePerPersonPrices(services: Array<{
+  service_type: string;
+  service_name: string;
+  description: string | null;
+  price: number | null;
+  person_count: number | null;
+  quantity: number | null;
+  details: any;
+}>): PerPersonLine[] {
+  const hotels = services.filter(s => s.service_type === "hotel");
+  const shared = services.filter(s => s.service_type !== "hotel");
+
+  if (hotels.length === 0) return [];
+
+  // Sum of shared services cost per person: each shared service total / its person_count
+  let sharedPerPerson = 0;
+  shared.forEach(s => {
+    const total = (s.price || 0) * (s.quantity || 1);
+    const persons = s.person_count || 1;
+    sharedPerPerson += total / persons;
+  });
+
+  return hotels.map(h => {
+    const persons = h.person_count || 1;
+    const hotelTotal = (h.price || 0) * (h.quantity || 1);
+    const hotelPerPerson = hotelTotal / persons;
+    return {
+      label: h.description || h.service_name,
+      personCount: persons,
+      pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson),
+    };
+  });
 }
 
 export default function PublicOffer() {
@@ -337,6 +379,23 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
           <p className="text-xs text-slate-400 italic border-t pt-3">{variant.notes}</p>
         )}
 
+        {/* Per-person price recap */}
+        {(() => {
+          const lines = computePerPersonPrices(variant.deal_variant_services);
+          if (lines.length === 0) return null;
+          return (
+            <div className="border-t pt-3 space-y-1">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
+              {lines.map((line, i) => (
+                <div key={i} className="flex items-baseline justify-between text-sm">
+                  <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
+                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson)} CZK</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Price */}
         {totalPrice > 0 && (
           <div className="border-t pt-4">
@@ -414,6 +473,22 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
             </div>
           </div>
         )}
+        {/* Per-person price recap */}
+        {(() => {
+          const lines = computePerPersonPrices(services);
+          if (lines.length === 0) return null;
+          return (
+            <div className="border-t pt-3 space-y-1">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
+              {lines.map((line, i) => (
+                <div key={i} className="flex items-baseline justify-between text-sm">
+                  <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
+                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson)} CZK</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
