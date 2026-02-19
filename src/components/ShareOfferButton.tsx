@@ -33,9 +33,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: Share
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const getPublicUrl = (token: string) => {
-    // Use edge function URL so crawlers (email clients, social media) get OG meta tags
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    return `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}`;
+    return `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(token)}`;
   };
 
   const ensureShareToken = async (): Promise<string | null> => {
