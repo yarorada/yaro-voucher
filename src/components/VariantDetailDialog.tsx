@@ -82,7 +82,11 @@ interface VariantService {
   start_date: string | null;
   end_date: string | null;
   price: number | null;
+  cost_price: number | null;
+  price_currency: string | null;
+  cost_currency: string | null;
   person_count: number | null;
+  quantity: number;
   supplier_id: string | null;
   order_index: number | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,7 +101,7 @@ interface SortableServiceRowProps {
   getServiceIcon: (type: VariantService["service_type"]) => React.ReactNode;
   getServiceTypeLabel: (type: VariantService["service_type"]) => string;
   formatDate: (d: string | null) => string;
-  formatPrice: (p: number | null) => string;
+  formatPrice: (p: number | null, currency?: string | null) => string;
   renderFlightSegments: (s: VariantService) => React.ReactNode;
   onEdit: (s: VariantService) => void;
   onDelete: (id: string) => void;
@@ -146,7 +150,7 @@ const SortableServiceRow = ({
       </TableCell>
       <TableCell>{service.person_count || 1}</TableCell>
       <TableCell className="font-medium">
-        {formatPrice((service.price || 0) * (service.person_count || 1))}
+        {formatPrice((service.price || 0) * (service.quantity || 1), service.price_currency)}
       </TableCell>
       <TableCell>
         <div className="flex gap-1">
@@ -236,7 +240,7 @@ export const VariantDetailDialog = ({
 
   const calculateTotalPrice = () => {
     return services.reduce((sum, service) => {
-      const servicePrice = (service.price || 0) * (service.person_count || 1);
+      const servicePrice = (service.price || 0) * (service.quantity || 1);
       return sum + servicePrice;
     }, 0);
   };
@@ -419,7 +423,7 @@ export const VariantDetailDialog = ({
     return new Date(dateString).toLocaleDateString("cs-CZ");
   };
 
-  const formatPrice = (price: number | null) => formatPriceCurrency(price);
+  const formatPriceWithCurrency = (price: number | null, currency?: string | null) => formatPriceCurrency(price, currency || "CZK");
 
   const renderFlightSegments = (service: VariantService) => {
     const details = service.details as FlightDetails | null;
@@ -593,7 +597,7 @@ export const VariantDetailDialog = ({
                   <div>
                     <h4 className="font-semibold">Služby</h4>
                     <p className="text-sm text-muted-foreground">
-                      Celková cena: {formatPrice(calculateTotalPrice())}
+                      Celková cena: {formatPriceWithCurrency(calculateTotalPrice(), services[0]?.price_currency)}
                     </p>
                   </div>
                   <DropdownMenu>
@@ -717,7 +721,7 @@ export const VariantDetailDialog = ({
                               getServiceIcon={getServiceIcon}
                               getServiceTypeLabel={getServiceTypeLabel}
                               formatDate={formatDate}
-                              formatPrice={formatPrice}
+                              formatPrice={formatPriceWithCurrency}
                               renderFlightSegments={renderFlightSegments}
                               onEdit={(s) => {
                                 setEditingService(s);
