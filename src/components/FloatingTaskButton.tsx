@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import { CalendarIcon } from "lucide-react";
 export const FloatingTaskButton = () => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date>(new Date());
   const [assignedTo, setAssignedTo] = useState<string>("");
@@ -72,6 +74,7 @@ export const FloatingTaskButton = () => {
     mutationFn: async () => {
       const { error } = await supabase.from("tasks").insert({
         title,
+        description: description.trim() || null,
         priority,
         due_date: format(dueDate, "yyyy-MM-dd"),
         user_id: assignedTo || currentUser?.id,
@@ -81,6 +84,7 @@ export const FloatingTaskButton = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setTitle("");
+      setDescription("");
       setPriority("medium");
       setDueDate(new Date());
       setAssignedTo(currentUser?.id || "");
@@ -123,6 +127,16 @@ export const FloatingTaskButton = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             autoFocus
           />
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Poznámky</label>
+            <Textarea
+              placeholder="Poznámky k úkolu..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
