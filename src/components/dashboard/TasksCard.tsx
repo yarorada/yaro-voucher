@@ -126,8 +126,8 @@ const TaskRow = ({
               value={editing.description}
               onChange={(e) => onEditChange("description", e.target.value)}
               placeholder="Poznámka..."
-              className="text-xs min-h-[40px] resize-none"
-              rows={2}
+              className="text-sm"
+              rows={5}
             />
           </div>
         ) : (
