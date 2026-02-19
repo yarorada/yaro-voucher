@@ -6,6 +6,7 @@ import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard"
 import { RecentDealsCard } from "@/components/dashboard/RecentDealsCard";
 import { RecentVouchersCard } from "@/components/dashboard/RecentVouchersCard";
 import { RecentContractsCard } from "@/components/dashboard/RecentContractsCard";
+import { BankNotificationsCard } from "@/components/dashboard/BankNotificationsCard";
 import {
   DndContext,
   closestCenter,
@@ -32,6 +33,7 @@ interface TileDef {
 }
 
 const DEFAULT_ORDER = [
+  "bank_notifications",
   "tasks",
   "stats",
   "overdue",
@@ -41,6 +43,7 @@ const DEFAULT_ORDER = [
 ];
 
 const TILE_COMPONENTS: Record<string, ReactNode> = {
+  bank_notifications: <BankNotificationsCard />,
   tasks: <TasksCard />,
   stats: <StatsCard />,
   overdue: <OverduePaymentsCard />,
