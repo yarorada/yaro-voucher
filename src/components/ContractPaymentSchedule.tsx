@@ -299,9 +299,11 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
   const iban = bankAccountToIban(bankAccount);
   const variableSymbol = extractVariableSymbol(contractNumber);
 
-  // Generate QR code for unpaid total
+  const isCzk = (currency || 'CZK').toUpperCase() === 'CZK';
+
+  // Generate QR code for unpaid total (only for CZK)
   useEffect(() => {
-    if (unpaidTotal > 0 && contractNumber) {
+    if (isCzk && unpaidTotal > 0 && contractNumber) {
       generatePaymentQrDataUrl({
         amount: unpaidTotal,
         contractNumber,

@@ -94,8 +94,10 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
 
     const [paymentQrUrls, setPaymentQrUrls] = useState<Record<string, string>>({});
 
+    const isCzk = (currency || 'CZK').toUpperCase() === 'CZK';
+
     useEffect(() => {
-      if (unpaidPayments.length === 0 || !contractNumber) return;
+      if (!isCzk || unpaidPayments.length === 0 || !contractNumber) return;
       const generate = async () => {
         const urls: Record<string, string> = {};
         for (const p of unpaidPayments) {
@@ -450,8 +452,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 </div>
               </div>
 
-              {/* QR kódy vedle sebe */}
-              {unpaidPayments.length > 0 && Object.keys(paymentQrUrls).length > 0 && (
+              {/* QR kódy vedle sebe – only for CZK */}
+              {isCzk && unpaidPayments.length > 0 && Object.keys(paymentQrUrls).length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   {unpaidPayments.map((p) => {
                     const url = paymentQrUrls[p.id];
