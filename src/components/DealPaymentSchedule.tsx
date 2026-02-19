@@ -317,6 +317,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
                     <TableHead>Typ</TableHead>
                     <TableHead>Částka</TableHead>
                     <TableHead>Splatnost</TableHead>
+                    <TableHead>Zaplaceno dne</TableHead>
                     <TableHead className="w-[70px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -340,6 +341,11 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate }: D
                         <TableCell className={cn("text-sm", isOverdue && "text-red-600 font-semibold")}>
                           {format(new Date(payment.due_date), "d.M.yyyy", { locale: cs })}
                           {isOverdue && <span className="ml-1 text-xs">⚠️</span>}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {payment.paid && payment.paid_at
+                            ? format(new Date(payment.paid_at), "d.M.yyyy", { locale: cs })
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
