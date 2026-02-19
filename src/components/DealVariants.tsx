@@ -453,21 +453,31 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   const services = variant.deal_variant_services || [];
                   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
                   const revenue = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
-                  // Use original cost prices in their native currency for display
-                  const costCurrency = services.find(s => s.cost_currency)?.cost_currency || "CZK";
+
+                  // Convert cost prices to selling currency
                   const costs = services.reduce((sum, s) => {
-                    const costVal = (costCurrency !== "CZK" && s.cost_price_original != null)
-                      ? s.cost_price_original
-                      : (s.cost_price || 0);
-                    return sum + (costVal * (s.quantity || 1));
+                    const costCur = s.cost_currency || "CZK";
+                    if (costCur === currency) {
+                      // Same currency as selling — use original cost
+                      const costVal = s.cost_price_original != null ? s.cost_price_original : (s.cost_price || 0);
+                      return sum + costVal * (s.quantity || 1);
+                    }
+                    if (currency === "CZK") {
+                      // Selling in CZK — cost_price is already CZK
+                      return sum + (s.cost_price || 0) * (s.quantity || 1);
+                    }
+                    // Selling in foreign currency, cost in different currency — convert CZK cost to selling currency
+                    // Derive rate: find any service with cost_price_original and cost_price to get CZK->selling rate
+                    const rateService = services.find(rs => rs.cost_price_original && rs.cost_price_original > 0 && rs.cost_price && rs.cost_price > 0 && rs.cost_currency === currency);
+                    if (rateService) {
+                      const rate = rateService.cost_price! / rateService.cost_price_original!; // CZK per 1 unit of selling currency
+                      return sum + ((s.cost_price || 0) / rate) * (s.quantity || 1);
+                    }
+                    // Fallback: use CZK cost_price as-is (best effort)
+                    return sum + (s.cost_price || 0) * (s.quantity || 1);
                   }, 0);
-                  // Profit: if currencies match, simple subtraction; if different, use CZK cost_price for profit
-                  const sameCurrency = currency === costCurrency;
-                  const costsForProfit = sameCurrency
-                    ? costs
-                    : services.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
-                  const profit = revenue - costsForProfit;
-                  const profitCurrency = sameCurrency ? currency : currency;
+
+                  const profit = revenue - costs;
                   return (
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
@@ -476,12 +486,12 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                        </div>
                        <div>
                          <p className="text-muted-foreground">Nákupní cena</p>
-                         <p className="font-semibold">{formatPrice(costs || null, true, costCurrency)}</p>
+                         <p className="font-semibold">{formatPrice(costs || null, true, currency)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Zisk</p>
                         <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
-                          {services.length > 0 ? formatPrice(profit, true, profitCurrency) : '-'}
+                          {services.length > 0 ? formatPrice(profit, true, currency) : '-'}
                         </p>
                       </div>
                     </div>
