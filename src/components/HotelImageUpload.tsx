@@ -146,9 +146,23 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const handleSelectImage = async (url: string, slot: ImageSlot) => {
     setSavingUrl(url);
     try {
-      // Download the image, compress and upload to our storage
-      const response = await fetch(url);
-      const blob = await response.blob();
+      // Download the image via edge function proxy to avoid CORS issues
+      const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-image", {
+        body: { url },
+      });
+
+      if (proxyError || !proxyData?.base64) {
+        throw new Error(proxyError?.message || "Proxy download failed");
+      }
+
+      // Convert base64 back to blob
+      const byteString = atob(proxyData.base64);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
       const file = new File([blob], "downloaded.jpg", { type: blob.type });
       
       const compressed = await compressImage(file, 1920, 1080, 0.85);
