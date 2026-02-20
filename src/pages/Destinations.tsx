@@ -204,7 +204,9 @@ const Destinations = () => {
   const navigate = useNavigate();
   const [countries, setCountries] = useState<Country[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [newCountry, setNewCountry] = useState({ name: "", iso_code: "", currency: "" });
+  const [newCountryName, setNewCountryName] = useState("");
+  const [newCountrySuggestion, setNewCountrySuggestion] = useState<{ iso: string; currency: string } | null>(null);
+  const [newCountryManual, setNewCountryManual] = useState({ iso_code: "", currency: "" });
   const [newDestination, setNewDestination] = useState({ name: "", country_id: "" });
   const [editingCountry, setEditingCountry] = useState<Country | null>(null);
   const [editingDestination, setEditingDestination] = useState<{ id: string; name: string; country_id: string } | null>(null);
@@ -234,20 +236,37 @@ const Destinations = () => {
     if (!error) setDestinations(data || []);
   };
 
-  const handleAddCountry = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCountry.name || !newCountry.iso_code) {
+  const handleCountryNameChange = (name: string) => {
+    setNewCountryName(name);
+    const match = lookupCountryData(name);
+    if (match) {
+      setNewCountrySuggestion(match);
+      setNewCountryManual({ iso_code: match.iso, currency: match.currency });
+    } else {
+      setNewCountrySuggestion(null);
+      setNewCountryManual({ iso_code: "", currency: "" });
+    }
+  };
+
+  const handleConfirmAddCountry = async () => {
+    if (!newCountryName.trim() || !newCountryManual.iso_code) {
       toast.error("Vyplňte název a ISO kód země");
       return;
     }
 
-    const { error } = await supabase.from("countries").insert(newCountry);
+    const { error } = await supabase.from("countries").insert({
+      name: newCountryName.trim(),
+      iso_code: newCountryManual.iso_code,
+      currency: newCountryManual.currency || null,
+    });
     if (error) {
       toast.error("Chyba při přidávání země");
       console.error(error);
     } else {
       toast.success("Země přidána");
-      setNewCountry({ name: "", iso_code: "", currency: "" });
+      setNewCountryName("");
+      setNewCountrySuggestion(null);
+      setNewCountryManual({ iso_code: "", currency: "" });
       fetchCountries();
     }
   };
@@ -463,53 +482,75 @@ const Destinations = () => {
                 <CardTitle className="text-lg md:text-xl">Přidat novou zemi</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                <form onSubmit={handleAddCountry} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="country-name">Název země *</Label>
-                      <Input
-                        id="country-name"
-                        value={newCountry.name}
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          const match = lookupCountryData(name);
-                          setNewCountry({
-                            name,
-                            iso_code: match?.iso || newCountry.iso_code,
-                            currency: match?.currency || newCountry.currency,
-                          });
-                        }}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="iso-code">ISO kód *</Label>
-                      <Input
-                        id="iso-code"
-                        value={newCountry.iso_code}
-                        onChange={(e) =>
-                          setNewCountry({ ...newCountry, iso_code: e.target.value })
-                        }
-                        maxLength={3}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Měna</Label>
-                      <Input
-                        id="currency"
-                        value={newCountry.currency}
-                        onChange={(e) =>
-                          setNewCountry({ ...newCountry, currency: e.target.value })
-                        }
-                      />
-                    </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="country-name">Název země *</Label>
+                    <Input
+                      id="country-name"
+                      placeholder="Zadejte název země…"
+                      value={newCountryName}
+                      onChange={(e) => handleCountryNameChange(e.target.value)}
+                    />
                   </div>
-                  <Button type="submit" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Přidat zemi
-                  </Button>
-                </form>
+
+                  {newCountryName.trim() && (
+                    <div className="rounded-lg border p-4 space-y-3">
+                      {newCountrySuggestion ? (
+                        <>
+                          <p className="text-sm font-medium">Nalezeno v databázi:</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">ISO kód</Label>
+                              <Input
+                                value={newCountryManual.iso_code}
+                                onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
+                                maxLength={3}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Měna</Label>
+                              <Input
+                                value={newCountryManual.currency}
+                                onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <Button onClick={handleConfirmAddCountry} className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Potvrdit a uložit
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground">Země nenalezena v databázi – zadejte údaje ručně:</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">ISO kód *</Label>
+                              <Input
+                                value={newCountryManual.iso_code}
+                                onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
+                                maxLength={3}
+                                placeholder="např. ESP"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Měna</Label>
+                              <Input
+                                value={newCountryManual.currency}
+                                onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
+                                placeholder="např. EUR"
+                              />
+                            </div>
+                          </div>
+                          <Button onClick={handleConfirmAddCountry} className="gap-2" disabled={!newCountryManual.iso_code}>
+                            <Plus className="h-4 w-4" />
+                            Uložit zemi
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
