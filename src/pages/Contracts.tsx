@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, FileText, Search, Trash2, Filter } from "lucide-react";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { parseDateSafe, formatPriceCurrency } from "@/lib/utils";
@@ -159,22 +160,44 @@ const Contracts = () => {
     );
   });
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <>
+      <div className="relative w-48 md:w-64">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Hledat..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-8 text-xs"
+        />
+      </div>
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Všechny statusy</SelectItem>
+          <SelectItem value="draft">Koncept</SelectItem>
+          <SelectItem value="sent">Odesláno</SelectItem>
+          <SelectItem value="signed">Podepsáno</SelectItem>
+          <SelectItem value="cancelled">Zrušeno</SelectItem>
+        </SelectContent>
+      </Select>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+      <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " gap-1"}>
+        <Plus className="h-3.5 w-3.5" />
+        Nová smlouva
+      </Button>
+    </>,
+    [searchQuery, statusFilter, dateFilter]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-foreground">Cestovní smlouvy</h1>
-              <p className="text-muted-foreground mt-2">Správa cestovních smluv podle §2521 OZ</p>
-            </div>
-            <Button onClick={() => navigate("/contracts/new")} variant="premium" className="gap-2 w-full md:w-auto">
-              <Plus className="h-4 w-4" />
-              Nová smlouva
-            </Button>
-          </div>
-        </header>
-
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítání smluv...</p>
@@ -191,40 +214,15 @@ const Contracts = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Celkem smluv: <span className="font-semibold text-foreground">{contracts?.length || 0}</span>
-                  {filteredContracts && filteredContracts.length !== contracts?.length && (
-                    <span className="ml-2">
-                      (zobrazeno: <span className="font-semibold text-foreground">{filteredContracts.length}</span>)
-                    </span>
-                  )}
-                </p>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Filtr statusu" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Všechny statusy</SelectItem>
-                    <SelectItem value="draft">Koncept</SelectItem>
-                    <SelectItem value="sent">Odesláno</SelectItem>
-                    <SelectItem value="signed">Podepsáno</SelectItem>
-                    <SelectItem value="cancelled">Zrušeno</SelectItem>
-                  </SelectContent>
-                </Select>
-                <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-              </div>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat podle čísla, klienta nebo destinace..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Celkem: <span className="font-semibold text-foreground">{contracts?.length || 0}</span>
+                {filteredContracts && filteredContracts.length !== contracts?.length && (
+                  <span className="ml-1">
+                    (zobrazeno: <span className="font-semibold text-foreground">{filteredContracts.length}</span>)
+                  </span>
+                )}
+              </p>
             </div>
 
             {filteredContracts && filteredContracts.length === 0 ? (

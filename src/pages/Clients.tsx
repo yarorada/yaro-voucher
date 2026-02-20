@@ -9,6 +9,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
 import { BulkClientUpload } from "@/components/BulkClientUpload";
 import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
   Select,
   SelectContent,
@@ -422,87 +423,72 @@ const Clients = () => {
     }
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <>
+      <div className="relative w-48 md:w-64">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Hledat..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="pl-8 h-8 text-xs"
+        />
+      </div>
+      <DuplicateClientChecker onComplete={fetchClients} />
+      <Button 
+        className={toolbarButtonClass}
+        onClick={async () => {
+          if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+          try {
+            const { data, error } = await supabase.functions.invoke('assign-client-titles');
+            if (error) throw error;
+            if (data?.success) {
+              toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+              if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+              fetchClients();
+            } else {
+              throw new Error(data?.error || 'Unknown error');
+            }
+          } catch (error: any) {
+            console.error('Error assigning titles:', error);
+            toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+          }
+        }}
+      >
+        Tituly
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className={toolbarButtonClass + " gap-1"}>
+            <Plus className="h-3.5 w-3.5" />
+            Přidat
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-background">
+          <DropdownMenuItem onClick={() => setIsDialogOpen(true)} className="cursor-pointer">
+            <Plus className="h-4 w-4 mr-2" />
+            Přidat individuálně
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setBulkImportOpen(true)} className="cursor-pointer">
+            <Users className="h-4 w-4 mr-2" />
+            Hromadný textový import
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setBulkDocumentUploadOpen(true)} className="cursor-pointer">
+            <FileUp className="h-4 w-4 mr-2" />
+            Nahrát dokumenty
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>,
+    [searchText]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-4xl font-bold text-foreground">Klienti</h1>
-                <p className="text-muted-foreground mt-2">
-                  Správa klientů a cestujících
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <DuplicateClientChecker onComplete={fetchClients} />
-                
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 shrink-0 md:size-default"
-                  onClick={async () => {
-                    if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
-                    
-                    try {
-                      const { data, error } = await supabase.functions.invoke('assign-client-titles');
-                      
-                      if (error) throw error;
-                      
-                      if (data?.success) {
-                        toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
-                        if (data.errors > 0) {
-                          toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
-                        }
-                        fetchClients();
-                      } else {
-                        throw new Error(data?.error || 'Unknown error');
-                      }
-                    } catch (error: any) {
-                      console.error('Error assigning titles:', error);
-                      toast.error(`Chyba při přiřazování titulů: ${error.message}`);
-                    }
-                  }}
-                >
-                  <span className="hidden md:inline">Přiřadit tituly</span>
-                  <span className="md:hidden">Tituly</span>
-                </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="default" size="sm" className="gap-2 shrink-0 md:size-default">
-                      <Plus className="h-4 w-4" />
-                      <span className="hidden md:inline">Přidat klienta</span>
-                      <span className="md:hidden">Přidat</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-background">
-                    <DropdownMenuItem 
-                      onClick={() => setIsDialogOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Přidat individuálně
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setBulkImportOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Hromadný textový import
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setBulkDocumentUploadOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <FileUp className="h-4 w-4 mr-2" />
-                      Nahrát dokumenty
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
 
             {/* Dialogs */}
             <Dialog
@@ -897,24 +883,6 @@ const Clients = () => {
                   />
                 </DialogContent>
               </Dialog>
-            </div>
-          </header>
-
-        {/* Search Bar */}
-        {!loading && clients.length > 0 && (
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Hledat klienta podle jména nebo emailu..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        )}
 
         {loading ? (
           <div className="text-center py-12">
