@@ -4,7 +4,7 @@ import { Download, Mail, Settings } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import html2pdf from "html2pdf.js";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -197,8 +197,19 @@ interface VoucherDisplayProps {
   supplierNotes?: string | null;
   voucherId?: string;
   dealId?: string | null;
+  hideActions?: boolean;
 }
-export const VoucherDisplay = ({
+
+export interface VoucherDisplayRef {
+  handleDownloadPDF: () => Promise<void>;
+  handleSendEmail: () => Promise<void>;
+  isGeneratingPdf: boolean;
+  isSendingEmail: boolean;
+  isTranslating: boolean;
+  settingsDialog: React.ReactNode;
+}
+
+export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>(({
   voucherCode,
   clientName,
   otherTravelers,
@@ -215,8 +226,9 @@ export const VoucherDisplay = ({
   supplierAddress,
   supplierNotes,
   voucherId,
-  dealId
-}: VoucherDisplayProps) => {
+  dealId,
+  hideActions
+}, ref) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [translatedServices, setTranslatedServices] = useState<Service[]>(services);
@@ -735,6 +747,92 @@ export const VoucherDisplay = ({
   };
   const baseFontRem = fontSize / 16; // Convert px to rem
   const headingSizeRem = headingSize / 16;
+
+  const settingsDialogContent = (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" className="h-8 w-8">
+          <Settings className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nastavení PDF</DialogTitle>
+          <DialogDescription>
+            Upravte velikost fontu a mezer před exportem PDF
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <Label>Velikost fontu: {fontSize}px</Label>
+            <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
+          </div>
+          <div className="space-y-2">
+            <Label>Velikost nadpisů: {headingSize}px</Label>
+            <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
+          </div>
+          <div className="space-y-2">
+            <Label>Velikost loga: {logoSize}px</Label>
+            <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
+          </div>
+          <div className="space-y-2">
+            <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
+            <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
+          </div>
+          <div className="space-y-2">
+            <Label>Mezery mezi sekcemi: {sectionSpacing}px</Label>
+            <Slider value={[sectionSpacing]} onValueChange={([value]) => setSectionSpacing(value)} min={4} max={32} step={2} />
+          </div>
+          <div className="space-y-2">
+            <Label>Padding obsahu: {contentPadding}px</Label>
+            <Slider value={[contentPadding]} onValueChange={([value]) => setContentPadding(value)} min={4} max={24} step={2} />
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-4">
+            <h4 className="font-medium text-sm">Nastavení emailu</h4>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="email-send-pdf" className="flex-1">Přiložit PDF k emailu</Label>
+              <Switch 
+                id="email-send-pdf"
+                checked={emailSendPdf}
+                onCheckedChange={setEmailSendPdf}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="email-cc-supplier" className="flex-1">Poslat kopii dodavateli</Label>
+              <Switch 
+                id="email-cc-supplier"
+                checked={emailCcSupplier}
+                onCheckedChange={setEmailCcSupplier}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-subject">Předmět emailu</Label>
+              <Input
+                id="email-subject"
+                value={emailSubjectTemplate}
+                onChange={(e) => setEmailSubjectTemplate(e.target.value)}
+                placeholder="Travel Voucher {{voucher_code}} - YARO Travel"
+              />
+              <p className="text-xs text-muted-foreground">Použijte {"{{voucher_code}}"} pro kód voucheru</p>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  useImperativeHandle(ref, () => ({
+    handleDownloadPDF,
+    handleSendEmail,
+    isGeneratingPdf,
+    isSendingEmail,
+    isTranslating,
+    settingsDialog: settingsDialogContent,
+  }), [isGeneratingPdf, isSendingEmail, isTranslating, settings]);
+
   return <div className="space-y-4">
       <style>
         {`
@@ -855,87 +953,17 @@ export const VoucherDisplay = ({
           }
         `}
       </style>
-      <div className="flex gap-2 print:hidden">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nastavení PDF</DialogTitle>
-              <DialogDescription>
-                Upravte velikost fontu a mezer před exportem PDF
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label>Velikost fontu: {fontSize}px</Label>
-                <Slider value={[fontSize]} onValueChange={([value]) => setFontSize(value)} min={10} max={20} step={1} />
-              </div>
-              <div className="space-y-2">
-                <Label>Velikost nadpisů: {headingSize}px</Label>
-                <Slider value={[headingSize]} onValueChange={([value]) => setHeadingSize(value)} min={12} max={24} step={1} />
-              </div>
-              <div className="space-y-2">
-                <Label>Velikost loga: {logoSize}px</Label>
-                <Slider value={[logoSize]} onValueChange={([value]) => setLogoSize(value)} min={40} max={200} step={4} />
-              </div>
-              <div className="space-y-2">
-                <Label>Výška řádků: {lineHeight.toFixed(1)}</Label>
-                <Slider value={[lineHeight]} onValueChange={([value]) => setLineHeight(value)} min={1.0} max={2.5} step={0.1} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mezery mezi sekcemi: {sectionSpacing}px</Label>
-                <Slider value={[sectionSpacing]} onValueChange={([value]) => setSectionSpacing(value)} min={4} max={32} step={2} />
-              </div>
-              <div className="space-y-2">
-                <Label>Padding obsahu: {contentPadding}px</Label>
-                <Slider value={[contentPadding]} onValueChange={([value]) => setContentPadding(value)} min={4} max={24} step={2} />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm">Nastavení emailu</h4>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email-send-pdf" className="flex-1">Přiložit PDF k emailu</Label>
-                  <Switch 
-                    id="email-send-pdf"
-                    checked={emailSendPdf}
-                    onCheckedChange={setEmailSendPdf}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email-cc-supplier" className="flex-1">Poslat kopii dodavateli</Label>
-                  <Switch 
-                    id="email-cc-supplier"
-                    checked={emailCcSupplier}
-                    onCheckedChange={setEmailCcSupplier}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email-subject">Předmět emailu</Label>
-                  <Input
-                    id="email-subject"
-                    value={emailSubjectTemplate}
-                    onChange={(e) => setEmailSubjectTemplate(e.target.value)}
-                    placeholder="Travel Voucher {{voucher_code}} - YARO Travel"
-                  />
-                  <p className="text-xs text-muted-foreground">Použijte {"{{voucher_code}}"} pro kód voucheru</p>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        <Button onClick={handleDownloadPDF} className="flex-1" size="icon" disabled={isGeneratingPdf || isTranslating} title={isTranslating ? "Čekám na překlad služeb..." : "Stáhnout PDF"}>
-          <Download className="h-5 w-5" />
-        </Button>
-        <Button variant="outline" className="flex-1" size="icon" onClick={handleSendEmail} disabled={isSendingEmail || !voucherId}>
-          <Mail className="h-5 w-5" />
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex gap-2 print:hidden">
+          {settingsDialogContent}
+          <Button onClick={handleDownloadPDF} className="flex-1" size="icon" disabled={isGeneratingPdf || isTranslating} title={isTranslating ? "Čekám na překlad služeb..." : "Stáhnout PDF"}>
+            <Download className="h-5 w-5" />
+          </Button>
+          <Button variant="outline" className="flex-1" size="icon" onClick={handleSendEmail} disabled={isSendingEmail || !voucherId}>
+            <Mail className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
 
       <Card id="voucher-content" className="p-8 shadow-[var(--shadow-strong)] bg-card print:shadow-none print:p-3.5 print:text-sm">
         {/* Header */}
@@ -1147,4 +1175,6 @@ export const VoucherDisplay = ({
         </div>
       </Card>
     </div>;
-};
+});
+
+VoucherDisplay.displayName = "VoucherDisplay";

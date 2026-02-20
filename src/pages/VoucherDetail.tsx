@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Download } from "lucide-react";
+import { Edit, Trash2, Download, Mail } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { VoucherDisplay } from "@/components/VoucherDisplay";
+import { VoucherDisplay, VoucherDisplayRef } from "@/components/VoucherDisplay";
 import { removeDiacritics, translateTitleToEnglish } from "@/lib/utils";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,61 +67,22 @@ const VoucherDetail = () => {
     notes: string | null;
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const voucherDisplayRef = useRef<VoucherDisplayRef>(null);
+  const [, forceUpdate] = useState(0);
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "";
-    // Parse YYYY-MM-DD safely to avoid timezone shifts
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const day = parts[2].padStart(2, '0');
-      const month = parts[1].padStart(2, '0');
-      return `${day}.${month}.${parts[0]}`;
-    }
-    return dateStr;
-  };
-
-  const calculateIssueDate = (expiryStr: string | null) => {
-    if (!expiryStr) return "";
-    const parts = expiryStr.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10) - 10;
-      const month = parts[1].padStart(2, '0');
-      const day = parts[2].padStart(2, '0');
-      return `${day}.${month}.${year}`;
-    }
-    return "";
-  };
-
-  const exportTravelersCsv = () => {
-    if (travelers.length === 0) return;
-    const header = "Jméno;Příjmení;Datum narození;Číslo pasu;Datum vydání pasu;Platnost pasu do";
-    const rows = travelers.map((t) => {
-      const c = t.clients;
-      return [
-        c.first_name,
-        c.last_name,
-        formatDate(c.date_of_birth),
-        c.passport_number || "",
-        calculateIssueDate(c.passport_expiry),
-        formatDate(c.passport_expiry),
-      ].join(";");
-    });
-    const csv = "\uFEFF" + [header, ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `cestujici-${voucher?.voucher_code || "export"}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exportováno");
-  };
 
   useEffect(() => {
     if (id) {
       fetchVoucher();
     }
   }, [id]);
+
+  // Force re-render after ref is set so toolbar picks up ref methods
+  useEffect(() => {
+    if (!loading && voucher) {
+      forceUpdate(n => n + 1);
+    }
+  }, [loading, voucher]);
 
   const handleDelete = async () => {
     try {
@@ -197,15 +157,26 @@ const VoucherDetail = () => {
   usePageToolbar(
     !loading && voucher ? (
       <>
+        {voucherDisplayRef.current?.settingsDialog}
         <Button
           variant="outline"
           size="sm"
-          onClick={exportTravelersCsv}
+          onClick={() => voucherDisplayRef.current?.handleDownloadPDF()}
           className={toolbarButtonClass}
-          disabled={travelers.length === 0}
+          disabled={voucherDisplayRef.current?.isGeneratingPdf || voucherDisplayRef.current?.isTranslating}
         >
           <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Export CSV</span>
+          <span className="hidden sm:inline">PDF</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => voucherDisplayRef.current?.handleSendEmail()}
+          className={toolbarButtonClass}
+          disabled={voucherDisplayRef.current?.isSendingEmail}
+        >
+          <Mail className="h-4 w-4" />
+          <span className="hidden sm:inline">Email</span>
         </Button>
         <Button
           variant="outline"
@@ -227,7 +198,7 @@ const VoucherDetail = () => {
         </Button>
       </>
     ) : null,
-    [id, loading, voucher, travelers.length]
+    [id, loading, voucher, voucherDisplayRef.current]
   );
 
   if (loading) {
@@ -247,6 +218,7 @@ const VoucherDetail = () => {
       <div className="container max-w-5xl mx-auto py-8 px-4">
 
         <VoucherDisplay
+          ref={voucherDisplayRef}
           voucherCode={voucher.voucher_code}
           clientName={
             travelers.find(t => t.is_main_client)
@@ -283,6 +255,7 @@ const VoucherDetail = () => {
           supplierNotes={supplier?.notes}
           voucherId={voucher.id}
           dealId={voucher.deal_id}
+          hideActions
         />
       </div>
 
