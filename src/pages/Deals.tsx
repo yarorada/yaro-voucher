@@ -178,7 +178,15 @@ const Deals = () => {
           if (!da && !db) return 0;
           if (!da) return 1;
           if (!db) return -1;
-          return da < db ? -1 : da > db ? 1 : 0;
+          const today = new Date().toISOString().split("T")[0];
+          const aFuture = da >= today;
+          const bFuture = db >= today;
+          // Future dates first, then past
+          if (aFuture && !bFuture) return -1;
+          if (!aFuture && bFuture) return 1;
+          // Within future: nearest first (asc); within past: most recent first (desc)
+          if (aFuture) return da < db ? -1 : da > db ? 1 : 0;
+          return db < da ? -1 : db > da ? 1 : 0;
         }
         case "departure_desc": {
           const da = a.start_date || "";
