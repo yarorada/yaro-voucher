@@ -92,6 +92,14 @@ export const OverduePaymentsCard = () => {
 
   const typeLabel = (t: string) => (t === "final" ? "Doplatek" : "Záloha");
 
+  const typeCircle = (t: string) => {
+    if (t === "final") return "D";
+    // deposit_1, deposit_2, deposit etc.
+    const match = t.match(/deposit_?(\d)?/);
+    if (match) return match[1] ? `Z${match[1]}` : "Z";
+    return "Z";
+  };
+
   const renderRow = (p: PaymentRow) => {
     const daysOver = differenceInDays(new Date(), parseISO(p.due_date));
     const isOverdue = p.due_date < today;
@@ -105,15 +113,15 @@ export const OverduePaymentsCard = () => {
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border-2 border-primary text-[10px] font-bold text-primary shrink-0">
+              {typeCircle(p.payment_type)}
+            </span>
             <span className="font-medium text-sm">{p.label}</span>
             {p.clientName && (
               <span className="text-sm text-muted-foreground">• {p.clientName}</span>
             )}
-            <Badge variant="outline" className="text-xs">
-              {typeLabel(p.payment_type)}
-            </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Splatnost: {format(parseISO(p.due_date), "d.M.yyyy")}
             {isOverdue && (
               <span className="text-destructive font-medium ml-1">
