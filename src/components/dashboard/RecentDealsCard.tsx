@@ -19,17 +19,30 @@ type SortMode = "updated_at" | "departure_asc" | "return_asc";
 interface Deal {
   id: string;
   deal_number: string;
-  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled";
+  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled" | "dispatched";
   created_at: string;
   updated_at: string;
   start_date: string | null;
   end_date: string | null;
-  destinations: { name: string } | null;
+  destinations: { name: string; countries?: { iso_code: string } | null } | null;
   deal_travelers: Array<{
     is_lead_traveler: boolean;
     clients: { first_name: string; last_name: string } | null;
   }>;
+  deal_services: Array<{
+    service_type: string;
+    service_name: string;
+  }>;
 }
+
+const formatDateShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
+};
 
 export const RecentDealsCard = () => {
   const [sortBy, setSortBy] = useState<SortMode>("updated_at");
@@ -40,15 +53,10 @@ export const RecentDealsCard = () => {
       let query = supabase
         .from("deals")
         .select(`
-          id,
-          deal_number,
-          status,
-          created_at,
-          updated_at,
-          start_date,
-          end_date,
-          destinations(name),
-          deal_travelers(is_lead_traveler, clients(first_name, last_name))
+          id, deal_number, status, created_at, updated_at, start_date, end_date,
+          destinations(name, countries(iso_code)),
+          deal_travelers(is_lead_traveler, clients(first_name, last_name)),
+          deal_services(service_type, service_name)
         `);
 
       switch (sortBy) {
@@ -58,7 +66,6 @@ export const RecentDealsCard = () => {
         case "return_asc":
           query = query.order("end_date", { ascending: true, nullsFirst: false });
           break;
-        case "updated_at":
         default:
           query = query.order("updated_at", { ascending: false });
           break;
@@ -66,16 +73,21 @@ export const RecentDealsCard = () => {
 
       const { data, error } = await query.limit(10);
       if (error) throw error;
-      return data as Deal[];
+      return data as unknown as Deal[];
     },
   });
 
   const getLeadClient = (deal: Deal) => {
     const lead = deal.deal_travelers?.find((t) => t.is_lead_traveler);
-    if (lead?.clients) {
-      return `${lead.clients.first_name} ${lead.clients.last_name}`;
-    }
-    return "—";
+    if (lead?.clients) return `${lead.clients.first_name} ${lead.clients.last_name}`;
+    const first = deal.deal_travelers?.[0];
+    if (first?.clients) return `${first.clients.first_name} ${first.clients.last_name}`;
+    return "";
+  };
+
+  const getHotel = (deal: Deal) => {
+    const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
+    return hotel?.service_name || "";
   };
 
   const getBaseNumber = (dealNumber: string) => {
@@ -83,10 +95,17 @@ export const RecentDealsCard = () => {
     return match ? match[0] : dealNumber;
   };
 
-  const formatDate = (d: string | null) => {
-    if (!d) return "";
-    const date = new Date(d);
-    return date.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
+  const buildDescription = (deal: Deal) => {
+    const parts: string[] = [];
+    const client = getLeadClient(deal);
+    if (client) parts.push(client);
+    const iso = deal.destinations?.countries?.iso_code;
+    if (iso) parts.push(iso);
+    const hotel = getHotel(deal);
+    if (hotel) parts.push(hotel);
+    const date = formatDateShort(deal.start_date);
+    if (date) parts.push(date);
+    return parts.join(" • ");
   };
 
   return (
@@ -117,30 +136,21 @@ export const RecentDealsCard = () => {
             Žádné obchodní případy
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {deals.map((deal) => (
               <Link
                 key={deal.id}
                 to={`/deals/${deal.id}`}
-                className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors group"
+                className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
               >
+                <DealStatusBadge status={deal.status} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">
-                    {getBaseNumber(deal.deal_number)}
+                    <span className="text-muted-foreground">{getBaseNumber(deal.deal_number)}</span>
+                    {" "}
+                    <span>{buildDescription(deal)}</span>
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {getLeadClient(deal)}
-                    {deal.destinations?.name && ` • ${deal.destinations.name}`}
-                  </p>
-                  {(deal.start_date || deal.end_date) && (
-                    <p className="text-xs text-muted-foreground">
-                      {deal.start_date && formatDate(deal.start_date)}
-                      {deal.start_date && deal.end_date && " → "}
-                      {deal.end_date && formatDate(deal.end_date)}
-                    </p>
-                  )}
                 </div>
-                <DealStatusBadge status={deal.status} />
               </Link>
             ))}
             <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
