@@ -298,10 +298,6 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
             Platební kalendář
           </CardTitle>
           <div className="flex gap-2">
-            <Button onClick={() => setEmailMatchOpen(true)} size="sm" variant="outline">
-              <Mail className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Z emailu</span>
-            </Button>
             <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Přidat</span>
