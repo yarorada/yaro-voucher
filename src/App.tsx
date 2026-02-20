@@ -62,7 +62,7 @@ const LayoutHeader = () => {
 };
 
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
-  <SidebarProvider defaultOpen={false}>
+  <SidebarProvider defaultOpen={true}>
     <PageToolbarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
