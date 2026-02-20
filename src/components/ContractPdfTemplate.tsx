@@ -532,7 +532,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <div style={{ width: '44%', textAlign: 'center' }}>
               <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
               <div style={{ textAlign: 'center', marginTop: '4px' }}>
-                <img src={radekPodpis} alt="Podpis" style={{ height: '40px', margin: '0 auto 2px' }} />
+                <img src={radekPodpis} alt="Podpis" style={{ height: '60px', margin: '0 auto 2px', imageRendering: 'auto' }} />
               </div>
               <div style={{ borderTop: '1px solid #000', paddingTop: '4px' }}>
                 <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>Radek Jaroměřský</p>
