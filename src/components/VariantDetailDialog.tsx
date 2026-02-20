@@ -318,6 +318,45 @@ export const VariantDetailDialog = ({
     }
   };
 
+  const syncServicesToMainDeal = async (variantId: string) => {
+    try {
+      const { data: variantServices, error: fetchError } = await supabase
+        .from("deal_variant_services")
+        .select("*")
+        .eq("variant_id", variantId)
+        .order("order_index");
+
+      if (fetchError) throw fetchError;
+
+      await supabase.from("deal_services").delete().eq("deal_id", dealId);
+
+      if (variantServices && variantServices.length > 0) {
+        const dealServices = variantServices.map((vs) => ({
+          deal_id: dealId,
+          service_type: vs.service_type,
+          service_name: vs.service_name,
+          description: vs.description,
+          supplier_id: vs.supplier_id,
+          start_date: vs.start_date,
+          end_date: vs.end_date,
+          person_count: vs.person_count,
+          quantity: (vs as any).quantity || 1,
+          price: vs.price,
+          price_currency: (vs as any).price_currency || "CZK",
+          cost_price: vs.cost_price,
+          cost_currency: (vs as any).cost_currency || "CZK",
+          cost_price_original: (vs as any).cost_price_original,
+          details: vs.details,
+          order_index: vs.order_index,
+        }));
+
+        await supabase.from("deal_services").insert(dealServices);
+      }
+    } catch (error) {
+      console.error("Error syncing services to main deal:", error);
+    }
+  };
+
   const recalcDatesFromServices = async (variantId: string) => {
     try {
       const { data: svcData } = await supabase
@@ -353,6 +392,9 @@ export const VariantDetailDialog = ({
         if (Object.keys(updateData).length > 0) {
           await supabase.from("deals").update(updateData).eq("id", dealId);
         }
+
+        // Sync services to main deal
+        await syncServicesToMainDeal(variantId);
       }
     } catch (error) {
       console.error("Error recalculating dates:", error);
