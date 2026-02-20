@@ -430,11 +430,9 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" title="Otevřít">
-                    <Button size="icon" variant="ghost" className="h-7 w-7">
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </a>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPreviewUrl(doc.file_url)} title="Náhled">
+                    <Eye className="h-3 w-3" />
+                  </Button>
                   <a href={doc.file_url} download={doc.file_name} title="Stáhnout">
                     <Button size="icon" variant="ghost" className="h-7 w-7">
                       <Download className="h-3 w-3" />
@@ -451,25 +449,82 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
 
         {/* Preview dialog */}
         <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-background">
             <DialogHeader>
               <DialogTitle>Náhled dokumentu</DialogTitle>
             </DialogHeader>
             {previewUrl && (
-              <div className="flex items-center justify-center">
-                {isImage(previewUrl) ? (
-                  <img src={previewUrl} alt="Dokument" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
-                ) : isPdf(previewUrl) ? (
-                  <iframe src={previewUrl} className="w-full h-[70vh] rounded-lg" title="PDF" />
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">Náhled není dostupný</p>
-                    <Button onClick={() => window.open(previewUrl!, "_blank")}>
-                      <Download className="h-4 w-4 mr-2" /> Otevřít
+              <div className="overflow-y-auto max-h-[70vh]">
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Dokument</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => window.open(previewUrl!, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Nové okno
                     </Button>
                   </div>
-                )}
+                  {isPdf(previewUrl) ? (
+                    <div className="bg-muted/50 rounded-lg p-8 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-3">PDF dokument</p>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => window.open(previewUrl!, '_blank')}
+                      >
+                        Otevřít PDF
+                      </Button>
+                    </div>
+                  ) : isImage(previewUrl) ? (
+                    <div className="relative">
+                      <img
+                        src={previewUrl}
+                        alt="Dokument"
+                        className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div
+                        className="hidden flex-col items-center justify-center bg-muted/50 rounded-lg p-8"
+                        style={{ display: 'none' }}
+                      >
+                        <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-3">Náhled nelze zobrazit</p>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => window.open(previewUrl!, '_blank')}
+                        >
+                          Otevřít dokument
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/50 rounded-lg p-8 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-3">Náhled není dostupný</p>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => window.open(previewUrl!, '_blank')}
+                      >
+                        Otevřít dokument
+                      </Button>
+                    </div>
+                  )}
+                </Card>
               </div>
             )}
           </DialogContent>
