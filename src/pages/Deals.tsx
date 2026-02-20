@@ -49,11 +49,21 @@ interface Deal {
   discount_note: string | null;
   adjustment_note: string | null;
   notes: string | null;
-  destinations: { name: string } | null;
-  deal_travelers: { clients: { first_name: string; last_name: string } }[];
+  destinations: { name: string; countries: { iso_code: string } | null } | null;
+  deal_travelers: { is_lead_traveler: boolean; clients: { first_name: string; last_name: string } | null }[];
+  deal_services: { service_type: string; service_name: string }[];
   created_at: string;
   updated_at: string;
 }
+
+const formatDateShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
+};
 
 const Deals = () => {
   const navigate = useNavigate();
@@ -104,14 +114,15 @@ const Deals = () => {
           notes,
           created_at,
           updated_at,
-          destinations:destination_id (name),
+          destinations:destination_id (name, countries:country_id(iso_code)),
           deal_travelers (
             is_lead_traveler,
             clients:client_id (
               first_name,
               last_name
             )
-          )
+          ),
+          deal_services (service_type, service_name)
         `)
         .order("created_at", { ascending: false });
 
@@ -420,12 +431,32 @@ const Deals = () => {
               </Card>
             ) : (
               filteredDeals.map((deal) => {
+                const lead = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
+                const firstTraveler = deal.deal_travelers?.[0];
+                const leadClient = lead?.clients || firstTraveler?.clients;
+                const leadName = leadClient ? `${leadClient.first_name} ${leadClient.last_name}` : "";
+
                 const mainTravelers = [...deal.deal_travelers]
                   .filter((dt: any) => dt.clients)
                   .sort((a: any, b: any) => (b.is_lead_traveler ? 1 : 0) - (a.is_lead_traveler ? 1 : 0))
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
-                const displayName = deal.name || deal.destinations?.name || deal.deal_number;
+
+                const iso = deal.destinations?.countries?.iso_code;
+                const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
+
+                // Build description: Jmeno Prijmeni • ISO • Hotel • DD-MM-RR
+                const descParts: string[] = [];
+                if (leadName) descParts.push(leadName);
+                if (iso) descParts.push(iso);
+                if (hotel) descParts.push(hotel.service_name);
+                if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
+                const displayDesc = descParts.join(" • ");
+
+                const getBaseNumber = (dn: string) => {
+                  const match = dn.match(/^D-\d{6}/);
+                  return match ? match[0] : dn;
+                };
 
                 return (
                   <Card key={deal.id} className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
@@ -433,7 +464,10 @@ const Deals = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           <DealStatusBadge status={deal.status} />
-                          <h3 className="text-lg md:text-xl font-bold text-foreground truncate">{displayName}</h3>
+                          <span className="font-bold text-foreground">{getBaseNumber(deal.deal_number)}</span>
+                          {displayDesc && (
+                            <span className="text-foreground truncate">{displayDesc}</span>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
                           {mainTravelers && (
