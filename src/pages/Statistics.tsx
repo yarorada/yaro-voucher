@@ -10,6 +10,7 @@ import { StatsCountryChart } from "@/components/statistics/StatsCountryChart";
 import { StatsPeriodTable } from "@/components/statistics/StatsPeriodTable";
 import { StatsCountryTable } from "@/components/statistics/StatsCountryTable";
 import { Loader2 } from "lucide-react";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 
 type PeriodType = "year" | "quarter" | "month";
 type StatusFilter = "all" | "confirmed" | "completed";
@@ -296,6 +297,61 @@ const Statistics = () => {
     };
   }, [statsData, deals, profitability, selectedYear, statusFilter, excludeFlights, flightCosts]);
 
+  const toolbarSelectClass = "w-[130px] h-8 text-xs";
+
+  usePageToolbar(
+    <>
+      <Select value={selectedYear} onValueChange={setSelectedYear}>
+        <SelectTrigger className={toolbarSelectClass}>
+          <SelectValue placeholder="Rok" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Všechny roky</SelectItem>
+          {availableYears.map((year) => (
+            <SelectItem key={year} value={year.toString()}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
+        <SelectTrigger className={toolbarSelectClass}>
+          <SelectValue placeholder="Období" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="year">Roky</SelectItem>
+          <SelectItem value="quarter">Čtvrtletí</SelectItem>
+          <SelectItem value="month">Měsíce</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+        <SelectTrigger className="w-[150px] h-8 text-xs">
+          <SelectValue placeholder="Stav" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Všechny (bez zruš.)</SelectItem>
+          <SelectItem value="confirmed">Potvrzené</SelectItem>
+          <SelectItem value="completed">Dokončené</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div className="flex items-center gap-2 border rounded-md px-3 py-1 h-8 bg-primary/10 border-primary/20">
+        <Switch
+          id="exclude-flights"
+          checked={excludeFlights}
+          onCheckedChange={setExcludeFlights}
+          className="scale-75"
+        />
+        <Label htmlFor="exclude-flights" className="text-xs cursor-pointer whitespace-nowrap text-primary">
+          Bez letenek
+        </Label>
+      </div>
+    </>,
+    [selectedYear, periodType, statusFilter, excludeFlights, availableYears]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -306,59 +362,6 @@ const Statistics = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Statistiky</h1>
-        
-        <div className="flex flex-wrap gap-3">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Rok" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny roky</SelectItem>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Období" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="year">Roky</SelectItem>
-              <SelectItem value="quarter">Čtvrtletí</SelectItem>
-              <SelectItem value="month">Měsíce</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Stav" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny (bez zruš.)</SelectItem>
-              <SelectItem value="confirmed">Potvrzené</SelectItem>
-              <SelectItem value="completed">Dokončené</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-2 border rounded-md px-3 py-1.5 h-9">
-            <Switch
-              id="exclude-flights"
-              checked={excludeFlights}
-              onCheckedChange={setExcludeFlights}
-            />
-            <Label htmlFor="exclude-flights" className="text-sm cursor-pointer whitespace-nowrap">
-              Bez letenek
-            </Label>
-          </div>
-        </div>
-      </div>
-
       <StatsSummaryCards stats={summaryStats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
