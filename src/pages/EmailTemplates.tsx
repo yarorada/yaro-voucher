@@ -232,10 +232,10 @@ export default function EmailTemplates() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Typ triggeru</Label>
-                  <Select value={editForm.trigger_type} onValueChange={v => setEditForm(p => ({ ...p, trigger_type: v }))}>
+                  <Select value={editForm.trigger_type || "none"} onValueChange={v => setEditForm(p => ({ ...p, trigger_type: v === "none" ? "" : v }))}>
                     <SelectTrigger><SelectValue placeholder="Žádný" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Žádný</SelectItem>
+                      <SelectItem value="none">Žádný</SelectItem>
                       {TRIGGER_TYPES.map(tt => (
                         <SelectItem key={tt.value} value={tt.value}>{tt.label}</SelectItem>
                       ))}
