@@ -879,36 +879,43 @@ const DealDetail = () => {
         return;
       }
       
-      // Payments exist — preserve all deposits/installments, only update the final payment
-      const depositsTotal = existingPayments
-        .filter(p => p.payment_type !== "final")
+      // Payments exist — recalculate all unpaid proportionally, keep paid locked
+      const paidSum = existingPayments
+        .filter(p => p.paid)
         .reduce((sum, p) => sum + (p.amount || 0), 0);
-      
-      const newFinalAmount = Math.max(0, totalPrice - depositsTotal);
-      
-      const finalPayment = existingPayments.find(p => p.payment_type === "final");
-      if (finalPayment) {
-        await supabase
-          .from("deal_payments")
-          .update({ amount: newFinalAmount })
-          .eq("id", finalPayment.id);
-      } else if (newFinalAmount > 0) {
-        // No final payment exists yet — create one
-        const departureDate = startDate;
-        const finalDueDate = departureDate 
-          ? addMonths(departureDate, -1) 
-          : addMonths(new Date(), 2);
-        
-        await supabase
-          .from("deal_payments")
-          .insert({
-            deal_id: dealId,
-            payment_type: "final",
-            amount: newFinalAmount,
-            due_date: format(finalDueDate, "yyyy-MM-dd"),
-            notes: "Doplatek",
-          });
+
+      const unpaidPayments = existingPayments.filter(p => !p.paid);
+      if (unpaidPayments.length === 0) return;
+
+      const remaining = Math.max(0, totalPrice - paidSum);
+      const unpaidTotal = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      const updates: PromiseLike<any>[] = [];
+      if (unpaidTotal > 0) {
+        let distributed = 0;
+        unpaidPayments.forEach((p, idx) => {
+          let newAmount: number;
+          if (idx === unpaidPayments.length - 1) {
+            newAmount = Math.max(0, remaining - distributed);
+          } else {
+            newAmount = Math.round((p.amount || 0) / unpaidTotal * remaining);
+            distributed += newAmount;
+          }
+          if (Math.abs((p.amount || 0) - newAmount) > 0.01) {
+            updates.push(
+              supabase.from("deal_payments").update({ amount: newAmount }).eq("id", p.id).then()
+            );
+          }
+        });
+      } else {
+        const last = unpaidPayments[unpaidPayments.length - 1];
+        if (Math.abs((last.amount || 0) - remaining) > 0.01) {
+          updates.push(
+            supabase.from("deal_payments").update({ amount: remaining }).eq("id", last.id).then()
+          );
+        }
       }
+      await Promise.all(updates);
     } catch (error) {
       console.error("Error auto-generating payments:", error);
     }
@@ -1207,6 +1214,12 @@ const DealDetail = () => {
           .from("deals")
           .update({ total_price: newTotal })
           .eq("id", deal.id);
+        
+        if (newTotal > 0) {
+          await autoGeneratePayments(deal.id, newTotal);
+          setPaymentRefreshKey(k => k + 1);
+        }
+        fetchDeal();
       }
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -1267,6 +1280,12 @@ const DealDetail = () => {
           .from("deals")
           .update({ total_price: newTotal })
           .eq("id", deal.id);
+        
+        if (newTotal > 0) {
+          await autoGeneratePayments(deal.id, newTotal);
+          setPaymentRefreshKey(k => k + 1);
+        }
+        fetchDeal();
       }
     } catch (error) {
       console.error("Error duplicating service:", error);
