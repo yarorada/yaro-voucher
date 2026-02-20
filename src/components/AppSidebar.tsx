@@ -42,7 +42,7 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { open, setOpenMobile } = useSidebar();
+  const { open, setOpen, setOpenMobile } = useSidebar();
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
 
@@ -55,11 +55,13 @@ export function AppSidebar() {
     navigate(url);
     if (isMobile) {
       setOpenMobile(false);
+    } else {
+      setOpen(false);
     }
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="offcanvas" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center justify-center py-6 px-4 border-b border-border/50">
