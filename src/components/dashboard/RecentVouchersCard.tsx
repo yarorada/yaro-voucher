@@ -22,7 +22,7 @@ export const RecentVouchersCard = () => {
       const { data, error } = await supabase
         .from("vouchers")
         .select(`
-          id, voucher_code, client_name, hotel_name, sent_at, created_at,
+          id, voucher_code, client_name, hotel_name, sent_at, created_at, services,
           deals(start_date, destinations(name, countries(iso_code))),
           voucher_travelers(is_main_client, clients(first_name, last_name))
         `)
@@ -42,6 +42,15 @@ export const RecentVouchersCard = () => {
     return v.client_name || "";
   };
 
+  const getFirstServiceDate = (v: any): string | null => {
+    const servicesArr = Array.isArray(v.services) ? v.services : [];
+    return servicesArr
+      .map((s: any) => s.start_date)
+      .filter(Boolean)
+      .sort()
+      [0] || null;
+  };
+
   const buildDescription = (v: any) => {
     const parts: string[] = [];
     const client = getClientName(v);
@@ -49,7 +58,7 @@ export const RecentVouchersCard = () => {
     const iso = v.deals?.destinations?.countries?.iso_code;
     if (iso) parts.push(iso);
     if (v.hotel_name) parts.push(v.hotel_name);
-    const date = formatDateShort(v.deals?.start_date || null);
+    const date = formatDateShort(getFirstServiceDate(v));
     if (date) parts.push(date);
     return parts.join(" • ");
   };
