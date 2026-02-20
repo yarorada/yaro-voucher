@@ -16,6 +16,7 @@ import { SendContractEmail } from "@/components/SendContractEmail";
 import { EditContractDialog } from "@/components/EditContractDialog";
 import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { ContractTeeTimesEditor } from "@/components/ContractTeeTimesEditor";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { formatPrice, parseDateSafe } from "@/lib/utils";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
@@ -174,6 +175,57 @@ const ContractDetail = () => {
     }
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    contract ? (
+      <>
+        <Button variant="outline" size="sm" className={toolbarButtonClass} onClick={() => setEditDialogOpen(true)}>
+          <Pencil className="h-4 w-4 mr-1" />
+          <span className="hidden sm:inline">Upravit</span>
+        </Button>
+        <CreateVoucherFromContract 
+          contractId={contract.id} 
+          contractStatus={contract.status} 
+        />
+        <SendContractEmail
+          contract={contract}
+          pdfContentRef={pdfContentRef}
+          onSent={refetch}
+        />
+        <Button variant="outline" size="sm" className={toolbarButtonClass} onClick={() => {
+            const signToken = (contract as any).sign_token;
+            if (signToken) {
+              const url = `${window.location.origin}/sign-contract?token=${signToken}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Odkaz pro podpis zkopírován");
+            } else {
+              toast.error("Smlouva nemá podpisový token");
+            }
+          }}>
+          {contract.status === 'signed' ? (
+            <><CheckCircle2 className="h-4 w-4 mr-1 text-primary" /><span className="hidden sm:inline">Podepsáno</span></>
+          ) : (
+            <><Copy className="h-4 w-4 mr-1" /><span className="hidden sm:inline">Odkaz pro podpis</span></>
+          )}
+        </Button>
+        {contract.status === 'signed' && (contract as any).signature_url && (
+          <Button variant="ghost" size="sm" className={toolbarButtonClass} asChild>
+            <a href={(contract as any).signature_url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 mr-1" /> Podpis
+            </a>
+          </Button>
+        )}
+        <Button size="sm" className={toolbarButtonClass} onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
+          {isGeneratingPdf ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+          <span className="hidden sm:inline">{isGeneratingPdf ? 'Generuji...' : 'PDF'}</span>
+          <span className="sm:hidden">PDF</span>
+        </Button>
+      </>
+    ) : null,
+    [contract, isGeneratingPdf, editDialogOpen]
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -224,49 +276,8 @@ const ContractDetail = () => {
             Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 mb-8">
-          <Button variant="outline" size="sm" className="md:size-default" onClick={() => setEditDialogOpen(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Upravit</span>
-          </Button>
-          <CreateVoucherFromContract 
-            contractId={contract.id} 
-            contractStatus={contract.status} 
-          />
-          <SendContractEmail
-            contract={contract}
-            pdfContentRef={pdfContentRef}
-            onSent={refetch}
-          />
-          <Button variant="outline" size="sm" className="md:size-default" onClick={() => {
-              const signToken = (contract as any).sign_token;
-              if (signToken) {
-                const url = `${window.location.origin}/sign-contract?token=${signToken}`;
-                navigator.clipboard.writeText(url);
-                toast.success("Odkaz pro podpis zkopírován");
-              } else {
-                toast.error("Smlouva nemá podpisový token");
-              }
-            }}>
-            {contract.status === 'signed' ? (
-              <><CheckCircle2 className="h-4 w-4 mr-2 text-primary" /><span className="hidden sm:inline">Podepsáno</span></>
-            ) : (
-              <><Copy className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Kopírovat odkaz pro podpis</span></>
-            )}
-          </Button>
-          {contract.status === 'signed' && (contract as any).signature_url && (
-            <Button variant="ghost" size="sm" asChild>
-              <a href={(contract as any).signature_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" /> Zobrazit podpis
-              </a>
-            </Button>
-          )}
-          <Button size="sm" className="md:size-default" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
-            {isGeneratingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            <span className="hidden sm:inline">{isGeneratingPdf ? 'Generuji...' : 'Stáhnout PDF'}</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
-        </div>
+
+
 
         <div className="grid gap-6">
           {/* Základní informace */}

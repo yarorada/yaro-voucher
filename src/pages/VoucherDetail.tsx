@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Download } from "lucide-react";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VoucherDisplay } from "@/components/VoucherDisplay";
@@ -199,6 +200,42 @@ const VoucherDetail = () => {
     );
   }
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportTravelersCsv}
+        className={toolbarButtonClass}
+        disabled={travelers.length === 0}
+      >
+        <Download className="h-4 w-4" />
+        <span className="hidden sm:inline">Export CSV</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => navigate(`/edit/${id}`)}
+        className={toolbarButtonClass}
+      >
+        <Edit className="h-4 w-4" />
+        <span className="hidden sm:inline">Upravit</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setDeleteDialogOpen(true)}
+        className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground`}
+      >
+        <Trash2 className="h-4 w-4" />
+        <span className="hidden sm:inline">Smazat</span>
+      </Button>
+    </>,
+    [id, travelers.length]
+  );
+
   if (!voucher) {
     return null;
   }
@@ -206,35 +243,6 @@ const VoucherDetail = () => {
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-8 px-4">
-        <header className="mb-8 print:hidden">
-          <div className="flex items-center justify-end gap-2 md:gap-4 mb-4">
-            <Button
-              variant="outline"
-              onClick={exportTravelersCsv}
-              className="gap-2 text-sm md:text-base"
-              disabled={travelers.length === 0}
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/edit/${id}`)}
-              className="gap-2 text-sm md:text-base"
-            >
-              <Edit className="h-4 w-4" />
-              <span className="hidden sm:inline">Upravit</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(true)}
-              className="gap-2 text-sm md:text-base hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Smazat</span>
-            </Button>
-          </div>
-        </header>
 
         <VoucherDisplay
           voucherCode={voucher.voucher_code}
