@@ -1,50 +1,21 @@
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { COUNTRY_DATA, searchCountries } from "@/lib/countryData";
 
 interface Destination {
   id: string;
   name: string;
-  countries: { name: string } | null;
-}
-
-interface Country {
-  id: string;
-  name: string;
-  iso_code: string;
+  countries: { id: string; name: string; iso_code: string } | null;
 }
 
 interface DestinationComboboxProps {
@@ -55,30 +26,29 @@ interface DestinationComboboxProps {
 export function DestinationCombobox({ value, onValueChange }: DestinationComboboxProps) {
   const [open, setOpen] = useState(false);
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newCountryId, setNewCountryId] = useState("");
-  const [newDescription, setNewDescription] = useState("");
+  const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchDestinations();
-    fetchCountries();
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setSearch("");
+    }
+  }, [open]);
 
   const fetchDestinations = async () => {
     try {
       const { data, error } = await supabase
         .from("destinations")
-        .select(`
-          id,
-          name,
-          countries:country_id (name)
-        `)
+        .select(`id, name, countries:country_id (id, name, iso_code)`)
         .order("name");
-
       if (error) throw error;
       setDestinations(data || []);
     } catch (error) {
@@ -88,201 +58,195 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
     }
   };
 
-  const fetchCountries = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("countries")
-        .select("id, name, iso_code")
-        .order("name");
+  const q = search.trim().toLowerCase();
 
-      if (error) throw error;
-      setCountries(data || []);
-    } catch (error) {
-      console.error("Error fetching countries:", error);
-    }
-  };
+  // Filter existing destinations
+  const filteredDestinations = useMemo(() => {
+    if (q.length < 1) return destinations;
+    return destinations.filter(
+      (d) =>
+        d.name.toLowerCase().includes(q) ||
+        d.countries?.name.toLowerCase().includes(q) ||
+        d.countries?.iso_code.toLowerCase().includes(q)
+    );
+  }, [destinations, q]);
 
-  const handleAddNew = async () => {
-    if (!newName.trim() || !newCountryId) {
-      toast.error("Vyplňte název destinace a vyberte zemi");
-      return;
-    }
+  // Suggest new countries from COUNTRY_DATA when ≥3 chars and no exact destination match
+  const countrySuggestions = useMemo(() => {
+    if (q.length < 3) return [];
+    // Only show if the search doesn't perfectly match existing destinations
+    const hasExact = destinations.some((d) => d.name.toLowerCase() === q);
+    if (hasExact) return [];
+    return searchCountries(search, 8);
+  }, [search, q, destinations]);
 
+  const selectedDestination = destinations.find((d) => d.id === value);
+
+  // Create destination + country (if needed) in one flow
+  const handleCreateNew = async (destinationName: string, countryName: string, iso: string, currency: string) => {
     setSaving(true);
     try {
-      const { data, error } = await supabase
+      // Check if country already exists by ISO code
+      let countryId: string;
+      const { data: existingCountry } = await supabase
+        .from("countries")
+        .select("id")
+        .eq("iso_code", iso)
+        .maybeSingle();
+
+      if (existingCountry) {
+        countryId = existingCountry.id;
+      } else {
+        // Create the country
+        const { data: newCountry, error: countryError } = await supabase
+          .from("countries")
+          .insert({ name: countryName, iso_code: iso, currency })
+          .select("id")
+          .single();
+        if (countryError) throw countryError;
+        countryId = newCountry.id;
+        toast.success(`Země ${countryName} (${iso}) přidána`);
+      }
+
+      // Create the destination
+      const { data: newDest, error: destError } = await supabase
         .from("destinations")
-        .insert({
-          name: newName.trim(),
-          country_id: newCountryId,
-          description: newDescription.trim() || null,
-        })
-        .select(`
-          id,
-          name,
-          countries:country_id (name)
-        `)
+        .insert({ name: destinationName, country_id: countryId })
+        .select(`id, name, countries:country_id (id, name, iso_code)`)
         .single();
+      if (destError) throw destError;
 
-      if (error) throw error;
-
-      toast.success("Destinace přidána");
-      setDestinations([...destinations, data]);
-      onValueChange(data.id);
-      setDialogOpen(false);
-      setNewName("");
-      setNewCountryId("");
-      setNewDescription("");
+      toast.success(`Destinace "${destinationName}" přidána`);
+      setDestinations((prev) => [...prev, newDest]);
+      onValueChange(newDest.id);
       setOpen(false);
+      setSearch("");
     } catch (error: any) {
-      console.error("Error adding destination:", error);
-      toast.error("Nepodařilo se přidat destinaci");
+      console.error("Error creating destination:", error);
+      toast.error("Nepodařilo se vytvořit destinaci");
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedDestination = destinations.find((d) => d.id === value);
-
   return (
-    <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            {selectedDestination
-              ? `${selectedDestination.name} (${selectedDestination.countries?.name})`
-              : "Vyberte destinaci..."}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0 bg-popover z-50">
-          <Command>
-            <CommandInput placeholder="Hledat destinaci..." />
-            <CommandList>
-              <CommandEmpty>
-                <div className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {loading ? "Načítání..." : "Žádná destinace nenalezena."}
-                  </p>
-                  {!loading && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setDialogOpen(true);
-                        setOpen(false);
-                      }}
-                      className="gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Přidat novou
-                    </Button>
-                  )}
-                </div>
-              </CommandEmpty>
-              <CommandGroup>
-                {destinations.map((destination) => (
-                  <CommandItem
-                    key={destination.id}
-                    value={`${destination.name} ${destination.countries?.name}`}
-                    onSelect={() => {
-                      onValueChange(destination.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === destination.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {destination.name} ({destination.countries?.name})
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    setDialogOpen(true);
-                    setOpen(false);
-                  }}
-                  className="justify-center text-primary"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Přidat novou destinaci
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {selectedDestination
+            ? `${selectedDestination.name} (${selectedDestination.countries?.name} – ${selectedDestination.countries?.iso_code})`
+            : "Vyberte destinaci..."}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full min-w-[320px] p-0 bg-popover z-50" align="start">
+        <div className="flex items-center border-b px-3">
+          <Input
+            ref={inputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Hledat nebo zadat novou destinaci..."
+            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+          />
+        </div>
+        <div className="max-h-[300px] overflow-y-auto p-1">
+          {loading && (
+            <div className="py-4 text-center text-sm text-muted-foreground">Načítání...</div>
+          )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Přidat destinaci</DialogTitle>
-            <DialogDescription>
-              Přidejte novou destinaci do databáze
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+          {/* Existing destinations */}
+          {filteredDestinations.length > 0 && (
             <div>
-              <Label htmlFor="destName">Název destinace *</Label>
-              <Input
-                id="destName"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="např. Costa del Sol"
-              />
+              {filteredDestinations.map((destination) => (
+                <button
+                  key={destination.id}
+                  onClick={() => {
+                    onValueChange(destination.id);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className={cn(
+                    "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                    value === destination.id && "bg-accent"
+                  )}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      value === destination.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>
+                    {destination.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({destination.countries?.name} – {destination.countries?.iso_code})
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
+          )}
+
+          {/* Separator if we have both */}
+          {filteredDestinations.length > 0 && countrySuggestions.length > 0 && (
+            <div className="my-1 h-px bg-border" />
+          )}
+
+          {/* Smart country suggestions for creating new destinations */}
+          {countrySuggestions.length > 0 && (
             <div>
-              <Label htmlFor="destCountry">Země *</Label>
-              <Select value={newCountryId} onValueChange={setNewCountryId}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Vyberte zemi..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {countries.map((country) => (
-                    <SelectItem key={country.id} value={country.id}>
-                      {country.name} ({country.iso_code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                Vytvořit novou destinaci
+              </div>
+              {countrySuggestions.map((country) => (
+                <button
+                  key={country.iso}
+                  disabled={saving}
+                  onClick={() => {
+                    // Use the search text as destination name, assign this country
+                    const destName = search.trim().charAt(0).toUpperCase() + search.trim().slice(1);
+                    handleCreateNew(destName, country.name, country.iso, country.currency);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    <strong>{search.trim()}</strong>{" "}
+                    <span className="text-muted-foreground">
+                      → {country.name} ({country.iso}) · {country.currency}
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
-            <div>
-              <Label htmlFor="destDescription">Popis (volitelné)</Label>
-              <Input
-                id="destDescription"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Krátký popis destinace..."
-              />
+          )}
+
+          {/* No results */}
+          {!loading && filteredDestinations.length === 0 && countrySuggestions.length === 0 && q.length >= 3 && (
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              Žádná shoda. Zkuste jiný název.
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setNewName("");
-                setNewCountryId("");
-                setNewDescription("");
-              }}
-            >
-              Zrušit
-            </Button>
-            <Button onClick={handleAddNew} disabled={saving}>
-              {saving ? "Ukládám..." : "Přidat"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          )}
+
+          {!loading && q.length > 0 && q.length < 3 && filteredDestinations.length === 0 && (
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              Zadejte alespoň 3 znaky pro vyhledání...
+            </div>
+          )}
+
+          {saving && (
+            <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vytvářím...
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
