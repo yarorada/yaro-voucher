@@ -362,24 +362,54 @@ export const VariantDetailDialog = ({
       const { data: payments } = await supabase
         .from("deal_payments")
         .select("id, payment_type, amount, paid")
-        .eq("deal_id", dealId);
+        .eq("deal_id", dealId)
+        .order("due_date");
 
       if (!payments || payments.length === 0) return;
 
-      const depositsSum = payments
-        .filter(p => p.payment_type !== "final")
+      // Split into paid (locked) and unpaid (recalculable)
+      const paidSum = payments
+        .filter(p => p.paid)
         .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      const finalPayment = payments.find(p => p.payment_type === "final");
-      if (finalPayment) {
-        const newFinalAmount = Math.max(0, newTotalPrice - depositsSum);
-        if (Math.abs(finalPayment.amount - newFinalAmount) > 0.01) {
-          await supabase
-            .from("deal_payments")
-            .update({ amount: newFinalAmount })
-            .eq("id", finalPayment.id);
+      const unpaidPayments = payments.filter(p => !p.paid);
+      if (unpaidPayments.length === 0) return;
+
+      const remaining = Math.max(0, newTotalPrice - paidSum);
+
+      // Keep original ratios among unpaid payments
+      const unpaidTotal = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      const updates: PromiseLike<any>[] = [];
+      if (unpaidTotal > 0) {
+        // Distribute proportionally
+        let distributed = 0;
+        unpaidPayments.forEach((p, idx) => {
+          let newAmount: number;
+          if (idx === unpaidPayments.length - 1) {
+            // Last unpaid gets the remainder to avoid rounding issues
+            newAmount = Math.max(0, remaining - distributed);
+          } else {
+            newAmount = Math.round((p.amount || 0) / unpaidTotal * remaining);
+            distributed += newAmount;
+          }
+          if (Math.abs((p.amount || 0) - newAmount) > 0.01) {
+            updates.push(
+              supabase.from("deal_payments").update({ amount: newAmount }).eq("id", p.id).then()
+            );
+          }
+        });
+      } else {
+        // All unpaid had 0 — put everything into the last unpaid (final/doplatek)
+        const last = unpaidPayments[unpaidPayments.length - 1];
+        if (Math.abs((last.amount || 0) - remaining) > 0.01) {
+          updates.push(
+            supabase.from("deal_payments").update({ amount: remaining }).eq("id", last.id).then()
+          );
         }
       }
+
+      await Promise.all(updates);
     } catch (error) {
       console.error("Error recalculating payment schedule:", error);
     }
