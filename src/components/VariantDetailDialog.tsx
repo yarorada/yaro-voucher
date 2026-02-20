@@ -357,6 +357,34 @@ export const VariantDetailDialog = ({
     }
   };
 
+  const recalcPaymentSchedule = async (newTotalPrice: number) => {
+    try {
+      const { data: payments } = await supabase
+        .from("deal_payments")
+        .select("id, payment_type, amount, paid")
+        .eq("deal_id", dealId);
+
+      if (!payments || payments.length === 0) return;
+
+      const depositsSum = payments
+        .filter(p => p.payment_type !== "final")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      const finalPayment = payments.find(p => p.payment_type === "final");
+      if (finalPayment) {
+        const newFinalAmount = Math.max(0, newTotalPrice - depositsSum);
+        if (Math.abs(finalPayment.amount - newFinalAmount) > 0.01) {
+          await supabase
+            .from("deal_payments")
+            .update({ amount: newFinalAmount })
+            .eq("id", finalPayment.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error recalculating payment schedule:", error);
+    }
+  };
+
   const recalcDatesFromServices = async (variantId: string) => {
     try {
       const { data: svcData } = await supabase
@@ -395,6 +423,11 @@ export const VariantDetailDialog = ({
 
         // Sync services to main deal
         await syncServicesToMainDeal(variantId);
+
+        // Recalculate payment schedule — preserve deposits, adjust final payment
+        if (totalPrice > 0) {
+          await recalcPaymentSchedule(totalPrice);
+        }
       }
     } catch (error) {
       console.error("Error recalculating dates:", error);
