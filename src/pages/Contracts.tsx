@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { parseDateSafe, formatPriceCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
 import {
   Select,
   SelectContent,
@@ -50,6 +51,7 @@ const Contracts = () => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>(defaultDateRangeFilter);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<{ id: string; number: string } | null>(null);
 
@@ -65,6 +67,7 @@ const Contracts = () => {
             deal_number,
             name,
             start_date,
+            end_date,
             destination:destinations(
               name,
               countries:country_id(iso_code)
@@ -130,6 +133,16 @@ const Contracts = () => {
   const filteredContracts = contracts?.filter((contract) => {
     // Status filter
     if (statusFilter !== "all" && contract.status !== statusFilter) return false;
+
+    // Date range filter
+    if (dateFilter.preset !== "all" && (dateFilter.from || dateFilter.to)) {
+      const dateValue = dateFilter.dateField === "departure"
+        ? (contract.deal as any)?.start_date
+        : (contract.deal as any)?.end_date;
+      if (!dateValue) return false;
+      if (dateFilter.from && dateValue < dateFilter.from) return false;
+      if (dateFilter.to && dateValue > dateFilter.to) return false;
+    }
 
     // Search
     const searchLower = searchQuery.toLowerCase();
@@ -201,6 +214,7 @@ const Contracts = () => {
                     <SelectItem value="cancelled">Zrušeno</SelectItem>
                   </SelectContent>
                 </Select>
+                <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
               </div>
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

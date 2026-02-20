@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Copy, MoreHorizontal, Filter, Trash2, FileText, ScrollText } from "lucide-react";
+import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
 import {
   Select,
   SelectContent,
@@ -74,6 +75,7 @@ const Deals = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("updated_at");
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>(defaultDateRangeFilter);
   
   // Duplicate dialog state
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -92,7 +94,7 @@ const Deals = () => {
 
   useEffect(() => {
     filterDeals();
-  }, [searchQuery, statusFilter, deals, sortBy]);
+  }, [searchQuery, statusFilter, deals, sortBy, dateFilter]);
 
   const fetchDeals = async () => {
     try {
@@ -157,6 +159,17 @@ const Deals = () => {
               .includes(query)
           )
       );
+    }
+
+    // Filter by date range
+    if (dateFilter.preset !== "all" && (dateFilter.from || dateFilter.to)) {
+      filtered = filtered.filter((deal) => {
+        const dateValue = dateFilter.dateField === "departure" ? deal.start_date : deal.end_date;
+        if (!dateValue) return false;
+        if (dateFilter.from && dateValue < dateFilter.from) return false;
+        if (dateFilter.to && dateValue > dateFilter.to) return false;
+        return true;
+      });
     }
 
     // Sort
@@ -403,7 +416,7 @@ const Deals = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-sm text-muted-foreground">
                   Celkem případů: <span className="font-semibold text-foreground">{deals.length}</span>
-                  {(searchQuery || statusFilter !== "all") && filteredDeals.length !== deals.length && (
+                  {(searchQuery || statusFilter !== "all" || dateFilter.preset !== "all") && filteredDeals.length !== deals.length && (
                     <span className="ml-2">
                       (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
                     </span>
@@ -437,6 +450,7 @@ const Deals = () => {
                     <SelectItem value="return_asc">Datum návratu</SelectItem>
                   </SelectContent>
                 </Select>
+                <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
               </div>
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
