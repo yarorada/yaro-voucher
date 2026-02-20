@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect, DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send } from "lucide-react";
@@ -14,6 +16,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface DealDocument {
@@ -49,6 +52,10 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
@@ -156,6 +163,50 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
 
   const totalItems = documents.length + vouchers.length;
 
+  const openSendDialog = () => {
+    const name = clientName || "klient";
+    setEmailSubject(`Cestovní dokumenty - YARO Travel`);
+    setEmailBody(
+      `Vážený ${name},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
+    );
+    setSendDialogOpen(true);
+  };
+
+  const handleSendAll = async () => {
+    if (!clientEmail) {
+      toast.error("Klient nemá zadaný e-mail");
+      return;
+    }
+    if (documents.length === 0) {
+      toast.error("Nejsou žádné dokumenty k odeslání");
+      return;
+    }
+
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-deal-documents", {
+        body: {
+          dealId,
+          clientEmail,
+          clientName: clientName || "",
+          emailSubject,
+          emailBody,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
+
+      toast.success(`E-mail odeslán na ${clientEmail} (${data.attachmentCount} příloh)`);
+      setSendDialogOpen(false);
+    } catch (err: any) {
+      console.error("Send error:", err);
+      toast.error(err.message || "Nepodařilo se odeslat dokumenty");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -166,9 +217,17 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
               Vouchery a externí cestovní dokumenty (letenky, pojištění, vouchery od jiných dodavatelů)
             </CardDescription>
           </div>
-          {totalItems > 0 && (
-            <Badge variant="secondary">{totalItems} položek</Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {totalItems > 0 && (
+              <Badge variant="secondary">{totalItems} položek</Badge>
+            )}
+            {documents.length > 0 && clientEmail && (
+              <Button size="sm" variant="default" onClick={openSendDialog}>
+                <Send className="h-4 w-4 mr-1" />
+                Odeslat vše klientovi
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -289,6 +348,59 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                 )}
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Send all dialog */}
+        <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Odeslat dokumenty klientovi</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Příjemce</Label>
+                <Input value={clientEmail || ""} disabled className="mt-1" />
+              </div>
+              <div>
+                <Label>Předmět</Label>
+                <Input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Text e-mailu</Label>
+                <Textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  rows={8}
+                  className="mt-1"
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Bude odesláno <strong>{documents.length}</strong> {documents.length === 1 ? "příloha" : documents.length < 5 ? "přílohy" : "příloh"}</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendDialogOpen(false)} disabled={sending}>
+                Zrušit
+              </Button>
+              <Button onClick={handleSendAll} disabled={sending}>
+                {sending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    Odesílám...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-1" />
+                    Odeslat
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardContent>
