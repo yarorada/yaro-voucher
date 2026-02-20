@@ -165,11 +165,24 @@ const handler = async (req: Request): Promise<Response> => {
       supplier = supplierData;
     }
 
-    // Find main client email and name
+    // Find main client email and name — try voucher_travelers first, fall back to voucher.client_id
     const mainClient = travelers?.find((t: any) => t.is_main_client);
     const mainClientData = mainClient?.clients as any;
-    const clientEmail = mainClientData?.email;
-    const clientLastName = mainClientData?.last_name || "klient";
+    let clientEmail = mainClientData?.email;
+    let clientLastName = mainClientData?.last_name || "klient";
+
+    // Fallback: if no travelers linked, use the voucher's client_id directly
+    if (!clientEmail && voucher.client_id) {
+      const { data: fallbackClient } = await supabase
+        .from("clients")
+        .select("email, last_name")
+        .eq("id", voucher.client_id)
+        .single();
+      if (fallbackClient) {
+        clientEmail = fallbackClient.email;
+        clientLastName = fallbackClient.last_name || "klient";
+      }
+    }
 
     if (!clientEmail) {
       throw new Error("Client email not found");
