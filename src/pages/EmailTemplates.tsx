@@ -41,9 +41,11 @@ const PLACEHOLDERS = [
 
 const TRIGGER_TYPES = [
   { value: "manual", label: "Manuální" },
-  { value: "before_departure", label: "Před odjezdem" },
-  { value: "after_return", label: "Po návratu" },
-  { value: "payment_received", label: "Po přijetí platby" },
+  { value: "before_departure", label: "Před odjezdem", desc: "X dní před start_date dealu" },
+  { value: "after_return", label: "Po návratu", desc: "X dní po end_date dealu" },
+  { value: "payment_reminder", label: "Připomenutí platby", desc: "X dní před splatností platby" },
+  { value: "payment_received", label: "Po přijetí platby", desc: "Po potvrzení platby" },
+  { value: "birthday", label: "Narozeniny", desc: "V den narozenin klienta" },
 ];
 
 const EXAMPLE_DATA: Record<string, string> = {

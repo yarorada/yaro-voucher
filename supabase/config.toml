@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.auto-send-deal-documents]
 verify_jwt = false
+
+[functions.auto-triggered-emails]
+verify_jwt = false
