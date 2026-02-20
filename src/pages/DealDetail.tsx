@@ -1438,13 +1438,15 @@ const DealDetail = () => {
     setSaving(true);
     try {
       // Build auto-generated deal name
-      let autoName = "";
+      // Extract base number D-RRNNNN from deal_number
+      const baseNumber = deal.deal_number.match(/^D-\d{6}/)?.[0] || "";
+      let autoName = baseNumber;
       
       // Lead traveler name
       const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler) 
         || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
       if (leadTraveler?.clients) {
-        autoName += `${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name}`;
+        autoName += ` ${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name}`;
       }
       
       // Country code from destination
