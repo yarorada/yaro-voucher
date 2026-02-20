@@ -6,11 +6,18 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, FileText, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Search, Trash2, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { parseDateSafe } from "@/lib/utils";
+import { parseDateSafe, formatPriceCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +29,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type ContractStatus = "draft" | "sent" | "signed" | "cancelled";
+
+const statusConfig: Record<ContractStatus, { label: string; className: string }> = {
+  draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
+  sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
+  signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
+  cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
+};
+
+const formatDateShort = (dateString: string | null | undefined): string => {
+  if (!dateString) return "";
+  const d = parseDateSafe(dateString);
+  if (!d) return "";
+  return format(d, "dd-MM-yy");
+};
+
 const Contracts = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<{ id: string; number: string } | null>(null);
 
@@ -37,7 +61,16 @@ const Contracts = () => {
         .select(`
           *,
           client:clients(first_name, last_name, email),
-          deal:deals(deal_number, name, destination:destinations(name))
+          deal:deals(
+            deal_number,
+            name,
+            start_date,
+            destination:destinations(
+              name,
+              countries:country_id(iso_code)
+            ),
+            deal_services(service_name, service_type)
+          )
         `)
         .order("created_at", { ascending: false });
 
@@ -52,7 +85,6 @@ const Contracts = () => {
         .from("travel_contracts")
         .delete()
         .eq("id", contractId);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -79,130 +111,182 @@ const Contracts = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-      draft: { variant: "secondary", label: "Koncept" },
-      sent: { variant: "default", label: "Odesláno" },
-      signed: { variant: "outline", label: "Podepsáno" },
-      cancelled: { variant: "destructive", label: "Zrušeno" },
-    };
-    const config = variants[status] || variants.draft;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  // Build display name: Jmeno Prijmeni ISO Hotel DD-MM-RR
+  const buildDisplayName = (contract: any) => {
+    const parts: string[] = [];
+    const client = contract.client as any;
+    if (client) {
+      parts.push(`${client.first_name} ${client.last_name}`);
+    }
+    const iso = contract.deal?.destination?.countries?.iso_code;
+    if (iso) parts.push(iso);
+    const hotel = contract.deal?.deal_services?.find((s: any) => s.service_type === "hotel");
+    if (hotel) parts.push(hotel.service_name);
+    const depDate = contract.deal?.start_date;
+    if (depDate) parts.push(formatDateShort(depDate));
+    return parts.join(" • ");
   };
 
   const filteredContracts = contracts?.filter((contract) => {
+    // Status filter
+    if (statusFilter !== "all" && contract.status !== statusFilter) return false;
+
+    // Search
     const searchLower = searchQuery.toLowerCase();
+    if (!searchLower) return true;
     const client = contract.client as any;
-    const clientName = client 
-      ? `${client.first_name || ''} ${client.last_name || ''}`.toLowerCase()
-      : '';
+    const clientName = client
+      ? `${client.first_name || ""} ${client.last_name || ""}`.toLowerCase()
+      : "";
     return (
       contract.contract_number.toLowerCase().includes(searchLower) ||
       clientName.includes(searchLower) ||
-      (contract.deal?.deal_number || '').toLowerCase().includes(searchLower)
+      (contract.deal?.deal_number || "").toLowerCase().includes(searchLower) ||
+      (contract.deal?.destination?.name || "").toLowerCase().includes(searchLower)
     );
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-7xl mx-auto py-8 px-4">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-heading-1 text-foreground">Cestovní smlouvy</h1>
-            <p className="text-body text-muted-foreground mt-1">Správa cestovních smluv podle §2521 OZ</p>
+    <div className="min-h-screen bg-[var(--gradient-subtle)]">
+      <div className="container max-w-6xl mx-auto py-8 px-4">
+        <header className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground">Cestovní smlouvy</h1>
+              <p className="text-muted-foreground mt-2">Správa cestovních smluv podle §2521 OZ</p>
+            </div>
+            <Button onClick={() => navigate("/contracts/new")} variant="premium" className="gap-2 w-full md:w-auto">
+              <Plus className="h-4 w-4" />
+              Nová smlouva
+            </Button>
           </div>
-          <Button onClick={() => navigate("/contracts/new")} className="shrink-0">
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Nová smlouva</span>
-            <span className="sm:hidden">Nová</span>
-          </Button>
-        </div>
-
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Hledat podle čísla smlouvy, klienta nebo obchodního případu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+        </header>
 
         {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-body text-muted-foreground">Načítání smluv...</p>
+            <p className="text-muted-foreground">Načítání smluv...</p>
           </div>
-        ) : filteredContracts && filteredContracts.length > 0 ? (
-          <div className="grid gap-4">
-            {filteredContracts.map((contract) => (
-              <Card
-                key={contract.id}
-                className="p-4 md:p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate(`/contracts/${contract.id}`)}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 md:gap-4 flex-1">
-                    <div className="p-2 md:p-3 rounded-lg bg-primary/10 shrink-0">
-                      <FileText className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                        <h3 className="text-lg md:text-xl font-bold text-foreground">
-                          {contract.contract_number}
-                        </h3>
-                        {getStatusBadge(contract.status)}
-                      </div>
-                      <p className="text-sm md:text-base text-muted-foreground mb-2">
-                        Klient: {(() => {
-                          const client = contract.client as any;
-                          if (!client) return '-';
-                          return `${client.first_name} ${client.last_name}`;
-                        })()}
-                      </p>
-                      {contract.deal?.destination?.name && (
-                        <p className="text-sm text-muted-foreground">
-                          Destinace: {contract.deal.destination.name}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap gap-2 md:gap-4 mt-3 text-xs md:text-sm text-muted-foreground">
-                        <span>Vytvořeno: {(() => { const d = parseDateSafe(contract.created_at); return d ? format(d, "d. M. yyyy", { locale: cs }) : ''; })()}</span>
-                        {contract.signed_at && (
-                          <span>Podepsáno: {(() => { const d = parseDateSafe(contract.signed_at); return d ? format(d, "d. M. yyyy", { locale: cs }) : ''; })()}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleDeleteClick(e, contract.id, contract.contract_number)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end sm:self-start shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Žádné smlouvy</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? "Nebyly nalezeny žádné smlouvy odpovídající vašemu hledání." : "Začněte vytvořením první cestovní smlouvy."}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => navigate("/contracts/new")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Vytvořit první smlouvu
-              </Button>
-            )}
+        ) : contracts && contracts.length === 0 ? (
+          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+            <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-2">Žádné smlouvy</h2>
+            <p className="text-muted-foreground mb-6">Začněte vytvořením první cestovní smlouvy.</p>
+            <Button onClick={() => navigate("/contracts/new")} variant="premium">
+              <Plus className="h-4 w-4 mr-2" />
+              Vytvořit první smlouvu
+            </Button>
           </Card>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Celkem smluv: <span className="font-semibold text-foreground">{contracts?.length || 0}</span>
+                  {filteredContracts && filteredContracts.length !== contracts?.length && (
+                    <span className="ml-2">
+                      (zobrazeno: <span className="font-semibold text-foreground">{filteredContracts.length}</span>)
+                    </span>
+                  )}
+                </p>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Filtr statusu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Všechny statusy</SelectItem>
+                    <SelectItem value="draft">Koncept</SelectItem>
+                    <SelectItem value="sent">Odesláno</SelectItem>
+                    <SelectItem value="signed">Podepsáno</SelectItem>
+                    <SelectItem value="cancelled">Zrušeno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Hledat podle čísla, klienta nebo destinace..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {filteredContracts && filteredContracts.length === 0 ? (
+              <Card className="p-12 text-center">
+                <p className="text-muted-foreground">Nebyly nalezeny žádné smlouvy odpovídající vašemu hledání.</p>
+              </Card>
+            ) : (
+              filteredContracts?.map((contract) => {
+                const client = contract.client as any;
+                const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
+                const displayName = buildDisplayName(contract);
+
+                return (
+                  <Card
+                    key={contract.id}
+                    className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer"
+                    onClick={() => navigate(`/contracts/${contract.id}`)}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        {/* Line 1: Status + Number + Name */}
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                          <Badge className={`text-xs shrink-0 ${config.className}`}>
+                            {config.label}
+                          </Badge>
+                          <span className="font-bold text-foreground">{contract.contract_number}</span>
+                          {displayName && (
+                            <span className="text-foreground truncate">{displayName}</span>
+                          )}
+                        </div>
+                        {/* Line 2: Details */}
+                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                          {client && (
+                            <span>
+                              <span className="font-semibold text-foreground">Klient:</span> {client.first_name} {client.last_name}
+                            </span>
+                          )}
+                          {contract.deal?.destination?.name && (
+                            <span>
+                              <span className="font-semibold text-foreground">Destinace:</span> {contract.deal.destination.name}
+                            </span>
+                          )}
+                          {contract.deal?.start_date && (
+                            <span>
+                              <span className="font-semibold text-foreground">Datum:</span> {formatDateShort(contract.deal.start_date)}
+                            </span>
+                          )}
+                          {contract.total_price && (
+                            <span>
+                              <span className="font-semibold text-foreground">Cena:</span> {formatPriceCurrency(contract.total_price, contract.currency || "CZK")}
+                            </span>
+                          )}
+                          <span>
+                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDateShort(contract.created_at)}
+                          </span>
+                          {contract.signed_at && (
+                            <span>
+                              <span className="font-semibold text-foreground">Podepsáno:</span> {formatDateShort(contract.signed_at)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleDeleteClick(e, contract.id, contract.contract_number)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end md:self-start shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         )}
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
