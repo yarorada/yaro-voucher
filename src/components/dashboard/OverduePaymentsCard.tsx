@@ -116,12 +116,12 @@ export const OverduePaymentsCard = () => {
             {(() => {
               const isFinal = p.payment_type === "final";
               const circleColor = isOverdue
-                ? "border-destructive text-destructive"
+                ? "bg-destructive"
                 : isFinal
-                  ? "border-emerald-600 text-emerald-600"
-                  : "border-yellow-500 text-yellow-600";
+                  ? "bg-emerald-600"
+                  : "bg-yellow-500";
               return (
-                <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full border-2 text-[10px] font-bold shrink-0 ${circleColor}`}>
+                <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold shrink-0 text-white ${circleColor}`}>
                   {typeCircle(p.payment_type)}
                 </span>
               );
