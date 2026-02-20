@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { COUNTRY_DATA, searchCountries } from "@/lib/countryData";
+import { COUNTRY_DATA, searchCountries, searchDestinations } from "@/lib/countryData";
 
 interface Destination {
   id: string;
@@ -71,14 +71,23 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
     );
   }, [destinations, q]);
 
-  // Suggest new countries from COUNTRY_DATA when ≥3 chars and no exact destination match
+  // Suggest known destinations from DESTINATION_COUNTRY_MAP when ≥3 chars
+  const destinationSuggestions = useMemo(() => {
+    if (q.length < 3) return [];
+    // Don't suggest if there's an exact existing destination match
+    const hasExact = destinations.some((d) => d.name.toLowerCase() === q);
+    if (hasExact) return [];
+    return searchDestinations(search, 8);
+  }, [search, q, destinations]);
+
+  // Suggest countries (fallback when no destination match found)
   const countrySuggestions = useMemo(() => {
     if (q.length < 3) return [];
-    // Only show if the search doesn't perfectly match existing destinations
+    if (destinationSuggestions.length > 0) return []; // prefer destination suggestions
     const hasExact = destinations.some((d) => d.name.toLowerCase() === q);
     if (hasExact) return [];
     return searchCountries(search, 8);
-  }, [search, q, destinations]);
+  }, [search, q, destinations, destinationSuggestions]);
 
   const selectedDestination = destinations.find((d) => d.id === value);
 
@@ -193,11 +202,38 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
           )}
 
           {/* Separator if we have both */}
-          {filteredDestinations.length > 0 && countrySuggestions.length > 0 && (
+          {filteredDestinations.length > 0 && (destinationSuggestions.length > 0 || countrySuggestions.length > 0) && (
             <div className="my-1 h-px bg-border" />
           )}
 
-          {/* Smart country suggestions for creating new destinations */}
+          {/* Smart destination suggestions (e.g. Hurghada → Egypt) */}
+          {destinationSuggestions.length > 0 && (
+            <div>
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                Vytvořit novou destinaci
+              </div>
+              {destinationSuggestions.map((sug) => (
+                <button
+                  key={`${sug.destination}-${sug.iso}`}
+                  disabled={saving}
+                  onClick={() => {
+                    handleCreateNew(sug.destination, sug.countryName, sug.iso, sug.currency);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    <strong>{sug.destination}</strong>
+                    <span className="text-muted-foreground">
+                      {" "}– {sug.countryName} ({sug.iso})
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Fallback: country suggestions for creating new destinations */}
           {countrySuggestions.length > 0 && (
             <div>
               <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
@@ -208,7 +244,6 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                   key={country.iso}
                   disabled={saving}
                   onClick={() => {
-                    // Use the search text as destination name, assign this country
                     const destName = search.trim().charAt(0).toUpperCase() + search.trim().slice(1);
                     handleCreateNew(destName, country.name, country.iso, country.currency);
                   }}
@@ -227,7 +262,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
           )}
 
           {/* No results */}
-          {!loading && filteredDestinations.length === 0 && countrySuggestions.length === 0 && q.length >= 3 && (
+          {!loading && filteredDestinations.length === 0 && destinationSuggestions.length === 0 && countrySuggestions.length === 0 && q.length >= 3 && (
             <div className="py-4 text-center text-sm text-muted-foreground">
               Žádná shoda. Zkuste jiný název.
             </div>
