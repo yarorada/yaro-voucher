@@ -553,6 +553,13 @@ const DealDetail = () => {
     fetchServices();
   }, [id]);
 
+  // Listen for deal-updated events (e.g. from auto-send toggle)
+  useEffect(() => {
+    const handler = () => fetchDeal();
+    window.addEventListener("deal-updated", handler);
+    return () => window.removeEventListener("deal-updated", handler);
+  }, []);
+
   // Recalculate total price when services or adjustments change
   useEffect(() => {
     if (services.length > 0 || discountAmount || adjustmentAmount) {
@@ -2649,6 +2656,9 @@ const DealDetail = () => {
             const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
             return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : undefined;
           })()}
+          startDate={deal.start_date}
+          autoSendDocuments={(deal as any).auto_send_documents}
+          documentsAutoSentAt={(deal as any).documents_auto_sent_at}
         />
         </div>
       </div>

@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-deal-documents]
 verify_jwt = true
+
+[functions.auto-send-deal-documents]
+verify_jwt = false

@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +45,12 @@ interface DealDocumentsSectionProps {
   dealId: string;
   clientEmail?: string | null;
   clientName?: string;
+  startDate?: string | null;
+  autoSendDocuments?: boolean;
+  documentsAutoSentAt?: string | null;
 }
 
-export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDocumentsSectionProps) {
+export function DealDocumentsSection({ dealId, clientEmail, clientName, startDate, autoSendDocuments, documentsAutoSentAt }: DealDocumentsSectionProps) {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<DealDocument[]>([]);
   const [vouchers, setVouchers] = useState<DealVoucher[]>([]);
@@ -439,6 +443,42 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Auto-send toggle */}
+        {startDate && clientEmail && (
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="auto-send-toggle" className="text-sm font-medium cursor-pointer">
+                  Automaticky odeslat dokumenty 7 dní před odjezdem
+                </Label>
+                {documentsAutoSentAt && (
+                  <p className="text-xs text-green-600 mt-0.5">
+                    ✓ Automaticky odesláno {new Date(documentsAutoSentAt).toLocaleDateString("cs-CZ")}
+                  </p>
+                )}
+              </div>
+            </div>
+            <Switch
+              id="auto-send-toggle"
+              checked={autoSendDocuments || false}
+              disabled={!!documentsAutoSentAt}
+              onCheckedChange={async (checked) => {
+                const { error } = await supabase
+                  .from("deals")
+                  .update({ auto_send_documents: checked })
+                  .eq("id", dealId);
+                if (error) {
+                  toast.error("Nepodařilo se uložit nastavení");
+                } else {
+                  toast.success(checked ? "Automatické odesílání zapnuto" : "Automatické odesílání vypnuto");
+                  window.dispatchEvent(new CustomEvent("deal-updated"));
+                }
+              }}
+            />
+          </div>
+        )}
+
         {/* Upload zone */}
         <div
           onDragOver={handleDragOver}
