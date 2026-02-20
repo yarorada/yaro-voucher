@@ -541,9 +541,14 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             </div>
             <div style={{ width: '44%', textAlign: 'center' }}>
               <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Zákazník:</p>
-              <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
+              {contract.signature_url ? (
+                <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                  <img src={contract.signature_url} alt="Podpis zákazníka" style={{ height: '40px', margin: '0 auto 2px' }} />
+                </div>
+              ) : null}
+              <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: contract.signature_url ? '0' : '22px' }}>
                 <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>{contract.client?.first_name} {contract.client?.last_name}</p>
-                <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis zákazníka)</p>
+                {!contract.signature_url && <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis zákazníka)</p>}
               </div>
             </div>
           </div>
