@@ -95,14 +95,14 @@ export const RecentContractsCard = () => {
                     <Badge className={`text-xs shrink-0 ${cfg.className}`}>
                       {cfg.label}
                     </Badge>
-                    <span className="font-bold text-sm text-muted-foreground">{contract.contract_number}</span>
-                    <span className="text-sm truncate">{buildDescription(contract)}</span>
+                    <span className="font-bold text-sm">{contract.contract_number}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
-                    {contract.deals?.destinations?.name && <span>{contract.deals.destinations.name}</span>}
-                    {contract.deals?.start_date && (
-                      <span>{formatDateShort(contract.deals.start_date)}</span>
-                    )}
+                  <div className="text-xs text-muted-foreground pl-1 truncate">
+                    {[
+                      contract.clients ? `${contract.clients.first_name} ${contract.clients.last_name}` : null,
+                      contract.deals?.destinations?.name,
+                      formatDateShort(contract.deals?.start_date || null),
+                    ].filter(Boolean).join(" • ")}
                   </div>
                 </Link>
               );

@@ -92,12 +92,14 @@ export const RecentVouchersCard = () => {
                   ) : (
                     <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                   )}
-                  <span className="font-bold text-sm text-muted-foreground">{voucher.voucher_code}</span>
-                  <span className="text-sm truncate">{buildDescription(voucher)}</span>
+                  <span className="font-bold text-sm">{voucher.voucher_code}</span>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
-                  {voucher.deals?.destinations?.name && <span>{voucher.deals.destinations.name}</span>}
-                  {voucher.hotel_name && <span>{voucher.hotel_name}</span>}
+                <div className="text-xs text-muted-foreground pl-1 truncate">
+                  {[
+                    getClientName(voucher),
+                    voucher.deals?.destinations?.name,
+                    formatDateShort(getFirstServiceDate(voucher)),
+                  ].filter(Boolean).join(" • ")}
                 </div>
               </Link>
             ))}

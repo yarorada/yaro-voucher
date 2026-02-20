@@ -145,14 +145,14 @@ export const RecentDealsCard = () => {
               >
                 <div className="flex items-center gap-2 mb-0.5">
                   <DealStatusBadge status={deal.status} />
-                  <span className="font-bold text-sm text-muted-foreground">{getBaseNumber(deal.deal_number)}</span>
-                  <span className="text-sm truncate">{buildDescription(deal)}</span>
+                  <span className="font-bold text-sm">{getBaseNumber(deal.deal_number)}</span>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
-                  {deal.destinations?.name && <span>{deal.destinations.name}</span>}
-                  {deal.start_date && deal.end_date && (
-                    <span>{formatDateShort(deal.start_date)} – {formatDateShort(deal.end_date)}</span>
-                  )}
+                <div className="text-xs text-muted-foreground pl-1 truncate">
+                  {[
+                    getLeadClient(deal),
+                    deal.destinations?.name,
+                    formatDateShort(deal.start_date),
+                  ].filter(Boolean).join(" • ")}
                 </div>
               </Link>
             ))}
