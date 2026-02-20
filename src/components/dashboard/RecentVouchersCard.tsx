@@ -97,7 +97,7 @@ export const RecentVouchersCard = () => {
                 <div className="text-xs text-muted-foreground pl-1 truncate">
                   {[
                     getClientName(voucher),
-                    voucher.deals?.destinations?.name,
+                    voucher.deals?.destinations?.name || voucher.hotel_name,
                     formatDateShort(getFirstServiceDate(voucher)),
                   ].filter(Boolean).join(" • ")}
                 </div>
