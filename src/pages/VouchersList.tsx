@@ -389,11 +389,19 @@ const VouchersList = () => {
                   ? new Date(voucher.expiration_date) < new Date() 
                   : false;
 
+                // Get earliest service start_date
+                const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
+                const firstServiceDate = servicesArr
+                  .map((s: any) => s.start_date)
+                  .filter(Boolean)
+                  .sort()
+                  [0] || null;
+
                 // Build Line 1 description: Name • Hotel • DD-MM-RR
                 const descParts: string[] = [];
                 if (displayName) descParts.push(displayName);
                 if (voucher.hotel_name) descParts.push(voucher.hotel_name);
-                if (voucher.issue_date) descParts.push(formatDate(voucher.issue_date));
+                if (firstServiceDate) descParts.push(formatDate(firstServiceDate));
                 const displayDesc = descParts.join(" • ");
 
                 return (
