@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Edit, Copy, Search, Trash2, Mail } from "lucide-react";
+import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +23,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DuplicateVoucherDialog } from "@/components/DuplicateVoucherDialog";
 
 interface Voucher {
@@ -455,45 +461,36 @@ const VouchersList = () => {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDuplicateClick(voucher.id);
-                          }}
-                          disabled={loading}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/edit/${voucher.id}`);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => navigate(`/voucher/${voucher.id}`)}>
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        {!isExpired && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(voucher.id);
-                            }}
-                            className="hover:bg-destructive hover:text-destructive-foreground"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/voucher/${voucher.id}`); }}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Náhled
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/edit/${voucher.id}`); }}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Upravit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicateClick(voucher.id); }} disabled={loading}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplikovat
+                          </DropdownMenuItem>
+                          {!isExpired && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteClick(voucher.id); }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Smazat
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </Card>
                 );
