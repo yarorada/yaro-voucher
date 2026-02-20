@@ -13,6 +13,7 @@ const routeNames: Record<string, string> = {
   "suppliers": "Dodavatelé",
   "destinations": "Destinace",
   "contracts": "Smlouvy",
+  "statistics": "Statistiky",
 };
 
 interface Breadcrumb {
