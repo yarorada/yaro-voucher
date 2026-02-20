@@ -12,14 +12,27 @@ interface Contract {
   status: "draft" | "sent" | "signed" | "cancelled";
   created_at: string;
   clients: { first_name: string; last_name: string } | null;
-  deals: { destinations: { name: string } | null } | null;
+  deals: {
+    start_date: string | null;
+    destinations: { name: string; countries?: { iso_code: string } | null } | null;
+    deal_services: Array<{ service_type: string; service_name: string }>;
+  } | null;
 }
 
 const statusConfig = {
-  draft: { label: "Koncept", variant: "secondary" as const },
-  sent: { label: "Odesláno", variant: "default" as const },
-  signed: { label: "Podepsáno", variant: "default" as const },
-  cancelled: { label: "Zrušeno", variant: "destructive" as const },
+  draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
+  sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
+  signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
+  cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
+};
+
+const formatDateShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
 };
 
 export const RecentContractsCard = () => {
@@ -29,20 +42,29 @@ export const RecentContractsCard = () => {
       const { data, error } = await supabase
         .from("travel_contracts")
         .select(`
-          id,
-          contract_number,
-          status,
-          created_at,
+          id, contract_number, status, created_at,
           clients(first_name, last_name),
-          deals(destinations(name))
+          deals(start_date, destinations(name, countries(iso_code)), deal_services(service_type, service_name))
         `)
         .order("created_at", { ascending: false })
         .limit(5);
 
       if (error) throw error;
-      return data as Contract[];
+      return data as unknown as Contract[];
     },
   });
+
+  const buildDescription = (c: Contract) => {
+    const parts: string[] = [];
+    if (c.clients) parts.push(`${c.clients.first_name} ${c.clients.last_name}`);
+    const iso = c.deals?.destinations?.countries?.iso_code;
+    if (iso) parts.push(iso);
+    const hotel = c.deals?.deal_services?.find((s) => s.service_type === "hotel");
+    if (hotel) parts.push(hotel.service_name);
+    const date = formatDateShort(c.deals?.start_date || null);
+    if (date) parts.push(date);
+    return parts.join(" • ");
+  };
 
   return (
     <Card className="h-full">
@@ -60,29 +82,28 @@ export const RecentContractsCard = () => {
             Žádné smlouvy
           </div>
         ) : (
-          <div className="space-y-3">
-            {contracts.map((contract) => (
-              <Link
-                key={contract.id}
-                to={`/contracts/${contract.id}`}
-                className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors group"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">
-                    {contract.contract_number}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {contract.clients
-                      ? `${contract.clients.first_name} ${contract.clients.last_name}`
-                      : "—"}
-                    {contract.deals?.destinations?.name && ` • ${contract.deals.destinations.name}`}
-                  </p>
-                </div>
-                <Badge variant={statusConfig[contract.status].variant} className="text-xs">
-                  {statusConfig[contract.status].label}
-                </Badge>
-              </Link>
-            ))}
+          <div className="space-y-2">
+            {contracts.map((contract) => {
+              const cfg = statusConfig[contract.status];
+              return (
+                <Link
+                  key={contract.id}
+                  to={`/contracts/${contract.id}`}
+                  className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <Badge className={`text-xs shrink-0 ${cfg.className}`}>
+                    {cfg.label}
+                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">
+                      <span className="text-muted-foreground">{contract.contract_number}</span>
+                      {" "}
+                      <span>{buildDescription(contract)}</span>
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
             <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
               <Link to="/contracts">
                 Zobrazit vše <ArrowRight className="h-4 w-4 ml-1" />

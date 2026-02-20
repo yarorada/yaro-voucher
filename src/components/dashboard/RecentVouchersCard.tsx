@@ -6,6 +6,15 @@ import { FileText, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+const formatDateShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
+};
+
 export const RecentVouchersCard = () => {
   const { data: vouchers = [], isLoading } = useQuery({
     queryKey: ["recent-vouchers"],
@@ -14,7 +23,7 @@ export const RecentVouchersCard = () => {
         .from("vouchers")
         .select(`
           id, voucher_code, client_name, hotel_name, sent_at, created_at,
-          deals(destinations(name)),
+          deals(start_date, destinations(name, countries(iso_code))),
           voucher_travelers(is_main_client, clients(first_name, last_name))
         `)
         .order("created_at", { ascending: false })
@@ -26,22 +35,23 @@ export const RecentVouchersCard = () => {
   });
 
   const getClientName = (v: any): string => {
-    // Try main traveler from voucher_travelers first
     const mainTraveler = (v.voucher_travelers || []).find((t: any) => t.is_main_client);
-    if (mainTraveler?.clients) {
-      return `${mainTraveler.clients.first_name} ${mainTraveler.clients.last_name}`;
-    }
-    // Fallback to first traveler
+    if (mainTraveler?.clients) return `${mainTraveler.clients.first_name} ${mainTraveler.clients.last_name}`;
     const firstTraveler = (v.voucher_travelers || [])[0];
-    if (firstTraveler?.clients) {
-      return `${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
-    }
-    // Fallback to client_name field
+    if (firstTraveler?.clients) return `${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
     return v.client_name || "";
   };
 
-  const getDestination = (v: any): string => {
-    return v.deals?.destinations?.name || v.hotel_name || "";
+  const buildDescription = (v: any) => {
+    const parts: string[] = [];
+    const client = getClientName(v);
+    if (client) parts.push(client);
+    const iso = v.deals?.destinations?.countries?.iso_code;
+    if (iso) parts.push(iso);
+    if (v.hotel_name) parts.push(v.hotel_name);
+    const date = formatDateShort(v.deals?.start_date || null);
+    if (date) parts.push(date);
+    return parts.join(" • ");
   };
 
   return (
@@ -60,33 +70,27 @@ export const RecentVouchersCard = () => {
             Žádné vouchery
           </div>
         ) : (
-          <div className="space-y-3">
-            {vouchers.map((voucher) => {
-              const clientName = getClientName(voucher);
-              const destination = getDestination(voucher);
-              return (
-                <Link
-                  key={voucher.id}
-                  to={`/vouchers/${voucher.id}`}
-                  className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50 transition-colors group"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">
-                      {voucher.voucher_code}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {clientName}
-                      {destination && ` • ${destination}`}
-                    </p>
-                  </div>
-                  {voucher.sent_at ? (
-                    <Badge variant="default" className="text-xs">Odesláno</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">Neodesláno</Badge>
-                  )}
-                </Link>
-              );
-            })}
+          <div className="space-y-2">
+            {vouchers.map((voucher) => (
+              <Link
+                key={voucher.id}
+                to={`/vouchers/${voucher.id}`}
+                className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+              >
+                {voucher.sent_at ? (
+                  <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                ) : (
+                  <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">
+                    <span className="text-muted-foreground">{voucher.voucher_code}</span>
+                    {" "}
+                    <span>{buildDescription(voucher)}</span>
+                  </p>
+                </div>
+              </Link>
+            ))}
             <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
               <Link to="/vouchers">
                 Zobrazit vše <ArrowRight className="h-4 w-4 ml-1" />
