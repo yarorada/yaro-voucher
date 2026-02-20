@@ -93,9 +93,15 @@ export const VariantServiceDialog = ({
       setEndDate(service.end_date ? new Date(service.end_date) : undefined);
       setPrice(service.price?.toString() || "");
       setPriceCurrency((service as any).price_currency || "CZK");
-      setCostPrice(service.cost_price?.toString() || "");
-      setCostCurrency((service as any).cost_currency || "CZK");
+      const svcCostCurrency = (service as any).cost_currency || "CZK";
+      setCostCurrency(svcCostCurrency);
       setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
+      // Show original-currency value in the input when not CZK
+      if (svcCostCurrency !== "CZK" && (service as any).cost_price_original != null) {
+        setCostPrice((service as any).cost_price_original.toString());
+      } else {
+        setCostPrice(service.cost_price?.toString() || "");
+      }
       setPersonCount(service.person_count?.toString() || "1");
       setPersonCountUnit((service.details as any)?.person_count_unit?.toString() || "");
       setQuantity((service as any).quantity?.toString() || "1");
