@@ -80,6 +80,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 
 interface DealTraveler {
   id: string;
@@ -1844,6 +1845,88 @@ const DealDetail = () => {
     }
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    deal ? (
+      <>
+        <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className={toolbarButtonClass}>
+          <Save className="h-4 w-4" />
+          <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
+        </Button>
+        <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={toolbarButtonClass}
+              onClick={() => setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString())}
+            >
+              <Copy className="h-4 w-4" />
+              <span className="hidden sm:inline">Duplikovat</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-background">
+            <DialogHeader>
+              <DialogTitle>Duplikovat obchodní případ</DialogTitle>
+              <DialogDescription>
+                Zadejte počet osob pro nový obchodní případ. Počet osob bude nastaven u všech služeb.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Počet osob</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={duplicatePersonCount}
+                  onChange={(e) => setDuplicatePersonCount(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)}>
+                  Zrušit
+                </Button>
+                <Button onClick={handleDuplicateDeal} disabled={duplicating}>
+                  {duplicating ? "Duplikuji..." : "Duplikovat"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Button variant="outline" size="sm" onClick={handleCreateContract} className={toolbarButtonClass}>
+          <FileSignature className="h-4 w-4" />
+          <span className="hidden sm:inline">Smlouva</span>
+        </Button>
+        <CreateVouchersFromDeal
+          dealId={deal.id}
+          services={services}
+          clientId={deal.deal_travelers.find(t => t.is_lead_traveler)?.client_id || null}
+          clientName={(() => {
+            const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
+            return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : "";
+          })()}
+          onComplete={fetchDeal}
+        />
+        <ShareOfferButton
+          dealId={deal.id}
+          shareToken={shareToken}
+          onTokenGenerated={setShareToken}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDelete}
+          className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground`}
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Smazat</span>
+        </Button>
+      </>
+    ) : null,
+    [deal, saving, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken]
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
@@ -1864,81 +1947,6 @@ const DealDetail = () => {
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <header className="mb-8">
-          <div className="flex flex-wrap items-center justify-end gap-2 md:gap-4 mb-4">
-            <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className="gap-2 md:size-default">
-              <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
-            </Button>
-            <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 md:size-default"
-                  onClick={() => setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString())}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span className="hidden sm:inline">Duplikovat</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-background">
-                <DialogHeader>
-                  <DialogTitle>Duplikovat obchodní případ</DialogTitle>
-                  <DialogDescription>
-                    Zadejte počet osob pro nový obchodní případ. Počet osob bude nastaven u všech služeb.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Počet osob</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={duplicatePersonCount}
-                      onChange={(e) => setDuplicatePersonCount(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)}>
-                      Zrušit
-                    </Button>
-                    <Button onClick={handleDuplicateDeal} disabled={duplicating}>
-                      {duplicating ? "Duplikuji..." : "Duplikovat"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button variant="outline" size="sm" onClick={handleCreateContract} className="gap-2 md:size-default">
-              <FileSignature className="h-4 w-4" />
-              <span className="hidden sm:inline">Vytvořit smlouvu</span>
-            </Button>
-            <CreateVouchersFromDeal
-              dealId={deal.id}
-              services={services}
-              clientId={deal.deal_travelers.find(t => t.is_lead_traveler)?.client_id || null}
-              clientName={(() => {
-                const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
-                return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : "";
-              })()}
-              onComplete={fetchDeal}
-            />
-            <ShareOfferButton
-              dealId={deal.id}
-              shareToken={shareToken}
-              onTokenGenerated={setShareToken}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              className="gap-2 hover:bg-destructive hover:text-destructive-foreground md:size-default"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Smazat</span>
-            </Button>
-          </div>
-          
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <DealStatusBadge status={deal.status} />
