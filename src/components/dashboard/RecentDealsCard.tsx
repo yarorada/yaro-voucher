@@ -132,13 +132,13 @@ export const RecentDealsCard = () => {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Obchodní případy
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Briefcase className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">Obchodní případy</span>
           </CardTitle>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortMode)}>
-            <SelectTrigger className="w-40 h-8 text-xs">
+            <SelectTrigger className="w-full sm:w-40 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

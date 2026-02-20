@@ -496,31 +496,36 @@ const Deals = () => {
                 };
 
                 return (
-                  <Card key={deal.id} className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        {/* Row 1: Status + Number */}
+                        <div className="flex items-center gap-2 mb-1">
                           <DealStatusBadge status={deal.status} />
-                          <span className="font-bold text-foreground">{getBaseNumber(deal.deal_number)}</span>
-                          {displayDesc && (
-                            <span className="text-foreground truncate">{displayDesc}</span>
-                          )}
+                          <span className="font-bold text-sm sm:text-base text-foreground">{getBaseNumber(deal.deal_number)}</span>
                         </div>
-                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                        {/* Row 2: Compact description */}
+                        {displayDesc && (
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate mb-1.5">
+                            {displayDesc}
+                          </p>
+                        )}
+                        {/* Row 3: Metadata grid */}
+                        <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                           {leadName && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Klient:</span> {leadName}
                             </span>
                           )}
                           {deal.destinations?.name && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Destinace:</span> {deal.destinations.name}
                             </span>
                           )}
                           {deal.start_date && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Datum:</span> {formatDate(deal.start_date)}
-                              {deal.end_date && ` - ${formatDate(deal.end_date)}`}
+                              {deal.end_date && ` – ${formatDate(deal.end_date)}`}
                             </span>
                           )}
                           {deal.total_price && (
@@ -532,7 +537,7 @@ const Deals = () => {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
