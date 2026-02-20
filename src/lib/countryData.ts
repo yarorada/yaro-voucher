@@ -178,3 +178,135 @@ export const searchCountries = (query: string, limit = 10) => {
       currency: val.currency 
     }));
 };
+
+// Known destination → country mapping for intelligent suggestions
+export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
+  // Egypt
+  "hurghada": "egypt", "sharm el sheikh": "egypt", "marsa alam": "egypt", "el gouna": "egypt",
+  "dahab": "egypt", "taba": "egypt", "luxor": "egypt", "aswan": "egypt", "káhira": "egypt",
+  "alexandria": "egypt", "soma bay": "egypt", "makadi bay": "egypt", "sahl hasheesh": "egypt",
+  // Turecko
+  "antalya": "turecko", "alanya": "turecko", "belek": "turecko", "side": "turecko",
+  "kemer": "turecko", "bodrum": "turecko", "marmaris": "turecko", "fethiye": "turecko",
+  "kusadasi": "turecko", "dalaman": "turecko", "ölüdeniz": "turecko", "istanbul": "turecko",
+  "kappadokie": "turecko", "kapadocie": "turecko", "lara": "turecko", "kundu": "turecko",
+  // Řecko
+  "kréta": "řecko", "rhodos": "řecko", "korfu": "řecko", "santorini": "řecko",
+  "zakynthos": "řecko", "kos": "řecko", "mykonos": "řecko", "lefkada": "řecko",
+  "thassos": "řecko", "samos": "řecko", "kefalonie": "řecko", "atény": "řecko",
+  "chalkidiki": "řecko", "skiathos": "řecko", "paros": "řecko", "naxos": "řecko",
+  // Španělsko
+  "mallorca": "španělsko", "tenerife": "španělsko", "gran canaria": "španělsko",
+  "fuerteventura": "španělsko", "lanzarote": "španělsko", "ibiza": "španělsko",
+  "costa brava": "španělsko", "costa del sol": "španělsko", "costa blanca": "španělsko",
+  "barcelona": "španělsko", "madrid": "španělsko", "málaga": "španělsko",
+  "menorca": "španělsko", "la palma": "španělsko", "marbella": "španělsko",
+  // Chorvatsko
+  "dubrovník": "chorvatsko", "split": "chorvatsko", "zadar": "chorvatsko",
+  "makarska": "chorvatsko", "pula": "chorvatsko", "rovinj": "chorvatsko",
+  "hvar": "chorvatsko", "brač": "chorvatsko", "korčula": "chorvatsko",
+  "opatija": "chorvatsko", "trogir": "chorvatsko", "šibenik": "chorvatsko",
+  // Itálie
+  "řím": "itálie", "milán": "itálie", "benátky": "itálie", "florencie": "itálie",
+  "neapol": "itálie", "sicílie": "itálie", "sardinie": "itálie", "toskánsko": "itálie",
+  "amalfi": "itálie", "capri": "itálie", "como": "itálie", "garda": "itálie",
+  "rimini": "itálie", "kalábrie": "itálie", "puglie": "itálie", "lignano": "itálie",
+  "bibione": "itálie", "caorle": "itálie", "lido di jesolo": "itálie",
+  // Portugalsko
+  "algarve": "portugalsko", "lisabon": "portugalsko", "porto": "portugalsko",
+  "madeira": "portugalsko", "azory": "portugalsko", "faro": "portugalsko",
+  "vilamoura": "portugalsko", "albufeira": "portugalsko", "lagos": "portugalsko",
+  "cascais": "portugalsko", "sintra": "portugalsko", "tavira": "portugalsko",
+  "quinta do lago": "portugalsko", "vale do lobo": "portugalsko",
+  // Tunisko
+  "hammamet": "tunisko", "sousse": "tunisko", "djerba": "tunisko",
+  "monastir": "tunisko", "port el kantaoui": "tunisko", "mahdia": "tunisko",
+  // SAE
+  "dubaj": "spojené arabské emiráty", "abu dhabi": "spojené arabské emiráty",
+  "ras al khaimah": "spojené arabské emiráty", "šardžá": "spojené arabské emiráty",
+  "ajmán": "spojené arabské emiráty",
+  // Thajsko
+  "phuket": "thajsko", "bangkok": "thajsko", "pattaya": "thajsko",
+  "koh samui": "thajsko", "krabi": "thajsko", "chiang mai": "thajsko",
+  "koh phangan": "thajsko", "koh lanta": "thajsko", "hua hin": "thajsko",
+  // Mauricius
+  "belle mare": "mauricius", "grand baie": "mauricius", "flic en flac": "mauricius",
+  "le morne": "mauricius", "trou aux biches": "mauricius",
+  // Maledivy
+  "malé": "maledivy", "ari atol": "maledivy", "baa atol": "maledivy",
+  // Dominikánská republika
+  "punta cana": "dominikánská republika", "puerto plata": "dominikánská republika",
+  "la romana": "dominikánská republika", "samaná": "dominikánská republika",
+  "bavaro": "dominikánská republika",
+  // Mexiko
+  "cancún": "mexiko", "riviera maya": "mexiko", "playa del carmen": "mexiko",
+  "los cabos": "mexiko", "tulum": "mexiko",
+  // Kuba
+  "varadero": "kuba", "havana": "kuba", "cayo coco": "kuba",
+  "cayo santa maria": "kuba", "holguín": "kuba",
+  // Bulharsko
+  "slunečné pobřeží": "bulharsko", "zlaté písky": "bulharsko",
+  "nesebar": "bulharsko", "sozopol": "bulharsko", "burgas": "bulharsko",
+  "sv. konstantin": "bulharsko", "pomorie": "bulharsko",
+  // Černá Hora
+  "budva": "černá hora", "bečiči": "černá hora", "kotor": "černá hora",
+  "tivat": "černá hora", "herceg novi": "černá hora", "ulcinj": "černá hora",
+  // Tunisko
+  // Seychely
+  "mahé": "seychely", "praslin": "seychely", "la digue": "seychely",
+  // Zanzibar / Tanzanie
+  "zanzibar": "tanzanie", "nungwi": "tanzanie", "kendwa": "tanzanie",
+  // Srí Lanka
+  "colombo": "srí lanka", "negombo": "srí lanka", "bentota": "srí lanka",
+  "unawatuna": "srí lanka",
+  // Kapverdy
+  "sal": "kapverdy", "boa vista": "kapverdy", "santiago": "kapverdy",
+  // Maroko
+  "marrákeš": "maroko", "agadir": "maroko", "fez": "maroko", "casablanca": "maroko",
+  // Kypr
+  "ayia napa": "kypr", "paphos": "kypr", "limassol": "kypr", "larnaka": "kypr", "protaras": "kypr",
+  // Jihoafrická republika
+  "kapské město": "jihoafrická republika", "johannesburg": "jihoafrická republika",
+  "durban": "jihoafrická republika", "krugerův park": "jihoafrická republika",
+  // Rakousko
+  "vídeň": "rakousko", "salzburg": "rakousko", "innsbruck": "rakousko", "tyrolsko": "rakousko",
+  // Francie
+  "paříž": "francie", "nice": "francie", "cannes": "francie", "marseille": "francie",
+  "lyon": "francie", "korsika": "francie", "provence": "francie", "côte d'azur": "francie",
+  // Velká Británie – not in COUNTRY_DATA, skip
+  // Německo
+  "berlín": "německo", "mnichov": "německo",
+  // Maďarsko
+  "budapešť": "maďarsko", "balaton": "maďarsko",
+  // Golf destinations
+  "vilamoura golf": "portugalsko", "belek golf": "turecko",
+  "costa del sol golf": "španělsko", "algarve golf": "portugalsko",
+};
+
+/**
+ * Search known destinations by query (≥3 chars).
+ * Returns destination name + matched country data.
+ */
+export const searchDestinations = (query: string, limit = 10) => {
+  const q = query.trim().toLowerCase();
+  if (q.length < 3) return [];
+  const results: { destination: string; countryName: string; iso: string; currency: string }[] = [];
+
+  for (const [dest, countryKey] of Object.entries(DESTINATION_COUNTRY_MAP)) {
+    if (dest.includes(q) || q.includes(dest)) {
+      const countryInfo = COUNTRY_DATA[countryKey];
+      if (countryInfo) {
+        const destCapitalized = dest.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        const countryCapitalized = countryKey.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        results.push({
+          destination: destCapitalized,
+          countryName: countryCapitalized,
+          iso: countryInfo.iso,
+          currency: countryInfo.currency,
+        });
+      }
+    }
+    if (results.length >= limit) break;
+  }
+  return results;
+};
