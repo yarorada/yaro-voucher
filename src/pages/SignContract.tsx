@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
+import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { CheckCircle2, FileSignature, Loader2, AlertCircle } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import html2pdf from "html2pdf.js";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -32,6 +34,9 @@ const SignContract = () => {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [sendingPdf, setSendingPdf] = useState(false);
+  const [pdfSent, setPdfSent] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["sign-contract", token],
@@ -51,6 +56,85 @@ const SignContract = () => {
 
   const contract = data?.contract;
 
+  const generateAndSendPdf = useCallback(async (contractData: any, signatureUrl: string) => {
+    setSendingPdf(true);
+    try {
+      // Wait a bit for the PDF template to render with the signature
+      await new Promise(r => setTimeout(r, 1500));
+      
+      const element = pdfRef.current;
+      if (!element) {
+        console.error("PDF element not found");
+        return;
+      }
+
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          letterRendering: true,
+          onclone: (clonedDoc: Document) => {
+            clonedDoc.documentElement.classList.remove('dark');
+            const clonedElement = clonedDoc.getElementById('signed-contract-pdf');
+            if (clonedElement) {
+              clonedElement.style.backgroundColor = '#ffffff';
+              clonedElement.style.color = '#000000';
+              clonedElement.style.display = 'block';
+              const logos = clonedElement.querySelectorAll('.logo-dark-mode');
+              logos.forEach(el => { (el as HTMLElement).style.filter = 'none'; });
+            }
+          },
+        },
+        jsPDF: {
+          unit: 'mm' as const,
+          format: 'a4' as const,
+          orientation: 'portrait' as const,
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['[data-pdf-section]'] },
+      };
+
+      const pdfBlob: Blob = await html2pdf().set(opt).from(element).outputPdf('blob');
+      
+      // Convert blob to base64
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const chunkSize = 8192;
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        for (let j = 0; j < chunk.length; j++) {
+          binary += String.fromCharCode(chunk[j]);
+        }
+      }
+      const pdfBase64 = btoa(binary);
+
+      // Send to edge function
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/send-signed-contract`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
+          body: JSON.stringify({ contractId: contractData.id, pdfBase64 }),
+        }
+      );
+
+      if (res.ok) {
+        setPdfSent(true);
+        console.log("Signed PDF sent successfully");
+      } else {
+        const err = await res.json();
+        console.error("Failed to send signed PDF:", err);
+      }
+    } catch (err) {
+      console.error("Error generating/sending PDF:", err);
+    } finally {
+      setSendingPdf(false);
+    }
+  }, []);
+
   const signMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(
@@ -67,7 +151,20 @@ const SignContract = () => {
       }
       return res.json();
     },
-    onSuccess: () => setSigned(true),
+    onSuccess: () => {
+      setSigned(true);
+      // After signing, generate PDF with the client's signature and send it
+      if (contract) {
+        // We need the signature URL - reconstruct it from storage pattern
+        // The sign-contract function uploads to contract-signatures/{contractId}/signature-{timestamp}.png
+        // We'll use the signatureData directly as the URL in the PDF
+        const contractWithSignature = {
+          ...contract,
+          signature_url: signatureData, // base64 data URL works in img src
+        };
+        generateAndSendPdf(contractWithSignature, signatureData!);
+      }
+    },
   });
 
   if (!token) {
@@ -103,6 +200,11 @@ const SignContract = () => {
   }
 
   if (signed || contract?.signed_at) {
+    // Build contract data with signature for PDF rendering
+    const signedContract = signed 
+      ? { ...contract, signature_url: signatureData }
+      : contract;
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="p-8 text-center max-w-md">
@@ -112,6 +214,17 @@ const SignContract = () => {
             Smlouva {contract?.contract_number} byla úspěšně podepsána.
             Děkujeme za důvěru!
           </p>
+          {sendingPdf && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Odesíláme podepsanou smlouvu na váš e-mail...
+            </div>
+          )}
+          {pdfSent && (
+            <p className="mt-4 text-sm text-green-600">
+              ✓ Podepsaná smlouva byla odeslána na váš e-mail.
+            </p>
+          )}
           {contract?.signature_url && !signed && (
             <div className="mt-4">
               <p className="text-sm text-muted-foreground mb-2">Podpis:</p>
@@ -119,6 +232,15 @@ const SignContract = () => {
             </div>
           )}
         </Card>
+
+        {/* Hidden PDF template for generating the signed contract */}
+        {signed && (
+          <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+            <div id="signed-contract-pdf" ref={pdfRef}>
+              <ContractPdfTemplate contract={signedContract} />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
