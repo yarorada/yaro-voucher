@@ -1,84 +1,56 @@
 
 
-# Propojení Fintable (Google Sheets) s webhook endpointem
+# Automatické odeslání dokumentů 7 dní před odjezdem
 
-## Shrnutí
+## Co se změní
 
-Fintable synchronizuje bankovní transakce do Google Sheets. Upravíme `bank-webhook` endpoint tak, aby kromě raw textu emailu umel prijmout i strukturovana data (amount, variable_symbol, date, sender_name). Navic dodame hotovy Google Apps Script, ktery se vlozi primo do Google Sheets a automaticky odeslane novy radek na webhook.
+Na detailu obchodního případu přibude přepínač (toggle) "Automaticky odeslat dokumenty před odjezdem". Pokud je zapnutý, systém 7 dní před datem `start_date` automaticky odešle klientovi všechny vouchery a dokumenty k danému OP. Pokud přepínač zapnutý není, nic se neodešle.
 
-## Co se zmeni
+## Technické kroky
 
-### 1. Uprava `bank-webhook` Edge funkce
+### 1. Databáze - nový sloupec `auto_send_documents`
 
-Aktualne funkce ocekava `emailText` a pouziva AI k extrakci dat. Nova verze bude:
+Přidáme sloupec `auto_send_documents` (boolean, default `false`) do tabulky `deals`. Tento sloupec určuje, zda se mají dokumenty automaticky odeslat.
 
-- **Detekce strukturovanych dat**: Pokud payload obsahuje pole `amount` (cislo), preskoci AI parsing a pouzije data primo
-- **Zachovani zpetne kompatibility**: Pokud payload obsahuje `emailText`, pouzije se stavajici AI parsing
-- Ocekavany format ze Sheets:
-  ```text
-  {
-    "amount": 15000,
-    "variable_symbol": "260012",
-    "date": "2026-02-19",
-    "sender_name": "Jan Novak",
-    "note": "Doplatek zajezd"
-  }
-  ```
-- Zbytek logiky (parovani podle VS, fallback podle castky, ulozeni do `bank_notifications`) zustava beze zmeny
+Přidáme také sloupec `documents_auto_sent_at` (timestamptz, nullable) pro záznam, že automatické odeslání již proběhlo (prevence opakovaného odeslání).
 
-### 2. Google Apps Script pro automaticke odesilani
+### 2. UI - přepínač v detailu obchodního případu
 
-Dodame hotovy skript, ktery uzivateli staci vlozit do Google Sheets (Extensions > Apps Script). Skript:
+V `src/pages/DealDetail.tsx` přidáme přepínač (Switch) do sekce s dokumenty nebo do hlavičky OP:
+- Label: "Automaticky odeslat dokumenty 7 dní před odjezdem"
+- Uloží se do pole `auto_send_documents` v tabulce `deals`
+- Zobrazí se pouze pokud OP má nastavené `start_date` a `clientEmail`
 
-- Reaguje na udalost `onEdit` nebo `onChange` pri pridani noveho radku
-- Precte sloupce (nazvy sloupcu se nakonfigurují podle toho, jak je Fintable pojmenoval)
-- Odesle POST request na `bank-webhook?token=XXX`
-- Zapise do posledniho sloupce "Odesláno" jako potvrzeni
+### 3. Edge funkce `auto-send-deal-documents`
 
-## Technicky detail
+Nová CRON edge funkce, která poběží 1x denně:
 
-### Edge funkce `bank-webhook/index.ts`
+1. Najde všechny dealy kde:
+   - `auto_send_documents = true`
+   - `documents_auto_sent_at IS NULL` (ještě nebylo odesláno)
+   - `start_date = today + 7 dní`
+   - `status` je `confirmed` nebo `dispatched`
+2. Pro každý takový deal:
+   - Najde lead travelera a jeho email
+   - Najde všechny dokumenty z `deal_documents`
+   - Najde všechny vouchery z `vouchers` pro daný deal
+   - Pro vouchery bez PDF vygeneruje/stáhne PDF
+   - Odešle jeden email se všemi přílohami (využije existující logiku z `send-deal-documents`)
+   - Nastaví `documents_auto_sent_at` na aktuální čas
+3. Zaloguje výsledek
 
-```
-// Na zacatku po nacteni body:
-if (typeof body.amount === 'number' && body.amount > 0) {
-  // Strukturovana data - preskocit AI parsing
-  parsed = {
-    amount: body.amount,
-    variable_symbol: body.variable_symbol || null,
-    date: body.date || null,
-    sender_name: body.sender_name || null,
-    note: body.note || null,
-  };
-} else {
-  // Stavajici AI parsing z emailText
-  ...
-}
-```
+### 4. CRON nastavení
 
-### Google Apps Script (dodany jako navod)
+Nastavíme denní spouštění funkce pomocí `pg_cron` + `pg_net` (INSERT do `cron.schedule`).
 
-```
-function onNewRow(e) {
-  var sheet = e.source.getActiveSheet();
-  var row = e.range.getRow();
-  // Cteni sloupcu: Castka, VS, Datum, Odesilatel
-  var amount = sheet.getRange(row, SLOUPEC_CASTKA).getValue();
-  var vs = sheet.getRange(row, SLOUPEC_VS).getValue();
-  // ... POST na webhook URL
-}
-```
+### 5. Aktualizace types
 
-## Postup implementace
+Soubor `src/integrations/supabase/types.ts` se automaticky aktualizuje po migraci.
 
-1. Upravit `bank-webhook` aby prijiml strukturovana data
-2. Poskytnout Google Apps Script navod s konfigurovatelnymi nazvy sloupcu
-3. Otestovat webhook s ukazkovym payloadem
+## Pořadí implementace
 
-## Co se NEMENI
-
-- Tabulka `bank_notifications` - zadne schema zmeny
-- Dashboard `BankNotificationsCard` - funguje stejne
-- `confirm-payment-match` - beze zmeny
-- Manualni parsovani emailu v `PaymentEmailMatchDialog` - funguje dale
-
+1. Migrace DB (nové sloupce `auto_send_documents`, `documents_auto_sent_at`)
+2. UI toggle v `DealDetail.tsx`
+3. Edge funkce `auto-send-deal-documents`
+4. CRON job registrace
+5. Konfigurace v `supabase/config.toml`
