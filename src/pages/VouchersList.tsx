@@ -83,7 +83,10 @@ const VouchersList = () => {
             last_name
           ),
           deals:deal_id (
-            destinations:destination_id (name)
+            destinations:destination_id (
+              name,
+              countries:country_id (iso_code)
+            )
           )
         `,
         )
@@ -383,6 +386,7 @@ const VouchersList = () => {
                   ? `${voucher.clients.first_name} ${voucher.clients.last_name}`
                   : voucher.client_name;
                 const destination = (voucher as any).deals?.destinations?.name;
+                const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || "";
                 
                 // Check if voucher is expired
                 const isExpired = voucher.expiration_date 
@@ -397,12 +401,13 @@ const VouchersList = () => {
                   .sort()
                   [0] || null;
 
-                // Build Line 1 description: Name • Hotel • DD-MM-RR
-                const descParts: string[] = [];
-                if (displayName) descParts.push(displayName);
-                if (voucher.hotel_name) descParts.push(voucher.hotel_name);
-                if (firstServiceDate) descParts.push(formatDate(firstServiceDate));
-                const displayDesc = descParts.join(" • ");
+                // Build Line 1: YT-RRNNNN Jméno Příjmení ISO Hotel DD-MM-RR
+                const nameParts: string[] = [];
+                if (displayName) nameParts.push(displayName);
+                if (countryIso) nameParts.push(countryIso);
+                if (voucher.hotel_name) nameParts.push(voucher.hotel_name);
+                if (firstServiceDate) nameParts.push(formatDate(firstServiceDate));
+                const displayTitle = [voucher.voucher_code, ...nameParts].join(" ");
 
                 return (
                   <Card 
@@ -423,10 +428,7 @@ const VouchersList = () => {
                           ) : (
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
-                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
-                          {displayDesc && (
-                            <span className="text-foreground truncate">{displayDesc}</span>
-                          )}
+                          <span className="font-bold text-foreground truncate">{displayTitle}</span>
                         </div>
                         {/* Line 2: Details */}
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
