@@ -1,73 +1,71 @@
 
 
-# Implementace: Automatické odeslání dokumentů 7 dní před odjezdem
+# Centralizovaný systém e-mailových šablon
 
-## Stav
-DB migrace (sloupce `auto_send_documents` a `documents_auto_sent_at`) je hotová. Zbývá UI, edge funkce a CRON.
+## Co se zmeni
 
-## 1. UI toggle v DealDocumentsSection
+Vytvorime databazovou tabulku pro e-mailove sablony, UI stranku pro jejich spravu a napojime existujici odesilaci funkce (send-voucher-email, send-contract-email, send-deal-documents) tak, aby nacitaly sablony z databaze misto hardcoded textu.
 
-**Soubor:** `src/components/DealDocumentsSection.tsx`
+## 1. Databaze
 
-- Přidat importy: `Switch` z ui, ikonu `Clock`
-- Rozšířit props interface o `startDate`, `autoSendDocuments`, `documentsAutoSentAt`
-- Před upload zónu vložit toggle blok:
-  - Zobrazí se pouze pokud existuje `startDate` a `clientEmail`
-  - Switch uloží hodnotu přímo do DB (`deals.auto_send_documents`)
-  - Pokud už bylo odesláno (`documentsAutoSentAt`), switch je disabled a zobrazí se zelený text s datem odeslání
-  - Po změně vyvolá event `deal-updated` pro refresh rodičovské stránky
+Vytvorime tabulku `email_templates` se sloupci:
+- `id` (UUID, PK)
+- `template_key` (text, unikatni) -- napr. "voucher_client_cz", "contract_client_cz", "contract_supplier_en"
+- `name` (text) -- lidsky citelny nazev sablony
+- `subject` (text) -- predmet emailu s placeholdery
+- `body` (text) -- telo emailu s placeholdery
+- `trigger_type` (text, nullable) -- napr. "manual", "before_departure", "after_return", "payment_received"
+- `trigger_offset_days` (integer, nullable) -- pocet dni pred/po udalosti
+- `is_active` (boolean, default true)
+- `created_at`, `updated_at`
 
-**Soubor:** `src/pages/DealDetail.tsx`
+Tabulku naplnime vychozimi sablonami z aktualnich hardcoded textu (voucher klient CZ, voucher dodavatel EN, smlouva klient CZ, smlouva dodavatel EN).
 
-- Předat nové props do `<DealDocumentsSection>`:
-  - `startDate={deal.start_date}`
-  - `autoSendDocuments={(deal as any).auto_send_documents}`
-  - `documentsAutoSentAt={(deal as any).documents_auto_sent_at}`
-- Přidat listener na `deal-updated` event pro refresh dat
+Vytvorime tabulku `email_log` pro sledovani odeslanych emailu:
+- `id`, `template_id`, `deal_id`, `contract_id`, `voucher_id`, `recipient_email`, `sent_at`, `status`
 
-## 2. Edge funkce `auto-send-deal-documents`
+## 2. UI -- Nova stranka "E-mailove sablony"
 
-**Soubor:** `supabase/functions/auto-send-deal-documents/index.ts`
+Pristupna z bocniho menu. Zobrazi seznam vsech sablon s moznosti:
+- Editovat predmet a telo
+- Zobrazit dostupne placeholdery: `{{first_name}}`, `{{last_name}}`, `{{destination}}`, `{{hotel}}`, `{{date_from}}`, `{{date_to}}`, `{{total_price}}`, `{{voucher_code}}`, `{{contract_number}}`, `{{sign_link}}`
+- Nahled vyrenderovane sablony
+- Aktivovat/deaktivovat sablonu
 
-Logika:
-1. Inicializace Supabase service role klienta
-2. Vypočítat datum `today + 7 dní`
-3. Dotaz na deals kde:
-   - `auto_send_documents = true`
-   - `documents_auto_sent_at IS NULL`
-   - `start_date = targetDate`
-   - `status IN ('confirmed', 'dispatched')`
-4. Pro každý deal:
-   - Najít lead travelera a jeho email z `deal_travelers` + `clients`
-   - Načíst dokumenty z `deal_documents`
-   - Načíst vouchery z `vouchers` pro deal
-   - Pro vouchery stáhnout PDF z `voucher-pdfs` storage (pokud existuje `sent_at`)
-   - Odeslat email přes Resend API se všemi přílohami
-   - BCC na `zajezdy@yarotravel.cz`
-   - Nastavit `documents_auto_sent_at = now()`
-5. Zalogovat výsledky
+## 3. Edge funkce -- napojeni na sablony
 
-Funkce bude `verify_jwt = false` (volá ji CRON).
+Upravime `send-voucher-email`, `send-contract-email` a `send-deal-documents` tak, aby:
+1. Nacetly sablonu z DB podle `template_key`
+2. Nahradily placeholdery skutecnymi hodnotami
+3. Pouzily defaultni hardcoded text jako fallback pokud sablona neexistuje
+4. Zaznamenaly odeslani do `email_log`
 
-## 3. Konfigurace v `supabase/config.toml`
+## 4. Navigace
 
-Přidat:
-```
-[functions.auto-send-deal-documents]
-verify_jwt = false
-```
+Pridame odkaz "E-maily" do `AppSidebar.tsx` (sekce Nastaveni nebo samostatna polozka).
 
-## 4. CRON job registrace
+---
 
-SQL příkaz (přes insert tool, ne migraci):
-- Denní spouštění v 7:00 UTC (9:00 CET)
-- Volá edge funkci `auto-send-deal-documents` přes `pg_net`
+## Technicke detaily
 
-## Pořadí implementace
+### Soubory k vytvoreni:
+- `src/pages/EmailTemplates.tsx` -- stranka se spravou sablon
+- Migrace pro tabulky `email_templates` a `email_log`
 
-1. Upravit `DealDocumentsSection.tsx` (toggle UI)
-2. Upravit `DealDetail.tsx` (předání props)
-3. Vytvořit edge funkci `auto-send-deal-documents`
-4. Aktualizovat `supabase/config.toml`
-5. Registrovat CRON job
+### Soubory k uprave:
+- `src/App.tsx` -- nova routa `/email-templates`
+- `src/components/AppSidebar.tsx` -- odkaz v menu
+- `supabase/functions/send-voucher-email/index.ts` -- nacteni sablony z DB
+- `supabase/functions/send-contract-email/index.ts` -- nacteni sablony z DB
+- `supabase/functions/send-deal-documents/index.ts` -- nacteni sablony z DB
+
+### Vychozi sablony (seed data):
+
+| template_key | Pouziti |
+|---|---|
+| voucher_client_cz | Voucher -- klient (cestina) |
+| voucher_supplier_en | Voucher -- dodavatel (anglictina) |
+| contract_client_cz | Smlouva -- klient (cestina) |
+| contract_supplier_en | Smlouva -- dodavatel (anglictina) |
+| deal_docs_client_cz | Dokumenty k dealu -- klient |
 
