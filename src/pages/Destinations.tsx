@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { toast } from "sonner";
@@ -215,44 +216,16 @@ const Destinations = () => {
                 <CardTitle className="text-lg md:text-xl">Přidat novou destinaci</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                <form onSubmit={handleAddDestination} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dest-name">Název destinace *</Label>
-                      <Input
-                        id="dest-name"
-                        value={newDestination.name}
-                        onChange={(e) =>
-                          setNewDestination({ ...newDestination, name: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dest-country">Země *</Label>
-                      <select
-                        id="dest-country"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={newDestination.country_id}
-                        onChange={(e) =>
-                          setNewDestination({ ...newDestination, country_id: e.target.value })
-                        }
-                        required
-                      >
-                        <option value="">Vyberte zemi...</option>
-                        {countries.map((country) => (
-                          <option key={country.id} value={country.id}>
-                            {country.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <Button type="submit" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Přidat destinaci
-                  </Button>
-                </form>
+                <div className="space-y-2">
+                  <Label>Vyhledejte nebo vytvořte destinaci</Label>
+                  <DestinationCombobox
+                    value=""
+                    onValueChange={(id) => {
+                      // Refresh the list after selecting/creating
+                      fetchDestinations();
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
 
