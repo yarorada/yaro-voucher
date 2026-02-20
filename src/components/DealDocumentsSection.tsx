@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect, DragEvent } from "react";
+import html2pdf from "html2pdf.js";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -172,18 +174,128 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
     setSendDialogOpen(true);
   };
 
+  // Generate a simple voucher PDF and upload to deal-documents
+  const generateVoucherPdf = async (voucher: DealVoucher): Promise<boolean> => {
+    try {
+      // Fetch full voucher data
+      const { data: fullVoucher, error } = await supabase
+        .from("vouchers")
+        .select("*")
+        .eq("id", voucher.id)
+        .single();
+      if (error || !fullVoucher) return false;
+
+      const services = (fullVoucher.services as any[]) || [];
+      const flights = (fullVoucher.flights as any[]) || [];
+      const teeTimes = (fullVoucher.tee_times as any[]) || [];
+
+      const formatDate = (d: string) => {
+        if (!d) return "";
+        const dt = new Date(d);
+        return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
+      };
+
+      // Build HTML
+      const servicesHtml = services.map(s => 
+        `<tr><td style="padding:4px 8px;border:1px solid #ddd">${s.name || s.service || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.dateFrom ? formatDate(s.dateFrom) : ""} - ${s.dateTo ? formatDate(s.dateTo) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.description || ""}</td></tr>`
+      ).join("");
+
+      const flightsHtml = flights.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Flights</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Route</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Flight</th></tr>${flights.map(f => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${f.departure || ""} → ${f.arrival || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.date ? formatDate(f.date) : ""} ${f.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.flightNumber || ""}</td></tr>`).join("")}</table>` : "";
+
+      const teeTimesHtml = teeTimes.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Tee Times</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Time</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Course</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Players</th></tr>${teeTimes.map(t => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${t.date ? formatDate(t.date) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.course || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.players || ""}</td></tr>`).join("")}</table>` : "";
+
+      const html = `<div style="font-family:Arial,sans-serif;padding:20px;max-width:700px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <img src="${yaroLogo}" style="height:40px" />
+          <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p></div>
+        </div>
+        <hr style="border:none;border-top:2px solid #2563eb;margin:8px 0 12px"/>
+        <p style="font-size:12px;margin:4px 0"><strong>Client:</strong> ${fullVoucher.client_name}</p>
+        ${fullVoucher.hotel_name ? `<p style="font-size:12px;margin:4px 0"><strong>Hotel:</strong> ${fullVoucher.hotel_name}</p>` : ""}
+        ${voucher.suppliers?.name ? `<p style="font-size:12px;margin:4px 0"><strong>Supplier:</strong> ${voucher.suppliers.name}</p>` : ""}
+        ${services.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Services</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Service</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Dates</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Description</th></tr>${servicesHtml}</table>` : ""}
+        ${flightsHtml}
+        ${teeTimesHtml}
+        <div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#666">
+          <p>YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz</p>
+        </div>
+      </div>`;
+
+      // Create temp element and generate PDF
+      const container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      const pdfBlob: Blob = await html2pdf().set({
+        margin: [8, 8, 8, 8],
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      }).from(container).outputPdf("blob");
+
+      document.body.removeChild(container);
+
+      // Upload to deal-documents storage
+      const path = `${dealId}/voucher-${fullVoucher.voucher_code}-${Date.now()}.pdf`;
+      const { error: uploadErr } = await supabase.storage.from("deal-documents").upload(path, pdfBlob, { contentType: "application/pdf" });
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("deal-documents").getPublicUrl(path);
+
+      await supabase.from("deal_documents").insert({
+        deal_id: dealId,
+        file_name: `Voucher ${fullVoucher.voucher_code}.pdf`,
+        file_url: urlData.publicUrl,
+        file_type: "application/pdf",
+        description: "Auto-generated voucher PDF",
+      } as any);
+
+      return true;
+    } catch (err) {
+      console.error("Error generating voucher PDF:", err);
+      return false;
+    }
+  };
+
   const handleSendAll = async () => {
     if (!clientEmail) {
       toast.error("Klient nemá zadaný e-mail");
       return;
     }
-    if (documents.length === 0) {
-      toast.error("Nejsou žádné dokumenty k odeslání");
-      return;
-    }
 
     setSending(true);
     try {
+      // Generate PDFs for vouchers that don't have a deal_document entry yet
+      if (vouchers.length > 0) {
+        const existingNames = documents.map(d => d.file_name.toLowerCase());
+        const missingVouchers = vouchers.filter(v => 
+          !existingNames.some(n => n.includes(v.voucher_code.toLowerCase()))
+        );
+
+        if (missingVouchers.length > 0) {
+          toast.info(`Generuji ${missingVouchers.length} PDF voucherů...`);
+          for (const v of missingVouchers) {
+            await generateVoucherPdf(v);
+          }
+          // Refresh documents list so the edge function picks them up
+          await fetchDocuments();
+        }
+      }
+
+      // Re-check that there are documents to send
+      const { data: freshDocs } = await supabase
+        .from("deal_documents")
+        .select("id")
+        .eq("deal_id", dealId);
+
+      if (!freshDocs || freshDocs.length === 0) {
+        toast.error("Nejsou žádné dokumenty k odeslání");
+        setSending(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("send-deal-documents", {
         body: {
           dealId,
@@ -221,7 +333,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
             {totalItems > 0 && (
               <Badge variant="secondary">{totalItems} položek</Badge>
             )}
-            {documents.length > 0 && clientEmail && (
+            {(documents.length > 0 || vouchers.length > 0) && clientEmail && (
               <Button size="sm" variant="default" onClick={openSendDialog}>
                 <Send className="h-4 w-4 mr-1" />
                 Odeslat vše klientovi
@@ -384,7 +496,9 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                 />
               </div>
               <div className="text-sm text-muted-foreground">
-                <p>Bude odesláno <strong>{documents.length}</strong> {documents.length === 1 ? "příloha" : documents.length < 5 ? "přílohy" : "příloh"}</p>
+                <p>Bude odesláno <strong>{documents.length}</strong> {documents.length === 1 ? "dokument" : documents.length < 5 ? "dokumenty" : "dokumentů"}
+                {vouchers.length > 0 && ` + ${vouchers.length} ${vouchers.length === 1 ? "voucher" : vouchers.length < 5 ? "vouchery" : "voucherů"} (PDF se vygeneruje automaticky)`}
+                </p>
               </div>
             </div>
             <DialogFooter>
