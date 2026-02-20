@@ -122,6 +122,15 @@ export function CreateVouchersFromDeal({
             });
           }
 
+          // Compute expiration_date as the latest service end_date in this group
+          let latestEndDate: string | null = null;
+          for (const s of group.services) {
+            const endDate = s.end_date || s.start_date;
+            if (endDate && (!latestEndDate || endDate > latestEndDate)) {
+              latestEndDate = endDate;
+            }
+          }
+
           // Create voucher
           const { data: voucher, error: voucherError } = await supabase
             .from("vouchers")
@@ -132,6 +141,7 @@ export function CreateVouchersFromDeal({
               supplier_id: group.supplierId,
               services: translatedServices,
               issue_date: new Date().toISOString().split("T")[0],
+              expiration_date: latestEndDate,
               voucher_number: Math.floor(Math.random() * 10000),
             } as any)
             .select()
