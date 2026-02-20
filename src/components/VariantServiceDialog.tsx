@@ -27,6 +27,7 @@ import { SupplierCombobox } from "./SupplierCombobox";
 import { ServiceCombobox } from "./ServiceCombobox";
 import { HotelCombobox } from "./HotelCombobox";
 import { CurrencySelect } from "./CurrencySelect";
+import { HotelAiImport, type ParsedHotelData } from "./HotelAiImport";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
 interface FlightDetails {
@@ -407,55 +408,43 @@ export const VariantServiceDialog = ({
 
           {serviceType === "flight" ? (
             <>
-              {/* AI Import Section */}
+              {/* AI Import Section - always visible at top */}
               <div className="space-y-3 p-4 border rounded-lg bg-primary/5 border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Inteligentní import
-                  </div>
-                  <Button
-                    type="button"
-                    variant={showAiImport ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setShowAiImport(!showAiImport)}
-                  >
-                    {showAiImport ? "Skrýt" : "Importovat z textu"}
-                  </Button>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI Import letů
                 </div>
-                {showAiImport && (
-                  <div className="space-y-3">
-                    <Textarea
-                      value={aiImportText}
-                      onChange={(e) => setAiImportText(e.target.value)}
-                      placeholder="Vložte text z rezervačního systému, např.:
+                <Textarea
+                  value={aiImportText}
+                  onChange={(e) => setAiImportText(e.target.value)}
+                  placeholder="Vložte text z rezervačního systému, např.:
 3 QR 292 K 20DEC PRGDOH 1455 2240
 4 QR 834 K 21DEC DOHBKK 0140 1215
 5 QR 835 Q 28DEC BKKDOH 1855 2220
 6 QR 289 Q 29DEC DOHPRG 0210 0620"
-                      rows={4}
-                      className="text-sm font-mono"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAiImport}
-                      disabled={aiImportLoading || !aiImportText.trim()}
-                      className="w-full"
-                    >
-                      {aiImportLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Zpracovávám...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Extrahovat všechny segmenty
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
+                  rows={3}
+                  className="text-sm font-mono"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAiImport}
+                  disabled={aiImportLoading || !aiImportText.trim()}
+                  className="w-full"
+                >
+                  {aiImportLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Zpracovávám...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Rozparsovat pomocí AI
+                    </>
+                  )}
+                </Button>
               </div>
 
               <FlightSegmentForm
@@ -473,6 +462,32 @@ export const VariantServiceDialog = ({
             </>
           ) : (
             <>
+              {serviceType === 'hotel' && (
+                <HotelAiImport
+                  onImport={(data: ParsedHotelData) => {
+                    if (data.hotel_name) setServiceName(data.hotel_name);
+                    if (data.room_type) setDescription(data.room_type);
+                    if (data.check_in) setStartDate(new Date(data.check_in));
+                    if (data.check_out) setEndDate(new Date(data.check_out));
+                    if (data.persons) setPersonCount(data.persons.toString());
+                    if (data.total_price) {
+                      if (data.currency && data.currency !== "CZK") {
+                        setCostCurrency(data.currency);
+                        setCostPriceOriginal(data.total_price.toString());
+                        setCostPrice(data.total_price.toString());
+                      } else {
+                        setCostPrice(data.total_price.toString());
+                        setCostPriceOriginal(data.total_price.toString());
+                      }
+                    }
+                    if (data.meal_plan && data.room_type) {
+                      setDescription(`${data.room_type} (${data.meal_plan})`);
+                    } else if (data.meal_plan) {
+                      setDescription(data.meal_plan);
+                    }
+                  }}
+                />
+              )}
               <div>
                 <Label htmlFor="service-name">{serviceType === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
                 {serviceType === 'hotel' ? (
