@@ -306,13 +306,13 @@ export function AirportCombobox({ value, onSelect, placeholder = "Vyberte letiš
               />
             </div>
             <div>
-              <Label htmlFor="country">Kód země (2 znaky) *</Label>
+              <Label htmlFor="country">Kód země (3 znaky) *</Label>
               <Input
                 id="country"
                 value={newCountry}
                 onChange={(e) => setNewCountry(e.target.value.toUpperCase())}
-                placeholder="např. CZ"
-                maxLength={2}
+                placeholder="např. CZE"
+                maxLength={3}
                 className="uppercase"
               />
             </div>
