@@ -141,15 +141,18 @@ export const RecentDealsCard = () => {
               <Link
                 key={deal.id}
                 to={`/deals/${deal.id}`}
-                className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="block p-2 rounded-lg border hover:bg-muted/50 transition-colors"
               >
-                <DealStatusBadge status={deal.status} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">
-                    <span className="text-muted-foreground">{getBaseNumber(deal.deal_number)}</span>
-                    {" "}
-                    <span>{buildDescription(deal)}</span>
-                  </p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <DealStatusBadge status={deal.status} />
+                  <span className="font-bold text-sm text-muted-foreground">{getBaseNumber(deal.deal_number)}</span>
+                  <span className="text-sm truncate">{buildDescription(deal)}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
+                  {deal.destinations?.name && <span>{deal.destinations.name}</span>}
+                  {deal.start_date && deal.end_date && (
+                    <span>{formatDateShort(deal.start_date)} – {formatDateShort(deal.end_date)}</span>
+                  )}
                 </div>
               </Link>
             ))}
