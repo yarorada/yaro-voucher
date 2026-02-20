@@ -310,7 +310,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPreviewUrl(doc.file_url)} title="Náhled">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(doc.file_url, "_blank")} title="Náhled">
                     <Eye className="h-3 w-3" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(doc.file_url, "_blank")} title="Stáhnout">
