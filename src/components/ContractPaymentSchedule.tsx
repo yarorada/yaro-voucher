@@ -330,10 +330,6 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             Platební kalendář
           </CardTitle>
           <div className="flex gap-2">
-            <Button onClick={() => setEmailMatchOpen(true)} size="sm" variant="outline">
-              <Mail className="h-4 w-4 mr-2" />
-              Z emailu
-            </Button>
             <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Přidat platbu
