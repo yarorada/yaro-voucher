@@ -163,6 +163,47 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
   const isImage = (url: string) => /\.(jpg|jpeg|png|webp|gif)/i.test(url);
   const isPdf = (url: string) => /\.pdf/i.test(url);
 
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreview = async (doc: DealDocument) => {
+    // For images, download via Supabase SDK to avoid blocked URLs in iframe
+    const parts = doc.file_url.split("/deal-documents/");
+    if (parts.length >= 2) {
+      setPreviewUrl(doc.file_url); // keep for type detection
+      setPreviewLoading(true);
+      try {
+        const storagePath = decodeURIComponent(parts[1]);
+        const { data, error } = await supabase.storage
+          .from("deal-documents")
+          .download(storagePath);
+        if (error || !data) throw error;
+        const blobUrl = URL.createObjectURL(data);
+        setPreviewBlobUrl(blobUrl);
+      } catch {
+        // Fallback: try direct fetch
+        try {
+          const res = await fetch(doc.file_url);
+          const blob = await res.blob();
+          setPreviewBlobUrl(URL.createObjectURL(blob));
+        } catch {
+          setPreviewBlobUrl(null);
+        }
+      } finally {
+        setPreviewLoading(false);
+      }
+    } else {
+      setPreviewUrl(doc.file_url);
+      setPreviewBlobUrl(null);
+    }
+  };
+
+  const closePreview = () => {
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewUrl(null);
+    setPreviewBlobUrl(null);
+  };
+
   const totalItems = documents.length + vouchers.length;
 
   const openSendDialog = () => {
@@ -430,7 +471,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPreviewUrl(doc.file_url)} title="Náhled">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePreview(doc)} title="Náhled">
                     <Eye className="h-3 w-3" />
                   </Button>
                   <a href={doc.file_url} download={doc.file_name} title="Stáhnout">
@@ -448,7 +489,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
         )}
 
         {/* Preview dialog */}
-        <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+        <Dialog open={!!previewUrl} onOpenChange={closePreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] bg-background">
             <DialogHeader>
               <DialogTitle>Náhled dokumentu</DialogTitle>
@@ -471,36 +512,40 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                       Nové okno
                     </Button>
                   </div>
-                  {isPdf(previewUrl) ? (
-                    <div className="bg-muted/50 rounded-lg p-8 text-center">
-                      <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-3">PDF dokument</p>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => window.open(previewUrl!, '_blank')}
-                      >
-                        Otevřít PDF
-                      </Button>
+                  {previewLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
+                  ) : isPdf(previewUrl) ? (
+                    previewBlobUrl ? (
+                      <iframe
+                        src={previewBlobUrl}
+                        className="w-full h-[60vh] rounded border"
+                        title="PDF náhled"
+                      />
+                    ) : (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-3">PDF dokument</p>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => window.open(previewUrl!, '_blank')}
+                        >
+                          Otevřít PDF
+                        </Button>
+                      </div>
+                    )
                   ) : isImage(previewUrl) ? (
-                    <div className="relative">
+                    previewBlobUrl ? (
                       <img
-                        src={previewUrl}
+                        src={previewBlobUrl}
                         alt="Dokument"
                         className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = target.nextElementSibling as HTMLElement;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
                       />
-                      <div
-                        className="hidden flex-col items-center justify-center bg-muted/50 rounded-lg p-8"
-                        style={{ display: 'none' }}
-                      >
-                        <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                    ) : (
+                      <div className="bg-muted/50 rounded-lg p-8 text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground mb-3">Náhled nelze zobrazit</p>
                         <Button
                           variant="default"
@@ -510,7 +555,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                           Otevřít dokument
                         </Button>
                       </div>
-                    </div>
+                    )
                   ) : (
                     <div className="bg-muted/50 rounded-lg p-8 text-center">
                       <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
