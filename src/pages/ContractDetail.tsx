@@ -180,10 +180,6 @@ const ContractDetail = () => {
   usePageToolbar(
     contract ? (
       <>
-        <Button variant="outline" size="sm" className={toolbarButtonClass} onClick={() => setEditDialogOpen(true)}>
-          <Pencil className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Upravit</span>
-        </Button>
         <CreateVoucherFromContract 
           contractId={contract.id} 
           contractStatus={contract.status} 
