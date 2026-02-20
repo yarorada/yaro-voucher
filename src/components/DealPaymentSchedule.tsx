@@ -311,58 +311,55 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
             <p className="text-sm text-muted-foreground">Zatím nejsou přidány žádné platby</p>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]"></TableHead>
-                    <TableHead>Typ</TableHead>
-                    <TableHead>Částka</TableHead>
-                    <TableHead>Splatnost</TableHead>
-                    <TableHead>Zaplaceno dne</TableHead>
-                    <TableHead className="w-[70px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((payment) => {
-                    const isOverdue = !payment.paid && isPast(startOfDay(new Date(payment.due_date)));
-                    return (
-                      <TableRow key={payment.id} className={cn(isOverdue && "bg-red-50 dark:bg-red-950/20")}>
-                        <TableCell>
-                          <Checkbox
-                            checked={payment.paid}
-                            onCheckedChange={() => handleTogglePaid(payment.id, payment.paid)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {payment.notes || getPaymentTypeLabel(payment.payment_type)}
-                        </TableCell>
-                        <TableCell className="text-sm font-semibold">
-                          {formatPrice(payment.amount, true, currency)}
-                        </TableCell>
-                        <TableCell className={cn("text-sm", isOverdue && "text-red-600 font-semibold")}>
-                          {format(new Date(payment.due_date), "d.M.yyyy", { locale: cs })}
-                          {isOverdue && <span className="ml-1 text-xs">⚠️</span>}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {payment.paid && payment.paid_at
-                            ? format(new Date(payment.paid_at), "d.M.yyyy", { locale: cs })
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(payment)}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDeletePayment(payment.id)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="space-y-2">
+                {payments.map((payment) => {
+                  const isOverdue = !payment.paid && isPast(startOfDay(new Date(payment.due_date)));
+                  return (
+                    <div
+                      key={payment.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border",
+                        isOverdue && "bg-red-50 dark:bg-red-950/20 border-destructive/30"
+                      )}
+                    >
+                      <Checkbox
+                        checked={payment.paid}
+                        onCheckedChange={() => handleTogglePaid(payment.id, payment.paid)}
+                        className="shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium truncate">
+                            {payment.notes || getPaymentTypeLabel(payment.payment_type)}
+                          </span>
+                          <span className="text-sm font-bold whitespace-nowrap">
+                            {formatPrice(payment.amount, true, currency)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                          <span className={cn(isOverdue && "text-destructive font-semibold")}>
+                            Splatnost: {format(new Date(payment.due_date), "d.M.yyyy", { locale: cs })}
+                            {isOverdue && " ⚠️"}
+                          </span>
+                          {payment.paid && payment.paid_at && (
+                            <span className="text-green-600">
+                              Zaplaceno: {format(new Date(payment.paid_at), "d.M.yyyy", { locale: cs })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(payment)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDeletePayment(payment.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <div className="border-t pt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Celkem:</span>
