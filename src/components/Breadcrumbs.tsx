@@ -52,7 +52,7 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-4">
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1;
         const Icon = crumb.icon;

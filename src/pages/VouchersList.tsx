@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye } from "lucide-react";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -324,22 +325,30 @@ const VouchersList = () => {
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <>
+      <div className="relative w-48 md:w-64">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Hledat..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-8 text-xs"
+        />
+      </div>
+      <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " gap-1"}>
+        <Plus className="h-3.5 w-3.5" />
+        Nový voucher
+      </Button>
+    </>,
+    [searchQuery]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground">Vouchery</h1>
-              <p className="text-muted-foreground mt-2">Správa a prohlížení všech cestovních voucherů</p>
-            </div>
-            <Button onClick={() => navigate("/create")} variant="premium" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Vytvořit voucher
-            </Button>
-          </div>
-        </header>
-
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám vouchery...</p>
@@ -356,24 +365,15 @@ const VouchersList = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3 mb-4">
               <p className="text-sm text-muted-foreground">
-                Celkem voucherů: <span className="font-semibold text-foreground">{vouchers.length}</span>
+                Celkem: <span className="font-semibold text-foreground">{vouchers.length}</span>
                 {searchQuery && filteredVouchers.length !== vouchers.length && (
-                  <span className="ml-2">
+                  <span className="ml-1">
                     (zobrazeno: <span className="font-semibold text-foreground">{filteredVouchers.length}</span>)
                   </span>
                 )}
               </p>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat podle jména, hotelu nebo kódu..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
             </div>
 
             {filteredVouchers.length === 0 ? (

@@ -207,18 +207,7 @@ const Destinations = () => {
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <h1 className="text-2xl md:text-heading-1 text-foreground">Destinace</h1>
-          <p className="text-body text-muted-foreground mt-2">
-            Správa zemí a destinací
-          </p>
-        </header>
-
         <Tabs defaultValue="destinations" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="destinations">Destinace</TabsTrigger>
-            <TabsTrigger value="countries">Země</TabsTrigger>
-          </TabsList>
 
           <TabsContent value="destinations" className="space-y-4">
             <Card>

@@ -4,11 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ const Suppliers = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [searchText, setSearchText] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -164,34 +165,42 @@ const Suppliers = () => {
     });
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  const filteredSuppliers = suppliers.filter((s) => {
+    if (!searchText.trim()) return true;
+    const q = searchText.toLowerCase();
+    return s.name.toLowerCase().includes(q) || (s.contact_person || "").toLowerCase().includes(q) || (s.email || "").toLowerCase().includes(q);
+  });
+
+  usePageToolbar(
+    <>
+      <div className="relative w-48 md:w-64">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Hledat..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="pl-8 h-8 text-xs"
+        />
+      </div>
+      <BulkSupplierUpload onComplete={fetchSuppliers} />
+      <Button className={toolbarButtonClass + " gap-1"} onClick={() => setIsDialogOpen(true)}>
+        <Plus className="h-3.5 w-3.5" />
+        Přidat
+      </Button>
+    </>,
+    [searchText]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-4xl font-bold text-foreground">Dodavatelé</h1>
-                <p className="text-muted-foreground mt-2">
-                  Správa dodavatelů služeb
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <BulkSupplierUpload onComplete={fetchSuppliers} />
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) handleDialogClose();
-                }}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="default"
-                      className="gap-2 shrink-0"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Přidat dodavatele
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) handleDialogClose();
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
                   <DialogHeader>
                     <DialogTitle>
                       {editingSupplier ? "Upravit dodavatele" : "Nový dodavatel"}
@@ -283,28 +292,24 @@ const Suppliers = () => {
                   </div>
                 </form>
                 </DialogContent>
-                </Dialog>
-              </div>
-            </div>
-          </div>
-        </header>
+        </Dialog>
 
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám dodavatele...</p>
           </div>
-        ) : suppliers.length === 0 ? (
+        ) : filteredSuppliers.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              Zatím žádní dodavatelé
+              {searchText ? "Žádní dodavatelé nenalezeni" : "Zatím žádní dodavatelé"}
             </h2>
             <p className="text-muted-foreground mb-6">
-              Přidejte prvního dodavatele
+              {searchText ? "Zkuste změnit hledání" : "Přidejte prvního dodavatele"}
             </p>
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {suppliers.map((supplier) => (
+            {filteredSuppliers.map((supplier) => (
               <Card
                 key={supplier.id}
                 className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"

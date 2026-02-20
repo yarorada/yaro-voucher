@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Copy, MoreHorizontal, Filter, Trash2, FileText, ScrollText } from "lucide-react";
 import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
   Select,
   SelectContent,
@@ -380,21 +381,59 @@ const Deals = () => {
     }
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <>
+      <div className="relative w-48 md:w-64">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Hledat..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-8 text-xs"
+        />
+      </div>
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Všechny statusy</SelectItem>
+          <SelectItem value="inquiry">Poptávka</SelectItem>
+          <SelectItem value="quote">Nabídka odeslána</SelectItem>
+          <SelectItem value="confirmed">Potvrzeno</SelectItem>
+          <SelectItem value="dispatched">Expedováno</SelectItem>
+          <SelectItem value="completed">Dokončeno</SelectItem>
+          <SelectItem value="cancelled">Zrušeno</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={sortBy} onValueChange={setSortBy}>
+        <SelectTrigger className="w-[150px] h-8 text-xs">
+          <SelectValue placeholder="Řazení" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="updated_at">Poslední změna</SelectItem>
+          <SelectItem value="deal_number_desc">Číslo ↓</SelectItem>
+          <SelectItem value="deal_number_asc">Číslo ↑</SelectItem>
+          <SelectItem value="departure_asc">Odjezd ↑</SelectItem>
+          <SelectItem value="departure_desc">Odjezd ↓</SelectItem>
+          <SelectItem value="return_asc">Návrat</SelectItem>
+        </SelectContent>
+      </Select>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+      <Button onClick={() => navigate("/deals/new")} className={toolbarButtonClass + " gap-1"}>
+        <Plus className="h-3.5 w-3.5" />
+        Nový případ
+      </Button>
+    </>,
+    [searchQuery, statusFilter, sortBy, dateFilter]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-foreground">Obchodní případy</h1>
-              <p className="text-muted-foreground mt-2">Správa všech obchodních příležitostí</p>
-            </div>
-            <Button onClick={() => navigate("/deals/new")} variant="premium" className="gap-2 w-full md:w-auto">
-              <Plus className="h-4 w-4" />
-              Nový případ
-            </Button>
-          </div>
-        </header>
 
         {loading ? (
           <div className="text-center py-12">
@@ -412,55 +451,15 @@ const Deals = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Celkem případů: <span className="font-semibold text-foreground">{deals.length}</span>
-                  {(searchQuery || statusFilter !== "all" || dateFilter.preset !== "all") && filteredDeals.length !== deals.length && (
-                    <span className="ml-2">
-                      (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
-                    </span>
-                  )}
-                </p>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <Filter className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Filtr statusu" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Všechny statusy</SelectItem>
-                    <SelectItem value="inquiry">Poptávka</SelectItem>
-                    <SelectItem value="quote">Nabídka odeslána</SelectItem>
-                    <SelectItem value="confirmed">Potvrzeno</SelectItem>
-                    <SelectItem value="dispatched">Expedováno</SelectItem>
-                    <SelectItem value="completed">Dokončeno</SelectItem>
-                    <SelectItem value="cancelled">Zrušeno</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[200px] h-9">
-                    <SelectValue placeholder="Řazení" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="updated_at">Poslední změna</SelectItem>
-                    <SelectItem value="deal_number_desc">Číslo dealu ↓</SelectItem>
-                    <SelectItem value="deal_number_asc">Číslo dealu ↑</SelectItem>
-                    <SelectItem value="departure_asc">Odjezd ↑ (nejbližší)</SelectItem>
-                    <SelectItem value="departure_desc">Odjezd ↓ (nejpozdější)</SelectItem>
-                    <SelectItem value="return_asc">Datum návratu</SelectItem>
-                  </SelectContent>
-                </Select>
-                <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-              </div>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat podle čísla, destinace nebo klienta..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Celkem: <span className="font-semibold text-foreground">{deals.length}</span>
+                {(searchQuery || statusFilter !== "all" || dateFilter.preset !== "all") && filteredDeals.length !== deals.length && (
+                  <span className="ml-1">
+                    (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
+                  </span>
+                )}
+              </p>
             </div>
 
             {filteredDeals.length === 0 ? (

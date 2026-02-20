@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { FloatingTaskButton } from "@/components/FloatingTaskButton";
+import { PageToolbarProvider, usePageToolbarContent } from "@/hooks/usePageToolbar";
 import { Menu } from "lucide-react";
 import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
@@ -35,34 +36,49 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
+const LayoutHeader = () => {
+  const toolbarContent = usePageToolbarContent();
+  return (
+    <header className="border-b bg-background print:hidden">
+      <div className="h-14 flex items-center px-3 gap-3">
+        <SidebarTrigger className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
+          <Menu className="h-5 w-5" />
+        </SidebarTrigger>
+        <div className="flex items-center gap-2 md:hidden">
+          <img src={yaroLogo} alt="YARO" className="h-8 w-8 logo-dark-mode" />
+          <span className="font-semibold text-foreground">YARO Travel</span>
+        </div>
+      </div>
+      <div className="px-4 pb-3">
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <Breadcrumbs />
+          {toolbarContent && (
+            <div className="flex flex-wrap items-center gap-2">
+              {toolbarContent}
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
   <SidebarProvider>
-    <div className="min-h-screen flex w-full">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col">
-        <header className="border-b bg-background print:hidden">
-          <div className="h-14 flex items-center px-3 gap-3">
-            <SidebarTrigger className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
-              <Menu className="h-5 w-5" />
-            </SidebarTrigger>
-            <div className="flex items-center gap-2 md:hidden">
-              <img src={yaroLogo} alt="YARO" className="h-8 w-8 logo-dark-mode" />
-              <span className="font-semibold text-foreground">YARO Travel</span>
-            </div>
-          </div>
-          <div className="px-4 pb-3">
-            <Breadcrumbs />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-        <FloatingTaskButton />
+    <PageToolbarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <LayoutHeader />
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
+          <FloatingTaskButton />
+        </div>
       </div>
-    </div>
+    </PageToolbarProvider>
   </SidebarProvider>
 );
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
