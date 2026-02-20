@@ -57,24 +57,19 @@ export function AppSidebar() {
     navigate(url);
     if (isMobile) {
       setOpenMobile(false);
-    } else {
-      setOpen(false);
     }
   };
 
   return (
-    <Sidebar collapsible="offcanvas" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center justify-between py-4 px-4 border-b border-border/50">
             <img 
               src={yaroLogo} 
               alt="YARO Travel" 
-              className="h-10 w-auto logo-dark-mode"
+              className="h-10 w-auto logo-dark-mode group-data-[state=collapsed]:hidden"
             />
-            <SidebarTrigger className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent">
-              <Menu className="h-5 w-5" />
-            </SidebarTrigger>
           </div>
           
           <SidebarGroupLabel className="mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
