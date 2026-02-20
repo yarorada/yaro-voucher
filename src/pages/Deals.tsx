@@ -151,6 +151,16 @@ const Deals = () => {
     // Sort
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
+        case "deal_number_asc": {
+          const numA = a.deal_number.match(/^D-(\d+)/)?.[1] || "";
+          const numB = b.deal_number.match(/^D-(\d+)/)?.[1] || "";
+          return numA.localeCompare(numB);
+        }
+        case "deal_number_desc": {
+          const numA = a.deal_number.match(/^D-(\d+)/)?.[1] || "";
+          const numB = b.deal_number.match(/^D-(\d+)/)?.[1] || "";
+          return numB.localeCompare(numA);
+        }
         case "departure_asc": {
           if (!a.start_date && !b.start_date) return 0;
           if (!a.start_date) return 1;
@@ -386,6 +396,8 @@ const Deals = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="updated_at">Poslední změna</SelectItem>
+                    <SelectItem value="deal_number_desc">Číslo dealu ↓</SelectItem>
+                    <SelectItem value="deal_number_asc">Číslo dealu ↑</SelectItem>
                     <SelectItem value="departure_asc">Nejbližší odjezd</SelectItem>
                     <SelectItem value="return_asc">Datum návratu</SelectItem>
                   </SelectContent>
