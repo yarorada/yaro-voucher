@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Copy, MoreHorizontal, Filter } from "lucide-react";
+import { Plus, Search, Copy, MoreHorizontal, Filter, Trash2, FileText, ScrollText } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -70,6 +70,11 @@ const Deals = () => {
   const [dealToDuplicate, setDealToDuplicate] = useState<Deal | null>(null);
   const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
   const [duplicating, setDuplicating] = useState(false);
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchDeals();
@@ -280,6 +285,44 @@ const Deals = () => {
     }
   };
 
+  const handleDeleteDeal = async () => {
+    if (!dealToDelete) return;
+    setDeleting(true);
+    try {
+      // Delete related data first
+      await Promise.all([
+        supabase.from("deal_services").delete().eq("deal_id", dealToDelete.id),
+        supabase.from("deal_travelers").delete().eq("deal_id", dealToDelete.id),
+        supabase.from("deal_payments").delete().eq("deal_id", dealToDelete.id),
+        supabase.from("deal_documents").delete().eq("deal_id", dealToDelete.id),
+      ]);
+
+      // Delete variants and their services
+      const { data: variants } = await supabase
+        .from("deal_variants")
+        .select("id")
+        .eq("deal_id", dealToDelete.id);
+      if (variants && variants.length > 0) {
+        const variantIds = variants.map(v => v.id);
+        await supabase.from("deal_variant_services").delete().in("variant_id", variantIds);
+        await supabase.from("deal_variants").delete().eq("deal_id", dealToDelete.id);
+      }
+
+      const { error } = await supabase.from("deals").delete().eq("id", dealToDelete.id);
+      if (error) throw error;
+
+      toast({ title: "Smazáno", description: "Obchodní případ byl smazán" });
+      setDeleteDialogOpen(false);
+      setDealToDelete(null);
+      fetchDeals();
+    } catch (error) {
+      console.error("Error deleting deal:", error);
+      toast({ title: "Chyba", description: "Nepodařilo se smazat obchodní případ", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
@@ -411,9 +454,24 @@ const Deals = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/contracts/new?dealId=${deal.id}`); }}>
+                            <ScrollText className="h-4 w-4 mr-2" />
+                            Vytvořit smlouvu
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/vouchers/new?dealId=${deal.id}`); }}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Vytvořit voucher
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => openDuplicateDialog(deal, e)}>
                             <Copy className="h-4 w-4 mr-2" />
                             Duplikovat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setDealToDelete(deal); setDeleteDialogOpen(true); }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Smazat
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -454,6 +512,26 @@ const Deals = () => {
             </Button>
             <Button onClick={handleDuplicateDeal} disabled={duplicating}>
               {duplicating ? "Duplikuji..." : "Duplikovat"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Smazat obchodní případ</DialogTitle>
+            <DialogDescription>
+              Opravdu chcete smazat případ <strong>{dealToDelete?.deal_number}</strong>? Tato akce je nevratná a smaže všechny související služby, cestující a dokumenty.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Zrušit
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteDeal} disabled={deleting}>
+              {deleting ? "Mažu..." : "Smazat"}
             </Button>
           </DialogFooter>
         </DialogContent>
