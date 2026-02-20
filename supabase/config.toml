@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.sign-contract]
 verify_jwt = false
+
+[functions.send-deal-documents]
+verify_jwt = true
