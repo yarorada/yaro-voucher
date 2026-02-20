@@ -401,14 +401,6 @@ const VouchersList = () => {
                   .sort()
                   [0] || null;
 
-                // Build Line 1: YT-RRNNNN Jméno Příjmení ISO Hotel DD-MM-RR
-                const nameParts: string[] = [];
-                if (displayName) nameParts.push(displayName);
-                if (countryIso) nameParts.push(countryIso);
-                if (voucher.hotel_name) nameParts.push(voucher.hotel_name);
-                if (firstServiceDate) nameParts.push(formatDate(firstServiceDate));
-                const displayTitle = [voucher.voucher_code, ...nameParts].join(" ");
-
                 return (
                   <Card 
                     key={voucher.id} 
@@ -419,8 +411,8 @@ const VouchersList = () => {
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        {/* Line 1: Status + Code */}
-                        <div className="flex items-center gap-2 mb-1">
+                        {/* Line 1: Status + Code + Client + ISO + Hotel + Date */}
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           {voucher.sent_at ? (
                             <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
                           ) : isExpired ? (
@@ -429,14 +421,28 @@ const VouchersList = () => {
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
                           <span className="font-bold text-foreground">{voucher.voucher_code}</span>
+                          {displayName && <span className="text-foreground truncate">{[displayName, countryIso, voucher.hotel_name, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}</span>}
                         </div>
-                        {/* Line 2: Klient • Destinace • Datum */}
-                        <div className="text-sm text-muted-foreground truncate">
-                          {[
-                            displayName,
-                            destination,
-                            firstServiceDate ? formatDate(firstServiceDate) : null,
-                          ].filter(Boolean).join(" • ")}
+                        {/* Line 2: Details */}
+                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                          {displayName && (
+                            <span>
+                              <span className="font-semibold text-foreground">Klient:</span> {displayName}
+                            </span>
+                          )}
+                          {destination && (
+                            <span>
+                              <span className="font-semibold text-foreground">Destinace:</span> {destination}
+                            </span>
+                          )}
+                          <span>
+                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(voucher.created_at)}
+                          </span>
+                          {voucher.sent_at && (
+                            <span>
+                              <span className="font-semibold text-foreground">Odesláno:</span> {formatDateTime(voucher.sent_at)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <DropdownMenu>
