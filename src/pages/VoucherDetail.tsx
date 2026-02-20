@@ -163,7 +163,6 @@ const VoucherDetail = () => {
           size="sm"
           onClick={() => voucherDisplayRef.current?.handleDownloadPDF()}
           className={toolbarButtonClass}
-          disabled={voucherDisplayRef.current?.isGeneratingPdf || voucherDisplayRef.current?.isTranslating}
         >
           <Download className="h-4 w-4" />
           <span className="hidden sm:inline">PDF</span>
@@ -173,7 +172,6 @@ const VoucherDetail = () => {
           size="sm"
           onClick={() => voucherDisplayRef.current?.handleSendEmail()}
           className={toolbarButtonClass}
-          disabled={voucherDisplayRef.current?.isSendingEmail}
         >
           <Mail className="h-4 w-4" />
           <span className="hidden sm:inline">Email</span>
