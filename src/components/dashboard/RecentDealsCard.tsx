@@ -32,6 +32,8 @@ interface Deal {
   deal_services: Array<{
     service_type: string;
     service_name: string;
+    start_date: string | null;
+    end_date: string | null;
   }>;
 }
 
@@ -56,7 +58,7 @@ export const RecentDealsCard = () => {
           id, deal_number, status, created_at, updated_at, start_date, end_date,
           destinations(name, countries(iso_code)),
           deal_travelers(is_lead_traveler, clients(first_name, last_name)),
-          deal_services(service_type, service_name)
+          deal_services(service_type, service_name, start_date, end_date)
         `);
 
       switch (sortBy) {
@@ -148,11 +150,21 @@ export const RecentDealsCard = () => {
                   <span className="font-bold text-sm">{getBaseNumber(deal.deal_number)}</span>
                 </div>
                 <div className="text-xs text-muted-foreground pl-1 truncate">
-                  {[
-                    getLeadClient(deal),
-                    deal.destinations?.name,
-                    formatDateShort(deal.start_date),
-                  ].filter(Boolean).join(" • ")}
+                  {(() => {
+                    const parts: string[] = [];
+                    const client = getLeadClient(deal);
+                    if (client) parts.push(client);
+                    if (deal.destinations?.name) parts.push(deal.destinations.name);
+                    const svcDates = (deal.deal_services || []).flatMap(s => [s.start_date, s.end_date]).filter(Boolean).sort() as string[];
+                    const firstDate = svcDates[0];
+                    const lastDate = svcDates[svcDates.length - 1];
+                    if (firstDate && lastDate && firstDate !== lastDate) {
+                      parts.push(`${formatDateShort(firstDate)} – ${formatDateShort(lastDate)}`);
+                    } else if (firstDate) {
+                      parts.push(formatDateShort(firstDate));
+                    }
+                    return parts.join(" • ");
+                  })()}
                 </div>
               </Link>
             ))}
