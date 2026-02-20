@@ -4,6 +4,7 @@ import { cs } from "date-fns/locale";
 import { formatPrice, parseDateSafe } from "@/lib/utils";
 import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } from "@/lib/spayd";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import radekPodpis from "@/assets/radek-podpis.png";
 
 const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 
@@ -530,10 +531,12 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
           <div data-pdf-section="signatures" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', paddingTop: '6px' }}>
             <div style={{ width: '44%', textAlign: 'center' }}>
               <p style={{ fontSize: '8px', color: '#666', margin: '0 0 3px' }}>Dodavatel:</p>
-              <div style={{ borderTop: '1px solid #000', paddingTop: '4px', marginTop: '22px' }}>
+              <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                <img src={radekPodpis} alt="Podpis" style={{ height: '40px', margin: '0 auto 2px' }} />
+              </div>
+              <div style={{ borderTop: '1px solid #000', paddingTop: '4px' }}>
                 <p style={{ fontWeight: 'bold', margin: 0, lineHeight: 1.3 }}>Radek Jaroměřský</p>
                 <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>{(contract as any).agency_name || 'YARO s.r.o.'}</p>
-                <p style={{ color: '#666', fontSize: '7px', margin: '1px 0 0' }}>(podpis a razítko)</p>
               </div>
             </div>
             <div style={{ width: '44%', textAlign: 'center' }}>
