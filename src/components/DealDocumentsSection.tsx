@@ -204,6 +204,37 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
     setPreviewBlobUrl(null);
   };
 
+  const downloadViaBlob = async (doc: DealDocument) => {
+    const parts = doc.file_url.split("/deal-documents/");
+    if (parts.length < 2) {
+      window.open(doc.file_url, "_blank");
+      return;
+    }
+    try {
+      const storagePath = decodeURIComponent(parts[1]);
+      const { data, error } = await supabase.storage.from("deal-documents").download(storagePath);
+      if (error || !data) throw error;
+      const blobUrl = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = doc.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(doc.file_url, "_blank");
+    }
+  };
+
+  const openInNewWindow = async () => {
+    if (previewBlobUrl) {
+      window.open(previewBlobUrl, "_blank");
+    } else if (previewUrl) {
+      window.open(previewUrl, "_blank");
+    }
+  };
+
   const totalItems = documents.length + vouchers.length;
 
   const openSendDialog = () => {
@@ -474,11 +505,9 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePreview(doc)} title="Náhled">
                     <Eye className="h-3 w-3" />
                   </Button>
-                  <a href={doc.file_url} download={doc.file_name} title="Stáhnout">
-                    <Button size="icon" variant="ghost" className="h-7 w-7">
-                      <Download className="h-3 w-3" />
-                    </Button>
-                  </a>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => downloadViaBlob(doc)} title="Stáhnout">
+                    <Download className="h-3 w-3" />
+                  </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(doc)} title="Smazat">
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -506,7 +535,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                       variant="outline"
                       size="sm"
                       className="gap-2"
-                      onClick={() => window.open(previewUrl!, '_blank')}
+                      onClick={openInNewWindow}
                     >
                       <ExternalLink className="h-4 w-4" />
                       Nové okno
@@ -530,7 +559,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => window.open(previewUrl!, '_blank')}
+                          onClick={openInNewWindow}
                         >
                           Otevřít PDF
                         </Button>
@@ -550,7 +579,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => window.open(previewUrl!, '_blank')}
+                          onClick={openInNewWindow}
                         >
                           Otevřít dokument
                         </Button>
@@ -563,7 +592,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => window.open(previewUrl!, '_blank')}
+                        onClick={openInNewWindow}
                       >
                         Otevřít dokument
                       </Button>

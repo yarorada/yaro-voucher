@@ -82,9 +82,42 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
     }
   };
 
-  const handlePreview = (doc: Document) => {
-    setPreviewUrl(doc.url);
+  const handlePreview = async (doc: Document) => {
     setPreviewType(doc.type);
+    setPreviewUrl(doc.url);
+    // Download via SDK to avoid blocked URLs
+    const parts = doc.url.split("/client-documents/");
+    if (parts.length >= 2) {
+      try {
+        const storagePath = decodeURIComponent(parts[1]);
+        const { data, error } = await supabase.storage.from("client-documents").download(storagePath);
+        if (error || !data) throw error;
+        setPreviewUrl(URL.createObjectURL(data));
+      } catch {
+        // keep original URL as fallback
+      }
+    }
+  };
+
+  const downloadDoc = async (doc: Document) => {
+    const parts = doc.url.split("/client-documents/");
+    if (parts.length >= 2) {
+      try {
+        const storagePath = decodeURIComponent(parts[1]);
+        const { data, error } = await supabase.storage.from("client-documents").download(storagePath);
+        if (error || !data) throw error;
+        const blobUrl = URL.createObjectURL(data);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = doc.type || "document";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        return;
+      } catch { /* fallback */ }
+    }
+    window.open(doc.url, "_blank");
   };
 
   const isImageUrl = (url: string) => {
@@ -129,7 +162,7 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => window.open(doc.url, "_blank")}
+                    onClick={() => downloadDoc(doc)}
                     title="Stáhnout"
                   >
                     <Download className="h-4 w-4" />
@@ -149,7 +182,10 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
         </div>
       </div>
 
-      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+      <Dialog open={!!previewUrl} onOpenChange={() => {
+        if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{getDocumentTypeLabel(previewType)}</DialogTitle>
@@ -172,7 +208,7 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
                 <div className="text-center py-8">
                   <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground mb-4">Náhled není dostupný pro tento typ souboru</p>
-                  <Button onClick={() => window.open(previewUrl, "_blank")}>
+                  <Button onClick={() => window.open(previewUrl!, "_blank")}>
                     <Download className="h-4 w-4 mr-2" />
                     Otevřít v novém okně
                   </Button>
