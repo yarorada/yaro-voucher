@@ -192,6 +192,44 @@ const VoucherDetail = () => {
     }
   };
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    !loading && voucher ? (
+      <>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportTravelersCsv}
+          className={toolbarButtonClass}
+          disabled={travelers.length === 0}
+        >
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Export CSV</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/edit/${id}`)}
+          className={toolbarButtonClass}
+        >
+          <Edit className="h-4 w-4" />
+          <span className="hidden sm:inline">Upravit</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDeleteDialogOpen(true)}
+          className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground`}
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Smazat</span>
+        </Button>
+      </>
+    ) : null,
+    [id, loading, voucher, travelers.length]
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
@@ -199,42 +237,6 @@ const VoucherDetail = () => {
       </div>
     );
   }
-
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
-
-  usePageToolbar(
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportTravelersCsv}
-        className={toolbarButtonClass}
-        disabled={travelers.length === 0}
-      >
-        <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Export CSV</span>
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => navigate(`/edit/${id}`)}
-        className={toolbarButtonClass}
-      >
-        <Edit className="h-4 w-4" />
-        <span className="hidden sm:inline">Upravit</span>
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setDeleteDialogOpen(true)}
-        className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground`}
-      >
-        <Trash2 className="h-4 w-4" />
-        <span className="hidden sm:inline">Smazat</span>
-      </Button>
-    </>,
-    [id, travelers.length]
-  );
 
   if (!voucher) {
     return null;
