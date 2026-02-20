@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,8 +205,10 @@ const Destinations = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [newCountryName, setNewCountryName] = useState("");
-  const [newCountrySuggestion, setNewCountrySuggestion] = useState<{ iso: string; currency: string } | null>(null);
+  const [newCountrySelected, setNewCountrySelected] = useState<{ name: string; iso: string; currency: string } | null>(null);
   const [newCountryManual, setNewCountryManual] = useState({ iso_code: "", currency: "" });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
   const [newDestination, setNewDestination] = useState({ name: "", country_id: "" });
   const [editingCountry, setEditingCountry] = useState<Country | null>(null);
   const [editingDestination, setEditingDestination] = useState<{ id: string; name: string; country_id: string } | null>(null);
@@ -227,25 +229,32 @@ const Destinations = () => {
   const fetchDestinations = async () => {
     const { data, error } = await supabase
       .from("destinations")
-      .select(`
-        id,
-        name,
-        countries:country_id (name)
-      `)
+      .select(`id, name, countries:country_id (name)`)
       .order("name");
     if (!error) setDestinations(data || []);
   };
 
-  const handleCountryNameChange = (name: string) => {
+  const countrySuggestions = useMemo(() => {
+    const q = newCountryName.trim().toLowerCase();
+    if (q.length < 3) return [];
+    return Object.entries(COUNTRY_DATA)
+      .filter(([key]) => key.includes(q))
+      .slice(0, 10)
+      .map(([key, val]) => ({ name: key.charAt(0).toUpperCase() + key.slice(1), ...val }));
+  }, [newCountryName]);
+
+  const handleSelectCountrySuggestion = (item: { name: string; iso: string; currency: string }) => {
+    setNewCountryName(item.name);
+    setNewCountrySelected(item);
+    setNewCountryManual({ iso_code: item.iso, currency: item.currency });
+    setShowSuggestions(false);
+  };
+
+  const handleCountryNameInput = (name: string) => {
     setNewCountryName(name);
-    const match = lookupCountryData(name);
-    if (match) {
-      setNewCountrySuggestion(match);
-      setNewCountryManual({ iso_code: match.iso, currency: match.currency });
-    } else {
-      setNewCountrySuggestion(null);
-      setNewCountryManual({ iso_code: "", currency: "" });
-    }
+    setNewCountrySelected(null);
+    setNewCountryManual({ iso_code: "", currency: "" });
+    setShowSuggestions(true);
   };
 
   const handleConfirmAddCountry = async () => {
@@ -265,7 +274,7 @@ const Destinations = () => {
     } else {
       toast.success("Země přidána");
       setNewCountryName("");
-      setNewCountrySuggestion(null);
+      setNewCountrySelected(null);
       setNewCountryManual({ iso_code: "", currency: "" });
       fetchCountries();
     }
@@ -483,71 +492,90 @@ const Destinations = () => {
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="country-name">Název země *</Label>
                     <Input
                       id="country-name"
-                      placeholder="Zadejte název země…"
+                      placeholder="Začněte psát název (min. 3 znaky)…"
                       value={newCountryName}
-                      onChange={(e) => handleCountryNameChange(e.target.value)}
+                      onChange={(e) => handleCountryNameInput(e.target.value)}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      autoComplete="off"
                     />
+                    {showSuggestions && countrySuggestions.length > 0 && !newCountrySelected && (
+                      <div ref={suggestionsRef} className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {countrySuggestions.map((item) => (
+                          <button
+                            key={item.iso}
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm flex items-center justify-between"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectCountrySuggestion(item)}
+                          >
+                            <span className="font-medium">{item.name}</span>
+                            <span className="text-muted-foreground text-xs">{item.iso} • {item.currency}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {newCountryName.trim() && (
+                  {newCountrySelected && (
+                    <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                      <p className="text-sm font-medium">
+                        {newCountrySelected.name} — <span className="text-muted-foreground">ISO: {newCountryManual.iso_code}, Měna: {newCountryManual.currency}</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">ISO kód</Label>
+                          <Input
+                            value={newCountryManual.iso_code}
+                            onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
+                            maxLength={3}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Měna</Label>
+                          <Input
+                            value={newCountryManual.currency}
+                            onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={handleConfirmAddCountry} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Potvrdit a uložit
+                      </Button>
+                    </div>
+                  )}
+
+                  {newCountryName.trim().length >= 3 && !newCountrySelected && countrySuggestions.length === 0 && (
                     <div className="rounded-lg border p-4 space-y-3">
-                      {newCountrySuggestion ? (
-                        <>
-                          <p className="text-sm font-medium">Nalezeno v databázi:</p>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">ISO kód</Label>
-                              <Input
-                                value={newCountryManual.iso_code}
-                                onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
-                                maxLength={3}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Měna</Label>
-                              <Input
-                                value={newCountryManual.currency}
-                                onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          <Button onClick={handleConfirmAddCountry} className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Potvrdit a uložit
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm text-muted-foreground">Země nenalezena v databázi – zadejte údaje ručně:</p>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">ISO kód *</Label>
-                              <Input
-                                value={newCountryManual.iso_code}
-                                onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
-                                maxLength={3}
-                                placeholder="např. ESP"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Měna</Label>
-                              <Input
-                                value={newCountryManual.currency}
-                                onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
-                                placeholder="např. EUR"
-                              />
-                            </div>
-                          </div>
-                          <Button onClick={handleConfirmAddCountry} className="gap-2" disabled={!newCountryManual.iso_code}>
-                            <Plus className="h-4 w-4" />
-                            Uložit zemi
-                          </Button>
-                        </>
-                      )}
+                      <p className="text-sm text-muted-foreground">Země „{newCountryName}" nenalezena – zadejte údaje ručně:</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">ISO kód *</Label>
+                          <Input
+                            value={newCountryManual.iso_code}
+                            onChange={(e) => setNewCountryManual({ ...newCountryManual, iso_code: e.target.value })}
+                            maxLength={3}
+                            placeholder="např. ESP"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Měna</Label>
+                          <Input
+                            value={newCountryManual.currency}
+                            onChange={(e) => setNewCountryManual({ ...newCountryManual, currency: e.target.value })}
+                            placeholder="např. EUR"
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={handleConfirmAddCountry} className="gap-2" disabled={!newCountryManual.iso_code}>
+                        <Plus className="h-4 w-4" />
+                        Uložit zemi
+                      </Button>
                     </div>
                   )}
                 </div>
