@@ -13,44 +13,36 @@ interface SendContractEmailRequest {
   customEmailText?: string | null;
 }
 
-// Czech email text for client
-const buildClientEmailText = (lastName: string, dateFrom: string, dateTo: string, destination: string) => {
-  return `Vážený ${lastName},
-
-posíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.
-
-Prosíme o prostudování smlouvy a její podepsání.
-
-S pozdravem,
-YARO Travel - Váš specialista na dovolenou
-Tel.: +420 602 102 108
-www.yarotravel.cz
-zajezdy@yarotravel.cz`;
+const buildClientEmailTextFallback = (lastName: string, dateFrom: string, dateTo: string, destination: string) => {
+  return `Vážený ${lastName},\n\nposíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.\n\nProsíme o prostudování smlouvy a její podepsání.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
 };
 
-// English email text for supplier
-const buildSupplierEmailText = (dateFrom: string, dateTo: string, destination: string) => {
-  return `Dear valued partner,
-
-we are sending you the travel contract for our clients for their trip from ${dateFrom} to ${dateTo} to ${destination}.
-
-Please find the contract attached.
-
-Best regards,
-YARO Travel
-Tel.: +420 602 102 108
-zajezdy@yarotravel.cz`;
+const buildSupplierEmailTextFallback = (dateFrom: string, dateTo: string, destination: string) => {
+  return `Dear valued partner,\n\nwe are sending you the travel contract for our clients for their trip from ${dateFrom} to ${dateTo} to ${destination}.\n\nPlease find the contract attached.\n\nBest regards,\nYARO Travel\nTel.: +420 602 102 108\nzajezdy@yarotravel.cz`;
 };
 
-// Format date to DD.MM.YY
 const formatDate = (dateString: string) => {
   if (!dateString) return "N/A";
   const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear()).slice(-2);
-  return `${day}.${month}.${year}`;
+  return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getFullYear()).slice(-2)}`;
 };
+
+function replacePlaceholders(text: string, vars: Record<string, string>): string {
+  let result = text;
+  for (const [key, val] of Object.entries(vars)) {
+    result = result.split(`{{${key}}}`).join(val);
+  }
+  return result;
+}
+
+async function getTemplate(supabase: any, key: string) {
+  const { data } = await supabase.from("email_templates").select("*").eq("template_key", key).eq("is_active", true).single();
+  return data;
+}
+
+async function logEmail(supabase: any, params: { template_id?: string; contract_id?: string; recipient_email: string; status: string }) {
+  try { await supabase.from("email_log").insert(params); } catch (e) { console.error("Failed to log email:", e); }
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -58,12 +50,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Verify JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -77,105 +67,103 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
 
-    // Validate contractId format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!contractId || !uuidRegex.test(contractId)) {
       return new Response(JSON.stringify({ error: "Invalid contract ID format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Sending contract email:", contractId, "by user:", user.id);
-
-    // Use SERVICE_ROLE_KEY for data access
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch contract with client and deal info
     const { data: contract, error: contractError } = await supabase
       .from("travel_contracts")
       .select("*, client:clients(*), deal:deals(*, destination:destinations(name, country:countries(name)))")
-      .eq("id", contractId)
-      .single();
+      .eq("id", contractId).single();
 
     if (contractError || !contract) {
-      console.error("Contract fetch error:", contractError);
       return new Response(JSON.stringify({ error: "Contract not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const clientEmail = contract.client?.email;
     const clientLastName = contract.client?.last_name || "klient";
-
+    const clientFirstName = contract.client?.first_name || "";
     if (!clientEmail) {
       return new Response(JSON.stringify({ error: "Client email not found" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get dates and destination
     const dateFrom = contract.deal?.start_date ? formatDate(contract.deal.start_date) : "N/A";
     const dateTo = contract.deal?.end_date ? formatDate(contract.deal.end_date) : "N/A";
     const destination = contract.deal?.destination?.name || "N/A";
 
-    // Prepare PDF attachment
+    const signToken = (contract as any).sign_token;
+    const baseUrl = siteUrl || "https://yarogolf-crm.lovable.app";
+    const signLink = signToken ? `${baseUrl}/sign-contract?token=${signToken}` : "";
+
+    const placeholderVars: Record<string, string> = {
+      first_name: clientFirstName,
+      last_name: clientLastName,
+      destination,
+      hotel: "",
+      date_from: dateFrom,
+      date_to: dateTo,
+      total_price: contract.total_price?.toString() || "",
+      voucher_code: "",
+      contract_number: contract.contract_number,
+      sign_link: signLink,
+    };
+
+    // Load templates
+    const clientTemplate = await getTemplate(supabase, "contract_client_cz");
+    const supplierTemplate = await getTemplate(supabase, "contract_supplier_en");
+
+    const subject = clientTemplate
+      ? replacePlaceholders(clientTemplate.subject, placeholderVars)
+      : `Cestovní smlouva ${contract.contract_number} - YARO Travel`;
+
+    // Prepare PDF
     let pdfAttachment: any[] = [];
     if (pdfPath) {
-      console.log("Downloading PDF from storage:", pdfPath);
       const { data: pdfData, error: pdfError } = await supabase.storage.from("voucher-pdfs").download(pdfPath);
-
-      if (pdfError) {
-        console.error("Error downloading PDF:", pdfError);
-      } else if (pdfData) {
+      if (!pdfError && pdfData) {
         const arrayBuffer = await pdfData.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         const chunkSize = 8192;
         let binary = "";
         for (let i = 0; i < bytes.length; i += chunkSize) {
           const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-          for (let j = 0; j < chunk.length; j++) {
-            binary += String.fromCharCode(chunk[j]);
-          }
+          for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
         }
-        const base64 = btoa(binary);
-        pdfAttachment = [{
-          filename: `Smlouva_${contract.contract_number}.pdf`,
-          content: base64,
-        }];
-        console.log("PDF attachment prepared, size:", arrayBuffer.byteLength, "bytes");
+        pdfAttachment = [{ filename: `Smlouva_${contract.contract_number}.pdf`, content: btoa(binary) }];
       }
-
-      // Clean up temp PDF
-      const { error: deleteError } = await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
-      if (deleteError) console.error("Error deleting temporary PDF:", deleteError);
+      await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
     }
 
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
-    const subject = `Cestovní smlouva ${contract.contract_number} - YARO Travel`;
 
-    // Build signing link
-    const signToken = (contract as any).sign_token;
-    const baseUrl = siteUrl || "https://yarogolf-crm.lovable.app";
-    const signLink = signToken ? `${baseUrl}/sign-contract?token=${signToken}` : null;
-
-    // Send to CLIENT (Czech) - use custom text if provided, otherwise use default
+    // Build client email text
     const signLinkText = signLink ? `\n\n📝 Smlouvu můžete podepsat online zde:\n${signLink}` : "";
     const signature = `\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
-    const clientEmailText = customEmailText
-      ? customEmailText + signLinkText + signature
-      : buildClientEmailText(clientLastName, dateFrom, dateTo, destination) + signLinkText;
-    console.log("Sending email to client:", clientEmail);
+
+    let clientEmailText: string;
+    if (customEmailText) {
+      clientEmailText = customEmailText + signLinkText + signature;
+    } else if (clientTemplate) {
+      clientEmailText = replacePlaceholders(clientTemplate.body, placeholderVars) + signLinkText;
+    } else {
+      clientEmailText = buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, destination) + signLinkText;
+    }
 
     const clientEmailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
@@ -184,64 +172,59 @@ const handler = async (req: Request): Promise<Response> => {
       subject,
       text: clientEmailText,
     };
-    if (pdfAttachment.length > 0) {
-      clientEmailPayload.attachments = pdfAttachment;
-    }
+    if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
 
     const clientResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
       body: JSON.stringify(clientEmailPayload),
     });
 
     if (clientResponse.ok) {
       const clientResult = await clientResponse.json();
       emailResults.push({ recipient: clientEmail, success: true, id: clientResult.id });
+      await logEmail(supabase, { template_id: clientTemplate?.id, contract_id: contractId, recipient_email: clientEmail, status: "sent" });
     } else {
       const clientError = await clientResponse.json();
-      console.error("Client email error:", clientError);
       emailResults.push({ recipient: clientEmail, success: false, error: JSON.stringify(clientError) });
+      await logEmail(supabase, { template_id: clientTemplate?.id, contract_id: contractId, recipient_email: clientEmail, status: "failed" });
     }
 
-    // Send to SUPPLIER (English) if CC email provided
+    // Send to SUPPLIER
     if (ccSupplierEmail) {
-      const supplierEmailText = buildSupplierEmailText(dateFrom, dateTo, destination);
-      console.log("Sending email to supplier:", ccSupplierEmail);
+      const supplierEmailText = supplierTemplate
+        ? replacePlaceholders(supplierTemplate.body, placeholderVars)
+        : buildSupplierEmailTextFallback(dateFrom, dateTo, destination);
+      const supplierSubject = supplierTemplate
+        ? replacePlaceholders(supplierTemplate.subject, placeholderVars)
+        : subject;
 
       const supplierEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
         to: [ccSupplierEmail],
         bcc: ["zajezdy@yarotravel.cz"],
-        subject,
+        subject: supplierSubject,
         text: supplierEmailText,
       };
-      if (pdfAttachment.length > 0) {
-        supplierEmailPayload.attachments = pdfAttachment;
-      }
+      if (pdfAttachment.length > 0) supplierEmailPayload.attachments = pdfAttachment;
 
       const supplierResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
         body: JSON.stringify(supplierEmailPayload),
       });
 
       if (supplierResponse.ok) {
         const supplierResult = await supplierResponse.json();
         emailResults.push({ recipient: ccSupplierEmail, success: true, id: supplierResult.id });
+        await logEmail(supabase, { template_id: supplierTemplate?.id, contract_id: contractId, recipient_email: ccSupplierEmail, status: "sent" });
       } else {
         const supplierError = await supplierResponse.json();
-        console.error("Supplier email error:", supplierError);
         emailResults.push({ recipient: ccSupplierEmail, success: false, error: JSON.stringify(supplierError) });
       }
     }
 
-    // Update sent_at on contract
+    // Update sent_at
     await supabase
       .from("travel_contracts")
       .update({ sent_at: new Date().toISOString(), status: contract.status === 'draft' ? 'sent' : contract.status })
@@ -249,28 +232,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     const allSuccessful = emailResults.every((r) => r.success);
 
-    return new Response(
-      JSON.stringify({
-        success: allSuccessful,
-        message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
-        recipients: emailResults.map((r) => r.recipient),
-        results: emailResults,
-        hasPdfAttachment: pdfAttachment.length > 0,
-      }),
-      {
-        status: allSuccessful ? 200 : 207,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
+    return new Response(JSON.stringify({
+      success: allSuccessful,
+      message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
+      recipients: emailResults.map((r) => r.recipient),
+      results: emailResults,
+      hasPdfAttachment: pdfAttachment.length > 0,
+    }), {
+      status: allSuccessful ? 200 : 207,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("Error sending contract email:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
