@@ -185,15 +185,23 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
         .single();
       if (error || !fullVoucher) return false;
 
-      const services = (fullVoucher.services as any[]) || [];
-      const flights = (fullVoucher.flights as any[]) || [];
-      const teeTimes = (fullVoucher.tee_times as any[]) || [];
-
       const formatDate = (d: string) => {
         if (!d) return "";
         const dt = new Date(d);
         return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
       };
+
+      const services = (fullVoucher.services as any[]) || [];
+      const flights = (fullVoucher.flights as any[]) || [];
+      const teeTimes = (fullVoucher.tee_times as any[]) || [];
+
+      // Compute expiration date = last service end date
+      const allEndDates = services
+        .map(s => s.dateTo || s.end_date)
+        .filter(Boolean)
+        .map(d => new Date(d).getTime());
+      const lastServiceDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates)) : null;
+      const expirationStr = lastServiceDate ? formatDate(lastServiceDate.toISOString()) : "";
 
       // Build HTML
       const servicesHtml = services.map(s => 
@@ -207,7 +215,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
       const html = `<div style="font-family:Arial,sans-serif;padding:20px;max-width:700px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <img src="${yaroLogo}" style="height:40px" />
-          <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p></div>
+          <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p>${expirationStr ? `<p style="margin:2px 0;font-size:11px;color:#666">Valid until: ${expirationStr}</p>` : ""}</div>
         </div>
         <hr style="border:none;border-top:2px solid #2563eb;margin:8px 0 12px"/>
         <p style="font-size:12px;margin:4px 0"><strong>Client:</strong> ${fullVoucher.client_name}</p>
