@@ -40,19 +40,15 @@ const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
   return (
     <header className="border-b bg-background print:hidden">
-      <div className="h-14 flex items-center px-3 gap-3">
-        <SidebarTrigger className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
-          <Menu className="h-5 w-5" />
-        </SidebarTrigger>
-        <div className="flex items-center gap-2 md:hidden">
-          <img src={yaroLogo} alt="YARO" className="h-8 w-8 logo-dark-mode" />
-          <span className="font-semibold text-foreground">YARO Travel</span>
-        </div>
-      </div>
-      <div className="px-4 pb-3">
+      <div className="px-4 py-3">
         <div className="container max-w-6xl mx-auto">
           <div className="flex flex-wrap items-center gap-2 justify-between">
-            <Breadcrumbs />
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
+              <Breadcrumbs />
+            </div>
             {toolbarContent && (
               <div className="flex flex-wrap items-center gap-2">
                 {toolbarContent}

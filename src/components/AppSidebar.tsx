@@ -8,7 +8,8 @@ import {
   MapPin, 
   FileSignature,
   BarChart3,
-  LogOut
+  LogOut,
+  Menu,
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,6 +21,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -64,12 +66,15 @@ export function AppSidebar() {
     <Sidebar collapsible="offcanvas" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
-          <div className="flex items-center justify-center py-6 px-4 border-b border-border/50">
+          <div className="flex items-center justify-between py-4 px-4 border-b border-border/50">
             <img 
               src={yaroLogo} 
               alt="YARO Travel" 
-              className={`logo-dark-mode transition-all duration-300 ${open ? "h-10 w-auto" : "h-8 w-8 object-contain"}`}
+              className="h-10 w-auto logo-dark-mode"
             />
+            <SidebarTrigger className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent">
+              <Menu className="h-5 w-5" />
+            </SidebarTrigger>
           </div>
           
           <SidebarGroupLabel className="mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
