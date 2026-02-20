@@ -856,6 +856,114 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          contract_id: string | null
+          deal_id: string | null
+          id: string
+          recipient_email: string
+          sent_at: string
+          status: string
+          template_id: string | null
+          voucher_id: string | null
+        }
+        Insert: {
+          contract_id?: string | null
+          deal_id?: string | null
+          id?: string
+          recipient_email: string
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          voucher_id?: string | null
+        }
+        Update: {
+          contract_id?: string | null
+          deal_id?: string | null
+          id?: string
+          recipient_email?: string
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          voucher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_log_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "email_log_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_log_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_log_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          template_key: string
+          trigger_offset_days: number | null
+          trigger_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string
+          template_key: string
+          trigger_offset_days?: number | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          template_key?: string
+          trigger_offset_days?: number | null
+          trigger_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       global_pdf_settings: {
         Row: {
           content_padding: number

@@ -14,6 +14,35 @@ interface SendRequest {
   emailSubject: string;
 }
 
+function replacePlaceholders(text: string, vars: Record<string, string>): string {
+  let result = text;
+  for (const [key, val] of Object.entries(vars)) {
+    result = result.split(`{{${key}}}`).join(val);
+  }
+  return result;
+}
+
+async function getTemplate(supabase: any, key: string) {
+  const { data } = await supabase.from("email_templates").select("*").eq("template_key", key).eq("is_active", true).single();
+  return data;
+}
+
+async function logEmail(supabase: any, params: { template_id?: string; deal_id?: string; recipient_email: string; status: string }) {
+  try { await supabase.from("email_log").insert(params); } catch (e) { console.error("Failed to log email:", e); }
+}
+
+function arrayBufferToBase64(bytes: Uint8Array): string {
+  const chunkSize = 8192;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    for (let j = 0; j < chunk.length; j++) {
+      binary += String.fromCharCode(chunk[j]);
+    }
+  }
+  return btoa(binary);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,8 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -38,8 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -47,8 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!dealId || !clientEmail) {
       return new Response(JSON.stringify({ error: "Missing dealId or clientEmail" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -57,70 +83,70 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // If no custom emailBody/emailSubject provided, try loading template
+    let finalSubject = emailSubject;
+    let finalBody = emailBody;
+    let templateId: string | undefined;
+
+    if (!emailBody || !emailSubject) {
+      const template = await getTemplate(supabase, "deal_docs_client_cz");
+      if (template) {
+        templateId = template.id;
+        const nameParts = (clientName || "").split(" ");
+        const vars: Record<string, string> = {
+          first_name: nameParts[0] || "",
+          last_name: nameParts.slice(1).join(" ") || clientName || "",
+          destination: "",
+          hotel: "",
+          date_from: "",
+          date_to: "",
+          total_price: "",
+          voucher_code: "",
+          contract_number: "",
+          sign_link: "",
+        };
+        if (!finalSubject) finalSubject = replacePlaceholders(template.subject, vars);
+        if (!finalBody) finalBody = replacePlaceholders(template.body, vars);
+      }
+    }
+
     // Fetch all deal documents
     const { data: documents, error: docsError } = await supabase
-      .from("deal_documents")
-      .select("*")
-      .eq("deal_id", dealId)
+      .from("deal_documents").select("*").eq("deal_id", dealId)
       .order("uploaded_at", { ascending: true });
 
-    if (docsError) {
-      throw new Error("Failed to fetch deal documents: " + docsError.message);
-    }
+    if (docsError) throw new Error("Failed to fetch deal documents: " + docsError.message);
 
     if (!documents || documents.length === 0) {
       return new Response(JSON.stringify({ error: "No documents found for this deal" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`Found ${documents.length} documents to attach`);
-
     // Download each document and prepare attachments
     const attachments: { filename: string; content: string }[] = [];
-
     for (const doc of documents) {
       try {
-        // Extract storage path from public URL
         const parts = doc.file_url.split("/deal-documents/");
         if (parts.length < 2) {
-          // Try fetching directly via URL for external files
-          console.log("Fetching external file:", doc.file_name);
           const response = await fetch(doc.file_url);
-          if (!response.ok) {
-            console.error(`Failed to fetch ${doc.file_name}: ${response.status}`);
-            continue;
-          }
+          if (!response.ok) { console.error(`Failed to fetch ${doc.file_name}: ${response.status}`); continue; }
           const arrayBuffer = await response.arrayBuffer();
-          const base64 = arrayBufferToBase64(new Uint8Array(arrayBuffer));
-          attachments.push({ filename: doc.file_name, content: base64 });
+          attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
           continue;
         }
-
         const storagePath = decodeURIComponent(parts[1]);
-        console.log("Downloading from storage:", storagePath);
-
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from("deal-documents")
-          .download(storagePath);
-
+        const { data: fileData, error: fileError } = await supabase.storage.from("deal-documents").download(storagePath);
         if (fileError || !fileData) {
-          console.error(`Error downloading ${doc.file_name}:`, fileError);
-          // Fallback: try fetching from public URL
           const response = await fetch(doc.file_url);
           if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
-            const base64 = arrayBufferToBase64(new Uint8Array(arrayBuffer));
-            attachments.push({ filename: doc.file_name, content: base64 });
+            attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
           }
           continue;
         }
-
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64 = arrayBufferToBase64(new Uint8Array(arrayBuffer));
-        attachments.push({ filename: doc.file_name, content: base64 });
-        console.log(`Prepared attachment: ${doc.file_name} (${arrayBuffer.byteLength} bytes)`);
+        attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
       } catch (err) {
         console.error(`Error processing ${doc.file_name}:`, err);
       }
@@ -128,80 +154,47 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (attachments.length === 0) {
       return new Response(JSON.stringify({ error: "Could not prepare any attachments" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    console.log(`Sending email with ${attachments.length} attachments`);
-
-    // Check total size - Resend limit is ~40MB
-    const totalSize = attachments.reduce((sum, a) => sum + a.content.length, 0);
-    console.log(`Total attachment size (base64): ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
 
     const emailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
       to: [clientEmail],
       bcc: ["zajezdy@yarotravel.cz"],
-      subject: emailSubject,
-      text: emailBody,
+      subject: finalSubject,
+      text: finalBody,
       attachments,
     };
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
       body: JSON.stringify(emailPayload),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Resend API error:", errorData);
+      await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "failed" });
       return new Response(JSON.stringify({ error: "Failed to send email", details: errorData }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const result = await response.json();
-    console.log("Email sent successfully:", result);
+    await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "sent" });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        emailId: result.id,
-        attachmentCount: attachments.length,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({
+      success: true, emailId: result.id, attachmentCount: attachments.length,
+    }), {
+      status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
-
-function arrayBufferToBase64(bytes: Uint8Array): string {
-  const chunkSize = 8192;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    for (let j = 0; j < chunk.length; j++) {
-      binary += String.fromCharCode(chunk[j]);
-    }
-  }
-  return btoa(binary);
-}
 
 serve(handler);

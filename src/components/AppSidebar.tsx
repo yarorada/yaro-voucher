@@ -10,6 +10,7 @@ import {
   BarChart3,
   LogOut,
   Menu,
+  Mail,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const menuItems = [
   { title: "Klienti", url: "/clients", icon: Users },
   { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
   { title: "Destinace", url: "/destinations", icon: MapPin },
+  { title: "E-maily", url: "/email-templates", icon: Mail },
 ];
 
 export function AppSidebar() {

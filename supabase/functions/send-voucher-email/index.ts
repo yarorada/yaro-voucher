@@ -13,34 +13,16 @@ interface SendEmailRequest {
   emailCcSupplier?: boolean;
 }
 
-// Czech email text for client
-const buildClientEmailText = (lastName: string, dateFrom: string, dateTo: string, hotel: string) => {
-  return `Vážený ${lastName},
-
-posíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.
-
-S pozdravem,
-YARO Travel - Váš specialista na dovolenou
-Tel.: +420 602 102 108
-www.yarotravel.cz
-zajezdy@yarotravel.cz`;
+// Fallback Czech email text for client
+const buildClientEmailTextFallback = (lastName: string, dateFrom: string, dateTo: string, hotel: string) => {
+  return `Vážený ${lastName},\n\nposíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
 };
 
-// English email text for supplier
-const buildSupplierEmailText = (dateFrom: string, dateTo: string, hotel: string) => {
-  return `Dear valued partner,
-
-we are sending to you voucher for our clients for their stay from ${dateFrom} to ${dateTo} at ${hotel}.
-
-Please find the voucher attached.
-
-Best regards,
-YARO Travel
-Tel.: +420 602 102 108
-zajezdy@yarotravel.cz`;
+// Fallback English email text for supplier
+const buildSupplierEmailTextFallback = (dateFrom: string, dateTo: string, hotel: string) => {
+  return `Dear valued partner,\n\nwe are sending to you voucher for our clients for their stay from ${dateFrom} to ${dateTo} at ${hotel}.\n\nPlease find the voucher attached.\n\nBest regards,\nYARO Travel\nTel.: +420 602 102 108\nzajezdy@yarotravel.cz`;
 };
 
-// Format date to DD.MM.YY
 const formatDate = (dateString: string) => {
   if (!dateString) return "N/A";
   const date = new Date(dateString);
@@ -50,29 +32,48 @@ const formatDate = (dateString: string) => {
   return `${day}.${month}.${year}`;
 };
 
-// Get travel date range from services
 const getTravelDateRange = (services: any[]) => {
   let earliestFrom: string | null = null;
   let latestTo: string | null = null;
-
   for (const service of services) {
     if (service.dateFrom) {
-      if (!earliestFrom || service.dateFrom < earliestFrom) {
-        earliestFrom = service.dateFrom;
-      }
+      if (!earliestFrom || service.dateFrom < earliestFrom) earliestFrom = service.dateFrom;
     }
     if (service.dateTo) {
-      if (!latestTo || service.dateTo > latestTo) {
-        latestTo = service.dateTo;
-      }
+      if (!latestTo || service.dateTo > latestTo) latestTo = service.dateTo;
     }
   }
-
   return {
     dateFrom: earliestFrom ? formatDate(earliestFrom) : "N/A",
     dateTo: latestTo ? formatDate(latestTo) : "N/A",
   };
 };
+
+function replacePlaceholders(text: string, vars: Record<string, string>): string {
+  let result = text;
+  for (const [key, val] of Object.entries(vars)) {
+    result = result.split(`{{${key}}}`).join(val);
+  }
+  return result;
+}
+
+async function getTemplate(supabase: any, key: string) {
+  const { data } = await supabase
+    .from("email_templates")
+    .select("*")
+    .eq("template_key", key)
+    .eq("is_active", true)
+    .single();
+  return data;
+}
+
+async function logEmail(supabase: any, params: { template_id?: string; voucher_id?: string; deal_id?: string; contract_id?: string; recipient_email: string; status: string }) {
+  try {
+    await supabase.from("email_log").insert(params);
+  } catch (e) {
+    console.error("Failed to log email:", e);
+  }
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -80,278 +81,203 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Get and verify JWT from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const jwt = authHeader.replace("Bearer ", "");
-
-    // Initialize Supabase client with user's auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify JWT and get user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser(jwt);
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     if (authError || !user) {
-      console.error("Authentication error:", authError);
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier }: SendEmailRequest = await req.json();
 
-    // Validate voucherId format (UUID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!voucherId || !uuidRegex.test(voucherId)) {
       return new Response(JSON.stringify({ error: "Invalid voucher ID format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Sending email for voucher:", voucherId, "by user:", user.id, "with PDF:", !!pdfPath);
+    console.log("Sending email for voucher:", voucherId, "by user:", user.id);
 
-    // Use SERVICE_ROLE_KEY for fetching data (RLS bypassed for internal operations)
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch voucher (service role - no RLS restriction)
     const { data: voucher, error: voucherError } = await supabase
-      .from("vouchers")
-      .select("*")
-      .eq("id", voucherId)
-      .single();
-
+      .from("vouchers").select("*").eq("id", voucherId).single();
     if (voucherError || !voucher) {
-      console.error("Voucher access error:", voucherError);
       return new Response(JSON.stringify({ error: "Voucher not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch travelers
-    const { data: travelers, error: travelersError } = await supabase
+    const { data: travelers } = await supabase
       .from("voucher_travelers")
       .select("client_id, is_main_client, clients(first_name, last_name, email)")
       .eq("voucher_id", voucherId)
       .order("is_main_client", { ascending: false });
 
-    if (travelersError) {
-      throw new Error("Failed to fetch travelers");
-    }
-
-    // Fetch supplier
     let supplier = null;
     if (voucher.supplier_id) {
       const { data: supplierData } = await supabase
-        .from("suppliers")
-        .select("name, contact_person, email, phone, address, notes")
-        .eq("id", voucher.supplier_id)
-        .single();
+        .from("suppliers").select("name, contact_person, email, phone, address, notes")
+        .eq("id", voucher.supplier_id).single();
       supplier = supplierData;
     }
 
-    // Find main client email and name — try voucher_travelers first, fall back to voucher.client_id
     const mainClient = travelers?.find((t: any) => t.is_main_client);
     const mainClientData = mainClient?.clients as any;
     let clientEmail = mainClientData?.email;
     let clientLastName = mainClientData?.last_name || "klient";
+    let clientFirstName = mainClientData?.first_name || "";
 
-    // Fallback: if no travelers linked, use the voucher's client_id directly
     if (!clientEmail && voucher.client_id) {
       const { data: fallbackClient } = await supabase
-        .from("clients")
-        .select("email, last_name")
-        .eq("id", voucher.client_id)
-        .single();
+        .from("clients").select("email, first_name, last_name").eq("id", voucher.client_id).single();
       if (fallbackClient) {
         clientEmail = fallbackClient.email;
         clientLastName = fallbackClient.last_name || "klient";
+        clientFirstName = fallbackClient.first_name || "";
       }
     }
 
-    if (!clientEmail) {
-      throw new Error("Client email not found");
-    }
+    if (!clientEmail) throw new Error("Client email not found");
 
-    // Get travel dates and hotel
     const { dateFrom, dateTo } = getTravelDateRange(voucher.services || []);
     const hotelName = voucher.hotel_name || "N/A";
 
-    // Build email subject from template
-    const defaultSubjectTemplate = "Travel Voucher {{voucher_code}} - YARO Travel";
-    const subjectTemplate = emailSubjectTemplate || defaultSubjectTemplate;
-    const subject = subjectTemplate.replace(/\{\{voucher_code\}\}/g, voucher.voucher_code);
+    const placeholderVars: Record<string, string> = {
+      first_name: clientFirstName,
+      last_name: clientLastName,
+      hotel: hotelName,
+      date_from: dateFrom,
+      date_to: dateTo,
+      voucher_code: voucher.voucher_code,
+      total_price: "",
+      destination: "",
+      contract_number: "",
+      sign_link: "",
+    };
 
-    // Prepare PDF attachment if provided
+    // Load templates from DB
+    const clientTemplate = await getTemplate(supabase, "voucher_client_cz");
+    const supplierTemplate = await getTemplate(supabase, "voucher_supplier_en");
+
+    const defaultSubjectTemplate = "Travel Voucher {{voucher_code}} - YARO Travel";
+    const subjectTemplate = clientTemplate?.subject || emailSubjectTemplate || defaultSubjectTemplate;
+    const subject = replacePlaceholders(subjectTemplate, placeholderVars);
+
+    // Prepare PDF attachment
     let pdfAttachment: any[] = [];
     if (pdfPath) {
-      console.log("Downloading PDF from storage:", pdfPath);
-
       const { data: pdfData, error: pdfError } = await supabase.storage.from("voucher-pdfs").download(pdfPath);
-
-      if (pdfError) {
-        console.error("Error downloading PDF:", pdfError);
-      } else if (pdfData) {
-        // Convert blob to base64 in chunks to avoid stack overflow
+      if (!pdfError && pdfData) {
         const arrayBuffer = await pdfData.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         const chunkSize = 8192;
         let binary = "";
-
         for (let i = 0; i < bytes.length; i += chunkSize) {
           const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-          for (let j = 0; j < chunk.length; j++) {
-            binary += String.fromCharCode(chunk[j]);
-          }
+          for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
         }
-
-        const base64 = btoa(binary);
-
-        pdfAttachment = [
-          {
-            filename: `voucher-${voucher.voucher_code}.pdf`,
-            content: base64,
-          },
-        ];
-
-        console.log("PDF attachment prepared, size:", arrayBuffer.byteLength, "bytes");
+        pdfAttachment = [{ filename: `voucher-${voucher.voucher_code}.pdf`, content: btoa(binary) }];
       }
-
-      // Clean up the temporary PDF file after preparing attachment
-      const { error: deleteError } = await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
-
-      if (deleteError) {
-        console.error("Error deleting temporary PDF:", deleteError);
-      } else {
-        console.log("Temporary PDF cleaned up:", pdfPath);
-      }
+      await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
     }
 
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
 
-    // Send email to CLIENT (Czech)
-    const clientEmailText = buildClientEmailText(clientLastName, dateFrom, dateTo, hotelName);
-    console.log("Sending email to client:", clientEmail);
+    // Send to CLIENT
+    const clientEmailText = clientTemplate
+      ? replacePlaceholders(clientTemplate.body, placeholderVars)
+      : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName);
 
     const clientEmailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
       to: [clientEmail],
       bcc: ["zajezdy@yarotravel.cz"],
-      subject: subject,
+      subject,
       text: clientEmailText,
     };
-
-    if (pdfAttachment.length > 0) {
-      clientEmailPayload.attachments = pdfAttachment;
-    }
+    if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
 
     const clientResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
       body: JSON.stringify(clientEmailPayload),
     });
 
     if (clientResponse.ok) {
       const clientResult = await clientResponse.json();
-      console.log("Client email sent successfully:", clientResult);
       emailResults.push({ recipient: clientEmail, success: true, id: clientResult.id });
+      await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "sent" });
     } else {
       const clientError = await clientResponse.json();
-      console.error("Client email error:", clientError);
       emailResults.push({ recipient: clientEmail, success: false, error: JSON.stringify(clientError) });
+      await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "failed" });
     }
 
-    // Send email to SUPPLIER (English) if enabled
+    // Send to SUPPLIER
     const shouldCcSupplier = emailCcSupplier !== false;
     if (shouldCcSupplier && supplier?.email) {
-      const supplierEmailText = buildSupplierEmailText(dateFrom, dateTo, hotelName);
-      console.log("Sending email to supplier:", supplier.email);
+      const supplierEmailText = supplierTemplate
+        ? replacePlaceholders(supplierTemplate.body, placeholderVars)
+        : buildSupplierEmailTextFallback(dateFrom, dateTo, hotelName);
+      const supplierSubject = supplierTemplate
+        ? replacePlaceholders(supplierTemplate.subject, placeholderVars)
+        : subject;
 
       const supplierEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
         to: [supplier.email],
         bcc: ["zajezdy@yarotravel.cz"],
-        subject: subject,
+        subject: supplierSubject,
         text: supplierEmailText,
       };
-
-      if (pdfAttachment.length > 0) {
-        supplierEmailPayload.attachments = pdfAttachment;
-      }
+      if (pdfAttachment.length > 0) supplierEmailPayload.attachments = pdfAttachment;
 
       const supplierResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
         body: JSON.stringify(supplierEmailPayload),
       });
 
       if (supplierResponse.ok) {
         const supplierResult = await supplierResponse.json();
-        console.log("Supplier email sent successfully:", supplierResult);
         emailResults.push({ recipient: supplier.email, success: true, id: supplierResult.id });
+        await logEmail(supabase, { template_id: supplierTemplate?.id, voucher_id: voucherId, recipient_email: supplier.email, status: "sent" });
       } else {
         const supplierError = await supplierResponse.json();
-        console.error("Supplier email error:", supplierError);
         emailResults.push({ recipient: supplier.email, success: false, error: JSON.stringify(supplierError) });
+        await logEmail(supabase, { template_id: supplierTemplate?.id, voucher_id: voucherId, recipient_email: supplier.email, status: "failed" });
       }
     }
 
     const allSuccessful = emailResults.every((r) => r.success);
-    const recipients = emailResults.map((r) => r.recipient);
 
-    // If send was successful and voucher belongs to a deal, check if all deal vouchers are now sent
+    // Deal dispatch logic
     if (allSuccessful && voucher.deal_id) {
       try {
-        // Mark this voucher as sent
-        await supabase
-          .from('vouchers')
-          .update({ sent_at: new Date().toISOString() })
-          .eq('id', voucherId)
-          .is('sent_at', null);
-
-        // Check if ALL vouchers for this deal now have sent_at
+        await supabase.from('vouchers').update({ sent_at: new Date().toISOString() }).eq('id', voucherId).is('sent_at', null);
         const { data: unsentVouchers } = await supabase
-          .from('vouchers')
-          .select('id')
-          .eq('deal_id', voucher.deal_id)
-          .is('sent_at', null)
-          .neq('id', voucherId);
-
+          .from('vouchers').select('id').eq('deal_id', voucher.deal_id).is('sent_at', null).neq('id', voucherId);
         if (!unsentVouchers || unsentVouchers.length === 0) {
-          // All vouchers sent — mark deal as dispatched
-          const { data: deal } = await supabase
-            .from('deals')
-            .select('status')
-            .eq('id', voucher.deal_id)
-            .single();
-
+          const { data: deal } = await supabase.from('deals').select('status').eq('id', voucher.deal_id).single();
           if (deal && deal.status !== 'completed' && deal.status !== 'cancelled') {
-            await supabase
-              .from('deals')
-              .update({ status: 'dispatched' })
-              .eq('id', voucher.deal_id);
-            console.log('Deal', voucher.deal_id, 'marked as dispatched — all vouchers sent');
+            await supabase.from('deals').update({ status: 'dispatched' }).eq('id', voucher.deal_id);
           }
         }
       } catch (e) {
@@ -359,31 +285,21 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: allSuccessful,
-        message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
-        recipients: recipients,
-        results: emailResults,
-        hasPdfAttachment: pdfAttachment.length > 0,
-      }),
-      {
-        status: allSuccessful ? 200 : 207,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
+    return new Response(JSON.stringify({
+      success: allSuccessful,
+      message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
+      recipients: emailResults.map((r) => r.recipient),
+      results: emailResults,
+      hasPdfAttachment: pdfAttachment.length > 0,
+    }), {
+      status: allSuccessful ? 200 : 207,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("Error sending email:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
