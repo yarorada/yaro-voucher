@@ -165,28 +165,43 @@ const Deals = () => {
         case "deal_number_asc": {
           const numA = a.deal_number.match(/^D-(\d+)/)?.[1] || "";
           const numB = b.deal_number.match(/^D-(\d+)/)?.[1] || "";
-          return numA.localeCompare(numB);
+          return numA < numB ? -1 : numA > numB ? 1 : 0;
         }
         case "deal_number_desc": {
           const numA = a.deal_number.match(/^D-(\d+)/)?.[1] || "";
           const numB = b.deal_number.match(/^D-(\d+)/)?.[1] || "";
-          return numB.localeCompare(numA);
+          return numB < numA ? -1 : numB > numA ? 1 : 0;
         }
         case "departure_asc": {
-          if (!a.start_date && !b.start_date) return 0;
-          if (!a.start_date) return 1;
-          if (!b.start_date) return -1;
-          return a.start_date.localeCompare(b.start_date);
+          const da = a.start_date || "";
+          const db = b.start_date || "";
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da < db ? -1 : da > db ? 1 : 0;
+        }
+        case "departure_desc": {
+          const da = a.start_date || "";
+          const db = b.start_date || "";
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return db < da ? -1 : db > da ? 1 : 0;
         }
         case "return_asc": {
-          if (!a.end_date && !b.end_date) return 0;
-          if (!a.end_date) return 1;
-          if (!b.end_date) return -1;
-          return a.end_date.localeCompare(b.end_date);
+          const ea = a.end_date || "";
+          const eb = b.end_date || "";
+          if (!ea && !eb) return 0;
+          if (!ea) return 1;
+          if (!eb) return -1;
+          return ea < eb ? -1 : ea > eb ? 1 : 0;
         }
         case "updated_at":
-        default:
-          return (b as any).updated_at?.localeCompare((a as any).updated_at) || 0;
+        default: {
+          const ua = a.updated_at || "";
+          const ub = b.updated_at || "";
+          return ub < ua ? -1 : ub > ua ? 1 : 0;
+        }
       }
     });
 
@@ -409,7 +424,8 @@ const Deals = () => {
                     <SelectItem value="updated_at">Poslední změna</SelectItem>
                     <SelectItem value="deal_number_desc">Číslo dealu ↓</SelectItem>
                     <SelectItem value="deal_number_asc">Číslo dealu ↑</SelectItem>
-                    <SelectItem value="departure_asc">Nejbližší odjezd</SelectItem>
+                    <SelectItem value="departure_asc">Odjezd ↑ (nejbližší)</SelectItem>
+                    <SelectItem value="departure_desc">Odjezd ↓ (nejpozdější)</SelectItem>
                     <SelectItem value="return_asc">Datum návratu</SelectItem>
                   </SelectContent>
                 </Select>
