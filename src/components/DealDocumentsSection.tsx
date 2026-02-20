@@ -310,12 +310,16 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(doc.file_url, "_blank")} title="Náhled">
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(doc.file_url, "_blank")} title="Stáhnout">
-                    <Download className="h-3 w-3" />
-                  </Button>
+                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" title="Otevřít">
+                    <Button size="icon" variant="ghost" className="h-7 w-7">
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </a>
+                  <a href={doc.file_url} download={doc.file_name} title="Stáhnout">
+                    <Button size="icon" variant="ghost" className="h-7 w-7">
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </a>
                   <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(doc)} title="Smazat">
                     <Trash2 className="h-3 w-3" />
                   </Button>
