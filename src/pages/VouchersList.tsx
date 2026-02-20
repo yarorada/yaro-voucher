@@ -396,7 +396,7 @@ const VouchersList = () => {
                 // Get earliest service start_date
                 const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
                 const firstServiceDate = servicesArr
-                  .map((s: any) => s.start_date)
+                  .map((s: any) => s.dateFrom || s.start_date)
                   .filter(Boolean)
                   .sort()
                   [0] || null;
