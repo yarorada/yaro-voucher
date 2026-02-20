@@ -50,13 +50,15 @@ const LayoutHeader = () => {
         </div>
       </div>
       <div className="px-4 pb-3">
-        <div className="flex flex-wrap items-center gap-2 justify-between">
-          <Breadcrumbs />
-          {toolbarContent && (
-            <div className="flex flex-wrap items-center gap-2">
-              {toolbarContent}
-            </div>
-          )}
+        <div className="container max-w-6xl mx-auto">
+          <div className="flex flex-wrap items-center gap-2 justify-between">
+            <Breadcrumbs />
+            {toolbarContent && (
+              <div className="flex flex-wrap items-center gap-2">
+                {toolbarContent}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
