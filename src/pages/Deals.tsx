@@ -470,9 +470,9 @@ const Deals = () => {
                           )}
                         </div>
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
-                          {mainTravelers && (
+                          {leadName && (
                             <span>
-                              <span className="font-semibold text-foreground">Klient:</span> {mainTravelers}
+                              <span className="font-semibold text-foreground">Klient:</span> {leadName}
                             </span>
                           )}
                           {deal.destinations?.name && (
