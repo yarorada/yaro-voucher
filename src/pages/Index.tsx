@@ -24,6 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 
 const STORAGE_KEY = "yaro-dashboard-order";
 
@@ -106,6 +107,21 @@ const Index = () => {
   const [order, setOrder] = useState<string[]>(loadOrder);
   const [editing, setEditing] = useState(false);
 
+  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+
+  usePageToolbar(
+    <Button
+      variant={editing ? "default" : "outline"}
+      size="sm"
+      className={editing ? "h-8 text-xs gap-1" : toolbarButtonClass + " gap-1"}
+      onClick={() => setEditing((e) => !e)}
+    >
+      {editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+      {editing ? "Hotovo" : "Upravit plochu"}
+    </Button>,
+    [editing]
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -127,7 +143,7 @@ const Index = () => {
     <div className="min-h-full bg-[var(--gradient-subtle)]">
       <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
         {/* Header */}
-        <div className="text-center pb-2 relative">
+        <div className="text-center pb-2">
           <img
             src={yaroLogo}
             alt="YARO Travel"
@@ -136,15 +152,6 @@ const Index = () => {
           <h1 className="text-xl md:text-2xl font-semibold text-foreground">
             Vítejte v systému YARO
           </h1>
-          <Button
-            variant={editing ? "default" : "outline"}
-            size="sm"
-            className="absolute top-0 right-0"
-            onClick={() => setEditing((e) => !e)}
-          >
-            {editing ? <Check className="h-4 w-4 mr-1" /> : <Pencil className="h-4 w-4 mr-1" />}
-            {editing ? "Hotovo" : "Upravit plochu"}
-          </Button>
         </div>
 
         {/* Draggable tiles */}
