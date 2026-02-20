@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type SortMode = "updated_at" | "departure_asc" | "return_asc";
+type SortMode = "departure_asc" | "departure_desc" | "return_asc" | "updated_at";
 
 interface Deal {
   id: string;
@@ -47,11 +47,13 @@ const formatDateShort = (d: string | null) => {
 };
 
 export const RecentDealsCard = () => {
-  const [sortBy, setSortBy] = useState<SortMode>("updated_at");
+  const [sortBy, setSortBy] = useState<SortMode>("departure_asc");
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["recent-deals", sortBy],
     queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+
       let query = supabase
         .from("deals")
         .select(`
@@ -59,11 +61,15 @@ export const RecentDealsCard = () => {
           destinations(name, countries(iso_code)),
           deal_travelers(is_lead_traveler, clients(first_name, last_name)),
           deal_services(service_type, service_name, start_date, end_date)
-        `);
+        `)
+        .or(`start_date.gte.${today},start_date.is.null`);
 
       switch (sortBy) {
         case "departure_asc":
           query = query.order("start_date", { ascending: true, nullsFirst: false });
+          break;
+        case "departure_desc":
+          query = query.order("start_date", { ascending: false, nullsFirst: false });
           break;
         case "return_asc":
           query = query.order("end_date", { ascending: true, nullsFirst: false });
@@ -75,6 +81,19 @@ export const RecentDealsCard = () => {
 
       const { data, error } = await query.limit(10);
       if (error) throw error;
+
+      // Client-side: for departure_asc, push nulls to end (future first)
+      if (sortBy === "departure_asc") {
+        (data as any[])?.sort((a: any, b: any) => {
+          const da = a.start_date || "";
+          const db = b.start_date || "";
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da < db ? -1 : da > db ? 1 : 0;
+        });
+      }
+
       return data as unknown as Deal[];
     },
   });
@@ -124,7 +143,8 @@ export const RecentDealsCard = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="updated_at">Poslední změna</SelectItem>
-              <SelectItem value="departure_asc">Nejbližší odjezd</SelectItem>
+              <SelectItem value="departure_asc">Odjezd ↑ (nejbližší)</SelectItem>
+              <SelectItem value="departure_desc">Odjezd ↓ (nejpozdější)</SelectItem>
               <SelectItem value="return_asc">Datum návratu</SelectItem>
             </SelectContent>
           </Select>
