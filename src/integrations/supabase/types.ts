@@ -736,6 +736,7 @@ export type Database = {
         Row: {
           adjustment_amount: number | null
           adjustment_note: string | null
+          auto_send_documents: boolean
           created_at: string
           currency: string | null
           deal_number: string
@@ -744,6 +745,7 @@ export type Database = {
           destination_id: string | null
           discount_amount: number | null
           discount_note: string | null
+          documents_auto_sent_at: string | null
           end_date: string | null
           id: string
           name: string | null
@@ -759,6 +761,7 @@ export type Database = {
         Insert: {
           adjustment_amount?: number | null
           adjustment_note?: string | null
+          auto_send_documents?: boolean
           created_at?: string
           currency?: string | null
           deal_number: string
@@ -767,6 +770,7 @@ export type Database = {
           destination_id?: string | null
           discount_amount?: number | null
           discount_note?: string | null
+          documents_auto_sent_at?: string | null
           end_date?: string | null
           id?: string
           name?: string | null
@@ -782,6 +786,7 @@ export type Database = {
         Update: {
           adjustment_amount?: number | null
           adjustment_note?: string | null
+          auto_send_documents?: boolean
           created_at?: string
           currency?: string | null
           deal_number?: string
@@ -790,6 +795,7 @@ export type Database = {
           destination_id?: string | null
           discount_amount?: number | null
           discount_note?: string | null
+          documents_auto_sent_at?: string | null
           end_date?: string | null
           id?: string
           name?: string | null
