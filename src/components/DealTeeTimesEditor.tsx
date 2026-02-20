@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 
 interface TeeTime {
   date: string | null;
@@ -23,6 +24,18 @@ export const DealTeeTimesEditor = ({ dealId, teeTimes, onUpdate }: DealTeeTimesE
   const [items, setItems] = useState<TeeTime[]>(teeTimes?.length ? teeTimes.map(t => ({ ...t })) : []);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  const handleAiImport = (parsedTeeTimes: ParsedTeeTime[]) => {
+    const newItems: TeeTime[] = parsedTeeTimes
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .map(tt => ({
+        date: tt.date || null,
+        club: tt.club || '',
+        time: tt.time || '',
+      }));
+    setItems(prev => [...prev, ...newItems]);
+    setHasChanges(true);
+  };
 
   const addItem = () => {
     setItems(prev => [...prev, { date: "", club: "", time: "" }]);
@@ -71,9 +84,11 @@ export const DealTeeTimesEditor = ({ dealId, teeTimes, onUpdate }: DealTeeTimesE
         )}
       </div>
 
+      <GolfAiImport onImport={handleAiImport} />
+
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-3">
-          Žádné startovací časy.
+          Žádné startovací časy. Použijte AI import výše nebo přidejte ručně.
         </p>
       )}
 
