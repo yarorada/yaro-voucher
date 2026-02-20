@@ -378,92 +378,84 @@ const VouchersList = () => {
                 <p className="text-muted-foreground">Nenalezeny žádné vouchery odpovídající vašemu hledání</p>
               </Card>
             ) : (
-              filteredVouchers.map((voucher, index) => {
+              filteredVouchers.map((voucher) => {
                 const displayName = voucher.clients
                   ? `${voucher.clients.first_name} ${voucher.clients.last_name}`
                   : voucher.client_name;
                 const destination = (voucher as any).deals?.destinations?.name;
-                const title = voucher.hotel_name 
-                  ? `${displayName} • ${voucher.hotel_name}` 
-                  : destination 
-                    ? `${displayName} • ${destination}`
-                    : displayName;
                 
                 // Check if voucher is expired
                 const isExpired = voucher.expiration_date 
                   ? new Date(voucher.expiration_date) < new Date() 
                   : false;
 
+                // Build Line 1 description: Name • Hotel • DD-MM-RR
+                const descParts: string[] = [];
+                if (displayName) descParts.push(displayName);
+                if (voucher.hotel_name) descParts.push(voucher.hotel_name);
+                if (voucher.issue_date) descParts.push(formatDate(voucher.issue_date));
+                const displayDesc = descParts.join(" • ");
+
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-6 hover:shadow-[var(--shadow-medium)] transition-shadow ${
+                    className={`p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
+                    onClick={() => navigate(`/voucher/${voucher.id}`)}
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex-1 cursor-pointer min-w-0" onClick={() => navigate(`/voucher/${voucher.id}`)}>
+                      <div className="flex-1 min-w-0">
+                        {/* Line 1: Status + Code + Description */}
                         <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {voucher.voucher_number}.
-                          </span>
-                          <Badge 
-                            variant="outline" 
-                            className={`font-mono ${
-                              isExpired 
-                                ? 'text-muted-foreground border-muted-foreground' 
-                                : 'text-primary border-primary'
-                            }`}
-                          >
-                            {voucher.voucher_code}
-                          </Badge>
-                          <h3 className={`text-lg md:text-xl font-bold truncate ${isExpired ? 'text-muted-foreground' : 'text-foreground'}`}>
-                            {title}
-                          </h3>
-                          {voucher.sent_at && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="text-xs gap-1 text-emerald-600 border-emerald-600 cursor-help">
-                                    <Mail className="h-3 w-3" />
-                                    Odesláno
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Odesláno: {formatDateTime(voucher.sent_at)}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          {voucher.sent_at ? (
+                            <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                          ) : isExpired ? (
+                            <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
+                          ) : (
+                            <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
-                          {isExpired && (
-                            <Badge variant="secondary" className="text-xs">
-                              Využitý
-                            </Badge>
+                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
+                          {displayDesc && (
+                            <span className="text-foreground truncate">{displayDesc}</span>
                           )}
                         </div>
+                        {/* Line 2: Details */}
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                          <span>
+                            <span className="font-semibold text-foreground">Klient:</span> {displayName}
+                          </span>
+                          {destination && (
+                            <span>
+                              <span className="font-semibold text-foreground">Destinace:</span> {destination}
+                            </span>
+                          )}
+                          {voucher.hotel_name && (
+                            <span>
+                              <span className="font-semibold text-foreground">Hotel:</span> {voucher.hotel_name}
+                            </span>
+                          )}
                           <span>
                             <span className="font-semibold text-foreground">Služby:</span> {voucher.services.length}
                           </span>
                           <span>
-                            <span className="font-semibold text-foreground">Datum vydání:</span>{" "}
-                            {formatDate(voucher.issue_date)}
+                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(voucher.created_at)}
                           </span>
-                          <span>
-                            <span className="font-semibold text-foreground">Vytvořeno:</span>{" "}
-                            {formatDate(voucher.created_at)}
-                          </span>
+                          {voucher.sent_at && (
+                            <span>
+                              <span className="font-semibold text-foreground">Odesláno:</span> {formatDateTime(voucher.sent_at)}
+                            </span>
+                          )}
                           {voucher.creator_email && (
                             <span>
-                              <span className="font-semibold text-foreground">Autor:</span>{" "}
-                              {voucher.creator_email}
+                              <span className="font-semibold text-foreground">Autor:</span> {voucher.creator_email}
                             </span>
                           )}
                         </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
