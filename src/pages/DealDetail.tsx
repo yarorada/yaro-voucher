@@ -89,6 +89,7 @@ interface DealTraveler {
     id: string;
     first_name: string;
     last_name: string;
+    email: string | null;
   };
 }
 
@@ -573,7 +574,7 @@ const DealDetail = () => {
             id,
             client_id,
             is_lead_traveler,
-            clients(id, first_name, last_name)
+            clients(id, first_name, last_name, email)
           )
         `)
         .eq("id", id)
@@ -2628,7 +2629,17 @@ const DealDetail = () => {
         )}
 
         {/* Cestovní dokumenty section */}
-        <DealDocumentsSection dealId={deal.id} />
+        <DealDocumentsSection
+          dealId={deal.id}
+          clientEmail={(() => {
+            const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
+            return lead?.clients?.email || null;
+          })()}
+          clientName={(() => {
+            const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
+            return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : undefined;
+          })()}
+        />
         </div>
       </div>
 
