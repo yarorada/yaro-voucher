@@ -196,6 +196,7 @@ interface VoucherDisplayProps {
   supplierAddress?: string | null;
   supplierNotes?: string | null;
   voucherId?: string;
+  dealId?: string | null;
 }
 export const VoucherDisplay = ({
   voucherCode,
@@ -213,7 +214,8 @@ export const VoucherDisplay = ({
   supplierPhone,
   supplierAddress,
   supplierNotes,
-  voucherId
+  voucherId,
+  dealId
 }: VoucherDisplayProps) => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -468,6 +470,45 @@ export const VoucherDisplay = ({
       return null;
     }
 
+    // Also save to deal-documents if linked to a deal
+    if (dealId) {
+      try {
+        const dealPath = `${dealId}/voucher-${voucherCode}-${Date.now()}.pdf`;
+        const { error: dealUploadError } = await supabase.storage
+          .from('deal-documents')
+          .upload(dealPath, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (!dealUploadError) {
+          const { data: urlData } = supabase.storage
+            .from('deal-documents')
+            .getPublicUrl(dealPath);
+
+          // Check if deal_document for this voucher already exists
+          const { data: existing } = await supabase
+            .from('deal_documents')
+            .select('id')
+            .eq('deal_id', dealId)
+            .ilike('file_name', `%${voucherCode}%`)
+            .limit(1);
+
+          if (!existing || existing.length === 0) {
+            await supabase.from('deal_documents').insert({
+              deal_id: dealId,
+              file_name: `Voucher ${voucherCode}.pdf`,
+              file_url: urlData.publicUrl,
+              file_type: 'application/pdf',
+              description: `Auto-generated voucher PDF`,
+            } as any);
+          }
+        }
+      } catch (e) {
+        console.error('Error saving voucher PDF to deal-documents:', e);
+      }
+    }
+
     return filePath;
   };
 
@@ -598,6 +639,19 @@ export const VoucherDisplay = ({
         }
       };
       await html2pdf().set(opt).from(element).save();
+      
+      // Also save to deal-documents if linked to a deal
+      if (dealId) {
+        try {
+          const pdfBlob = await generatePdfBlob();
+          if (pdfBlob) {
+            await uploadPdfToStorage(pdfBlob);
+          }
+        } catch (e) {
+          console.error('Error auto-saving to deal-documents:', e);
+        }
+      }
+      
       toast.success('PDF úspěšně stažen');
     } catch (error) {
       console.error('Error generating PDF:', error);

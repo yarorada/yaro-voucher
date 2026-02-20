@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2 } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +25,26 @@ interface DealDocument {
   uploaded_at: string;
 }
 
-interface DealDocumentsSectionProps {
-  dealId: string;
+interface DealVoucher {
+  id: string;
+  voucher_code: string;
+  client_name: string;
+  supplier_id: string | null;
+  sent_at: string | null;
+  created_at: string;
+  suppliers?: { name: string } | null;
 }
 
-export function DealDocumentsSection({ dealId }: DealDocumentsSectionProps) {
+interface DealDocumentsSectionProps {
+  dealId: string;
+  clientEmail?: string | null;
+  clientName?: string;
+}
+
+export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDocumentsSectionProps) {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DealDocument[]>([]);
+  const [vouchers, setVouchers] = useState<DealVoucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -36,13 +52,21 @@ export function DealDocumentsSection({ dealId }: DealDocumentsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("deal_documents")
-      .select("*")
-      .eq("deal_id", dealId)
-      .order("uploaded_at", { ascending: false });
+    const [docsRes, vouchersRes] = await Promise.all([
+      supabase
+        .from("deal_documents")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("uploaded_at", { ascending: false }),
+      supabase
+        .from("vouchers")
+        .select("id, voucher_code, client_name, supplier_id, sent_at, created_at, suppliers:supplier_id(name)")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: false }),
+    ]);
 
-    if (!error) setDocuments(data || []);
+    if (!docsRes.error) setDocuments(docsRes.data || []);
+    if (!vouchersRes.error) setVouchers((vouchersRes.data as any) || []);
     setLoading(false);
   }, [dealId]);
 
@@ -62,7 +86,6 @@ export function DealDocumentsSection({ dealId }: DealDocumentsSectionProps) {
       try {
         let fileToUpload = file;
 
-        // Compress images
         if (isImageFile(file)) {
           try {
             const compressed = await compressImage(file, 1920, 1920, 0.85);
@@ -131,13 +154,22 @@ export function DealDocumentsSection({ dealId }: DealDocumentsSectionProps) {
   const isImage = (url: string) => /\.(jpg|jpeg|png|webp|gif)/i.test(url);
   const isPdf = (url: string) => /\.pdf/i.test(url);
 
+  const totalItems = documents.length + vouchers.length;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cestovní dokumenty</CardTitle>
-        <CardDescription>
-          Nahrávejte externí cestovní dokumenty (letenky, pojištění, vouchery od jiných dodavatelů)
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Cestovní dokumenty</CardTitle>
+            <CardDescription>
+              Vouchery a externí cestovní dokumenty (letenky, pojištění, vouchery od jiných dodavatelů)
+            </CardDescription>
+          </div>
+          {totalItems > 0 && (
+            <Badge variant="secondary">{totalItems} položek</Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Upload zone */}
@@ -169,13 +201,44 @@ export function DealDocumentsSection({ dealId }: DealDocumentsSectionProps) {
           className="hidden"
         />
 
-        {/* Documents list */}
+        {/* Documents & vouchers list */}
         {loading ? (
           <p className="text-sm text-muted-foreground text-center py-4">Načítání...</p>
-        ) : documents.length === 0 ? (
+        ) : totalItems === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">Zatím nejsou nahrány žádné dokumenty</p>
         ) : (
           <div className="space-y-2">
+            {/* Vouchers */}
+            {vouchers.map((v) => (
+              <div key={`v-${v.id}`} className="flex items-center justify-between p-3 rounded-lg border bg-background">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate">Voucher {v.voucher_code}</p>
+                      <Badge variant="outline" className="text-xs shrink-0">Voucher</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {v.suppliers?.name || "—"} · {v.client_name}
+                      {v.sent_at && " · Odesláno"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => navigate(`/vouchers/${v.id}`)}
+                    title="Otevřít voucher"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            {/* Uploaded documents */}
             {documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border bg-background">
                 <div className="flex items-center gap-2 min-w-0">

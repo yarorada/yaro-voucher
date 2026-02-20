@@ -32,6 +32,7 @@ interface Voucher {
   issue_date: string;
   expiration_date: string | null;
   supplier_id: string | null;
+  deal_id: string | null;
   clients?: {
     first_name: string;
     last_name: string;
@@ -271,6 +272,7 @@ const VoucherDetail = () => {
           supplierAddress={supplier?.address}
           supplierNotes={supplier?.notes}
           voucherId={voucher.id}
+          dealId={voucher.deal_id}
         />
       </div>
 
