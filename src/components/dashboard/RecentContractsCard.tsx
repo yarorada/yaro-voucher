@@ -15,7 +15,7 @@ interface Contract {
   deals: {
     start_date: string | null;
     destinations: { name: string; countries?: { iso_code: string } | null } | null;
-    deal_services: Array<{ service_type: string; service_name: string }>;
+    deal_services: Array<{ service_type: string; service_name: string; start_date: string | null; end_date: string | null }>;
   } | null;
 }
 
@@ -44,7 +44,7 @@ export const RecentContractsCard = () => {
         .select(`
           id, contract_number, status, created_at,
           clients(first_name, last_name),
-          deals(start_date, destinations(name, countries(iso_code)), deal_services(service_type, service_name))
+          deals(start_date, destinations(name, countries(iso_code)), deal_services(service_type, service_name, start_date, end_date))
         `)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -98,11 +98,20 @@ export const RecentContractsCard = () => {
                     <span className="font-bold text-sm">{contract.contract_number}</span>
                   </div>
                   <div className="text-xs text-muted-foreground pl-1 truncate">
-                    {[
-                      contract.clients ? `${contract.clients.first_name} ${contract.clients.last_name}` : null,
-                      contract.deals?.destinations?.name,
-                      formatDateShort(contract.deals?.start_date || null),
-                    ].filter(Boolean).join(" • ")}
+                    {(() => {
+                      const parts: string[] = [];
+                      if (contract.clients) parts.push(`${contract.clients.first_name} ${contract.clients.last_name}`);
+                      if (contract.deals?.destinations?.name) parts.push(contract.deals.destinations.name);
+                      const svcDates = (contract.deals?.deal_services || []).flatMap(s => [s.start_date, s.end_date]).filter(Boolean).sort() as string[];
+                      const firstDate = svcDates[0];
+                      const lastDate = svcDates[svcDates.length - 1];
+                      if (firstDate && lastDate && firstDate !== lastDate) {
+                        parts.push(`${formatDateShort(firstDate)} – ${formatDateShort(lastDate)}`);
+                      } else if (firstDate) {
+                        parts.push(formatDateShort(firstDate));
+                      }
+                      return parts.join(" • ");
+                    })()}
                   </div>
                 </Link>
               );
