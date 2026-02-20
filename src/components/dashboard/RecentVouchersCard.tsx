@@ -84,19 +84,20 @@ export const RecentVouchersCard = () => {
               <Link
                 key={voucher.id}
                 to={`/vouchers/${voucher.id}`}
-                className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                className="block p-2 rounded-lg border hover:bg-muted/50 transition-colors"
               >
-                {voucher.sent_at ? (
-                  <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
-                ) : (
-                  <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">
-                    <span className="text-muted-foreground">{voucher.voucher_code}</span>
-                    {" "}
-                    <span>{buildDescription(voucher)}</span>
-                  </p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  {voucher.sent_at ? (
+                    <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                  ) : (
+                    <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+                  )}
+                  <span className="font-bold text-sm text-muted-foreground">{voucher.voucher_code}</span>
+                  <span className="text-sm truncate">{buildDescription(voucher)}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
+                  {voucher.deals?.destinations?.name && <span>{voucher.deals.destinations.name}</span>}
+                  {voucher.hotel_name && <span>{voucher.hotel_name}</span>}
                 </div>
               </Link>
             ))}

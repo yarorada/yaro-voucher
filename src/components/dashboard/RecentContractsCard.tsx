@@ -89,17 +89,20 @@ export const RecentContractsCard = () => {
                 <Link
                   key={contract.id}
                   to={`/contracts/${contract.id}`}
-                  className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="block p-2 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
-                  <Badge className={`text-xs shrink-0 ${cfg.className}`}>
-                    {cfg.label}
-                  </Badge>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">
-                      <span className="text-muted-foreground">{contract.contract_number}</span>
-                      {" "}
-                      <span>{buildDescription(contract)}</span>
-                    </p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Badge className={`text-xs shrink-0 ${cfg.className}`}>
+                      {cfg.label}
+                    </Badge>
+                    <span className="font-bold text-sm text-muted-foreground">{contract.contract_number}</span>
+                    <span className="text-sm truncate">{buildDescription(contract)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground pl-1">
+                    {contract.deals?.destinations?.name && <span>{contract.deals.destinations.name}</span>}
+                    {contract.deals?.start_date && (
+                      <span>{formatDateShort(contract.deals.start_date)}</span>
+                    )}
                   </div>
                 </Link>
               );
