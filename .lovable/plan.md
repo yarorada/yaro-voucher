@@ -1,56 +1,73 @@
 
 
-# Automatické odeslání dokumentů 7 dní před odjezdem
+# Implementace: Automatické odeslání dokumentů 7 dní před odjezdem
 
-## Co se změní
+## Stav
+DB migrace (sloupce `auto_send_documents` a `documents_auto_sent_at`) je hotová. Zbývá UI, edge funkce a CRON.
 
-Na detailu obchodního případu přibude přepínač (toggle) "Automaticky odeslat dokumenty před odjezdem". Pokud je zapnutý, systém 7 dní před datem `start_date` automaticky odešle klientovi všechny vouchery a dokumenty k danému OP. Pokud přepínač zapnutý není, nic se neodešle.
+## 1. UI toggle v DealDocumentsSection
 
-## Technické kroky
+**Soubor:** `src/components/DealDocumentsSection.tsx`
 
-### 1. Databáze - nový sloupec `auto_send_documents`
+- Přidat importy: `Switch` z ui, ikonu `Clock`
+- Rozšířit props interface o `startDate`, `autoSendDocuments`, `documentsAutoSentAt`
+- Před upload zónu vložit toggle blok:
+  - Zobrazí se pouze pokud existuje `startDate` a `clientEmail`
+  - Switch uloží hodnotu přímo do DB (`deals.auto_send_documents`)
+  - Pokud už bylo odesláno (`documentsAutoSentAt`), switch je disabled a zobrazí se zelený text s datem odeslání
+  - Po změně vyvolá event `deal-updated` pro refresh rodičovské stránky
 
-Přidáme sloupec `auto_send_documents` (boolean, default `false`) do tabulky `deals`. Tento sloupec určuje, zda se mají dokumenty automaticky odeslat.
+**Soubor:** `src/pages/DealDetail.tsx`
 
-Přidáme také sloupec `documents_auto_sent_at` (timestamptz, nullable) pro záznam, že automatické odeslání již proběhlo (prevence opakovaného odeslání).
+- Předat nové props do `<DealDocumentsSection>`:
+  - `startDate={deal.start_date}`
+  - `autoSendDocuments={(deal as any).auto_send_documents}`
+  - `documentsAutoSentAt={(deal as any).documents_auto_sent_at}`
+- Přidat listener na `deal-updated` event pro refresh dat
 
-### 2. UI - přepínač v detailu obchodního případu
+## 2. Edge funkce `auto-send-deal-documents`
 
-V `src/pages/DealDetail.tsx` přidáme přepínač (Switch) do sekce s dokumenty nebo do hlavičky OP:
-- Label: "Automaticky odeslat dokumenty 7 dní před odjezdem"
-- Uloží se do pole `auto_send_documents` v tabulce `deals`
-- Zobrazí se pouze pokud OP má nastavené `start_date` a `clientEmail`
+**Soubor:** `supabase/functions/auto-send-deal-documents/index.ts`
 
-### 3. Edge funkce `auto-send-deal-documents`
-
-Nová CRON edge funkce, která poběží 1x denně:
-
-1. Najde všechny dealy kde:
+Logika:
+1. Inicializace Supabase service role klienta
+2. Vypočítat datum `today + 7 dní`
+3. Dotaz na deals kde:
    - `auto_send_documents = true`
-   - `documents_auto_sent_at IS NULL` (ještě nebylo odesláno)
-   - `start_date = today + 7 dní`
-   - `status` je `confirmed` nebo `dispatched`
-2. Pro každý takový deal:
-   - Najde lead travelera a jeho email
-   - Najde všechny dokumenty z `deal_documents`
-   - Najde všechny vouchery z `vouchers` pro daný deal
-   - Pro vouchery bez PDF vygeneruje/stáhne PDF
-   - Odešle jeden email se všemi přílohami (využije existující logiku z `send-deal-documents`)
-   - Nastaví `documents_auto_sent_at` na aktuální čas
-3. Zaloguje výsledek
+   - `documents_auto_sent_at IS NULL`
+   - `start_date = targetDate`
+   - `status IN ('confirmed', 'dispatched')`
+4. Pro každý deal:
+   - Najít lead travelera a jeho email z `deal_travelers` + `clients`
+   - Načíst dokumenty z `deal_documents`
+   - Načíst vouchery z `vouchers` pro deal
+   - Pro vouchery stáhnout PDF z `voucher-pdfs` storage (pokud existuje `sent_at`)
+   - Odeslat email přes Resend API se všemi přílohami
+   - BCC na `zajezdy@yarotravel.cz`
+   - Nastavit `documents_auto_sent_at = now()`
+5. Zalogovat výsledky
 
-### 4. CRON nastavení
+Funkce bude `verify_jwt = false` (volá ji CRON).
 
-Nastavíme denní spouštění funkce pomocí `pg_cron` + `pg_net` (INSERT do `cron.schedule`).
+## 3. Konfigurace v `supabase/config.toml`
 
-### 5. Aktualizace types
+Přidat:
+```
+[functions.auto-send-deal-documents]
+verify_jwt = false
+```
 
-Soubor `src/integrations/supabase/types.ts` se automaticky aktualizuje po migraci.
+## 4. CRON job registrace
+
+SQL příkaz (přes insert tool, ne migraci):
+- Denní spouštění v 7:00 UTC (9:00 CET)
+- Volá edge funkci `auto-send-deal-documents` přes `pg_net`
 
 ## Pořadí implementace
 
-1. Migrace DB (nové sloupce `auto_send_documents`, `documents_auto_sent_at`)
-2. UI toggle v `DealDetail.tsx`
-3. Edge funkce `auto-send-deal-documents`
-4. CRON job registrace
-5. Konfigurace v `supabase/config.toml`
+1. Upravit `DealDocumentsSection.tsx` (toggle UI)
+2. Upravit `DealDetail.tsx` (předání props)
+3. Vytvořit edge funkci `auto-send-deal-documents`
+4. Aktualizovat `supabase/config.toml`
+5. Registrovat CRON job
+
