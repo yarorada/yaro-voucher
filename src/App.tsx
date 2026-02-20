@@ -125,6 +125,16 @@ const App = () => (
             }
           />
           <Route
+            path="/vouchers/:id"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <VoucherDetail />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/suppliers"
             element={
               <ProtectedRoute>
