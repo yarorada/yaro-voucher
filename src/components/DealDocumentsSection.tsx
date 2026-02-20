@@ -166,35 +166,57 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  const handlePreview = async (doc: DealDocument) => {
-    // For images, download via Supabase SDK to avoid blocked URLs in iframe
-    const parts = doc.file_url.split("/deal-documents/");
-    if (parts.length >= 2) {
-      setPreviewUrl(doc.file_url); // keep for type detection
-      setPreviewLoading(true);
-      try {
-        const storagePath = decodeURIComponent(parts[1]);
-        const { data, error } = await supabase.storage
-          .from("deal-documents")
-          .download(storagePath);
-        if (error || !data) throw error;
-        const blobUrl = URL.createObjectURL(data);
-        setPreviewBlobUrl(blobUrl);
-      } catch {
-        // Fallback: try direct fetch
-        try {
-          const res = await fetch(doc.file_url);
-          const blob = await res.blob();
-          setPreviewBlobUrl(URL.createObjectURL(blob));
-        } catch {
-          setPreviewBlobUrl(null);
-        }
-      } finally {
-        setPreviewLoading(false);
+  const downloadFileAsBlob = async (fileUrl: string, bucket: string): Promise<Blob | null> => {
+    const parts = fileUrl.split(`/${bucket}/`);
+    if (parts.length < 2) return null;
+    const storagePath = decodeURIComponent(parts[1]);
+    
+    // Try SDK download first
+    try {
+      const { data, error } = await supabase.storage.from(bucket).download(storagePath);
+      if (!error && data) return data;
+      console.warn("SDK download failed:", error);
+    } catch (e) {
+      console.warn("SDK download exception:", e);
+    }
+    
+    // Fallback: fetch via createSignedUrl (uses REST API differently)
+    try {
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(storagePath, 300);
+      if (!signedError && signedData?.signedUrl) {
+        const res = await fetch(signedData.signedUrl);
+        if (res.ok) return await res.blob();
       }
-    } else {
-      setPreviewUrl(doc.file_url);
-      setPreviewBlobUrl(null);
+    } catch (e) {
+      console.warn("Signed URL fallback failed:", e);
+    }
+
+    // Last fallback: direct fetch
+    try {
+      const res = await fetch(fileUrl);
+      if (res.ok) return await res.blob();
+    } catch (e) {
+      console.warn("Direct fetch fallback failed:", e);
+    }
+
+    return null;
+  };
+
+  const handlePreview = async (doc: DealDocument) => {
+    setPreviewUrl(doc.file_url); // keep for type detection
+    setPreviewLoading(true);
+    setPreviewBlobUrl(null);
+    try {
+      const blob = await downloadFileAsBlob(doc.file_url, "deal-documents");
+      if (blob) {
+        setPreviewBlobUrl(URL.createObjectURL(blob));
+      }
+    } catch (e) {
+      console.error("Preview download failed:", e);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -205,25 +227,19 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName }: DealDo
   };
 
   const downloadViaBlob = async (doc: DealDocument) => {
-    const parts = doc.file_url.split("/deal-documents/");
-    if (parts.length < 2) {
-      window.open(doc.file_url, "_blank");
-      return;
-    }
     try {
-      const storagePath = decodeURIComponent(parts[1]);
-      const { data, error } = await supabase.storage.from("deal-documents").download(storagePath);
-      if (error || !data) throw error;
-      const blobUrl = URL.createObjectURL(data);
+      const blob = await downloadFileAsBlob(doc.file_url, "deal-documents");
+      if (!blob) throw new Error("Download failed");
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = doc.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch {
-      window.open(doc.file_url, "_blank");
+      toast.error("Nepodařilo se stáhnout soubor");
     }
   };
 
