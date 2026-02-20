@@ -1,5 +1,4 @@
 import { useState, useCallback, ReactNode } from "react";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
@@ -142,17 +141,6 @@ const Index = () => {
   return (
     <div className="min-h-full bg-[var(--gradient-subtle)]">
       <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
-        {/* Header */}
-        <div className="text-center pb-2">
-          <img
-            src={yaroLogo}
-            alt="YARO Travel"
-            className="h-12 md:h-16 mx-auto mb-4 logo-dark-mode"
-          />
-          <h1 className="text-xl md:text-2xl font-semibold text-foreground">
-            Vítejte v systému YARO
-          </h1>
-        </div>
 
         {/* Draggable tiles */}
         <DndContext
