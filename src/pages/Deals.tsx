@@ -499,17 +499,14 @@ const Deals = () => {
                   <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {/* Row 1: Status + Number */}
-                        <div className="flex items-center gap-2 mb-1">
+                        {/* Row 1: Status + Number + Name ISO Hotel Date */}
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           <DealStatusBadge status={deal.status} />
-                          <span className="font-bold text-sm sm:text-base text-foreground">{getBaseNumber(deal.deal_number)}</span>
+                          <span className="font-bold text-foreground">{getBaseNumber(deal.deal_number)}</span>
+                          {displayDesc && (
+                            <span className="text-foreground truncate">{displayDesc}</span>
+                          )}
                         </div>
-                        {/* Row 2: Compact description */}
-                        {displayDesc && (
-                          <p className="text-xs sm:text-sm text-muted-foreground truncate mb-1.5">
-                            {displayDesc}
-                          </p>
-                        )}
                         {/* Row 3: Metadata grid */}
                         <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                           {leadName && (
