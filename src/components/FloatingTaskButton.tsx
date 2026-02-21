@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus } from "lucide-react";
@@ -25,19 +26,28 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { cn, formatDateForDB } from "@/lib/utils";
+import { CalendarIcon, ClipboardList, Briefcase } from "lucide-react";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 export const FloatingTaskButton = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("task");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date>(new Date());
   const [assignedTo, setAssignedTo] = useState<string>("");
+  // Deal fields
+  const [dealName, setDealName] = useState("");
+  const [dealLeadTravelerId, setDealLeadTravelerId] = useState("");
+  const [dealStatus, setDealStatus] = useState<string>("inquiry");
+  const [dealLoading, setDealLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -101,6 +111,39 @@ export const FloatingTaskButton = () => {
     addTaskMutation.mutate();
   };
 
+  const handleCreateDeal = async () => {
+    if (!dealLeadTravelerId) {
+      toast({ title: "Vyberte hlavního cestujícího", variant: "destructive" });
+      return;
+    }
+    setDealLoading(true);
+    try {
+      const { data: deal, error: dealError } = await supabase
+        .from("deals")
+        .insert([{ deal_number: "", name: dealName || null, status: dealStatus as any }])
+        .select()
+        .single();
+      if (dealError) throw dealError;
+
+      const { error: travelerError } = await supabase
+        .from("deal_travelers")
+        .insert({ deal_id: deal.id, client_id: dealLeadTravelerId, is_lead_traveler: true });
+      if (travelerError) throw travelerError;
+
+      queryClient.invalidateQueries({ queryKey: ["recent-deals"] });
+      setDealName("");
+      setDealLeadTravelerId("");
+      setDealStatus("inquiry");
+      setOpen(false);
+      toast({ title: "Obchodní případ vytvořen" });
+      navigate(`/deals/${deal.id}`);
+    } catch {
+      toast({ title: "Chyba při vytváření", variant: "destructive" });
+    } finally {
+      setDealLoading(false);
+    }
+  };
+
   const profileLabel = (p: { email: string; name?: string | null }) => {
     return p.name || p.email.split("@")[0].charAt(0).toUpperCase() + p.email.split("@")[0].slice(1);
   };
@@ -117,97 +160,110 @@ export const FloatingTaskButton = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nový úkol</DialogTitle>
+          <DialogTitle>Rychlé vytvoření</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <Input
-            placeholder="Název úkolu..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            autoFocus
-          />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="pt-1">
+          <TabsList className="w-full">
+            <TabsTrigger value="task" className="flex-1 gap-1.5">
+              <ClipboardList className="h-4 w-4" /> Úkol
+            </TabsTrigger>
+            <TabsTrigger value="deal" className="flex-1 gap-1.5">
+              <Briefcase className="h-4 w-4" /> Obch. případ
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Poznámky</label>
-            <Textarea
-              placeholder="Poznámky k úkolu..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
+          <TabsContent value="task" className="space-y-4 pt-2">
+            <Input
+              placeholder="Název úkolu..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              autoFocus
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Priorita</label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <label className="text-sm font-medium">Poznámky</label>
+              <Textarea
+                placeholder="Poznámky k úkolu..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={5}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Priorita</label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Nízká</SelectItem>
+                    <SelectItem value="medium">Střední</SelectItem>
+                    <SelectItem value="high">Vysoká</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Přiřazeno</label>
+                <Select value={assignedTo} onValueChange={setAssignedTo}>
+                  <SelectTrigger><SelectValue placeholder="Vyberte..." /></SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {profileLabel(p)}
+                        {p.id === currentUser?.id && " (já)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Datum splnění</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "d. MMMM yyyy", { locale: cs }) : "Vyberte datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dueDate} onSelect={(d) => d && setDueDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button className="w-full" onClick={handleSubmit} disabled={!title.trim() || addTaskMutation.isPending}>
+              Vytvořit úkol
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="deal" className="space-y-4 pt-2">
+            <Input
+              placeholder="Název obchodního případu..."
+              value={dealName}
+              onChange={(e) => setDealName(e.target.value)}
+            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Hlavní cestující *</label>
+              <ClientCombobox value={dealLeadTravelerId} onChange={setDealLeadTravelerId} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={dealStatus} onValueChange={setDealStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Nízká</SelectItem>
-                  <SelectItem value="medium">Střední</SelectItem>
-                  <SelectItem value="high">Vysoká</SelectItem>
+                  <SelectItem value="inquiry">Poptávka</SelectItem>
+                  <SelectItem value="quote">Nabídka</SelectItem>
+                  <SelectItem value="confirmed">Potvrzeno</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Přiřazeno</label>
-              <Select value={assignedTo} onValueChange={setAssignedTo}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Vyberte..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {profileLabel(p)}
-                      {p.id === currentUser?.id && " (já)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Datum splnění</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate
-                    ? format(dueDate, "d. MMMM yyyy", { locale: cs })
-                    : "Vyberte datum"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={(d) => d && setDueDate(d)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <Button
-            className="w-full"
-            onClick={handleSubmit}
-            disabled={!title.trim() || addTaskMutation.isPending}
-          >
-            Vytvořit úkol
-          </Button>
-        </div>
+            <Button className="w-full" onClick={handleCreateDeal} disabled={!dealLeadTravelerId || dealLoading}>
+              {dealLoading ? "Vytváření..." : "Vytvořit případ"}
+            </Button>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
