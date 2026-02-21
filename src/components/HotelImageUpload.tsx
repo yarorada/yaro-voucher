@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -24,6 +24,7 @@ interface HotelImageUploadProps {
   imageUrl3: string | null;
   description: string | null;
   onUpdate: () => void;
+  autoScrape?: boolean;
 }
 
 const IMAGE_LABELS = [
@@ -34,7 +35,7 @@ const IMAGE_LABELS = [
 
 type ImageSlot = "image_url" | "image_url_2" | "image_url_3";
 
-export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, description, onUpdate }: HotelImageUploadProps) {
+export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, description, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[] } | null>(null);
@@ -47,6 +48,15 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const [savingUrlInput, setSavingUrlInput] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const autoScrapeDone = useRef(false);
+
+  // Auto-trigger scrape when component mounts with autoScrape prop
+  useEffect(() => {
+    if (autoScrapeProp && hotelName && !autoScrapeDone.current) {
+      autoScrapeDone.current = true;
+      handleScrape();
+    }
+  }, [autoScrapeProp, hotelName]);
 
   const images: Record<string, string | null> = {
     image_url: imageUrl,
@@ -432,7 +442,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           </DialogHeader>
           
           {/* Slot selector */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             {IMAGE_LABELS.map(({ key, label }) => (
               <Button
                 key={key}
@@ -445,6 +455,27 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 {label}
               </Button>
             ))}
+            <div className="ml-auto flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1"
+                onClick={() => {
+                  const query = encodeURIComponent(`${hotelName} hotel photos`);
+                  window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
+                }}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Hledat jiné fotky
+              </Button>
+              <Button
+                size="sm"
+                className="text-xs"
+                onClick={() => setPickerOpen(false)}
+              >
+                Hotovo
+              </Button>
+            </div>
           </div>
           
           {!selectedSlot && (

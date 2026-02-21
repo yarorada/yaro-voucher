@@ -63,6 +63,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
   const [deletingHotel, setDeletingHotel] = useState<HotelTemplate | null>(null);
   const [editingHotel, setEditingHotel] = useState<HotelTemplate | null>(null);
   const [newHotelName, setNewHotelName] = useState("");
+  const [autoScrapeOnOpen, setAutoScrapeOnOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,9 +104,13 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
       toast.success("Hotel přidán do databáze");
       setHotels([...hotels, data]);
       onChange(data.name);
-      setNewHotelName("");
       setCreateDialogOpen(false);
       setOpen(false);
+      // Auto-open edit dialog with scrape
+      setEditingHotel(data);
+      setNewHotelName(data.name);
+      setAutoScrapeOnOpen(true);
+      setEditDialogOpen(true);
     } catch (error) {
       console.error("Error creating hotel:", error);
       toast.error("Nepodařilo se vytvořit hotel");
@@ -323,7 +328,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(v) => { setEditDialogOpen(v); if (!v) setAutoScrapeOnOpen(false); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Upravit hotel</DialogTitle>
@@ -350,6 +355,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                     imageUrl2={editingHotel.image_url_2 || null}
                     imageUrl3={editingHotel.image_url_3 || null}
                     description={editingHotel.description || null}
+                    autoScrape={autoScrapeOnOpen}
                     onUpdate={async () => {
                       await fetchHotels();
                       // Refresh editingHotel from DB so image previews update immediately
