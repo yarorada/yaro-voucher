@@ -1,49 +1,43 @@
 
 
-# Verejne stranky s hotely
+# Pridani destinace a zeme k hotelum
 
 ## Co udelame
 
-Pridame do aplikace verejne pristupne stranky pro zobrazeni hotelu -- seznam vsech publikovanych hotelu a detail jednotliveho hotelu. Stranky budou bez prihlaseni, podobne jako existujici `/offer/:token` a `/sign-contract`.
+Pri vytvareni/editaci hotelu v databazi bude mozne pridat destinaci (ktera obsahuje i zemi). Vyuzijeme existujici `DestinationCombobox`, ktery uz umi navrhnout destinaci i zemi a rovnou je vytvorit.
 
-## Stranky
+## Zmeny
 
-### 1. Seznam hotelu (`/hotely`)
-- Nacteni dat pres edge funkci `get-hotel-data` (uz existuje, verejna)
-- Karta pro kazdy hotel: hero fotka, nazev, podtitulek, cena, pocet noci
-- Kliknuti presmeruje na detail hotelu
-- Responzivni grid (1/2/3 sloupce)
-- YARO logo v hlavicce, kontaktni udaje v paticce
+### 1. Databaze -- novy sloupec
+- Pridat `destination_id` (uuid, nullable, FK na `destinations`) do tabulky `hotel_templates`
 
-### 2. Detail hotelu (`/hotely/:slug`)
-- Nacteni pres `get-hotel-data?slug=xxx`
-- Galerie fotek (hero + carousel, podobne jako v PublicOffer)
-- HTML popis hotelu
-- Info: pocet noci, green fees, golfova hriste, cena
-- Benefity a typy pokoju (z JSONB poli)
-- Odkaz na oficialní web hotelu
-- Tlacitko "Kontaktujte nas" / odkaz na kontakt
+### 2. Stranka Hotels.tsx -- editacni formular
+- Pridat `DestinationCombobox` do editacniho dialogu hotelu (sekce "Zakladni info")
+- Pri ulozeni odeslat `destination_id` na server
+- Zobrazit aktualni destinaci a zemi na karte hotelu (pod subtitulkem)
 
-## Technicky detail
+### 3. Edge funkce get-hotel-data
+- Pridat join na `destinations` a `countries` do selectu
+- Vratit `destination_name` a `country_name` v odpovedi API (pro pouziti na webu yarogolf.cz)
 
-### Nove soubory
-- `src/pages/PublicHotels.tsx` -- seznam hotelu
-- `src/pages/PublicHotelDetail.tsx` -- detail hotelu
+## Technicke detaily
 
-### Zmeny v existujicich souborech
-- `src/App.tsx` -- pridani dvou verejnych rout:
+### Migrace SQL
+```sql
+ALTER TABLE hotel_templates
+  ADD COLUMN destination_id uuid REFERENCES destinations(id) ON DELETE SET NULL;
+```
+
+### Hotels.tsx
+- Import `DestinationCombobox`
+- Pridat `destination_id` do `formData` stavu
+- Zobrazit komponentu v editacnim dialogu s labelem "Destinace / Zeme"
+- Ulozit `destination_id` pri handleSave
+
+### get-hotel-data
+- Zmenit select z `hotel_templates` na join:
   ```
-  <Route path="/hotely" element={<PublicHotels />} />
-  <Route path="/hotely/:slug" element={<PublicHotelDetail />} />
+  hotel_templates(*, destinations(name, countries(name, iso_code)))
   ```
-
-### Data
-- Pouzijeme existujici edge funkci `get-hotel-data` (verify_jwt = false)
-- Zadne zmeny v databazi ani RLS
-
-### Design
-- Cistý, moderni design s YARO brandingem
-- Tmave zahlavi s logem, svetly obsah
-- Podobny vizualni styl jako PublicOffer stranka
-- Mobilne responzivni
+- Do transformovaneho vystupu pridat `destination_name` a `country_name`
 
