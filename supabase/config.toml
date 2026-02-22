@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.auto-triggered-emails]
 verify_jwt = false
+
+[functions.search-hotel-info]
+verify_jwt = false

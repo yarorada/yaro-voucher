@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
     console.log("Searching images for hotel:", hotelName, "golf:", golfCourseName);
 
-    // Step 1: Search for hotel official website
+    // Search for hotel official website
     const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -42,9 +42,9 @@ Deno.serve(async (req) => {
     const searchData = await searchResponse.json();
     console.log("Search results:", JSON.stringify(searchData).substring(0, 500));
 
-    // Step 2: Scrape the top result for images
+    // Scrape the top result for images
     const hotelImages: string[] = [];
-    
+
     if (searchData?.data && searchData.data.length > 0) {
       const topUrl = searchData.data[0].url;
       console.log("Scraping hotel URL:", topUrl);
@@ -63,10 +63,9 @@ Deno.serve(async (req) => {
       });
 
       const scrapeData = await scrapeResponse.json();
-      console.log("Scrape response keys:", Object.keys(scrapeData?.data || scrapeData || {}));
-
-      // Extract image URLs from markdown content
       const content = scrapeData?.data?.markdown || scrapeData?.markdown || "";
+
+      // Extract image URLs from markdown
       const imgRegex = /!\[.*?\]\((https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|webp)[^\s)]*)\)/gi;
       let match;
       while ((match = imgRegex.exec(content)) !== null) {
@@ -75,18 +74,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Also try to extract from raw links
+      // Extract from links
       const links = scrapeData?.data?.links || scrapeData?.links || [];
       for (const link of links) {
         const linkStr = typeof link === "string" ? link : link?.url || "";
-        if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) && 
+        if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) &&
             !linkStr.includes("icon") && !linkStr.includes("logo") && !linkStr.includes("favicon") &&
             linkStr.length < 500) {
           hotelImages.push(linkStr);
         }
       }
 
-      // Also try plain img tags from markdown
+      // Extract from src attributes in markdown
       const imgRegex2 = /(?:src=["'])(https?:\/\/[^\s"']+\.(?:jpg|jpeg|png|webp)[^\s"']*)/gi;
       while ((match = imgRegex2.exec(content)) !== null) {
         if (!match[1].includes("icon") && !match[1].includes("logo")) {
@@ -95,7 +94,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Step 3: Search for golf course images if provided
+    // Search for golf course images if provided
     const golfImages: string[] = [];
     if (golfCourseName) {
       const golfSearchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
@@ -144,7 +143,7 @@ Deno.serve(async (req) => {
         const golfLinks = golfScrapeData?.data?.links || golfScrapeData?.links || [];
         for (const link of golfLinks) {
           const linkStr = typeof link === "string" ? link : link?.url || "";
-          if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) && 
+          if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) &&
               !linkStr.includes("icon") && !linkStr.includes("logo") &&
               linkStr.length < 500) {
             golfImages.push(linkStr);
@@ -153,85 +152,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Deduplicate
     const uniqueHotelImages = [...new Set(hotelImages)].slice(0, 12);
     const uniqueGolfImages = [...new Set(golfImages)].slice(0, 8);
 
-    // Extract hotel description from markdown content
-    let hotelDescription = "";
-    if (searchData?.data && searchData.data.length > 0) {
-      const markdown = searchData.data[0].markdown || "";
-      // Get a meaningful paragraph (skip short lines, headers, nav items)
-      const paragraphs = markdown
-        .split(/\n\n+/)
-        .map((p: string) => p
-          // Remove markdown image syntax ![alt](url)
-          .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-          // Remove markdown links but keep text [text](url) -> text
-          .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-          // Remove remaining URLs
-          .replace(/https?:\/\/\S+/g, "")
-          // Remove markdown formatting chars
-          .replace(/[#*!]/g, "")
-          .trim()
-        )
-        .filter((p: string) => p.length > 80 && !p.includes("|") && !/^[-–•]/.test(p));
-      
-      if (paragraphs.length > 0) {
-        // Take first 2 meaningful paragraphs, max 500 chars
-        hotelDescription = paragraphs.slice(0, 2).join("\n\n").substring(0, 500);
-      }
-    }
-
-    // Translate description to Czech using Lovable AI
-    if (hotelDescription) {
-      try {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (LOVABLE_API_KEY) {
-          console.log("Translating hotel description to Czech...");
-          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
-              messages: [
-                {
-                  role: "system",
-                  content: "Jsi překladatel. Přelož následující popis hotelu do češtiny. Vrať pouze přeložený text, nic jiného. Zachovej význam a styl původního textu.",
-                },
-                { role: "user", content: hotelDescription },
-              ],
-            }),
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const translated = aiData.choices?.[0]?.message?.content?.trim();
-            if (translated) {
-              hotelDescription = translated;
-              console.log("Description translated to Czech successfully");
-            }
-          } else {
-            console.error("AI translation failed:", aiResponse.status);
-          }
-        }
-      } catch (translateError) {
-        console.error("Translation error:", translateError);
-        // Keep original description if translation fails
-      }
-    }
-
-    console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images, desc: ${hotelDescription.length} chars`);
+    console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images`);
 
     return new Response(
       JSON.stringify({
         success: true,
         hotelImages: uniqueHotelImages,
         golfImages: uniqueGolfImages,
-        hotelDescription,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
