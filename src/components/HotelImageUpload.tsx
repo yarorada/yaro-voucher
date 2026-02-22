@@ -64,12 +64,15 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const autoScrapeDone = useRef(false);
   const [descriptionOpen, setDescriptionOpen] = useState(!!description);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
-  // Auto-trigger scrape when component mounts with autoScrape prop
+  // Auto-trigger scrape + description when component mounts with autoScrape prop
   useEffect(() => {
     if (autoScrapeProp && hotelName && !autoScrapeDone.current) {
       autoScrapeDone.current = true;
+      // Run both in parallel
       handleScrape();
+      handleGenerateDescription();
     }
   }, [autoScrapeProp, hotelName]);
 
@@ -213,6 +216,40 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     }
   };
 
+  const handleGenerateDescription = async () => {
+    if (!hotelName) {
+      toast.error("Nejdříve vyberte hotel");
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-hotel-info", {
+        body: { hotelName, golfCourseName },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data.description) {
+        await supabase
+          .from("hotel_templates")
+          .update({ description: data.description } as any)
+          .eq("id", hotelId);
+        setEditDescription(data.description);
+        setDescriptionOpen(true);
+        toast.success("Popis hotelu vygenerován");
+        onUpdate();
+      } else {
+        toast.error(data?.error || "Nepodařilo se vygenerovat popis");
+      }
+    } catch (error) {
+      console.error("Generate description error:", error);
+      toast.error("Nepodařilo se vygenerovat popis");
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+
   const handleScrape = async () => {
     if (!hotelName) {
       toast.error("Nejdříve vyberte hotel");
@@ -230,15 +267,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       if (data?.success) {
         const hotelImgs = data.hotelImages || [];
         const golfImgs = data.golfImages || [];
-        
-        // Auto-save hotel description if found
-        if (data.hotelDescription && hotelId) {
-          await supabase
-            .from("hotel_templates")
-            .update({ description: data.hotelDescription } as any)
-            .eq("id", hotelId);
-          setEditDescription(data.hotelDescription);
-        }
         
         if (hotelImgs.length === 0 && golfImgs.length === 0) {
           toast.info("Nepodařilo se najít fotky na oficiálních stránkách", {
@@ -342,11 +370,28 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             variant="outline"
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => setDescriptionOpen(!descriptionOpen)}
+            onClick={handleGenerateDescription}
+            disabled={generatingDescription}
           >
-            <FileText className="h-4 w-4" />
-            Popis hotelu
+            {generatingDescription ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            {generatingDescription ? "Generuji popis..." : "Vygenerovat popis"}
           </Button>
+          {description && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => setDescriptionOpen(!descriptionOpen)}
+            >
+              <FileText className="h-4 w-4" />
+              {descriptionOpen ? "Skrýt popis" : "Zobrazit popis"}
+            </Button>
+          )}
         </div>
       )}
 
