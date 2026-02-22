@@ -77,7 +77,12 @@ Piš pouze plynulý text v odstavcích. Piš v češtině, profesionálním styl
     const perplexityData = await perplexityResponse.json();
     let description = perplexityData.choices?.[0]?.message?.content?.trim() || "";
     // Strip citation numbers like [1], [2][3], etc.
-    description = description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
+    description = description.replace(/\[\d+\]/g, "").trim();
+    // Strip markdown bold markers **text** → text
+    description = description.replace(/\*\*(.*?)\*\*/g, "$1");
+    // Convert paragraphs (double newline separated) to HTML <p> tags
+    const paragraphs = description.split(/\n\s*\n/).map(p => p.replace(/\n/g, " ").replace(/\s{2,}/g, " ").trim()).filter(p => p.length > 0);
+    description = paragraphs.map(p => `<p>${p}</p>`).join("\n");
 
     console.log(`Perplexity returned ${description.length} chars`);
 
