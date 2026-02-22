@@ -25,18 +25,26 @@ Deno.serve(async (req) => {
 
     console.log("Searching hotel info via Perplexity:", hotelName, "golf:", golfCourseName);
 
-    // Build prompt focused on golf travelers
+    // Build prompt focused on golf travelers with 5-paragraph template
     const golfContext = golfCourseName
       ? ` Hotel se nachází v blízkosti golfového hřiště ${golfCourseName}.`
       : "";
 
-    const prompt = `Napiš stručný popis hotelu "${hotelName}" pro golfové cestovatele (2-3 odstavce, max 400 slov).${golfContext} Zaměř se na:
-- Polohu hotelu a okolí
-- Kvalitu pokojů a vybavení
-- Stravování a restaurace
-- Wellness/spa a volnočasové aktivity
-- Blízkost golfových hřišť a jejich kvalitu
-Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
+    const prompt = `Napiš popis hotelu "${hotelName}" pro golfové cestovatele.${golfContext}
+Popis musí mít přesně 5 odstavců oddělených prázdným řádkem:
+
+1. odstavec: Základní představení hotelu - název, počet hvězdiček, rozloha areálu, poloha, hlavní přednost (např. přímý přístup ke golfovému hřišti).
+
+2. odstavec: Pokoje a stravování - počet pokojů, typ pokojů, vybavení, koncept stravování (all inclusive / polopenze), počet restaurací.
+
+3. odstavec: Golf - název golfového hřiště, designer, počet jamek, par, driving range, putting green, golf academy.
+
+4. odstavec: Wellness a volný čas - bazény, wellness/spa, hammam, sauna, fitness, pláž a její vzdálenost.
+
+5. odstavec: Závěrečné doporučení - proč je hotel ideální pro golfisty, dostupnost dalších hřišť v okolí.
+
+Nepoužívej žádné nadpisy, odrážky ani markdown formátování (žádné #, *, -, **).
+Piš pouze plynulý text v odstavcích. Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
 
     const perplexityResponse = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
@@ -49,7 +57,7 @@ Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
         messages: [
           {
             role: "system",
-            content: "Jsi odborník na golfové cestování a hotelový průmysl. Piš výhradně v češtině. Odpovídej pouze popisem hotelu, bez úvodních frází typu 'Zde je popis'. Pokud hotel neznáš, napiš to stručně.",
+            content: "Jsi odborník na golfové cestování a hotelový průmysl. Piš výhradně v češtině. Odpovídej pouze popisem hotelu ve formě 5 plynulých odstavců oddělených prázdným řádkem. Nepoužívej žádné nadpisy, odrážky, číslování ani markdown formátování. Žádné úvodní fráze typu 'Zde je popis'. Pokud hotel neznáš, napiš to stručně.",
           },
           { role: "user", content: prompt },
         ],
