@@ -1,37 +1,49 @@
 
 
-# Oprava ukládání URL adresy hotelu
+# Verejne stranky s hotely
 
-## Problem
+## Co udelame
 
-Kdyz kliknete na "Ulozit web" u detekované adresy, URL se ulozi do databaze spravne. Ale kdyz potom kliknete na hlavni tlacitko "Ulozit" pro ulozeni celého hotelu, formular prepise website_url zpet na prazdnou hodnotu (null), protoze formularova data se neaktualizuji po ulozeni webu.
+Pridame do aplikace verejne pristupne stranky pro zobrazeni hotelu -- seznam vsech publikovanych hotelu a detail jednotliveho hotelu. Stranky budou bez prihlaseni, podobne jako existujici `/offer/:token` a `/sign-contract`.
 
-## Reseni
+## Stranky
 
-V souboru `src/pages/Hotels.tsx` upravime `onUpdate` callback tak, aby po obnoveni `editHotel` z databaze aktualizoval i `formData` - konkretne pole `website_url`:
+### 1. Seznam hotelu (`/hotely`)
+- Nacteni dat pres edge funkci `get-hotel-data` (uz existuje, verejna)
+- Karta pro kazdy hotel: hero fotka, nazev, podtitulek, cena, pocet noci
+- Kliknuti presmeruje na detail hotelu
+- Responzivni grid (1/2/3 sloupce)
+- YARO logo v hlavicce, kontaktni udaje v paticce
 
-### Zmena v `src/pages/Hotels.tsx`
+### 2. Detail hotelu (`/hotely/:slug`)
+- Nacteni pres `get-hotel-data?slug=xxx`
+- Galerie fotek (hero + carousel, podobne jako v PublicOffer)
+- HTML popis hotelu
+- Info: pocet noci, green fees, golfova hriste, cena
+- Benefity a typy pokoju (z JSONB poli)
+- Odkaz na oficialní web hotelu
+- Tlacitko "Kontaktujte nas" / odkaz na kontakt
 
-V `onUpdate` callbacku (radky 457-465) pridame aktualizaci formData po nacteni cerstvych dat z databaze:
+## Technicky detail
 
-```typescript
-onUpdate={async () => {
-  await fetchHotels();
-  const { data } = await supabase
-    .from("hotel_templates")
-    .select("*")
-    .eq("id", editHotel.id)
-    .single();
-  if (data) {
-    setEditHotel(data);
-    // Sync formData so the main Save button doesn't overwrite
-    setFormData(f => ({
-      ...f,
-      website_url: data.website_url || "",
-    }));
-  }
-}}
-```
+### Nove soubory
+- `src/pages/PublicHotels.tsx` -- seznam hotelu
+- `src/pages/PublicHotelDetail.tsx` -- detail hotelu
 
-Tím se zajistí, že po uložení webu přes tlačítko "Uložit web" se aktualizuje i formulář, a hlavní "Uložit" tlačítko nebude přepisovat website_url zpět na prázdnou hodnotu.
+### Zmeny v existujicich souborech
+- `src/App.tsx` -- pridani dvou verejnych rout:
+  ```
+  <Route path="/hotely" element={<PublicHotels />} />
+  <Route path="/hotely/:slug" element={<PublicHotelDetail />} />
+  ```
+
+### Data
+- Pouzijeme existujici edge funkci `get-hotel-data` (verify_jwt = false)
+- Zadne zmeny v databazi ani RLS
+
+### Design
+- Cistý, moderni design s YARO brandingem
+- Tmave zahlavi s logem, svetly obsah
+- Podobny vizualni styl jako PublicOffer stranka
+- Mobilne responzivni
 
