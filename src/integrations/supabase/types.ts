@@ -1032,8 +1032,11 @@ export type Database = {
       }
       hotel_templates: {
         Row: {
+          benefits: Json | null
           created_at: string
           description: string | null
+          golf_courses: string | null
+          green_fees: string | null
           id: string
           image_url: string | null
           image_url_10: string | null
@@ -1045,12 +1048,21 @@ export type Database = {
           image_url_7: string | null
           image_url_8: string | null
           image_url_9: string | null
+          is_published: boolean | null
           name: string
+          nights: string | null
+          price_label: string | null
+          room_types: Json | null
+          slug: string | null
+          subtitle: string | null
           updated_at: string
         }
         Insert: {
+          benefits?: Json | null
           created_at?: string
           description?: string | null
+          golf_courses?: string | null
+          green_fees?: string | null
           id?: string
           image_url?: string | null
           image_url_10?: string | null
@@ -1062,12 +1074,21 @@ export type Database = {
           image_url_7?: string | null
           image_url_8?: string | null
           image_url_9?: string | null
+          is_published?: boolean | null
           name: string
+          nights?: string | null
+          price_label?: string | null
+          room_types?: Json | null
+          slug?: string | null
+          subtitle?: string | null
           updated_at?: string
         }
         Update: {
+          benefits?: Json | null
           created_at?: string
           description?: string | null
+          golf_courses?: string | null
+          green_fees?: string | null
           id?: string
           image_url?: string | null
           image_url_10?: string | null
@@ -1079,7 +1100,13 @@ export type Database = {
           image_url_7?: string | null
           image_url_8?: string | null
           image_url_9?: string | null
+          is_published?: boolean | null
           name?: string
+          nights?: string | null
+          price_label?: string | null
+          room_types?: Json | null
+          slug?: string | null
+          subtitle?: string | null
           updated_at?: string
         }
         Relationships: []
