@@ -340,7 +340,14 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       });
 
       if (proxyError || !proxyData?.base64) {
-        throw new Error(proxyError?.message || "Proxy download failed");
+        // Remove the broken URL from found images so user doesn't try again
+        setFoundImages(prev => prev ? {
+          hotel: prev.hotel.filter(u => u !== url),
+          golf: prev.golf.filter(u => u !== url),
+        } : null);
+        toast.error("Tento obrázek není dostupný (neplatná URL). Zkuste jiný.");
+        setSavingUrl(null);
+        return;
       }
 
       const byteString = atob(proxyData.base64);
