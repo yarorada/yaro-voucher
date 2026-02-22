@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,59 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Component to display images through proxy (avoids CORS/hotlink blocking)
+const ProxiedImageButton = ({ url, alt, disabled, saving, onClick }: {
+  url: string; alt: string; disabled: boolean; saving: boolean; onClick: () => void;
+}) => {
+  const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Try direct load first, fall back to proxy
+    const img = new Image();
+    img.onload = () => { if (!cancelled) setSrc(url); };
+    img.onerror = () => {
+      if (cancelled) return;
+      // Load via proxy
+      supabase.functions.invoke("proxy-image", { body: { url } }).then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data?.base64) {
+          setSrc(`data:${data.contentType || "image/jpeg"};base64,${data.base64}`);
+        } else {
+          setFailed(true);
+        }
+      });
+    };
+    img.src = url;
+    return () => { cancelled = true; };
+  }, [url]);
+
+  if (failed) return null;
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      onClick={onClick}
+    >
+      {saving && (
+        <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-white" />
+        </div>
+      )}
+      {src ? (
+        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-muted">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+    </button>
+  );
+};
 
 interface HotelImageUploadProps {
   hotelId: string;
@@ -626,25 +679,14 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
                   {foundImages.hotel.map((url, i) => (
-                    <button
-                      key={i}
-                      type="button"
+                    <ProxiedImageButton
+                      key={`hotel-${i}-${url}`}
+                      url={url}
+                      alt={`Hotel ${i + 1}`}
                       disabled={!selectedSlot || savingUrl === url}
-                      className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                    >
-                      {savingUrl === url && (
-                        <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 animate-spin text-white" />
-                        </div>
-                      )}
-                      <img
-                        src={url}
-                        alt={`Hotel ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    </button>
+                    />
                   ))}
                 </div>
               </div>
@@ -657,25 +699,14 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
                   {foundImages.golf.map((url, i) => (
-                    <button
-                      key={i}
-                      type="button"
+                    <ProxiedImageButton
+                      key={`golf-${i}-${url}`}
+                      url={url}
+                      alt={`Golf ${i + 1}`}
                       disabled={!selectedSlot || savingUrl === url}
-                      className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                    >
-                      {savingUrl === url && (
-                        <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center">
-                          <Loader2 className="h-6 w-6 animate-spin text-white" />
-                        </div>
-                      )}
-                      <img
-                        src={url}
-                        alt={`Golf ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    </button>
+                    />
                   ))}
                 </div>
               </div>
