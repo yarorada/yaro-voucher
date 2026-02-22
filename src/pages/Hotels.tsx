@@ -453,6 +453,7 @@ export default function Hotels() {
                     imageUrl9={editHotel.image_url_9}
                     imageUrl10={editHotel.image_url_10}
                     description={editHotel.description}
+                    websiteUrl={editHotel.website_url}
                     onUpdate={async () => {
                       await fetchHotels();
                       const { data } = await supabase

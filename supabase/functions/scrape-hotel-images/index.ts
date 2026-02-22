@@ -44,10 +44,16 @@ Deno.serve(async (req) => {
 
     // Scrape the top result for images
     const hotelImages: string[] = [];
+    let detectedWebsiteUrl: string | null = null;
 
     if (searchData?.data && searchData.data.length > 0) {
       const topUrl = searchData.data[0].url;
-      console.log("Scraping hotel URL:", topUrl);
+      // Extract the base domain as the official website URL
+      try {
+        const parsedUrl = new URL(topUrl);
+        detectedWebsiteUrl = parsedUrl.origin;
+      } catch { /* ignore */ }
+      console.log("Scraping hotel URL:", topUrl, "detected website:", detectedWebsiteUrl);
 
       const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
         method: "POST",
@@ -162,6 +168,7 @@ Deno.serve(async (req) => {
         success: true,
         hotelImages: uniqueHotelImages,
         golfImages: uniqueGolfImages,
+        detectedWebsiteUrl,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
