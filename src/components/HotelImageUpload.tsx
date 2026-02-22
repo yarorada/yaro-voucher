@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -286,7 +286,14 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
 
       if (data?.success && data.description) {
         // Strip citation numbers like [1], [2][3]
-        const cleanDesc = data.description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
+        let cleanDesc = data.description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
+        // Convert markdown bold **text** and __text__ to <strong>
+        cleanDesc = cleanDesc.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        cleanDesc = cleanDesc.replace(/__(.+?)__/g, "<strong>$1</strong>");
+        // Convert markdown italic *text* and _text_ to <em>
+        cleanDesc = cleanDesc.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+        // Convert markdown headings ## to bold paragraphs
+        cleanDesc = cleanDesc.replace(/^#{1,6}\s+(.+)$/gm, "<strong>$1</strong>");
         // Convert plain text paragraphs to HTML
         const htmlDesc = cleanDesc.split(/\n{2,}/).map((p: string) => `<p>${p.trim()}</p>`).join("\n");
         await supabase
@@ -510,15 +517,69 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           ) : (
-            <div
-              ref={editorRef}
-              contentEditable
-              suppressContentEditableWarning
-              dangerouslySetInnerHTML={{ __html: editDescription }}
-              onBlur={(e) => setEditDescription(e.currentTarget.innerHTML)}
-              className="w-full min-h-[80px] max-h-[200px] overflow-y-auto rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:font-bold [&_em]:italic"
-              style={{ whiteSpace: 'pre-wrap' }}
-            />
+            <>
+              {/* Formatting toolbar */}
+              <div className="flex gap-0.5 border border-input border-b-0 rounded-t-md bg-muted/50 px-1 py-0.5">
+                {[
+                  { cmd: "bold", icon: Bold, label: "Tučné (⌘B)" },
+                  { cmd: "italic", icon: Italic, label: "Kurzíva (⌘I)" },
+                  { cmd: "underline", icon: Underline, label: "Podtržení (⌘U)" },
+                  { cmd: "insertUnorderedList", icon: List, label: "Odrážky" },
+                  { cmd: "insertOrderedList", icon: ListOrdered, label: "Číslování" },
+                ].map(({ cmd, icon: Icon, label }) => (
+                  <Button
+                    key={cmd}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    title={label}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand(cmd, false);
+                      editorRef.current?.focus();
+                    }}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  title="Nadpis (⌘⇧H)"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0) {
+                      document.execCommand("formatBlock", false, "h3");
+                    }
+                    editorRef.current?.focus();
+                  }}
+                >
+                  <Heading2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: editDescription }}
+                onBlur={(e) => setEditDescription(e.currentTarget.innerHTML)}
+                onKeyDown={(e) => {
+                  // Keyboard shortcuts are handled natively by contentEditable
+                  // (Cmd+B, Cmd+I, Cmd+U work out of the box)
+                  // Add Cmd+Shift+H for heading
+                  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'h') {
+                    e.preventDefault();
+                    document.execCommand("formatBlock", false, "h3");
+                  }
+                }}
+                className="w-full min-h-[80px] max-h-[200px] overflow-y-auto rounded-t-none rounded-b-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:font-bold [&_em]:italic [&_h3]:text-sm [&_h3]:font-bold [&_h3]:my-2"
+                style={{ whiteSpace: 'pre-wrap' }}
+              />
+            </>
           )}
           {editDescription !== (description || "") && (
             <Button
