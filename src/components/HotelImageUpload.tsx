@@ -609,6 +609,61 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         </div>
       )}
 
+      {/* Bulk drop zone */}
+      <div
+        className={`relative rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
+          dragOver === "__bulk__" ? "border-primary bg-primary/10" : "border-border bg-muted/20"
+        }`}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver("__bulk__"); }}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver("__bulk__"); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(null); }}
+        onDrop={async (e) => {
+          e.preventDefault(); e.stopPropagation(); setDragOver(null);
+          const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+          if (files.length === 0) return;
+          // Find empty slots
+          const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
+          const toUpload = files.slice(0, emptySlots.length);
+          if (toUpload.length === 0) {
+            toast.info("Všechny sloty jsou obsazené. Nejprve odstraňte fotku.");
+            return;
+          }
+          toast.info(`Nahrávám ${toUpload.length} fotek...`);
+          for (let i = 0; i < toUpload.length; i++) {
+            await handleUpload(emptySlots[i], toUpload[i]);
+          }
+        }}
+        onClick={() => {
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*,.heic,.heif";
+          input.multiple = true;
+          input.onchange = async () => {
+            const files = Array.from(input.files || []);
+            if (files.length === 0) return;
+            const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
+            const toUpload = files.slice(0, emptySlots.length);
+            if (toUpload.length === 0) {
+              toast.info("Všechny sloty jsou obsazené. Nejprve odstraňte fotku.");
+              return;
+            }
+            toast.info(`Nahrávám ${toUpload.length} fotek...`);
+            for (let i = 0; i < toUpload.length; i++) {
+              await handleUpload(emptySlots[i], toUpload[i]);
+            }
+          };
+          input.click();
+        }}
+      >
+        <ImagePlus className={`h-8 w-8 mx-auto mb-1 ${dragOver === "__bulk__" ? "text-primary" : "text-muted-foreground/50"}`} />
+        <p className="text-sm text-muted-foreground">
+          {dragOver === "__bulk__" ? "Pusťte fotky zde" : "Přetáhněte více fotek najednou nebo klikněte"}
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          {IMAGE_LABELS.map(l => l.key).filter(k => !images[k]).length} volných slotů z {IMAGE_LABELS.length}
+        </p>
+      </div>
+
       {/* Manual upload grid */}
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {IMAGE_LABELS.map(({ key, label }) => {
