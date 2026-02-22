@@ -66,91 +66,92 @@ function getHotelImageUrls(images: OfferData["hotelImages"][string] | null): str
   ].filter((u): u is string => !!u);
 }
 
-function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+function HeroGallery({ images, alt }: { images: string[]; alt: string }) {
   const [current, setCurrent] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
   const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    setAutoPlay(false);
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-      if (dx < 0) next(); else prev();
-    }
-    touchStartX.current = null;
-    touchStartY.current = null;
-    setAutoPlay(true);
+  // Keyboard navigation
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); prev(); }
+    };
+    el.addEventListener("keydown", handler);
+    return () => el.removeEventListener("keydown", handler);
   }, [next, prev]);
 
-  useEffect(() => {
-    if (!autoPlay || images.length <= 1) return;
-    const timer = setInterval(next, 4000);
-    return () => clearInterval(timer);
-  }, [autoPlay, next, images.length]);
-
   if (images.length === 0) return null;
-  if (images.length === 1) {
-    return (
-      <div className="relative aspect-[16/9] overflow-hidden">
-        <img src={images[0]} alt={alt} className="w-full h-full object-cover" />
-      </div>
-    );
-  }
+
+  // Show hero + up to 2 thumbnails below
+  const thumbs = images.length > 1 ? images.filter((_, i) => i !== current).slice(0, 2) : [];
 
   return (
-    <div
-      className="relative aspect-[16/9] overflow-hidden group"
-      onMouseEnter={() => setAutoPlay(false)}
-      onMouseLeave={() => setAutoPlay(true)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {images.map((url, i) => (
-        <img
-          key={i}
-          src={url}
-          alt={`${alt} ${i + 1}`}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-            i === current ? "opacity-100" : "opacity-0"
-          }`}
-        />
-      ))}
-      {/* Navigation arrows */}
-      <button
-        onClick={(e) => { e.stopPropagation(); prev(); }}
-        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+    <div ref={containerRef} tabIndex={0} className="outline-none" role="region" aria-label="Fotogalerie hotelu">
+      {/* Hero image with carousel */}
+      <div
+        className="relative aspect-[16/9] overflow-hidden cursor-pointer group"
+        onClick={next}
       >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        onClick={(e) => { e.stopPropagation(); next(); }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
-      {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {images.map((_, i) => (
-          <button
+        {images.map((url, i) => (
+          <img
             key={i}
-            onClick={() => setCurrent(i)}
-            className={`w-2 h-2 rounded-full transition-all ${
-              i === current ? "bg-white scale-110" : "bg-white/50"
+            src={url}
+            alt={`${alt} ${i + 1}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+              i === current ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           />
         ))}
+        {/* Navigation arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Předchozí fotka"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Další fotka"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            {/* Counter */}
+            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              {current + 1} / {images.length}
+            </div>
+          </>
+        )}
       </div>
+      {/* Two smaller images below */}
+      {thumbs.length > 0 && (
+        <div className={`grid gap-0.5 mt-0.5 ${thumbs.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {thumbs.map((url, i) => {
+            const imgIndex = images.indexOf(url);
+            return (
+              <div
+                key={i}
+                className="aspect-[16/7] overflow-hidden cursor-pointer"
+                onClick={() => setCurrent(imgIndex)}
+              >
+                <img
+                  src={url}
+                  alt={`${alt} ${imgIndex + 1}`}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -396,7 +397,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
       {/* Image carousel */}
       {allImages.length > 0 && (
         <div className="relative">
-          <ImageCarousel images={allImages} alt={hotelService?.service_name || "Hotel"} />
+          <HeroGallery images={allImages} alt={hotelService?.service_name || "Hotel"} />
           {showBadge && (
             <div className="absolute top-3 left-3 z-10">
               <span className="bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
@@ -518,7 +519,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-lg border border-slate-200 max-w-2xl mx-auto">
       {allImages.length > 0 && (
-        <ImageCarousel images={allImages} alt="Hotel" />
+        <HeroGallery images={allImages} alt="Hotel" />
       )}
       <div className="p-5 space-y-4">
         {/* Hotel description */}
