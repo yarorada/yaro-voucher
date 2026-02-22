@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2 } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -82,6 +82,7 @@ interface HotelImageUploadProps {
   imageUrl9?: string | null;
   imageUrl10?: string | null;
   description: string | null;
+  websiteUrl?: string | null;
   onUpdate: () => void;
   autoScrape?: boolean;
 }
@@ -101,7 +102,7 @@ const IMAGE_LABELS = [
 
 type ImageSlot = "image_url" | "image_url_2" | "image_url_3" | "image_url_4" | "image_url_5" | "image_url_6" | "image_url_7" | "image_url_8" | "image_url_9" | "image_url_10";
 
-export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
+export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, websiteUrl, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[]; search: string[] } | null>(null);
@@ -117,6 +118,8 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const autoScrapeDone = useRef(false);
   const [descriptionOpen, setDescriptionOpen] = useState(!!description);
   const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [detectedWebsite, setDetectedWebsite] = useState<string | null>(null);
+  const [savingWebsite, setSavingWebsite] = useState(false);
   const [htmlMode, setHtmlMode] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -349,6 +352,9 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       if (scrapeResult.status === "fulfilled" && scrapeResult.value.data?.success) {
         hotelImgs.push(...(scrapeResult.value.data.hotelImages || []));
         golfImgs.push(...(scrapeResult.value.data.golfImages || []));
+        if (scrapeResult.value.data.detectedWebsiteUrl && !websiteUrl) {
+          setDetectedWebsite(scrapeResult.value.data.detectedWebsiteUrl);
+        }
       }
 
       if (searchResult.status === "fulfilled") {
@@ -807,6 +813,39 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             </div>
           </div>
           
+          {detectedWebsite && !websiteUrl && (
+            <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/50">
+              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm truncate flex-1">{detectedWebsite}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1 shrink-0"
+                disabled={savingWebsite}
+                onClick={async () => {
+                  setSavingWebsite(true);
+                  try {
+                    const { error } = await supabase
+                      .from("hotel_templates")
+                      .update({ website_url: detectedWebsite })
+                      .eq("id", hotelId);
+                    if (error) throw error;
+                    toast.success("Web hotelu uložen");
+                    setDetectedWebsite(null);
+                    onUpdate();
+                  } catch {
+                    toast.error("Nepodařilo se uložit");
+                  } finally {
+                    setSavingWebsite(false);
+                  }
+                }}
+              >
+                <Check className="h-3 w-3" />
+                Uložit web
+              </Button>
+            </div>
+          )}
+
           {!selectedSlot && (
             <p className="text-sm text-muted-foreground">
               Nejdříve vyberte slot (hlavní foto, pokoj, golf) a pak klikněte na fotku.
