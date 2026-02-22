@@ -104,7 +104,7 @@ type ImageSlot = "image_url" | "image_url_2" | "image_url_3" | "image_url_4" | "
 export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
-  const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[] } | null>(null);
+  const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[]; search: string[] } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<ImageSlot | null>(null);
   const [savingUrl, setSavingUrl] = useState<string | null>(null);
@@ -330,46 +330,44 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
 
     setScraping(true);
     try {
-      const { data, error } = await supabase.functions.invoke("scrape-hotel-images", {
-        body: { hotelName, golfCourseName },
-      });
+      // Run both scrape and search in parallel
+      const [scrapeResult, searchResult] = await Promise.allSettled([
+        supabase.functions.invoke("scrape-hotel-images", {
+          body: { hotelName, golfCourseName },
+        }),
+        perplexityImagesRef.current.length > 0
+          ? Promise.resolve({ data: { imageUrls: perplexityImagesRef.current }, error: null })
+          : supabase.functions.invoke("search-hotel-info", {
+              body: { hotelName, golfCourseName },
+            }),
+      ]);
 
-      if (error) throw error;
+      const hotelImgs: string[] = [];
+      const golfImgs: string[] = [];
+      const searchImgs: string[] = [];
 
-      if (data?.success) {
-        const hotelImgs = data.hotelImages || [];
-        const golfImgs = data.golfImages || [];
-        
-        if (hotelImgs.length === 0 && golfImgs.length === 0) {
-          // Fallback: use Perplexity images if available
-          if (perplexityImagesRef.current.length > 0) {
-            setFoundImages({ hotel: perplexityImagesRef.current, golf: [] });
-            setPickerOpen(true);
-            toast.success(`Nalezeno ${perplexityImagesRef.current.length} fotek přes AI vyhledávání`);
-          } else {
-            // Try fetching from Perplexity now
-            try {
-              const { data: infoData } = await supabase.functions.invoke("search-hotel-info", {
-                body: { hotelName, golfCourseName },
-              });
-              if (infoData?.imageUrls?.length > 0) {
-                setFoundImages({ hotel: infoData.imageUrls, golf: [] });
-                setPickerOpen(true);
-                toast.success(`Nalezeno ${infoData.imageUrls.length} fotek přes AI vyhledávání`);
-              } else {
-                toast.info("Nepodařilo se najít fotky. Zkuste nahrát fotky ručně.");
-              }
-            } catch {
-              toast.info("Nepodařilo se najít fotky na oficiálních stránkách. Zkuste nahrát fotky ručně.");
-            }
-          }
-        } else {
-          setFoundImages({ hotel: hotelImgs, golf: golfImgs });
-          setPickerOpen(true);
-          toast.success(`Nalezeno ${hotelImgs.length + golfImgs.length} fotek`);
+      if (scrapeResult.status === "fulfilled" && scrapeResult.value.data?.success) {
+        hotelImgs.push(...(scrapeResult.value.data.hotelImages || []));
+        golfImgs.push(...(scrapeResult.value.data.golfImages || []));
+      }
+
+      if (searchResult.status === "fulfilled") {
+        const searchData = searchResult.value.data;
+        const urls = searchData?.imageUrls || [];
+        if (urls.length > 0) {
+          perplexityImagesRef.current = urls;
+          const existing = new Set([...hotelImgs, ...golfImgs]);
+          searchImgs.push(...urls.filter((u: string) => !existing.has(u)));
         }
+      }
+
+      const totalFound = hotelImgs.length + golfImgs.length + searchImgs.length;
+      if (totalFound === 0) {
+        toast.info("Nepodařilo se najít fotky. Zkuste nahrát fotky ručně.");
       } else {
-        toast.error(data?.error || "Nepodařilo se vyhledat fotky");
+        setFoundImages({ hotel: hotelImgs, golf: golfImgs, search: searchImgs });
+        setPickerOpen(true);
+        toast.success(`Nalezeno ${totalFound} fotek`);
       }
     } catch (error) {
       console.error("Scrape error:", error);
@@ -391,6 +389,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         setFoundImages(prev => prev ? {
           hotel: prev.hotel.filter(u => u !== url),
           golf: prev.golf.filter(u => u !== url),
+          search: prev.search.filter(u => u !== url),
         } : null);
         toast.error("Tento obrázek není dostupný (neplatná URL). Zkuste jiný.");
         setSavingUrl(null);
@@ -846,6 +845,26 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                       key={`golf-${i}-${url}`}
                       url={url}
                       alt={`Golf ${i + 1}`}
+                      disabled={!selectedSlot || savingUrl === url}
+                      saving={savingUrl === url}
+                      onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {foundImages?.search && foundImages.search.length > 0 && (
+              <div className="space-y-2 mt-4 pt-4 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  🔍 Fotky z vyhledávání ({foundImages.search.length})
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {foundImages.search.map((url, i) => (
+                    <ProxiedImageButton
+                      key={`search-${i}-${url}`}
+                      url={url}
+                      alt={`Search ${i + 1}`}
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
