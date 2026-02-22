@@ -231,7 +231,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
               value={searchValue}
               onValueChange={setSearchValue}
             />
-            <CommandList className="max-h-64 overflow-y-auto">
+            <CommandList className="max-h-64 overflow-auto" onWheel={(e) => e.stopPropagation()}>
               <CommandEmpty>
                 {showCreateOption ? (
                   <Button
