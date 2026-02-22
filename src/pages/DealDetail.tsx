@@ -2073,6 +2073,37 @@ const DealDetail = () => {
                   />
                 </div>
 
+                {/* Hotel & meal info from selected variant services */}
+                {(() => {
+                  const hotelServices = services.filter(s => s.service_type === 'hotel');
+                  if (hotelServices.length === 0) return null;
+                  return (
+                    <div className={`space-y-1 col-span-2 md:col-span-3`}>
+                      {hotelServices.map((hs, idx) => {
+                        const details = hs.details as any;
+                        const mealPlan = details?.meal_plan || hs.description || '';
+                        return (
+                          <div key={hs.id} className={`flex items-center gap-3 ${idx > 0 ? 'mt-1' : ''}`}>
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <Hotel className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm font-medium truncate">{hs.service_name}</span>
+                              {(hs.quantity || 1) > 1 && (
+                                <span className="text-xs text-muted-foreground">({hs.quantity}×)</span>
+                              )}
+                            </div>
+                            {mealPlan && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                                <Utensils className="h-3 w-3" />
+                                <span>{mealPlan}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 <div className="space-y-1 col-span-2 md:col-span-3">
                   <Label className="text-xs text-muted-foreground">Datum</Label>
                   <DateRangePicker
