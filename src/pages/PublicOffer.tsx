@@ -445,6 +445,9 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
           <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
 
+        {/* Services heading */}
+        <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider pt-2">Cena zahrnuje</h4>
+
         {/* Services */}
         <div className="space-y-2">
           {variant.deal_variant_services.map((service) => {
@@ -526,6 +529,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         {hotelService && isValidDescription(hotelImgData?.description ?? null) && (
           <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
+        <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider pt-2">Cena zahrnuje</h4>
         <div className="space-y-2">
           {services.map((service) => {
             const Icon = serviceIcons[service.service_type] || FileText;
