@@ -1,48 +1,68 @@
 
 
-## Uprava promptu pro generovani popisu hotelu
+# Nahrazeni Firecrawl image search za Google Custom Search API
 
-### Co se zmeni
+## Co se zmeni
 
-Upravim prompt v backend funkci `search-hotel-info`, aby generoval popis hotelu podle zadane sablony s 5 odstavci:
+Aktualne funkce `search-hotel-info` pouziva Firecrawl pro vyhledavani fotek hotelu v sekci "Fotky z vyhledavani". Nahradime to Google Custom Search JSON API, ktere je spolehlivejsi pro hledani obrazku a nabizi 100 dotazu denne zdarma.
 
-1. **Uvodni odstavec** - zakladni info o hotelu, hvezdicky, rozloha, poloha, hlavni prednosti
-2. **Pokoje a stravovani** - pocet pokoju, vybaveni, typ stravovani, restaurace
-3. **Golf** - golfova hriste, pocet jamek, par, designer, driving range, academy
-4. **Wellness a volny cas** - bazeny, spa, plaz, fitness, dalsi aktivity
-5. **Zaverecne doporuceni** - proc je hotel idealni pro golfisty, dostupnost dalsich hrist
+## Potrebne kroky
 
-### Technicke zmeny
+### 1. Vytvoreni Google Custom Search Engine a ziskani klicu
 
-**Soubor: `supabase/functions/search-hotel-info/index.ts`**
+Budete potrebovat dva udaje od Google:
+- **API Key** - ziskate v Google Cloud Console (console.cloud.google.com) pod "APIs & Services" > "Credentials"
+- **Search Engine ID (CX)** - vytvorite v Programmable Search Engine (programmablesearchengine.google.com), nastavte "Search the entire web" a zapnete "Image search"
 
-- Prepisu user prompt (`prompt` promennou) tak, aby obsahoval presnou strukturu 5 odstavcu s popisem, co ma kazdy odstavec obsahovat
-- Prepisu system prompt, aby AI dodrzovala format bez nadpisu (pouze odstavce oddelene prazdnym radkem)
-- Pridam instrukci, ze text nema obsahovat markdown formatovani (hvezdicky, hashe) - pouze cisty text s HTML tagy `<strong>` pro tucne, pokud je potreba
-- Zachovam konverzi markdown na HTML a preklad do cestiny pokud odpoved prijde anglicky
+Oba udaje ulozime bezpecne do backendu jako secrets: `GOOGLE_CSE_API_KEY` a `GOOGLE_CSE_CX`.
 
-### Priklad noveho promptu
+### 2. Uprava edge funkce `search-hotel-info`
 
+Nahradime Firecrawl image search za Google Custom Search API:
+- Endpoint: `https://www.googleapis.com/customsearch/v1`
+- Parametry: `key`, `cx`, `q` (nazev hotelu + "hotel photos"), `searchType=image`, `num=10`
+- API vraci primo pole `items` s polem `link` (prima URL obrazku) - zadne parsovani markdown
+- Vyfiltrujeme male obrazky (API vraci i `image.width` a `image.height`)
+
+### 3. Zadne zmeny ve frontendu
+
+Komponenta `HotelImageUpload.tsx` uz zpracovava pole `imageUrls` z odpovedi `search-hotel-info` - format odpovedi zustane stejny, takze frontend se nemeni.
+
+## Technicke detaily
+
+### Google Custom Search API volani
+
+```text
+GET https://www.googleapis.com/customsearch/v1
+  ?key=API_KEY
+  &cx=SEARCH_ENGINE_ID
+  &q=Hotel+Name+hotel+photos
+  &searchType=image
+  &num=10
+  &imgSize=large
 ```
-Napiš popis hotelu "{hotelName}" pro golfové cestovatele.
-Popis musí mít přesně 5 odstavců oddělených prázdným řádkem:
 
-1. odstavec: Základní představení hotelu - název, počet hvězdiček, rozloha areálu,
-   poloha, hlavní přednost (např. přímý přístup ke golfovému hřišti).
+Odpoved obsahuje pole `items`, kazda polozka ma:
+- `link` - prima URL obrazku
+- `image.width`, `image.height` - rozmery
+- `image.thumbnailLink` - nahled
 
-2. odstavec: Pokoje a stravování - počet pokojů, typ pokojů, vybavení,
-   koncept stravování (all inclusive / polopenze), počet restaurací.
+### Zmeny v `search-hotel-info/index.ts`
 
-3. odstavec: Golf - název golfového hřiště, designer, počet jamek, par,
-   driving range, putting green, golf academy.
+- Odstraneni celeho bloku s Firecrawl API volanim (radky 131-193)
+- Nahrazeni za jednoduchy GET request na Google Custom Search API
+- Filtrovani vysledku: vylouceni malych obrazku (< 300px), ikon, log
+- Zachovani stejneho response formatu `{ success, description, imageUrls }`
 
-4. odstavec: Wellness a volný čas - bazény, wellness/spa, hammam, sauna,
-   fitness, pláž a její vzdálenost.
+### Cena
 
-5. odstavec: Závěrečné doporučení - proč je hotel ideální pro golfisty,
-   dostupnost dalších hřišť v okolí.
+- **Zdarma**: 100 dotazu/den (pro vase pouziti bohat staci)
+- Nad 100 dotazu: $5 za 1000 dotazu (volitelne)
 
-Nepoužívej žádné nadpisy, odrážky ani markdown formátování.
-Piš pouze plynulý text v odstavcích.
-```
+## Souhrn zmen
+
+| Soubor | Zmena |
+|--------|-------|
+| Secrets | Pridat `GOOGLE_CSE_API_KEY` a `GOOGLE_CSE_CX` |
+| `supabase/functions/search-hotel-info/index.ts` | Nahradit Firecrawl image search za Google CSE |
 
