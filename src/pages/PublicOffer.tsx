@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
-import { Plane, Hotel, Navigation, Car, Shield, FileText } from "lucide-react";
+import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -52,8 +52,85 @@ interface OfferData {
     start_date: string | null;
     end_date: string | null;
   }>;
-  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }>;
+  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null }>;
   hasSelectedVariant: boolean;
+}
+
+function getHotelImageUrls(images: OfferData["hotelImages"][string] | null): string[] {
+  if (!images) return [];
+  return [
+    images.image_url, images.image_url_2, images.image_url_3,
+    images.image_url_4, images.image_url_5, images.image_url_6,
+    images.image_url_7, images.image_url_8, images.image_url_9,
+    images.image_url_10,
+  ].filter((u): u is string => !!u);
+}
+
+function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
+  const [current, setCurrent] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+
+  const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
+  const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (!autoPlay || images.length <= 1) return;
+    const timer = setInterval(next, 4000);
+    return () => clearInterval(timer);
+  }, [autoPlay, next, images.length]);
+
+  if (images.length === 0) return null;
+  if (images.length === 1) {
+    return (
+      <div className="relative aspect-[16/9] overflow-hidden">
+        <img src={images[0]} alt={alt} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative aspect-[16/9] overflow-hidden group"
+      onMouseEnter={() => setAutoPlay(false)}
+      onMouseLeave={() => setAutoPlay(true)}
+    >
+      {images.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt={`${alt} ${i + 1}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+            i === current ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+      {/* Navigation arrows */}
+      <button
+        onClick={(e) => { e.stopPropagation(); prev(); }}
+        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); next(); }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+      {/* Dots */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            className={`w-2 h-2 rounded-full transition-all ${
+              i === current ? "bg-white scale-110" : "bg-white/50"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const serviceIcons: Record<string, typeof Plane> = {
@@ -280,7 +357,8 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
   showBadge: boolean;
 }) {
   const hotelService = variant.deal_variant_services.find(s => s.service_type === "hotel");
-  const images = hotelService ? hotelImages[hotelService.service_name] : null;
+  const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
+  const allImages = getHotelImageUrls(hotelImgData);
   const dest = variant.destination;
 
   const totalPrice = variant.total_price || variant.deal_variant_services.reduce(
@@ -293,23 +371,19 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
     <div className={`rounded-2xl overflow-hidden bg-white shadow-lg border transition-all ${
       isSelected ? "ring-2 ring-blue-500 shadow-blue-100" : "border-slate-200"
     }`}>
-      {/* Hero image */}
-      {images?.image_url && (
-        <div className="relative aspect-[16/9] overflow-hidden">
-          <img
-            src={images.image_url}
-            alt={hotelService?.service_name || "Hotel"}
-            className="w-full h-full object-cover"
-          />
+      {/* Image carousel */}
+      {allImages.length > 0 && (
+        <div className="relative">
+          <ImageCarousel images={allImages} alt={hotelService?.service_name || "Hotel"} />
           {showBadge && (
-            <div className="absolute top-3 left-3">
+            <div className="absolute top-3 left-3 z-10">
               <span className="bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
                 {variant.variant_name}
               </span>
             </div>
           )}
           {isSelected && (
-            <div className="absolute top-3 right-3">
+            <div className="absolute top-3 right-3 z-10">
               <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
                 Doporučená varianta
               </span>
@@ -318,24 +392,8 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
         </div>
       )}
 
-      {/* Small images */}
-      {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 mt-1">
-          {images?.image_url_2 && (
-            <div className="aspect-[16/10] overflow-hidden">
-              <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
-            </div>
-          )}
-          {images?.image_url_3 && (
-            <div className="aspect-[16/10] overflow-hidden">
-              <img src={images.image_url_3} alt="Golf / Pláž" className="w-full h-full object-cover" />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* No hero image but has badge */}
-      {!images?.image_url && showBadge && (
+      {/* No images but has badge */}
+      {allImages.length === 0 && showBadge && (
         <div className="px-5 pt-5">
           <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-full">
             {variant.variant_name}
@@ -360,8 +418,8 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
         )}
 
         {/* Hotel description from website */}
-        {isValidDescription(images?.description ?? null) && (
-          <p className="text-sm text-slate-500 leading-relaxed">{images!.description}</p>
+        {isValidDescription(hotelImgData?.description ?? null) && (
+          <p className="text-sm text-slate-500 leading-relaxed">{hotelImgData!.description}</p>
         )}
 
         {/* Services */}
@@ -430,36 +488,21 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
   totalPrice: number | null;
 }) {
   const hotelService = services.find(s => s.service_type === "hotel");
-  const images = hotelService ? hotelImages[hotelService.service_name] : null;
+  const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
+  const allImages = getHotelImageUrls(hotelImgData);
 
   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-lg border border-slate-200 max-w-2xl mx-auto">
-      {images?.image_url && (
-        <div className="aspect-[16/9] overflow-hidden">
-          <img src={images.image_url} alt="Hotel" className="w-full h-full object-cover" />
-        </div>
-      )}
-      {(images?.image_url_2 || images?.image_url_3) && (
-        <div className="grid grid-cols-2 gap-1 mt-1">
-          {images?.image_url_2 && (
-            <div className="aspect-[16/10] overflow-hidden">
-              <img src={images.image_url_2} alt="Pokoj" className="w-full h-full object-cover" />
-            </div>
-          )}
-          {images?.image_url_3 && (
-            <div className="aspect-[16/10] overflow-hidden">
-              <img src={images.image_url_3} alt="" className="w-full h-full object-cover" />
-            </div>
-          )}
-        </div>
+      {allImages.length > 0 && (
+        <ImageCarousel images={allImages} alt="Hotel" />
       )}
       <div className="p-5 space-y-4">
         {/* Hotel description */}
-        {hotelService && isValidDescription(hotelImages[hotelService.service_name]?.description ?? null) && (
+        {hotelService && isValidDescription(hotelImgData?.description ?? null) && (
           <p className="text-sm text-slate-500 leading-relaxed">
-            {hotelImages[hotelService.service_name].description}
+            {hotelImgData!.description}
           </p>
         )}
         <div className="space-y-2">

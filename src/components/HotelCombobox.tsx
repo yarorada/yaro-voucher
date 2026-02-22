@@ -44,6 +44,13 @@ interface HotelTemplate {
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
+  image_url_4?: string | null;
+  image_url_5?: string | null;
+  image_url_6?: string | null;
+  image_url_7?: string | null;
+  image_url_8?: string | null;
+  image_url_9?: string | null;
+  image_url_10?: string | null;
   description?: string | null;
 }
 
@@ -354,6 +361,13 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                     imageUrl={editingHotel.image_url || null}
                     imageUrl2={editingHotel.image_url_2 || null}
                     imageUrl3={editingHotel.image_url_3 || null}
+                    imageUrl4={editingHotel.image_url_4 || null}
+                    imageUrl5={editingHotel.image_url_5 || null}
+                    imageUrl6={editingHotel.image_url_6 || null}
+                    imageUrl7={editingHotel.image_url_7 || null}
+                    imageUrl8={editingHotel.image_url_8 || null}
+                    imageUrl9={editingHotel.image_url_9 || null}
+                    imageUrl10={editingHotel.image_url_10 || null}
                     description={editingHotel.description || null}
                     autoScrape={autoScrapeOnOpen}
                     onUpdate={async () => {

@@ -1036,8 +1036,15 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          image_url_10: string | null
           image_url_2: string | null
           image_url_3: string | null
+          image_url_4: string | null
+          image_url_5: string | null
+          image_url_6: string | null
+          image_url_7: string | null
+          image_url_8: string | null
+          image_url_9: string | null
           name: string
           updated_at: string
         }
@@ -1046,8 +1053,15 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_url_10?: string | null
           image_url_2?: string | null
           image_url_3?: string | null
+          image_url_4?: string | null
+          image_url_5?: string | null
+          image_url_6?: string | null
+          image_url_7?: string | null
+          image_url_8?: string | null
+          image_url_9?: string | null
           name: string
           updated_at?: string
         }
@@ -1056,8 +1070,15 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_url_10?: string | null
           image_url_2?: string | null
           image_url_3?: string | null
+          image_url_4?: string | null
+          image_url_5?: string | null
+          image_url_6?: string | null
+          image_url_7?: string | null
+          image_url_8?: string | null
+          image_url_9?: string | null
           name?: string
           updated_at?: string
         }

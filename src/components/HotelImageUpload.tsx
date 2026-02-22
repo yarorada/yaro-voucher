@@ -22,20 +22,34 @@ interface HotelImageUploadProps {
   imageUrl: string | null;
   imageUrl2: string | null;
   imageUrl3: string | null;
+  imageUrl4?: string | null;
+  imageUrl5?: string | null;
+  imageUrl6?: string | null;
+  imageUrl7?: string | null;
+  imageUrl8?: string | null;
+  imageUrl9?: string | null;
+  imageUrl10?: string | null;
   description: string | null;
   onUpdate: () => void;
   autoScrape?: boolean;
 }
 
 const IMAGE_LABELS = [
-  { key: "image_url", label: "Hlavní foto hotelu" },
+  { key: "image_url", label: "Hlavní foto" },
   { key: "image_url_2", label: "Foto pokoje" },
-  { key: "image_url_3", label: "Golf / Pláž / Signature" },
+  { key: "image_url_3", label: "Golf / Pláž" },
+  { key: "image_url_4", label: "Foto 4" },
+  { key: "image_url_5", label: "Foto 5" },
+  { key: "image_url_6", label: "Foto 6" },
+  { key: "image_url_7", label: "Foto 7" },
+  { key: "image_url_8", label: "Foto 8" },
+  { key: "image_url_9", label: "Foto 9" },
+  { key: "image_url_10", label: "Foto 10" },
 ] as const;
 
-type ImageSlot = "image_url" | "image_url_2" | "image_url_3";
+type ImageSlot = "image_url" | "image_url_2" | "image_url_3" | "image_url_4" | "image_url_5" | "image_url_6" | "image_url_7" | "image_url_8" | "image_url_9" | "image_url_10";
 
-export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, description, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
+export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
   const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[] } | null>(null);
@@ -62,6 +76,13 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     image_url: imageUrl,
     image_url_2: imageUrl2,
     image_url_3: imageUrl3,
+    image_url_4: imageUrl4 || null,
+    image_url_5: imageUrl5 || null,
+    image_url_6: imageUrl6 || null,
+    image_url_7: imageUrl7 || null,
+    image_url_8: imageUrl8 || null,
+    image_url_9: imageUrl9 || null,
+    image_url_10: imageUrl10 || null,
   };
 
   const handleUpload = async (field: string, file: File) => {
@@ -332,7 +353,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       </div>
 
       {/* Manual upload grid */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {IMAGE_LABELS.map(({ key, label }) => {
           const url = images[key];
           const isUploading = uploading === key;
