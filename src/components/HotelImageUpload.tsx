@@ -568,12 +568,25 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 dangerouslySetInnerHTML={{ __html: editDescription }}
                 onBlur={(e) => setEditDescription(e.currentTarget.innerHTML)}
                 onKeyDown={(e) => {
-                  // Keyboard shortcuts are handled natively by contentEditable
-                  // (Cmd+B, Cmd+I, Cmd+U work out of the box)
-                  // Add Cmd+Shift+H for heading
-                  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'h') {
-                    e.preventDefault();
-                    document.execCommand("formatBlock", false, "h3");
+                  if (e.metaKey || e.ctrlKey) {
+                    const key = e.key.toLowerCase();
+                    if (key === 'b') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      document.execCommand("bold", false);
+                    } else if (key === 'i') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      document.execCommand("italic", false);
+                    } else if (key === 'u') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      document.execCommand("underline", false);
+                    } else if (e.shiftKey && key === 'h') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      document.execCommand("formatBlock", false, "h3");
+                    }
                   }
                 }}
                 className="w-full min-h-[80px] max-h-[200px] overflow-y-auto rounded-t-none rounded-b-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:font-bold [&_em]:italic [&_h3]:text-sm [&_h3]:font-bold [&_h3]:my-2"
