@@ -17,21 +17,42 @@ Deno.serve(async (req) => {
 
     console.log("Proxying image:", url);
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "image/*,*/*;q=0.8",
-      },
-    });
-
-    if (!response.ok) {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/*,*/*;q=0.8",
+          "Referer": new URL(url).origin + "/",
+        },
+      });
+    } catch (fetchErr) {
+      console.warn("Fetch failed for:", url, fetchErr);
       return new Response(
-        JSON.stringify({ error: `Failed to fetch image: ${response.status}` }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ base64: null, contentType: null, skipped: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const contentType = response.headers.get("content-type") || "image/jpeg";
+    if (!response.ok) {
+      console.warn(`Image returned ${response.status} for: ${url}`);
+      return new Response(
+        JSON.stringify({ base64: null, contentType: null, skipped: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify it's actually an image
+    const contentTypeHeader = response.headers.get("content-type") || "";
+    if (!contentTypeHeader.includes("image")) {
+      console.warn(`Not an image (${contentTypeHeader}) for: ${url}`);
+      return new Response(
+        JSON.stringify({ base64: null, contentType: null, skipped: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const contentType = contentTypeHeader || "image/jpeg";
     const arrayBuffer = await response.arrayBuffer();
 
     // Convert to base64
