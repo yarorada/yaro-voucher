@@ -1056,6 +1056,7 @@ export type Database = {
           slug: string | null
           subtitle: string | null
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           benefits?: Json | null
@@ -1082,6 +1083,7 @@ export type Database = {
           slug?: string | null
           subtitle?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           benefits?: Json | null
@@ -1108,6 +1110,7 @@ export type Database = {
           slug?: string | null
           subtitle?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }

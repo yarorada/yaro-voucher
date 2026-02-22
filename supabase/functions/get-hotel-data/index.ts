@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("hotel_templates")
       .select(
-        "id, name, slug, subtitle, description, nights, green_fees, price_label, golf_courses, benefits, room_types, is_published, image_url, image_url_2, image_url_3, image_url_4, image_url_5, image_url_6, image_url_7, image_url_8, image_url_9, image_url_10"
+        "id, name, slug, subtitle, description, nights, green_fees, price_label, golf_courses, benefits, room_types, is_published, website_url, image_url, image_url_2, image_url_3, image_url_4, image_url_5, image_url_6, image_url_7, image_url_8, image_url_9, image_url_10"
       )
       .eq("is_published", true);
 

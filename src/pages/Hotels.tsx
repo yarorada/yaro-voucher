@@ -60,6 +60,7 @@ interface HotelTemplate {
   image_url_8: string | null;
   image_url_9: string | null;
   image_url_10: string | null;
+  website_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +85,7 @@ export default function Hotels() {
     green_fees: "",
     price_label: "",
     golf_courses: "",
+    website_url: "",
     is_published: false,
   });
 
@@ -152,6 +154,7 @@ export default function Hotels() {
       green_fees: hotel.green_fees || "",
       price_label: hotel.price_label || "",
       golf_courses: hotel.golf_courses || "",
+      website_url: hotel.website_url || "",
       is_published: hotel.is_published || false,
     });
     setEditDialogOpen(true);
@@ -171,6 +174,7 @@ export default function Hotels() {
           green_fees: formData.green_fees.trim() || null,
           price_label: formData.price_label.trim() || null,
           golf_courses: formData.golf_courses.trim() || null,
+          website_url: formData.website_url.trim() || null,
           is_published: formData.is_published,
         })
         .eq("id", editHotel.id);
@@ -400,6 +404,14 @@ export default function Hotels() {
                     value={formData.golf_courses}
                     onChange={(e) => setFormData((f) => ({ ...f, golf_courses: e.target.value }))}
                     placeholder="Gloria Old, Gloria New, Gloria Verde"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Oficiální web hotelu</Label>
+                  <Input
+                    value={formData.website_url}
+                    onChange={(e) => setFormData((f) => ({ ...f, website_url: e.target.value }))}
+                    placeholder="https://www.gloriagolf.com"
                   />
                 </div>
               </div>
