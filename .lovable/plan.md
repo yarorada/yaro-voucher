@@ -1,71 +1,56 @@
 
 
-# Centralizovaný systém e-mailových šablon
+# Vylepšení vyhledávání informací o hotelu pomocí Perplexity
 
-## Co se zmeni
+## Co se změní
 
-Vytvorime databazovou tabulku pro e-mailove sablony, UI stranku pro jejich spravu a napojime existujici odesilaci funkce (send-voucher-email, send-contract-email, send-deal-documents) tak, aby nacitaly sablony z databaze misto hardcoded textu.
+Současný přístup používá Firecrawl pro vše (fotky i popis). Nový přístup rozdělí úlohy:
 
-## 1. Databaze
+- **Perplexity** -- vyhledání a syntéza popisu hotelu z více zdrojů, překlad do češtiny
+- **Firecrawl** -- zůstane pouze pro scraping fotek z oficiálního webu hotelu
 
-Vytvorime tabulku `email_templates` se sloupci:
-- `id` (UUID, PK)
-- `template_key` (text, unikatni) -- napr. "voucher_client_cz", "contract_client_cz", "contract_supplier_en"
-- `name` (text) -- lidsky citelny nazev sablony
-- `subject` (text) -- predmet emailu s placeholdery
-- `body` (text) -- telo emailu s placeholdery
-- `trigger_type` (text, nullable) -- napr. "manual", "before_departure", "after_return", "payment_received"
-- `trigger_offset_days` (integer, nullable) -- pocet dni pred/po udalosti
-- `is_active` (boolean, default true)
-- `created_at`, `updated_at`
+## Postup
 
-Tabulku naplnime vychozimi sablonami z aktualnich hardcoded textu (voucher klient CZ, voucher dodavatel EN, smlouva klient CZ, smlouva dodavatel EN).
+### 1. Připojení Perplexity konektoru
+- Použije se connector `perplexity` pro získání API klíče
+- Klíč bude dostupný jako `PERPLEXITY_API_KEY` v edge functions
 
-Vytvorime tabulku `email_log` pro sledovani odeslanych emailu:
-- `id`, `template_id`, `deal_id`, `contract_id`, `voucher_id`, `recipient_email`, `sent_at`, `status`
+### 2. Nová edge funkce `search-hotel-info`
+- Zavolá Perplexity API (`sonar` model) s dotazem typu: "Napiš stručný popis hotelu {název} pro golfové cestovatele. Zaměř se na polohu, vybavení, kvalitu pokojů, stravování a blízkost golfových hřišť."
+- Druhý dotaz pro vyhledání URL obrázků hotelu (jako záloha k Firecrawlu)
+- Výstup přeloží do češtiny pomocí Lovable AI (Gemini flash-lite) -- stejně jako nyní
+- Vrátí strukturovaný popis hotelu
 
-## 2. UI -- Nova stranka "E-mailove sablony"
+### 3. Úprava `scrape-hotel-images` edge funkce
+- Odstraní se logika pro generování popisu (Firecrawl search + markdown parsing + AI překlad)
+- Funkce se zaměří pouze na hledání a extrakci obrázků
 
-Pristupna z bocniho menu. Zobrazi seznam vsech sablon s moznosti:
-- Editovat predmet a telo
-- Zobrazit dostupne placeholdery: `{{first_name}}`, `{{last_name}}`, `{{destination}}`, `{{hotel}}`, `{{date_from}}`, `{{date_to}}`, `{{total_price}}`, `{{voucher_code}}`, `{{contract_number}}`, `{{sign_link}}`
-- Nahled vyrenderovane sablony
-- Aktivovat/deaktivovat sablonu
+### 4. Úprava `HotelImageUpload.tsx`
+- Tlačítko "Najít fotky z webu" zůstane -- volá Firecrawl pro fotky
+- Tlačítko "Popis hotelu" se změní na "Vygenerovat popis" -- volá novou Perplexity funkci
+- Popis se automaticky vygeneruje při auto-scrape (nový hotel)
+- Obě akce (fotky + popis) se spustí paralelně při vytvoření nového hotelu
 
-## 3. Edge funkce -- napojeni na sablony
+## Technické detaily
 
-Upravime `send-voucher-email`, `send-contract-email` a `send-deal-documents` tak, aby:
-1. Nacetly sablonu z DB podle `template_key`
-2. Nahradily placeholdery skutecnymi hodnotami
-3. Pouzily defaultni hardcoded text jako fallback pokud sablona neexistuje
-4. Zaznamenaly odeslani do `email_log`
+### Edge funkce `search-hotel-info`
+```
+POST /search-hotel-info
+Body: { hotelName: string, golfCourseName?: string }
+Response: { success: true, description: string }
+```
 
-## 4. Navigace
+Perplexity prompt bude v češtině a zaměřený na golfové cestovatele (cílová skupina aplikace). Model `sonar` prohledá web a vrátí syntetizovaný popis z více zdrojů.
 
-Pridame odkaz "E-maily" do `AppSidebar.tsx` (sekce Nastaveni nebo samostatna polozka).
+Následně se popis přeloží do češtiny přes Lovable AI (Gemini flash-lite), pokud Perplexity vrátí anglický text.
 
----
+### Změny ve stávajícím `scrape-hotel-images`
+- Smazání kroků: search description z markdown, AI překlad popisu
+- Ponechání: search + scrape fotek z webu hotelu a golfu
+- Funkce bude jednodušší a rychlejší
 
-## Technicke detaily
-
-### Soubory k vytvoreni:
-- `src/pages/EmailTemplates.tsx` -- stranka se spravou sablon
-- Migrace pro tabulky `email_templates` a `email_log`
-
-### Soubory k uprave:
-- `src/App.tsx` -- nova routa `/email-templates`
-- `src/components/AppSidebar.tsx` -- odkaz v menu
-- `supabase/functions/send-voucher-email/index.ts` -- nacteni sablony z DB
-- `supabase/functions/send-contract-email/index.ts` -- nacteni sablony z DB
-- `supabase/functions/send-deal-documents/index.ts` -- nacteni sablony z DB
-
-### Vychozi sablony (seed data):
-
-| template_key | Pouziti |
-|---|---|
-| voucher_client_cz | Voucher -- klient (cestina) |
-| voucher_supplier_en | Voucher -- dodavatel (anglictina) |
-| contract_client_cz | Smlouva -- klient (cestina) |
-| contract_supplier_en | Smlouva -- dodavatel (anglictina) |
-| deal_docs_client_cz | Dokumenty k dealu -- klient |
+### Změny v UI (`HotelImageUpload`)
+- Při auto-scrape se spustí obě funkce paralelně (Promise.all)
+- Nové tlačítko "Vygenerovat popis" vedle tlačítka "Najít fotky z webu"
+- Loader indikátor zvlášť pro fotky a zvlášť pro popis
 
