@@ -34,6 +34,8 @@ import {
   Hotel,
   Globe,
   Image as ImageIcon,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
@@ -78,6 +80,13 @@ export default function Hotels() {
   const [saving, setSaving] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newHotelName, setNewHotelName] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<{
+    destination: string;
+    country: string;
+    iso_code: string;
+    confidence: string;
+  } | null>(null);
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -425,11 +434,71 @@ export default function Hotels() {
                     placeholder="https://www.gloriagolf.com"
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  <Label>Destinace / Země</Label>
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Destinace / Země</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={suggesting || !formData.name.trim()}
+                      onClick={async () => {
+                        setSuggesting(true);
+                        setAiSuggestion(null);
+                        try {
+                          const { data, error } = await supabase.functions.invoke("suggest-hotel-destination", {
+                            body: { hotelName: formData.name },
+                          });
+                          if (error) throw error;
+                          if (data?.error) throw new Error(data.error);
+                          setAiSuggestion(data);
+                          // Try to find existing destination match
+                          const { data: destinations } = await supabase
+                            .from("destinations")
+                            .select("id, name, countries:country_id(name, iso_code)")
+                            .ilike("name", data.destination);
+                          const match = destinations?.find(
+                            (d: any) => d.name.toLowerCase() === data.destination.toLowerCase()
+                          );
+                          if (match) {
+                            setFormData((f) => ({ ...f, destination_id: match.id }));
+                            toast.success(`Nalezena existující destinace: ${match.name}`);
+                            setAiSuggestion(null);
+                          }
+                        } catch (e: any) {
+                          console.error(e);
+                          toast.error("Nepodařilo se získat návrh");
+                        } finally {
+                          setSuggesting(false);
+                        }
+                      }}
+                    >
+                      {suggesting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      Navrhnout
+                    </Button>
+                  </div>
+                  {aiSuggestion && !formData.destination_id && (
+                    <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
+                      <p>
+                        AI návrh: <strong>{aiSuggestion.destination}</strong> – {aiSuggestion.country} ({aiSuggestion.iso_code})
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({aiSuggestion.confidence === "high" ? "vysoká jistota" : aiSuggestion.confidence === "medium" ? "střední jistota" : "nízká jistota"})
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">Vyberte destinaci níže nebo vytvořte novou zadáním názvu do pole</p>
+                    </div>
+                  )}
                   <DestinationCombobox
                     value={formData.destination_id}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, destination_id: v }))}
+                    onValueChange={(v) => {
+                      setFormData((f) => ({ ...f, destination_id: v }));
+                      setAiSuggestion(null);
+                    }}
                   />
                 </div>
               </div>
