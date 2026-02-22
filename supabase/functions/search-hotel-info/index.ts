@@ -31,17 +31,18 @@ Deno.serve(async (req) => {
       : "";
 
     const prompt = `Napiš popis hotelu "${hotelName}" pro golfové cestovatele.${golfContext}
-Popis musí mít přesně 5 odstavců oddělených prázdným řádkem:
+Popis musí mít přesně 5 odstavců oddělených prázdným řádkem.
+Každý odstavec MUSÍ začínat tučným názvem sekce (použij HTML tag <strong>) následovaným textem.
 
-1. odstavec: Základní představení hotelu - název, počet hvězdiček, rozloha areálu, poloha, hlavní přednost (např. přímý přístup ke golfovému hřišti).
+1. odstavec: Začni "<strong>Úvodní odstavec</strong>" - pak základní představení hotelu, název, počet hvězdiček, rozloha areálu, poloha, hlavní přednost.
 
-2. odstavec: Pokoje a stravování - počet pokojů, typ pokojů, vybavení, koncept stravování (all inclusive / polopenze), počet restaurací.
+2. odstavec: Začni "<strong>Pokoje a stravování</strong>" - pak počet pokojů, typ pokojů, vybavení, koncept stravování, počet restaurací.
 
-3. odstavec: Golf - název golfového hřiště, designer, počet jamek, par, driving range, putting green, golf academy.
+3. odstavec: Začni "<strong>Golf</strong>" - pak název golfového hřiště, designer, počet jamek, par, driving range, putting green, golf academy.
 
-4. odstavec: Wellness a volný čas - bazény, wellness/spa, hammam, sauna, fitness, pláž a její vzdálenost.
+4. odstavec: Začni "<strong>Wellness a volný čas</strong>" - pak bazény, wellness/spa, hammam, sauna, fitness, pláž a její vzdálenost.
 
-5. odstavec: Závěrečné doporučení - proč je hotel ideální pro golfisty, dostupnost dalších hřišť v okolí.
+5. odstavec: Začni "<strong>Závěrečné doporučení</strong>" - pak proč je hotel ideální pro golfisty, dostupnost dalších hřišť v okolí.
 
 Nepoužívej žádné nadpisy, odrážky ani markdown formátování (žádné #, *, -, **).
 Piš pouze plynulý text v odstavcích. Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
