@@ -71,7 +71,7 @@ Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
     // Strip citation numbers like [1], [2][3], etc.
     description = description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
 
-    console.log(`Perplexity returned ${description.length} chars, ${citations.length} citations`);
+    console.log(`Perplexity returned ${description.length} chars`);
 
     // If the response seems to be in English, translate to Czech via Lovable AI
     const czechPattern = /[čďěňřšťůžČĎĚŇŘŠŤŮŽ]/;
@@ -152,7 +152,7 @@ Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
     }
 
     return new Response(
-      JSON.stringify({ success: true, description, citations, imageUrls }),
+      JSON.stringify({ success: true, description, imageUrls }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
