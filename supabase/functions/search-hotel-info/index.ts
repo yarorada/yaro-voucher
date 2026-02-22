@@ -128,38 +128,65 @@ Piš pouze plynulý text v odstavcích. Piš v češtině, profesionálním styl
       }
     }
 
-    // Search for image URLs via Perplexity
+    // Search for image URLs via Firecrawl
     let imageUrls: string[] = [];
     try {
-      const imagePrompt = `Find high-quality photo URLs of hotel "${hotelName}". Return ONLY a list of direct image URLs (jpg, jpeg, png, webp) from the hotel's official website or reputable travel sites. No text, just URLs, one per line.`;
-      
-      const imageResponse = await fetch("https://api.perplexity.ai/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${perplexityKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "sonar",
-          messages: [
-            {
-              role: "system",
-              content: "You are a hotel image finder. Return ONLY direct image URLs, one per line. No markdown, no text, no explanations. Only URLs ending in .jpg, .jpeg, .png, or .webp.",
-            },
-            { role: "user", content: imagePrompt },
-          ],
-          temperature: 0.1,
-        }),
-      });
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (firecrawlKey) {
+        console.log("Searching images via Firecrawl for:", hotelName);
 
-      if (imageResponse.ok) {
-        const imageData = await imageResponse.json();
-        const imageContent = imageData.choices?.[0]?.message?.content || "";
-        // Extract URLs from the response
-        const urlRegex = /https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/gi;
-        const matches = imageContent.match(urlRegex) || [];
-        imageUrls = [...new Set(matches)].slice(0, 12);
-        console.log(`Perplexity found ${imageUrls.length} image URLs`);
+        const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${firecrawlKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: `${hotelName} hotel photos images`,
+            limit: 3,
+            scrapeOptions: { formats: ["links", "markdown"] },
+          }),
+        });
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          const results = searchData?.data || [];
+
+          for (const result of results) {
+            const content = result?.markdown || "";
+            const links = result?.links || [];
+
+            // Extract image URLs from markdown
+            const imgRegex = /!\[.*?\]\((https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|webp)[^\s)]*)\)/gi;
+            let match;
+            while ((match = imgRegex.exec(content)) !== null) {
+              if (!match[1].includes("icon") && !match[1].includes("logo") && !match[1].includes("favicon")) {
+                imageUrls.push(match[1]);
+              }
+            }
+
+            // Extract from src attributes
+            const srcRegex = /(?:src=["'])(https?:\/\/[^\s"']+\.(?:jpg|jpeg|png|webp)[^\s"']*)/gi;
+            while ((match = srcRegex.exec(content)) !== null) {
+              if (!match[1].includes("icon") && !match[1].includes("logo")) {
+                imageUrls.push(match[1]);
+              }
+            }
+
+            // Extract from links
+            for (const link of links) {
+              const linkStr = typeof link === "string" ? link : link?.url || "";
+              if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) &&
+                  !linkStr.includes("icon") && !linkStr.includes("logo") && !linkStr.includes("favicon") &&
+                  linkStr.length < 500) {
+                imageUrls.push(linkStr);
+              }
+            }
+          }
+        }
+
+        imageUrls = [...new Set(imageUrls)].slice(0, 12);
+        console.log(`Firecrawl found ${imageUrls.length} image URLs`);
       }
     } catch (imgError) {
       console.error("Image search error:", imgError);
