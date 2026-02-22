@@ -442,7 +442,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
 
         {/* Hotel description from website */}
         {isValidDescription(hotelImgData?.description ?? null) && (
-          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
 
         {/* Services */}
@@ -524,7 +524,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
       <div className="p-5 space-y-4">
         {/* Hotel description */}
         {hotelService && isValidDescription(hotelImgData?.description ?? null) && (
-          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
         <div className="space-y-2">
           {services.map((service) => {
