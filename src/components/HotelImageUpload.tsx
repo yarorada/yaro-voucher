@@ -237,6 +237,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           .eq("id", hotelId);
         setEditDescription(data.description);
         setDescriptionOpen(true);
+        // Store image URLs from Perplexity as fallback for scraping
+        if (data.imageUrls?.length > 0) {
+          perplexityImagesRef.current = data.imageUrls;
+        }
         toast.success("Popis hotelu vygenerován");
         onUpdate();
       } else {
@@ -249,6 +253,9 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       setGeneratingDescription(false);
     }
   };
+
+  // Store Perplexity images as fallback
+  const perplexityImagesRef = useRef<string[]>([]);
 
   const handleScrape = async () => {
     if (!hotelName) {
@@ -269,16 +276,46 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         const golfImgs = data.golfImages || [];
         
         if (hotelImgs.length === 0 && golfImgs.length === 0) {
-          toast.info("Nepodařilo se najít fotky na oficiálních stránkách", {
-            action: {
-              label: "Hledat na Google",
-              onClick: () => {
-                const query = encodeURIComponent(`${hotelName} hotel photos`);
-                window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
-              },
-            },
-            duration: 8000,
-          });
+          // Fallback: use Perplexity images if available
+          if (perplexityImagesRef.current.length > 0) {
+            setFoundImages({ hotel: perplexityImagesRef.current, golf: [] });
+            setPickerOpen(true);
+            toast.success(`Nalezeno ${perplexityImagesRef.current.length} fotek přes AI vyhledávání`);
+          } else {
+            // Try fetching from Perplexity now
+            try {
+              const { data: infoData } = await supabase.functions.invoke("search-hotel-info", {
+                body: { hotelName, golfCourseName },
+              });
+              if (infoData?.imageUrls?.length > 0) {
+                setFoundImages({ hotel: infoData.imageUrls, golf: [] });
+                setPickerOpen(true);
+                toast.success(`Nalezeno ${infoData.imageUrls.length} fotek přes AI vyhledávání`);
+              } else {
+                toast.info("Nepodařilo se najít fotky", {
+                  action: {
+                    label: "Hledat na Google",
+                    onClick: () => {
+                      const query = encodeURIComponent(`${hotelName} hotel photos`);
+                      window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
+                    },
+                  },
+                  duration: 8000,
+                });
+              }
+            } catch {
+              toast.info("Nepodařilo se najít fotky na oficiálních stránkách", {
+                action: {
+                  label: "Hledat na Google",
+                  onClick: () => {
+                    const query = encodeURIComponent(`${hotelName} hotel photos`);
+                    window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
+                  },
+                },
+                duration: 8000,
+              });
+            }
+          }
         } else {
           setFoundImages({ hotel: hotelImgs, golf: golfImgs });
           setPickerOpen(true);

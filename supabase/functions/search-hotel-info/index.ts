@@ -113,8 +113,45 @@ Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
       }
     }
 
+    // Search for image URLs via Perplexity
+    let imageUrls: string[] = [];
+    try {
+      const imagePrompt = `Find high-quality photo URLs of hotel "${hotelName}". Return ONLY a list of direct image URLs (jpg, jpeg, png, webp) from the hotel's official website or reputable travel sites. No text, just URLs, one per line.`;
+      
+      const imageResponse = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${perplexityKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "sonar",
+          messages: [
+            {
+              role: "system",
+              content: "You are a hotel image finder. Return ONLY direct image URLs, one per line. No markdown, no text, no explanations. Only URLs ending in .jpg, .jpeg, .png, or .webp.",
+            },
+            { role: "user", content: imagePrompt },
+          ],
+          temperature: 0.1,
+        }),
+      });
+
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        const imageContent = imageData.choices?.[0]?.message?.content || "";
+        // Extract URLs from the response
+        const urlRegex = /https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/gi;
+        const matches = imageContent.match(urlRegex) || [];
+        imageUrls = [...new Set(matches)].slice(0, 12);
+        console.log(`Perplexity found ${imageUrls.length} image URLs`);
+      }
+    } catch (imgError) {
+      console.error("Image search error:", imgError);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, description, citations }),
+      JSON.stringify({ success: true, description, citations, imageUrls }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
