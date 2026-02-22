@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("hotel_templates")
       .select(
-        "id, name, slug, subtitle, description, nights, green_fees, price_label, golf_courses, benefits, room_types, is_published, website_url, image_url, image_url_2, image_url_3, image_url_4, image_url_5, image_url_6, image_url_7, image_url_8, image_url_9, image_url_10"
+        "id, name, slug, subtitle, description, nights, green_fees, price_label, golf_courses, benefits, room_types, is_published, website_url, image_url, image_url_2, image_url_3, image_url_4, image_url_5, image_url_6, image_url_7, image_url_8, image_url_9, image_url_10, destinations:destination_id(name, countries:country_id(name, iso_code))"
       )
       .eq("is_published", true);
 
@@ -58,7 +58,12 @@ Deno.serve(async (req) => {
         ...rest
       } = hotel;
 
-      return { ...rest, images };
+      const destination_name = rest.destinations?.name || null;
+      const country_name = rest.destinations?.countries?.name || null;
+      const country_iso = rest.destinations?.countries?.iso_code || null;
+      const { destinations, ...clean } = rest;
+
+      return { ...clean, images, destination_name, country_name, country_iso };
     };
 
     const result = slug

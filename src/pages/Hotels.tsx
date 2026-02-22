@@ -36,6 +36,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { DestinationCombobox } from "@/components/DestinationCombobox";
 
 interface HotelTemplate {
   id: string;
@@ -61,6 +62,8 @@ interface HotelTemplate {
   image_url_9: string | null;
   image_url_10: string | null;
   website_url: string | null;
+  destination_id: string | null;
+  destinations?: { name: string; countries: { name: string; iso_code: string } | null } | null;
   created_at: string;
   updated_at: string;
 }
@@ -87,6 +90,7 @@ export default function Hotels() {
     golf_courses: "",
     website_url: "",
     is_published: false,
+    destination_id: "",
   });
 
   usePageToolbar(
@@ -105,7 +109,7 @@ export default function Hotels() {
     try {
       const { data, error } = await supabase
         .from("hotel_templates")
-        .select("*")
+        .select("*, destinations:destination_id(name, countries:country_id(name, iso_code))")
         .order("name");
       if (error) throw error;
       setHotels(data || []);
@@ -156,6 +160,7 @@ export default function Hotels() {
       golf_courses: hotel.golf_courses || "",
       website_url: hotel.website_url || "",
       is_published: hotel.is_published || false,
+      destination_id: hotel.destination_id || "",
     });
     setEditDialogOpen(true);
   };
@@ -176,6 +181,7 @@ export default function Hotels() {
           golf_courses: formData.golf_courses.trim() || null,
           website_url: formData.website_url.trim() || null,
           is_published: formData.is_published,
+          destination_id: formData.destination_id || null,
         })
         .eq("id", editHotel.id);
       if (error) throw error;
@@ -184,10 +190,10 @@ export default function Hotels() {
       // Refresh editHotel
       const { data } = await supabase
         .from("hotel_templates")
-        .select("*")
+        .select("*, destinations:destination_id(name, countries:country_id(name, iso_code))")
         .eq("id", editHotel.id)
         .single();
-      if (data) setEditHotel(data);
+      if (data) setEditHotel(data as any);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message?.includes("duplicate") ? "Slug je již použitý" : "Nepodařilo se uložit");
@@ -304,6 +310,11 @@ export default function Hotels() {
                       {hotel.subtitle && (
                         <p className="text-sm text-muted-foreground truncate">{hotel.subtitle}</p>
                       )}
+                      {hotel.destinations && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {hotel.destinations.name} – {hotel.destinations.countries?.name}
+                        </p>
+                      )}
                       {hotel.slug && (
                         <p className="text-xs text-muted-foreground/70 mt-1">/{hotel.slug}</p>
                       )}
@@ -414,6 +425,13 @@ export default function Hotels() {
                     placeholder="https://www.gloriagolf.com"
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <Label>Destinace / Země</Label>
+                  <DestinationCombobox
+                    value={formData.destination_id}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, destination_id: v }))}
+                  />
+                </div>
               </div>
 
               {/* Published toggle */}
@@ -458,7 +476,7 @@ export default function Hotels() {
                       await fetchHotels();
                       const { data } = await supabase
                         .from("hotel_templates")
-                        .select("*")
+                        .select("*, destinations:destination_id(name, countries:country_id(name, iso_code))")
                         .eq("id", editHotel.id)
                         .single();
                       if (data) {

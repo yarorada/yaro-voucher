@@ -1035,6 +1035,7 @@ export type Database = {
           benefits: Json | null
           created_at: string
           description: string | null
+          destination_id: string | null
           golf_courses: string | null
           green_fees: string | null
           id: string
@@ -1062,6 +1063,7 @@ export type Database = {
           benefits?: Json | null
           created_at?: string
           description?: string | null
+          destination_id?: string | null
           golf_courses?: string | null
           green_fees?: string | null
           id?: string
@@ -1089,6 +1091,7 @@ export type Database = {
           benefits?: Json | null
           created_at?: string
           description?: string | null
+          destination_id?: string | null
           golf_courses?: string | null
           green_fees?: string | null
           id?: string
@@ -1112,7 +1115,15 @@ export type Database = {
           updated_at?: string
           website_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "hotel_templates_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
