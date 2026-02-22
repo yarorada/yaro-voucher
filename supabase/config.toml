@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.get-hotel-data]
 verify_jwt = false
+
+[functions.suggest-hotel-destination]
+verify_jwt = true
