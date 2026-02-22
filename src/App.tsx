@@ -26,6 +26,7 @@ import ContractDetail from "./pages/ContractDetail";
 import CreateContract from "./pages/CreateContract";
 import Statistics from "./pages/Statistics";
 import EmailTemplates from "./pages/EmailTemplates";
+import Hotels from "./pages/Hotels";
 import PublicOffer from "./pages/PublicOffer";
 import SignContract from "./pages/SignContract";
 import Auth from "./pages/Auth";
@@ -255,6 +256,16 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedLayout>
                   <EmailTemplates />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hotels"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <Hotels />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

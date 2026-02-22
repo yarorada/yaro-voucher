@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   Mail,
+  Hotel,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const menuItems = [
   { title: "Statistiky", url: "/statistics", icon: BarChart3 },
   { title: "Klienti", url: "/clients", icon: Users },
   { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
+  { title: "Hotely", url: "/hotels", icon: Hotel },
   { title: "Destinace", url: "/destinations", icon: MapPin },
   { title: "E-maily", url: "/email-templates", icon: Mail },
 ];
