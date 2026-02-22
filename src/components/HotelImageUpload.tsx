@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, ExternalLink, FileText } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -345,28 +345,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 setPickerOpen(true);
                 toast.success(`Nalezeno ${infoData.imageUrls.length} fotek přes AI vyhledávání`);
               } else {
-                toast.info("Nepodařilo se najít fotky", {
-                  action: {
-                    label: "Hledat na Google",
-                    onClick: () => {
-                      const query = encodeURIComponent(`${hotelName} hotel photos`);
-                      window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
-                    },
-                  },
-                  duration: 8000,
-                });
+                toast.info("Nepodařilo se najít fotky. Zkuste nahrát fotky ručně.");
               }
             } catch {
-              toast.info("Nepodařilo se najít fotky na oficiálních stránkách", {
-                action: {
-                  label: "Hledat na Google",
-                  onClick: () => {
-                    const query = encodeURIComponent(`${hotelName} hotel photos`);
-                    window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
-                  },
-                },
-                duration: 8000,
-              });
+              toast.info("Nepodařilo se najít fotky na oficiálních stránkách. Zkuste nahrát fotky ručně.");
             }
           }
         } else {
@@ -647,13 +629,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                 size="sm"
                 variant="outline"
                 className="text-xs gap-1"
-                onClick={() => {
-                  const query = encodeURIComponent(`${hotelName} hotel photos`);
-                  window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
-                }}
+                onClick={handleScrape}
               >
-                <ExternalLink className="h-3 w-3" />
-                Hledat jiné fotky
+                <Search className="h-3 w-3" />
+                Hledat znovu
               </Button>
               <Button
                 size="sm"
