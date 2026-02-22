@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 Popis musí mít přesně 5 odstavců oddělených prázdným řádkem.
 Každý odstavec MUSÍ začínat tučným názvem sekce (použij HTML tag <strong>) následovaným textem.
 
-1. odstavec: Začni "<strong>Úvodní odstavec</strong>" - pak základní představení hotelu, název, počet hvězdiček, rozloha areálu, poloha, hlavní přednost.
+1. odstavec: Začni "<strong>${hotelName}</strong>" - pak základní představení hotelu, počet hvězdiček, rozloha areálu, poloha, hlavní přednost.
 
 2. odstavec: Začni "<strong>Pokoje a stravování</strong>" - pak počet pokojů, typ pokojů, vybavení, koncept stravování, počet restaurací.
 
