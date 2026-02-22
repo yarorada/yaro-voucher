@@ -461,7 +461,13 @@ export default function Hotels() {
                         .select("*")
                         .eq("id", editHotel.id)
                         .single();
-                      if (data) setEditHotel(data);
+                      if (data) {
+                        setEditHotel(data);
+                        setFormData(f => ({
+                          ...f,
+                          website_url: data.website_url || "",
+                        }));
+                      }
                     }}
                   />
                 </div>
