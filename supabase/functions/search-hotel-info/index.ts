@@ -68,7 +68,8 @@ Piš v češtině, profesionálním stylem vhodným pro cestovní agenturu.`;
 
     const perplexityData = await perplexityResponse.json();
     let description = perplexityData.choices?.[0]?.message?.content?.trim() || "";
-    const citations = perplexityData.citations || [];
+    // Strip citation numbers like [1], [2][3], etc.
+    description = description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
 
     console.log(`Perplexity returned ${description.length} chars, ${citations.length} citations`);
 
