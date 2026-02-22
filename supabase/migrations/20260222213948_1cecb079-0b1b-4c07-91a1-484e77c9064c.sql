@@ -1,0 +1,1 @@
+ALTER TABLE public.hotel_templates ADD COLUMN website_url text;
