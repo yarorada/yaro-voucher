@@ -56,6 +56,17 @@ interface OfferData {
   hasSelectedVariant: boolean;
 }
 
+function getMainHotelName(data: OfferData): string | null {
+  // From selected variant
+  const selected = data.variants.find(v => v.is_selected);
+  const hotelFromVariant = (selected || data.variants[0])?.deal_variant_services?.find(s => s.service_type === "hotel");
+  if (hotelFromVariant) return hotelFromVariant.service_name;
+  // From direct services
+  const hotelDirect = data.directServices.find(s => s.service_type === "hotel");
+  if (hotelDirect) return hotelDirect.service_name;
+  return null;
+}
+
 function getHotelImageUrls(images: OfferData["hotelImages"][string] | null): string[] {
   if (!images) return [];
   return [
@@ -329,6 +340,9 @@ export default function PublicOffer() {
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
             Nabídka pro {deal.lead_client_name || deal.name || "klienta"}
           </h1>
+          {getMainHotelName(data) && (
+            <p className="text-lg font-medium text-slate-600">{getMainHotelName(data)}</p>
+          )}
           {destination && (
             <p className="text-base text-slate-500">
               {destination.country?.name} – {destination.name}
