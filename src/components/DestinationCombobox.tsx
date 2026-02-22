@@ -29,6 +29,8 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [customCountrySearch, setCustomCountrySearch] = useState("");
+  const [showCustomCountryPicker, setShowCustomCountryPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -40,6 +42,8 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setSearch("");
+      setShowCustomCountryPicker(false);
+      setCustomCountrySearch("");
     }
   }, [open]);
 
@@ -263,8 +267,54 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
 
           {/* No results */}
           {!loading && filteredDestinations.length === 0 && destinationSuggestions.length === 0 && countrySuggestions.length === 0 && q.length >= 3 && (
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              Žádná shoda. Zkuste jiný název.
+            <div className="p-2">
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                Žádná shoda – vytvořit vlastní destinaci
+              </div>
+              {!showCustomCountryPicker ? (
+                <button
+                  onClick={() => setShowCustomCountryPicker(true)}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Vytvořit <strong>„{search.trim()}"</strong> a přiřadit zemi
+                  </span>
+                </button>
+              ) : (
+                <div className="space-y-2 px-2 py-1">
+                  <Input
+                    value={customCountrySearch}
+                    onChange={(e) => setCustomCountrySearch(e.target.value)}
+                    placeholder="Zadejte název země..."
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  {customCountrySearch.trim().length >= 2 && (
+                    <div className="max-h-[150px] overflow-y-auto rounded border">
+                      {searchCountries(customCountrySearch, 10).map((country) => (
+                        <button
+                          key={country.iso}
+                          disabled={saving}
+                          onClick={() => {
+                            const destName = search.trim().charAt(0).toUpperCase() + search.trim().slice(1);
+                            handleCreateNew(destName, country.name, country.iso, country.currency);
+                            setShowCustomCountryPicker(false);
+                            setCustomCountrySearch("");
+                          }}
+                          className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                        >
+                          <Plus className="h-3 w-3 shrink-0 text-primary" />
+                          <span>{country.name} ({country.iso})</span>
+                        </button>
+                      ))}
+                      {searchCountries(customCountrySearch, 10).length === 0 && (
+                        <div className="px-2 py-2 text-xs text-muted-foreground">Země nenalezena</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
