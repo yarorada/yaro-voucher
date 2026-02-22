@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, ExternalLink } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, ExternalLink, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -63,6 +63,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const [dragOver, setDragOver] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const autoScrapeDone = useRef(false);
+  const [descriptionOpen, setDescriptionOpen] = useState(!!description);
 
   // Auto-trigger scrape when component mounts with autoScrape prop
   useEffect(() => {
@@ -240,7 +241,16 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         }
         
         if (hotelImgs.length === 0 && golfImgs.length === 0) {
-          toast.info("Nepodařilo se najít žádné fotky na oficiálních stránkách");
+          toast.info("Nepodařilo se najít fotky na oficiálních stránkách", {
+            action: {
+              label: "Hledat na Google",
+              onClick: () => {
+                const query = encodeURIComponent(`${hotelName} hotel photos`);
+                window.open(`https://www.google.com/search?q=${query}&tbm=isch`, "_blank");
+              },
+            },
+            duration: 8000,
+          });
         } else {
           setFoundImages({ hotel: hotelImgs, golf: golfImgs });
           setPickerOpen(true);
@@ -309,48 +319,62 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
 
   return (
     <div className="space-y-3">
-      {/* Auto-find button */}
+      {/* Action buttons row */}
       {hotelName && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full gap-2"
-          onClick={handleScrape}
-          disabled={scraping}
-        >
-          {scraping ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
-          )}
-          {scraping ? "Hledám fotky..." : "Najít fotky a popis z webu hotelu"}
-        </Button>
-      )}
-
-      {/* Hotel description */}
-      <div className="space-y-1">
-        <Label className="text-xs">Popis hotelu</Label>
-        <Textarea
-          value={editDescription}
-          onChange={(e) => setEditDescription(e.target.value)}
-          placeholder="Popis hotelu..."
-          rows={3}
-          className="text-xs"
-        />
-        {editDescription !== (description || "") && (
+        <div className="flex gap-2">
           <Button
             type="button"
+            variant="outline"
             size="sm"
-            className="h-7 text-xs"
-            onClick={handleSaveDescription}
-            disabled={savingDescription}
+            className="flex-1 gap-2"
+            onClick={handleScrape}
+            disabled={scraping}
           >
-            {savingDescription ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-            Uložit popis
+            {scraping ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            {scraping ? "Hledám fotky..." : "Najít fotky z webu"}
           </Button>
-        )}
-      </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => setDescriptionOpen(!descriptionOpen)}
+          >
+            <FileText className="h-4 w-4" />
+            Popis hotelu
+          </Button>
+        </div>
+      )}
+
+      {/* Hotel description (collapsible) */}
+      {descriptionOpen && (
+        <div className="space-y-1">
+          <Label className="text-xs">Popis hotelu</Label>
+          <Textarea
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            placeholder="Popis hotelu..."
+            rows={3}
+            className="text-xs"
+          />
+          {editDescription !== (description || "") && (
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleSaveDescription}
+              disabled={savingDescription}
+            >
+              {savingDescription ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Uložit popis
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Manual upload grid */}
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
