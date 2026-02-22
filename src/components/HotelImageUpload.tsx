@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, FileText } from "lucide-react";
+import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -118,6 +117,8 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const autoScrapeDone = useRef(false);
   const [descriptionOpen, setDescriptionOpen] = useState(!!description);
   const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [htmlMode, setHtmlMode] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Auto-trigger scrape + description when component mounts with autoScrape prop
   useEffect(() => {
@@ -284,11 +285,15 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       if (error) throw error;
 
       if (data?.success && data.description) {
+        // Strip citation numbers like [1], [2][3]
+        const cleanDesc = data.description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
+        // Convert plain text paragraphs to HTML
+        const htmlDesc = cleanDesc.split(/\n{2,}/).map((p: string) => `<p>${p.trim()}</p>`).join("\n");
         await supabase
           .from("hotel_templates")
-          .update({ description: data.description } as any)
+          .update({ description: htmlDesc } as any)
           .eq("id", hotelId);
-        setEditDescription(data.description);
+        setEditDescription(htmlDesc);
         setDescriptionOpen(true);
         // Store image URLs from Perplexity as fallback for scraping
         if (data.imageUrls?.length > 0) {
@@ -477,14 +482,44 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       {/* Hotel description (collapsible) */}
       {descriptionOpen && (
         <div className="space-y-1">
-          <Label className="text-xs">Popis hotelu</Label>
-          <Textarea
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.target.value)}
-            placeholder="Popis hotelu..."
-            rows={3}
-            className="text-xs"
-          />
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Popis hotelu</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs gap-1"
+              onClick={() => {
+                if (!htmlMode && editorRef.current) {
+                  // Switching to HTML mode - sync from contentEditable
+                  setEditDescription(editorRef.current.innerHTML);
+                }
+                setHtmlMode(!htmlMode);
+              }}
+            >
+              {htmlMode ? <Eye className="h-3 w-3" /> : <Code className="h-3 w-3" />}
+              {htmlMode ? "Náhled" : "HTML"}
+            </Button>
+          </div>
+          {htmlMode ? (
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="<p>Popis hotelu...</p>"
+              rows={6}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          ) : (
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              dangerouslySetInnerHTML={{ __html: editDescription }}
+              onBlur={(e) => setEditDescription(e.currentTarget.innerHTML)}
+              className="w-full min-h-[80px] max-h-[200px] overflow-y-auto rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:font-bold [&_em]:italic"
+              style={{ whiteSpace: 'pre-wrap' }}
+            />
+          )}
           {editDescription !== (description || "") && (
             <Button
               type="button"
