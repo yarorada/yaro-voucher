@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
 import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight } from "lucide-react";
@@ -69,9 +69,29 @@ function getHotelImageUrls(images: OfferData["hotelImages"][string] | null): str
 function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
   const [current, setCurrent] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
   const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setAutoPlay(false);
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (dx < 0) next(); else prev();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+    setAutoPlay(true);
+  }, [next, prev]);
 
   useEffect(() => {
     if (!autoPlay || images.length <= 1) return;
@@ -93,6 +113,8 @@ function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
       className="relative aspect-[16/9] overflow-hidden group"
       onMouseEnter={() => setAutoPlay(false)}
       onMouseLeave={() => setAutoPlay(true)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {images.map((url, i) => (
         <img
