@@ -1,82 +1,48 @@
 
 
-## Propojení hotelových dat mezi CRM a webem
+## Uprava promptu pro generovani popisu hotelu
 
-### Problém
-- **CRM** (tento projekt) ma tabulku `hotel_templates` s hotely, fotkami a popisy
-- **YARO Golf Web** ma vsechna data o hotelech natvrdo v kodu (2 781 radku v HotelDetail.tsx) - zadna databaze
-- Pri zmene informaci o hotelu je treba upravovat oba projekty zvlast
+### Co se zmeni
 
-### Reseni: CRM jako zdroj pravdy pres verejne API
+Upravim prompt v backend funkci `search-hotel-info`, aby generoval popis hotelu podle zadane sablony s 5 odstavci:
 
-Vytvorime v CRM verejnou backend funkci (API), ktera bude servit hotelova data. Webovy projekt pak bude tato data nacitat z API misto z hardcodovanych konstant.
+1. **Uvodni odstavec** - zakladni info o hotelu, hvezdicky, rozloha, poloha, hlavni prednosti
+2. **Pokoje a stravovani** - pocet pokoju, vybaveni, typ stravovani, restaurace
+3. **Golf** - golfova hriste, pocet jamek, par, designer, driving range, academy
+4. **Wellness a volny cas** - bazeny, spa, plaz, fitness, dalsi aktivity
+5. **Zaverecne doporuceni** - proc je hotel idealni pro golfisty, dostupnost dalsich hrist
 
-### Krok 1: Rozsirit tabulku `hotel_templates` v CRM
+### Technicke zmeny
 
-Pridat sloupce pro data, ktera web potrebuje a CRM zatim neeviduje:
+**Soubor: `supabase/functions/search-hotel-info/index.ts`**
 
-| Sloupec | Typ | Ucel |
-|---------|-----|------|
-| `slug` | text (unique) | URL identifikator, napr. "gloria-verde" |
-| `subtitle` | text | Podtitulek hotelu |
-| `nights` | text | Pocet noci, napr. "7 noci" |
-| `green_fees` | text | Popis green fees |
-| `price_label` | text | Cenovka, napr. "37 900 Kc / os." |
-| `golf_courses` | text | Kratky popis hrist pro kartu |
-| `benefits` | jsonb | Pole vyhod (ikona, titulek, popis) |
-| `room_types` | jsonb | Typy pokoju s fotkami |
-| `is_published` | boolean | Zda se hotel zobrazuje na webu |
+- Prepisu user prompt (`prompt` promennou) tak, aby obsahoval presnou strukturu 5 odstavcu s popisem, co ma kazdy odstavec obsahovat
+- Prepisu system prompt, aby AI dodrzovala format bez nadpisu (pouze odstavce oddelene prazdnym radkem)
+- Pridam instrukci, ze text nema obsahovat markdown formatovani (hvezdicky, hashe) - pouze cisty text s HTML tagy `<strong>` pro tucne, pokud je potreba
+- Zachovam konverzi markdown na HTML a preklad do cestiny pokud odpoved prijde anglicky
 
-### Krok 2: Vytvorit verejnou backend funkci `get-hotel-data`
+### Priklad noveho promptu
 
-Nova funkce v CRM, ktera:
-- Nevyzaduje autentizaci (verejna)
-- Vraci seznam hotelu s `is_published = true`
-- Podporuje filtr `?slug=gloria-verde` pro detail jednoho hotelu
-- Vraci vsechna potrebna data: nazev, popis, fotky, ceny, vyhody, pokoje
+```
+Napiš popis hotelu "{hotelName}" pro golfové cestovatele.
+Popis musí mít přesně 5 odstavců oddělených prázdným řádkem:
 
-### Krok 3: Upravit webovy projekt YARO Golf Web
+1. odstavec: Základní představení hotelu - název, počet hvězdiček, rozloha areálu,
+   poloha, hlavní přednost (např. přímý přístup ke golfovému hřišti).
 
-- Nahradit hardcodovana data volanim API z CRM
-- Stranky `HotelDetail.tsx` a `Index.tsx` budou nacitat data dynamicky
-- Fotky budou odkazovat na URL z CRM databaze (Lovable Cloud storage)
+2. odstavec: Pokoje a stravování - počet pokojů, typ pokojů, vybavení,
+   koncept stravování (all inclusive / polopenze), počet restaurací.
 
-### Jak to bude fungovat
+3. odstavec: Golf - název golfového hřiště, designer, počet jamek, par,
+   driving range, putting green, golf academy.
 
-```text
-+------------------+         GET /get-hotel-data          +------------------+
-|                  |  -------------------------------------> |                  |
-|  YARO Golf Web   |                                       |   CRM (toto)     |
-|  (webove stranky)|  <------------------------------------- |                  |
-|                  |         JSON s hotely, fotkami,        | hotel_templates  |
-+------------------+         popisy, cenami                +------------------+
+4. odstavec: Wellness a volný čas - bazény, wellness/spa, hammam, sauna,
+   fitness, pláž a její vzdálenost.
+
+5. odstavec: Závěrečné doporučení - proč je hotel ideální pro golfisty,
+   dostupnost dalších hřišť v okolí.
+
+Nepoužívej žádné nadpisy, odrážky ani markdown formátování.
+Piš pouze plynulý text v odstavcích.
 ```
 
-1. V CRM spravujete hotely, fotky a popisy na jednom miste
-2. Webove stranky si data automaticky stahuji pres API
-3. Zmena v CRM se okamzite projevi na webu
-
-### Technicke detaily
-
-**Backend funkce `get-hotel-data`:**
-- Endpoint bez autentizace (verify_jwt = false)
-- Cte z tabulky `hotel_templates` kde `is_published = true`
-- Vraci JSON pole hotelu se vsemi sloupci
-
-**Migrace na webovem projektu:**
-- Odstraneni ~150 statickych importu obrazku
-- Nahrazeni objektu `hotelsData` za dynamicky fetch
-- Pridani loading stavu a error handlingu
-
-### Postup implementace
-
-1. Pridat nove sloupce do `hotel_templates` v CRM
-2. Naplnit data z webu do CRM databaze (jednorázový import)
-3. Vytvorit backend funkci `get-hotel-data` v CRM
-4. Upravit webovy projekt pro dynamicke nacitani
-
-### Omezeni a poznamky
-
-- Fotky, ktere jsou nyni jako staticke soubory ve webovem projektu, bude treba nahrat do uložiště CRM (bucket `hotel-images`) a pouzivat jejich URL
-- Prvni nacteni webu bude zavislet na API volani (mozno pridat cache)
-- Import existujicich dat z webu do CRM bude jednorázová akce
