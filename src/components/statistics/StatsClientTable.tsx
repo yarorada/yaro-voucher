@@ -86,27 +86,25 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
 
       if (travelersError) throw travelersError;
 
-      // Collect all unique client IDs to build name map
-      const allClientIds = [...new Set((travelersData || []).map((dt: any) => dt.client_id))];
-      const clientMap = new Map<string, string>();
+      // Count travelers per deal
+      const travelerCountMap = new Map<string, number>();
       (travelersData || []).forEach((dt: any) => {
-        if (dt.clients) {
-          clientMap.set(dt.client_id, `${dt.clients.first_name} ${dt.clients.last_name}`);
-        }
+        travelerCountMap.set(dt.deal_id, (travelerCountMap.get(dt.deal_id) || 0) + 1);
       });
 
-      // Build all traveler-deal records
+      // Build all traveler-deal records with proportional share
       const allDeals: AllTravelerDeal[] = [];
       (travelersData || []).forEach((dt: any) => {
         if (!dt.clients) return;
         const prof = profitMap.get(dt.deal_id);
         if (!prof || prof.status === "cancelled" || !prof.start_date) return;
+        const travelerCount = travelerCountMap.get(dt.deal_id) || 1;
         allDeals.push({
           clientId: dt.client_id,
           clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
           dealId: dt.deal_id,
-          revenue: prof.revenue,
-          cost: prof.cost,
+          revenue: prof.revenue / travelerCount,
+          cost: prof.cost / travelerCount,
           year: new Date(prof.start_date).getFullYear(),
           isLead: dt.is_lead_traveler,
         });
