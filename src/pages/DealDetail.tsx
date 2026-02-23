@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare } from "lucide-react";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
@@ -271,6 +271,53 @@ interface Deal {
   };
   deal_travelers: DealTraveler[];
 }
+
+// Client Offer Response Card
+const ClientOfferResponseCard = ({ dealId }: { dealId: string }) => {
+  const [response, setResponse] = useState<{
+    client_name: string | null;
+    comment: string | null;
+    created_at: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchResponse = async () => {
+      const { data } = await supabase
+        .from('offer_responses')
+        .select('client_name, comment, created_at')
+        .eq('deal_id', dealId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setResponse(data);
+    };
+    fetchResponse();
+  }, [dealId]);
+
+  if (!response) return null;
+
+  return (
+    <Card className="border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+          <CheckCircle2 className="h-5 w-5" />
+          Odpověď klienta
+        </CardTitle>
+        <CardDescription>
+          {response.client_name} · {format(new Date(response.created_at), "d.M.yyyy HH:mm")}
+        </CardDescription>
+      </CardHeader>
+      {response.comment && (
+        <CardContent className="pt-0">
+          <div className="flex gap-2 items-start">
+            <MessageSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm whitespace-pre-wrap">{response.comment}</p>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+};
 
 const DealDetail = () => {
   const { id } = useParams();
@@ -2345,6 +2392,9 @@ const DealDetail = () => {
             <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
           </CardContent>
         </Card>
+
+        {/* Client Offer Response Card */}
+        <ClientOfferResponseCard dealId={deal.id} />
 
         <Card>
           <CardHeader>

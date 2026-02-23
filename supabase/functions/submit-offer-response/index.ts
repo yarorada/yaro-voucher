@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, comment, variant_name } = await req.json();
+    const { token, comment, variant_name, variant_id } = await req.json();
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'Token is required' }), {
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     // Find deal by share_token
     const { data: deal, error: dealError } = await supabase
       .from('deals')
-      .select('id, deal_number, name')
+      .select('id, deal_number, name, notes')
       .eq('share_token', token)
       .single();
 
@@ -67,6 +67,35 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Auto-select variant if variant_id provided
+    if (variant_id) {
+      // Deselect all variants for this deal
+      await supabase
+        .from('deal_variants')
+        .update({ is_selected: false })
+        .eq('deal_id', deal.id);
+
+      // Select the approved variant
+      await supabase
+        .from('deal_variants')
+        .update({ is_selected: true })
+        .eq('id', variant_id);
+    }
+
+    // Save client comment to deals.notes
+    if (comment) {
+      const prefix = '📝 Poznámka klienta: ';
+      const newNote = prefix + comment;
+      const updatedNotes = deal.notes
+        ? `${deal.notes}\n\n${newNote}`
+        : newNote;
+
+      await supabase
+        .from('deals')
+        .update({ notes: updatedNotes })
+        .eq('id', deal.id);
     }
 
     // Update deal status to "approved"
@@ -125,7 +154,6 @@ Deno.serve(async (req) => {
         });
       } catch (emailErr) {
         console.error('Email send error:', emailErr);
-        // Don't fail the whole request if email fails
       }
     }
 
