@@ -12,14 +12,15 @@ import {
 import { Users, UserCheck } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface LeadClientStat {
+interface LeadClientDeal {
   clientId: string;
   clientName: string;
-  dealCount: number;
-  totalRevenue: number;
-  totalCost: number;
-  profit: number;
+  dealId: string;
+  revenue: number;
+  cost: number;
+  year: number;
 }
 
 interface TravelerServiceStat {
@@ -33,9 +34,11 @@ type SortMetric = "revenue" | "profit";
 
 export function StatsClientTable() {
   const [loading, setLoading] = useState(true);
-  const [leadStats, setLeadStats] = useState<LeadClientStat[]>([]);
+  const [leadDeals, setLeadDeals] = useState<LeadClientDeal[]>([]);
   const [travelerStats, setTravelerStats] = useState<TravelerServiceStat[]>([]);
   const [sortMetric, setSortMetric] = useState<SortMetric>("revenue");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -59,9 +62,10 @@ export function StatsClientTable() {
       if (leadError) throw leadError;
 
       // Get all deal IDs from lead data
-      const dealIds = (leadData || [])
-        .filter((dt: any) => dt.deals && dt.deals.status !== "cancelled")
-        .map((dt: any) => dt.deal_id);
+      const validLeadData = (leadData || []).filter(
+        (dt: any) => dt.clients && dt.deals && dt.deals.status !== "cancelled" && dt.deals.start_date
+      );
+      const dealIds = validLeadData.map((dt: any) => dt.deal_id);
 
       // Fetch deal services for cost calculation
       let dealServicesMap = new Map<string, number>();
@@ -77,33 +81,29 @@ export function StatsClientTable() {
         });
       }
 
-      // Aggregate by client
-      const leadMap = new Map<string, LeadClientStat>();
-      (leadData || []).forEach((dt: any) => {
-        if (!dt.clients || !dt.deals) return;
-        if (dt.deals.status === "cancelled") return;
-        const key = dt.client_id;
-        const revenue = dt.deals.total_price || 0;
-        const cost = dealServicesMap.get(dt.deal_id) || 0;
-        const existing = leadMap.get(key);
-        if (existing) {
-          existing.dealCount += 1;
-          existing.totalRevenue += revenue;
-          existing.totalCost += cost;
-          existing.profit += revenue - cost;
-        } else {
-          leadMap.set(key, {
-            clientId: dt.client_id,
-            clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
-            dealCount: 1,
-            totalRevenue: revenue,
-            totalCost: cost,
-            profit: revenue - cost,
-          });
-        }
-      });
+      // Build per-deal records with year
+      const deals: LeadClientDeal[] = validLeadData.map((dt: any) => ({
+        clientId: dt.client_id,
+        clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
+        dealId: dt.deal_id,
+        revenue: dt.deals.total_price || 0,
+        cost: dealServicesMap.get(dt.deal_id) || 0,
+        year: new Date(dt.deals.start_date).getFullYear(),
+      }));
 
-      setLeadStats(Array.from(leadMap.values()));
+      // Extract available years
+      const years = new Set(deals.map((d) => d.year));
+      const sortedYears = Array.from(years).sort((a, b) => b - a);
+      setAvailableYears(sortedYears);
+      
+      const currentYear = new Date().getFullYear();
+      if (sortedYears.includes(currentYear)) {
+        setSelectedYear(currentYear.toString());
+      } else if (sortedYears.length > 0) {
+        setSelectedYear(sortedYears[0].toString());
+      }
+
+      setLeadDeals(deals);
 
       // Fetch service assignments
       const { data: serviceData, error: serviceError } = await supabase
@@ -150,11 +150,37 @@ export function StatsClientTable() {
   };
 
   const sortedLeadStats = useMemo(() => {
-    return [...leadStats].sort((a, b) => {
+    // Filter by year
+    const filtered = selectedYear === "all"
+      ? leadDeals
+      : leadDeals.filter((d) => d.year === parseInt(selectedYear));
+
+    // Aggregate by client
+    const map = new Map<string, { clientId: string; clientName: string; dealCount: number; totalRevenue: number; totalCost: number; profit: number }>();
+    filtered.forEach((d) => {
+      const existing = map.get(d.clientId);
+      if (existing) {
+        existing.dealCount += 1;
+        existing.totalRevenue += d.revenue;
+        existing.totalCost += d.cost;
+        existing.profit += d.revenue - d.cost;
+      } else {
+        map.set(d.clientId, {
+          clientId: d.clientId,
+          clientName: d.clientName,
+          dealCount: 1,
+          totalRevenue: d.revenue,
+          totalCost: d.cost,
+          profit: d.revenue - d.cost,
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
       if (sortMetric === "revenue") return b.totalRevenue - a.totalRevenue;
       return b.profit - a.profit;
     });
-  }, [leadStats, sortMetric]);
+  }, [leadDeals, sortMetric, selectedYear]);
 
   const serviceTypeLabels: Record<string, string> = {
     hotel: "Hotel",
@@ -192,12 +218,27 @@ export function StatsClientTable() {
               <UserCheck className="h-5 w-5" />
               Hlavní klienti
             </CardTitle>
-            <Tabs value={sortMetric} onValueChange={(v) => setSortMetric(v as SortMetric)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="revenue" className="text-xs px-3 h-7">Obrat</TabsTrigger>
-                <TabsTrigger value="profit" className="text-xs px-3 h-7">Zisk</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center gap-2">
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[110px] h-8 text-xs">
+                  <SelectValue placeholder="Rok" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Celkem</SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Tabs value={sortMetric} onValueChange={(v) => setSortMetric(v as SortMetric)}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="revenue" className="text-xs px-3 h-7">Obrat</TabsTrigger>
+                  <TabsTrigger value="profit" className="text-xs px-3 h-7">Zisk</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
