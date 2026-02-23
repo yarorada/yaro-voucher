@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
 
       const badgeHtml = showBadge ? `<div style="padding:12px 20px 0;"><span style="background:#f1f5f9; color:#334155; font-size:12px; font-weight:600; padding:4px 12px; border-radius:999px;">${escapeHtml(v.variant_name || 'Varianta')}</span></div>` : '';
 
-      const descHtml = images && isValidDescription(images.description) ? `<p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${escapeHtml(images.description!)}</p>` : '';
+      const descHtml = images && isValidDescription(images.description) ? `<div style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${images.description!}</div>` : '';
 
       return `
         <div style="margin-bottom:28px; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid #e2e8f0;">
@@ -416,7 +416,7 @@ Deno.serve(async (req) => {
         if (dImages?.image_url_3) dImagesHtml += `<td style="width:50%; padding-left:2px;"><img src="${escapeHtml(dImages.image_url_3)}" style="width:100%; height:140px; object-fit:cover; display:block;" /></td>`;
         dImagesHtml += `</tr></table>`;
       }
-      const dDescHtml = dHotelSvc && isValidDescription(hotelData[dHotelSvc.service_name]?.description) ? `<p style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${escapeHtml(hotelData[dHotelSvc.service_name].description!)}</p>` : '';
+      const dDescHtml = dHotelSvc && isValidDescription(hotelData[dHotelSvc.service_name]?.description) ? `<div style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${hotelData[dHotelSvc.service_name].description!}</div>` : '';
 
       directServicesHtml = `
         <div style="margin-bottom:28px; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid #e2e8f0; max-width:560px; margin-left:auto; margin-right:auto;">
