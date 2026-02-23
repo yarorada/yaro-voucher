@@ -1,0 +1,1 @@
+ALTER TABLE public.hotel_templates ADD COLUMN highlights jsonb DEFAULT NULL;

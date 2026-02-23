@@ -1,7 +1,17 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ArrowLeft, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, ExternalLink, MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building } from "lucide-react";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
+
+const iconMap: Record<string, any> = {
+  MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building,
+};
+
+interface Highlight {
+  icon: string;
+  title: string;
+  text: string;
+}
 
 interface HotelDetail {
   id: string;
@@ -15,6 +25,7 @@ interface HotelDetail {
   price_label: string | null;
   benefits: any;
   room_types: any;
+  highlights: Highlight[] | null;
   website_url: string | null;
   images: string[];
 }
@@ -234,6 +245,55 @@ export default function PublicHotelDetail() {
               className="prose prose-slate max-w-none text-slate-600 leading-relaxed [&>p]:mb-4 [&>p:last-child]:mb-0"
               dangerouslySetInnerHTML={{ __html: hotel.description }}
             />
+          </div>
+        )}
+
+        {/* Highlights - Why choose this hotel */}
+        {hotel.highlights && hotel.highlights.length > 0 && (
+          <div className="space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
+                Proč si vybrat {hotel.name}?
+              </h2>
+              <p className="text-slate-500">
+                Objevte výhody, díky kterým se k nám hosté vracejí rok co rok
+              </p>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hotel.highlights.map((h, i) => {
+                const IconComp = iconMap[h.icon] || Star;
+                return (
+                  <div
+                    key={i}
+                    className="bg-white rounded-xl border border-slate-200 p-6 space-y-3 hover:shadow-md transition-shadow"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
+                      <IconComp className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <h3 className="font-bold text-slate-800">{h.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{h.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom tiles */}
+            <div className={`grid gap-3 ${hotel.highlights.length <= 4 ? `grid-cols-2 md:grid-cols-${hotel.highlights.length}` : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'}`}>
+              {hotel.highlights.slice(0, 4).map((h, i) => {
+                const IconComp = iconMap[h.icon] || Star;
+                return (
+                  <div
+                    key={i}
+                    className="bg-slate-50 rounded-xl border border-slate-200 py-5 px-4 flex flex-col items-center gap-2 text-center"
+                  >
+                    <IconComp className="h-6 w-6 text-amber-600" />
+                    <span className="text-sm font-medium text-slate-700">{h.title}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

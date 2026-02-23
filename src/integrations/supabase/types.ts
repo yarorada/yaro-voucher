@@ -1038,6 +1038,7 @@ export type Database = {
           destination_id: string | null
           golf_courses: string | null
           green_fees: string | null
+          highlights: Json | null
           id: string
           image_url: string | null
           image_url_10: string | null
@@ -1066,6 +1067,7 @@ export type Database = {
           destination_id?: string | null
           golf_courses?: string | null
           green_fees?: string | null
+          highlights?: Json | null
           id?: string
           image_url?: string | null
           image_url_10?: string | null
@@ -1094,6 +1096,7 @@ export type Database = {
           destination_id?: string | null
           golf_courses?: string | null
           green_fees?: string | null
+          highlights?: Json | null
           id?: string
           image_url?: string | null
           image_url_10?: string | null

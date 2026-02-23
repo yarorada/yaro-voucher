@@ -34,6 +34,11 @@ Deno.serve(async (req) => {
 3. The ISO 3166-1 alpha-3 country code (e.g. "TUR", "EGY", "PRT", "ESP")
 4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
 5. Golf courses associated with or near the hotel. If the hotel/resort has its own golf course(s), list them. If not, suggest the 3 nearest golf courses with approximate driving distance in minutes (e.g. "Royal Golf Marrakech (15 min)", "Amelkis Golf Club (20 min)"). Separate multiple courses with comma.
+6. Exactly 6 compelling reasons (highlights) why a golf traveler should choose this hotel. Each highlight has:
+   - "icon": one of these icon names: MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building
+   - "title": short catchy title in Czech (max 4 words)
+   - "text": descriptive text in Czech (1-2 sentences, max 120 chars)
+   Focus on: location, golf access, cuisine, atmosphere, wellness, lifestyle/experiences.
 
 Use the tool to return your answer.`,
           },
@@ -47,7 +52,7 @@ Use the tool to return your answer.`,
             type: "function",
             function: {
               name: "suggest_destination",
-              description: "Return the suggested destination, country, subtitle and golf courses for the hotel",
+              description: "Return the suggested destination, country, subtitle, golf courses and highlights for the hotel",
               parameters: {
                 type: "object",
                 properties: {
@@ -76,8 +81,30 @@ Use the tool to return your answer.`,
                     type: "string",
                     description: "Comma-separated golf courses. Own courses listed by name, nearby courses with driving time in parentheses",
                   },
+                  highlights: {
+                    type: "array",
+                    description: "Exactly 6 compelling reasons to choose this hotel",
+                    items: {
+                      type: "object",
+                      properties: {
+                        icon: {
+                          type: "string",
+                          description: "Icon name from: MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building",
+                        },
+                        title: {
+                          type: "string",
+                          description: "Short title in Czech, max 4 words",
+                        },
+                        text: {
+                          type: "string",
+                          description: "Description in Czech, 1-2 sentences, max 120 chars",
+                        },
+                      },
+                      required: ["icon", "title", "text"],
+                    },
+                  },
                 },
-                required: ["destination", "country", "iso_code", "confidence", "subtitle", "golf_courses"],
+                required: ["destination", "country", "iso_code", "confidence", "subtitle", "golf_courses", "highlights"],
                 additionalProperties: false,
               },
             },
