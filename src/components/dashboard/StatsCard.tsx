@@ -93,7 +93,7 @@ export const StatsCard = () => {
   });
 
   const margin = stats && stats.revenue > 0 
-    ? ((stats.profit / stats.revenue) * 100).toFixed(1) 
+    ? ((stats.profit / stats.revenue) * 100).toFixed(0) 
     : "0";
 
   return (

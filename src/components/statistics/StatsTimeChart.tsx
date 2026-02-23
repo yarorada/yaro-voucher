@@ -12,7 +12,7 @@ const formatCurrency = (value: number) => {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
   if (abs >= 1000000) {
-    return `${sign}${(abs / 1000000).toFixed(1)}M`;
+    return `${sign}${(abs / 1000000).toFixed(0)}M`;
   }
   if (abs >= 1000) {
     return `${sign}${(abs / 1000).toFixed(0)}K`;

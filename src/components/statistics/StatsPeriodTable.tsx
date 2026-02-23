@@ -124,7 +124,7 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
                 <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(row.costs)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(row.profit)}</TableCell>
-                <TableCell className="text-right">{row.margin.toFixed(1)}%</TableCell>
+                <TableCell className="text-right">{row.margin.toFixed(0)}%</TableCell>
                 <TableCell className="text-right">
                   {row.change === null ? (
                     <span className="text-muted-foreground">—</span>
@@ -137,7 +137,7 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
                       {row.change > 0.5 ? <TrendingUp className="h-3 w-3" /> : 
                        row.change < -0.5 ? <TrendingDown className="h-3 w-3" /> : 
                        <Minus className="h-3 w-3" />}
-                      {row.change >= 0 ? "+" : ""}{row.change.toFixed(1)}%
+                      {row.change >= 0 ? "+" : ""}{row.change.toFixed(0)}%
                     </span>
                   )}
                 </TableCell>
