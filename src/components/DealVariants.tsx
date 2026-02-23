@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
 import { formatPrice } from "@/lib/utils";
@@ -298,6 +298,61 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     }
   };
 
+  const handleDuplicateVariant = async (variant: DealVariant) => {
+    try {
+      // Create new variant
+      const { data: newVariant, error: variantError } = await supabase
+        .from("deal_variants")
+        .insert({
+          deal_id: dealId,
+          variant_name: `${variant.variant_name} (kopie)`,
+          destination_id: variant.destination_id,
+          start_date: variant.start_date,
+          end_date: variant.end_date,
+          total_price: variant.total_price,
+          notes: variant.notes,
+          is_selected: false,
+        })
+        .select("id")
+        .single();
+
+      if (variantError) throw variantError;
+
+      // Copy services
+      const { data: services, error: svcError } = await supabase
+        .from("deal_variant_services")
+        .select("*")
+        .eq("variant_id", variant.id)
+        .order("order_index");
+
+      if (svcError) throw svcError;
+
+      if (services && services.length > 0) {
+        const newServices = services.map(({ id, variant_id, created_at, updated_at, ...rest }) => ({
+          ...rest,
+          variant_id: newVariant.id,
+        }));
+        const { error: insertError } = await supabase
+          .from("deal_variant_services")
+          .insert(newServices);
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Úspěch",
+        description: "Varianta byla zduplikována",
+      });
+      fetchVariants();
+    } catch (error) {
+      console.error("Error duplicating variant:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zduplikovat variantu",
+        variant: "destructive",
+      });
+    }
+  };
+
   const copyServicesToMain = async (variantId: string) => {
     // Get variant services
     const { data: variantServices, error: fetchError } = await supabase
@@ -526,6 +581,14 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Upravit
+                  </Button>
+                  <Button
+                    onClick={() => handleDuplicateVariant(variant)}
+                    size="sm"
+                    variant="ghost"
+                    title="Duplikovat variantu"
+                  >
+                    <Copy className="h-4 w-4" />
                   </Button>
                   <Button
                     onClick={() => handleDeleteVariant(variant.id, variant.is_selected)}
