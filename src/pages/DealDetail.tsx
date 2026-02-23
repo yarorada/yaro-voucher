@@ -461,6 +461,7 @@ const DealDetail = () => {
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
+  const handleSaveRef = useRef<() => Promise<void>>();
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -1582,6 +1583,9 @@ const DealDetail = () => {
     }
   };
 
+  // Keep ref updated so toolbar always calls latest version
+  handleSaveRef.current = handleSave;
+
   const checkAndOfferContractSync = async () => {
     if (!deal) return;
     try {
@@ -1879,7 +1883,7 @@ const DealDetail = () => {
   usePageToolbar(
     deal ? (
       <>
-        <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className={toolbarButtonClass}>
+        <Button variant="outline" size="sm" onClick={() => handleSaveRef.current?.()} disabled={saving} className={toolbarButtonClass}>
           <Save className="h-4 w-4" />
           <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
         </Button>
