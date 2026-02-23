@@ -282,7 +282,7 @@ const DealDetail = () => {
   const [services, setServices] = useState<DealService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [paymentRefreshKey, setPaymentRefreshKey] = useState(0);
-  const [variantCount, setVariantCount] = useState(0);
+  const [dealVariants, setDealVariants] = useState<{ id: string; variant_name: string; is_selected: boolean }[]>([]);
 
   // Dialog states
   const [travelerDialogOpen, setTravelerDialogOpen] = useState(false);
@@ -632,9 +632,10 @@ const DealDetail = () => {
       // Fetch variant count
       const { data: variantsData } = await supabase
         .from("deal_variants")
-        .select("id")
-        .eq("deal_id", id);
-      setVariantCount(variantsData?.length || 0);
+        .select("id, variant_name, is_selected")
+        .eq("deal_id", id)
+        .order("created_at", { ascending: true });
+      setDealVariants(variantsData || []);
     } catch (error) {
       console.error("Error fetching deal:", error);
       toast({
@@ -2023,8 +2024,8 @@ const DealDetail = () => {
           dealId={deal.id}
           shareToken={shareToken}
           onTokenGenerated={setShareToken}
-          hasMultipleVariants={variantCount > 1}
-          key={`share-${variantCount}`}
+          variants={dealVariants}
+          key={`share-${dealVariants.length}`}
         />
         <Button
           variant="outline"

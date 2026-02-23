@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, Check, Link, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,11 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
+interface VariantInfo {
+  id: string;
+  variant_name: string;
+  is_selected: boolean;
+}
+
 interface ShareOfferButtonProps {
   dealId: string;
   shareToken: string | null;
   onTokenGenerated: (token: string) => void;
-  hasMultipleVariants?: boolean;
+  variants: VariantInfo[];
 }
 
 function generateToken(length = 12): string {
@@ -29,16 +35,51 @@ function generateToken(length = 12): string {
   return result;
 }
 
-export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMultipleVariants }: ShareOfferButtonProps) {
+export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [allVariants, setAllVariants] = useState(false);
+  const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
+
+  const hasMultipleVariants = variants.length > 1;
+
+  // Initialize: select the is_selected variant, or all if none
+  useEffect(() => {
+    if (variants.length <= 1) {
+      setSelectedVariantIds(new Set(variants.map(v => v.id)));
+      return;
+    }
+    const selected = variants.filter(v => v.is_selected);
+    if (selected.length > 0) {
+      setSelectedVariantIds(new Set(selected.map(v => v.id)));
+    } else {
+      setSelectedVariantIds(new Set(variants.map(v => v.id)));
+    }
+  }, [variants]);
+
+  const toggleVariant = (id: string) => {
+    setSelectedVariantIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        if (next.size > 1) next.delete(id); // keep at least 1
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedVariantIds(new Set(variants.map(v => v.id)));
+
+  const allSelected = selectedVariantIds.size === variants.length;
 
   const getPublicUrl = (token: string) => {
     const base = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(token)}`;
-    return allVariants ? `${base}?all=1` : base;
+    if (!hasMultipleVariants || allSelected) {
+      return allSelected && hasMultipleVariants ? `${base}?all=1` : base;
+    }
+    return `${base}?variants=${Array.from(selectedVariantIds).join(",")}`;
   };
 
   const ensureShareToken = async (): Promise<string | null> => {
@@ -79,7 +120,11 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMult
     setSendingEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-offer-email', {
-        body: { dealId, allVariants },
+        body: {
+          dealId,
+          allVariants: allSelected && hasMultipleVariants,
+          variantIds: hasMultipleVariants && !allSelected ? Array.from(selectedVariantIds) : undefined,
+        },
       });
 
       if (error) throw error;
@@ -115,6 +160,10 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMult
 
   const publicUrl = shareToken ? getPublicUrl(shareToken) : null;
 
+  const selectedNames = variants
+    .filter(v => selectedVariantIds.has(v.id))
+    .map(v => v.variant_name);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -146,17 +195,38 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMult
         <PopoverContent className="w-80" align="end">
           <div className="space-y-3">
             <p className="text-sm font-medium">Veřejný odkaz na nabídku</p>
-            
+
             {hasMultipleVariants && (
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="all-variants"
-                  checked={allVariants}
-                  onCheckedChange={(checked) => setAllVariants(!!checked)}
-                />
-                <Label htmlFor="all-variants" className="text-sm cursor-pointer">
-                  Poslat všechny varianty
-                </Label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Varianty k odeslání:</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 py-0 text-xs"
+                    onClick={allSelected ? () => {
+                      const sel = variants.find(v => v.is_selected);
+                      setSelectedVariantIds(new Set([sel?.id || variants[0].id]));
+                    } : selectAll}
+                  >
+                    {allSelected ? "Jen vybraná" : "Vybrat vše"}
+                  </Button>
+                </div>
+                {variants.map(v => (
+                  <div key={v.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`variant-${v.id}`}
+                      checked={selectedVariantIds.has(v.id)}
+                      onCheckedChange={() => toggleVariant(v.id)}
+                    />
+                    <Label htmlFor={`variant-${v.id}`} className="text-sm cursor-pointer flex-1">
+                      {v.variant_name}
+                      {v.is_selected && (
+                        <span className="ml-1 text-xs text-muted-foreground">(vybraná)</span>
+                      )}
+                    </Label>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -185,9 +255,11 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMult
               {sendingEmail ? "Odesílám..." : "Odeslat mailem"}
             </Button>
             <p className="text-xs text-muted-foreground">
-              {allVariants 
-                ? "Klient uvidí všechny varianty nabídky" 
-                : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
+              {allSelected && hasMultipleVariants
+                ? "Klient uvidí všechny varianty nabídky"
+                : hasMultipleVariants
+                  ? `Klient uvidí: ${selectedNames.join(", ")}`
+                  : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
             </p>
           </div>
         </PopoverContent>

@@ -32,6 +32,8 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get('token');
     const format = url.searchParams.get('format'); // 'json' or empty
     const showAll = url.searchParams.get('all') === '1'; // show all variants regardless of selection
+    const variantIdsParam = url.searchParams.get('variants'); // comma-separated variant IDs
+    const variantIds = variantIdsParam ? variantIdsParam.split(',').filter(Boolean) : null;
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'Token is required' }), {
@@ -186,7 +188,15 @@ Deno.serve(async (req) => {
 
     // Determine which variants to show
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    const displayVariants = (showAll || !selectedVariant) ? (variants || []) : [selectedVariant];
+    let displayVariants: any[];
+    if (variantIds && variantIds.length > 0) {
+      displayVariants = (variants || []).filter((v: any) => variantIds.includes(v.id));
+      if (displayVariants.length === 0) displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
+    } else if (showAll || !selectedVariant) {
+      displayVariants = variants || [];
+    } else {
+      displayVariants = [selectedVariant];
+    }
 
     return new Response(JSON.stringify({
       deal: {
