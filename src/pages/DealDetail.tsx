@@ -630,11 +630,11 @@ const DealDetail = () => {
       }
 
       // Fetch variant count
-      const { count } = await supabase
+      const { data: variantsData } = await supabase
         .from("deal_variants")
-        .select("id", { count: "exact", head: true })
+        .select("id")
         .eq("deal_id", id);
-      setVariantCount(count || 0);
+      setVariantCount(variantsData?.length || 0);
     } catch (error) {
       console.error("Error fetching deal:", error);
       toast({
