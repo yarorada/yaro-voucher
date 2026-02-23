@@ -1131,6 +1131,48 @@ export type Database = {
           },
         ]
       }
+      offer_responses: {
+        Row: {
+          client_email: string | null
+          client_name: string | null
+          comment: string | null
+          created_at: string
+          deal_id: string
+          id: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name?: string | null
+          comment?: string | null
+          created_at?: string
+          deal_id: string
+          id?: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string | null
+          comment?: string | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_responses_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "offer_responses_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

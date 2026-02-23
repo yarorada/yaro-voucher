@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
-import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight, CheckCircle2, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -268,6 +270,9 @@ export default function PublicOffer() {
   const [data, setData] = useState<OfferData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -295,6 +300,31 @@ export default function PublicOffer() {
     };
     fetchOffer();
   }, [token]);
+  const handleSubmitResponse = async () => {
+    if (!token || submitting) return;
+    setSubmitting(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/submit-offer-response`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ token, comment }),
+        }
+      );
+      if (res.ok) {
+        setSubmitted(true);
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -373,6 +403,46 @@ export default function PublicOffer() {
         ) : (
           <div className="text-center py-12 text-slate-400">Žádné služby</div>
         )}
+
+        {/* Offer Response Section */}
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl overflow-hidden bg-white shadow-lg border border-slate-200 p-6 md:p-8">
+            {submitted ? (
+              <div className="text-center space-y-3 py-4">
+                <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
+                <h3 className="text-xl font-bold text-slate-800">Děkujeme za Váš souhlas!</h3>
+                <p className="text-slate-500">Vaše odpověď byla odeslána. Brzy se Vám ozveme.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-800">Máte zájem o tuto nabídku?</h3>
+                <p className="text-sm text-slate-500">
+                  Pokud Vám nabídka vyhovuje, dejte nám vědět. Můžete přidat i poznámku s Vašimi požadavky.
+                </p>
+                <Textarea
+                  placeholder="Vaše poznámky nebo požadavky (nepovinné)..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="min-h-[100px] bg-slate-50 border-slate-200 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
+                />
+                <Button
+                  onClick={handleSubmitResponse}
+                  disabled={submitting}
+                  className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md"
+                >
+                  {submitting ? (
+                    "Odesílání..."
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Souhlasím s nabídkou
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
       </main>
 
       {/* Footer */}
