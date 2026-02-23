@@ -11,12 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Users, UserCheck } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LeadClientStat {
   clientId: string;
   clientName: string;
   dealCount: number;
   totalRevenue: number;
+  totalCost: number;
+  profit: number;
 }
 
 interface TravelerServiceStat {
@@ -26,10 +29,13 @@ interface TravelerServiceStat {
   serviceTypes: Record<string, number>;
 }
 
+type SortMetric = "revenue" | "profit";
+
 export function StatsClientTable() {
   const [loading, setLoading] = useState(true);
   const [leadStats, setLeadStats] = useState<LeadClientStat[]>([]);
   const [travelerStats, setTravelerStats] = useState<TravelerServiceStat[]>([]);
+  const [sortMetric, setSortMetric] = useState<SortMetric>("revenue");
 
   useEffect(() => {
     fetchData();
@@ -52,29 +58,52 @@ export function StatsClientTable() {
 
       if (leadError) throw leadError;
 
+      // Get all deal IDs from lead data
+      const dealIds = (leadData || [])
+        .filter((dt: any) => dt.deals && dt.deals.status !== "cancelled")
+        .map((dt: any) => dt.deal_id);
+
+      // Fetch deal services for cost calculation
+      let dealServicesMap = new Map<string, number>();
+      if (dealIds.length > 0) {
+        const { data: servicesData } = await supabase
+          .from("deal_services")
+          .select("deal_id, cost_price, quantity")
+          .in("deal_id", dealIds);
+
+        (servicesData || []).forEach((s: any) => {
+          const cost = (s.cost_price || 0) * (s.quantity || 1);
+          dealServicesMap.set(s.deal_id, (dealServicesMap.get(s.deal_id) || 0) + cost);
+        });
+      }
+
       // Aggregate by client
       const leadMap = new Map<string, LeadClientStat>();
       (leadData || []).forEach((dt: any) => {
         if (!dt.clients || !dt.deals) return;
         if (dt.deals.status === "cancelled") return;
         const key = dt.client_id;
+        const revenue = dt.deals.total_price || 0;
+        const cost = dealServicesMap.get(dt.deal_id) || 0;
         const existing = leadMap.get(key);
         if (existing) {
           existing.dealCount += 1;
-          existing.totalRevenue += dt.deals.total_price || 0;
+          existing.totalRevenue += revenue;
+          existing.totalCost += cost;
+          existing.profit += revenue - cost;
         } else {
           leadMap.set(key, {
             clientId: dt.client_id,
             clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
             dealCount: 1,
-            totalRevenue: dt.deals.total_price || 0,
+            totalRevenue: revenue,
+            totalCost: cost,
+            profit: revenue - cost,
           });
         }
       });
 
-      setLeadStats(
-        Array.from(leadMap.values()).sort((a, b) => b.dealCount - a.dealCount)
-      );
+      setLeadStats(Array.from(leadMap.values()));
 
       // Fetch service assignments
       const { data: serviceData, error: serviceError } = await supabase
@@ -120,6 +149,13 @@ export function StatsClientTable() {
     }
   };
 
+  const sortedLeadStats = useMemo(() => {
+    return [...leadStats].sort((a, b) => {
+      if (sortMetric === "revenue") return b.totalRevenue - a.totalRevenue;
+      return b.profit - a.profit;
+    });
+  }, [leadStats, sortMetric]);
+
   const serviceTypeLabels: Record<string, string> = {
     hotel: "Hotel",
     flight: "Let",
@@ -151,25 +187,35 @@ export function StatsClientTable() {
       {/* Lead client stats */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-heading-2 flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Hlavní klienti
-          </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-heading-2 flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Hlavní klienti
+            </CardTitle>
+            <Tabs value={sortMetric} onValueChange={(v) => setSortMetric(v as SortMetric)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="revenue" className="text-xs px-3 h-7">Obrat</TabsTrigger>
+                <TabsTrigger value="profit" className="text-xs px-3 h-7">Zisk</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
         <CardContent>
-          {leadStats.length === 0 ? (
+          {sortedLeadStats.length === 0 ? (
             <p className="text-body text-muted-foreground">Žádná data</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Klient</TableHead>
-                  <TableHead className="text-center">Počet cest</TableHead>
-                  <TableHead className="text-right">Celkový obrat</TableHead>
+                  <TableHead className="text-center">Cest</TableHead>
+                  <TableHead className="text-right">
+                    {sortMetric === "revenue" ? "Obrat" : "Zisk"}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leadStats.map((stat) => (
+                {sortedLeadStats.map((stat) => (
                   <TableRow key={stat.clientId}>
                     <TableCell className="text-body font-medium break-words">
                       {stat.clientName}
@@ -178,7 +224,13 @@ export function StatsClientTable() {
                       {stat.dealCount}
                     </TableCell>
                     <TableCell className="text-right text-body">
-                      {stat.totalRevenue.toLocaleString("cs-CZ")} Kč
+                      {sortMetric === "revenue" ? (
+                        <span>{stat.totalRevenue.toLocaleString("cs-CZ")} Kč</span>
+                      ) : (
+                        <span className={stat.profit > 0 ? "text-green-600 dark:text-green-400" : stat.profit < 0 ? "text-destructive" : ""}>
+                          {stat.profit.toLocaleString("cs-CZ")} Kč
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
