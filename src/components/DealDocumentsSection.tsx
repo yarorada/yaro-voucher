@@ -38,7 +38,7 @@ interface DealVoucher {
   supplier_id: string | null;
   sent_at: string | null;
   created_at: string;
-  suppliers?: { name: string } | null;
+  suppliers?: { name: string; email?: string | null } | null;
 }
 
 interface DealDocumentsSectionProps {
@@ -62,6 +62,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const [sending, setSending] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [ccSuppliers, setCcSuppliers] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
@@ -73,7 +74,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         .order("uploaded_at", { ascending: false }),
       supabase
         .from("vouchers")
-        .select("id, voucher_code, client_name, supplier_id, sent_at, created_at, suppliers:supplier_id(name)")
+        .select("id, voucher_code, client_name, supplier_id, sent_at, created_at, suppliers:supplier_id(name, email)")
         .eq("deal_id", dealId)
         .order("created_at", { ascending: false }),
     ]);
@@ -257,12 +258,22 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
   const totalItems = documents.length + vouchers.length;
 
+  // Get unique supplier emails from vouchers
+  const supplierEmails = Array.from(
+    new Set(
+      vouchers
+        .filter((v) => v.suppliers?.email)
+        .map((v) => v.suppliers!.email!)
+    )
+  );
+
   const openSendDialog = () => {
     const name = clientName || "klient";
     setEmailSubject(`Cestovní dokumenty - YARO Travel`);
     setEmailBody(
       `Vážený ${name},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
     );
+    setCcSuppliers(supplierEmails.length > 0);
     setSendDialogOpen(true);
   };
 
@@ -403,13 +414,15 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           clientName: clientName || "",
           emailSubject,
           emailBody,
+          ccEmails: ccSuppliers ? supplierEmails : [],
         },
       });
 
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
 
-      toast.success(`E-mail odeslán na ${clientEmail} (${data.attachmentCount} příloh)`);
+      const ccInfo = ccSuppliers && supplierEmails.length > 0 ? ` + CC: ${supplierEmails.join(", ")}` : "";
+      toast.success(`E-mail odeslán na ${clientEmail}${ccInfo} (${data.attachmentCount} příloh)`);
       setSendDialogOpen(false);
     } catch (err: any) {
       console.error("Send error:", err);
@@ -436,7 +449,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
             {(documents.length > 0 || vouchers.length > 0) && clientEmail && (
               <Button size="sm" variant="default" onClick={openSendDialog}>
                 <Send className="h-4 w-4 mr-1" />
-                Odeslat vše klientovi
+                Odeslat klientovi{supplierEmails.length > 0 ? " a dodavateli" : ""}
               </Button>
             )}
           </div>
@@ -664,13 +677,30 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Odeslat dokumenty klientovi</DialogTitle>
+              <DialogTitle>Odeslat dokumenty</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Příjemce</Label>
+                <Label>Příjemce (klient)</Label>
                 <Input value={clientEmail || ""} disabled className="mt-1" />
               </div>
+              {supplierEmails.length > 0 && (
+                <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                  <div>
+                    <Label htmlFor="cc-suppliers-toggle" className="text-sm font-medium cursor-pointer">
+                      Kopie dodavatelům (CC)
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {supplierEmails.join(", ")}
+                    </p>
+                  </div>
+                  <Switch
+                    id="cc-suppliers-toggle"
+                    checked={ccSuppliers}
+                    onCheckedChange={setCcSuppliers}
+                  />
+                </div>
+              )}
               <div>
                 <Label>Předmět</Label>
                 <Input

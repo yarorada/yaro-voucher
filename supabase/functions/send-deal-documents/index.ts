@@ -12,6 +12,7 @@ interface SendRequest {
   clientName: string;
   emailBody: string;
   emailSubject: string;
+  ccEmails?: string[];
 }
 
 function replacePlaceholders(text: string, vars: Record<string, string>): string {
@@ -70,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { dealId, clientEmail, clientName, emailBody, emailSubject }: SendRequest = await req.json();
+    const { dealId, clientEmail, clientName, emailBody, emailSubject, ccEmails }: SendRequest = await req.json();
 
     if (!dealId || !clientEmail) {
       return new Response(JSON.stringify({ error: "Missing dealId or clientEmail" }), {
@@ -158,14 +159,21 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    const bccList = ["zajezdy@yarotravel.cz"];
+    const ccList = (ccEmails || []).filter((e) => e && e !== clientEmail);
+
     const emailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
       to: [clientEmail],
-      bcc: ["zajezdy@yarotravel.cz"],
+      bcc: bccList,
       subject: finalSubject,
       text: finalBody,
       attachments,
     };
+
+    if (ccList.length > 0) {
+      emailPayload.cc = ccList;
+    }
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
