@@ -493,6 +493,16 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                       <CardDescription>{variant.destination.name}</CardDescription>
                     )}
                   </div>
+                  {!variant.is_selected && (
+                    <Button
+                      onClick={() => handleSelectVariant(variant.id)}
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Vybrat jako finální
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -564,16 +574,6 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                 )}
 
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {!variant.is_selected && (
-                    <Button
-                      onClick={() => handleSelectVariant(variant.id)}
-                      size="sm"
-                      variant="default"
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Vybrat jako finální
-                    </Button>
-                  )}
                   <Button
                     onClick={() => handleEditVariant(variant)}
                     size="sm"
