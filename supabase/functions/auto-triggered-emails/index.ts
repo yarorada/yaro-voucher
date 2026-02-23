@@ -200,6 +200,19 @@ Deno.serve(async (req) => {
               success: result.ok,
               error: result.ok ? undefined : JSON.stringify(result.error),
             });
+
+            // Insert notification for birthday email
+            if (result.ok) {
+              try {
+                await supabase.from("notifications").insert({
+                  event_type: "email_sent",
+                  title: `Odesláno přání k narozeninám pro ${client.first_name} ${client.last_name}`,
+                  message: `E-mail odeslán na ${client.email}`,
+                });
+              } catch (e) {
+                console.error("Notification insert error:", e);
+              }
+            }
           }
         }
       } catch (err: any) {
@@ -313,6 +326,27 @@ async function processDealEmail(
     success: result.ok,
     error: result.ok ? undefined : JSON.stringify(result.error),
   });
+
+  // Insert notification for triggered email
+  if (result.ok) {
+    const triggerLabels: Record<string, string> = {
+      before_departure: "před odjezdem",
+      after_return: "po návratu",
+      payment_reminder: "připomenutí platby",
+    };
+    const label = triggerLabels[template.trigger_type] || template.template_key;
+    try {
+      await supabase.from("notifications").insert({
+        event_type: "email_sent",
+        title: `Automatický e-mail (${label}) odeslán pro deal ${deal.deal_number}`,
+        message: `Příjemce: ${clientEmail}`,
+        deal_id: deal.id,
+        link: `/deals/${deal.id}`,
+      });
+    } catch (e) {
+      console.error("Notification insert error:", e);
+    }
+  }
 
   console.log(`[auto-triggered] Deal ${deal.deal_number} (${template.template_key}): ${status} -> ${clientEmail}`);
 }

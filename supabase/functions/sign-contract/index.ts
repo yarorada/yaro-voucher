@@ -131,6 +131,26 @@ Deno.serve(async (req) => {
 
     console.log(`Contract ${contract.id} signed by ${signerName} from ${clientIp}`);
 
+    // Insert notification
+    try {
+      const { data: contractData } = await supabase
+        .from('travel_contracts')
+        .select('contract_number, deal_id')
+        .eq('id', contract.id)
+        .single();
+
+      await supabase.from('notifications').insert({
+        event_type: 'contract_signed',
+        title: `Smlouva ${contractData?.contract_number || ''} podepsána klientem online`,
+        message: `Podepsal: ${signerName}`,
+        contract_id: contract.id,
+        deal_id: contractData?.deal_id || null,
+        link: contractData?.deal_id ? `/deals/${contractData.deal_id}` : `/contracts/${contract.id}`,
+      });
+    } catch (e) {
+      console.error('Notification insert error:', e);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

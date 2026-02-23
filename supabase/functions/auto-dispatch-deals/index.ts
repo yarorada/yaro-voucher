@@ -65,6 +65,27 @@ Deno.serve(async (req) => {
         .in("id", toDispatch);
 
       if (updateError) throw updateError;
+
+      // Insert notifications for each dispatched deal
+      for (const dealId of toDispatch) {
+        const deal = candidates?.find((d: any) => d.id === dealId);
+        try {
+          const { data: dealInfo } = await supabase
+            .from("deals")
+            .select("deal_number")
+            .eq("id", dealId)
+            .single();
+
+          await supabase.from("notifications").insert({
+            event_type: "deal_status_changed",
+            title: `Deal ${dealInfo?.deal_number || dealId} automaticky přepnut na Odbaveno`,
+            deal_id: dealId,
+            link: `/deals/${dealId}`,
+          });
+        } catch (e) {
+          console.error("Notification insert error:", e);
+        }
+      }
     }
 
     return new Response(
