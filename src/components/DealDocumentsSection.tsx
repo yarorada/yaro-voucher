@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingVoucherId, setSendingVoucherId] = useState<string | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [ccSuppliers, setCcSuppliers] = useState(true);
@@ -432,6 +433,37 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
   };
 
+  const handleSendVoucher = async (voucher: DealVoucher) => {
+    setSendingVoucherId(voucher.id);
+    try {
+      // Generate PDF for the voucher first
+      await generateVoucherPdf(voucher);
+
+      // Use the send-voucher-email edge function
+      const { data, error } = await supabase.functions.invoke("send-voucher-email", {
+        body: {
+          voucherId: voucher.id,
+          emailCcSupplier: !!voucher.suppliers?.email,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
+
+      const recipients = (data.results || [])
+        .filter((r: any) => r.success)
+        .map((r: any) => r.recipient)
+        .join(", ");
+      toast.success(`Voucher ${voucher.voucher_code} odeslán: ${recipients}`);
+      fetchDocuments();
+    } catch (err: any) {
+      console.error("Send voucher error:", err);
+      toast.error(err.message || "Nepodařilo se odeslat voucher");
+    } finally {
+      setSendingVoucherId(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -540,11 +572,28 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {v.suppliers?.name || "—"} · {v.client_name}
-                      {v.sent_at && " · Odesláno"}
+                      {v.sent_at && (
+                        <span className="text-green-600 dark:text-green-400"> · ✓ Odesláno</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => handleSendVoucher(v)}
+                    disabled={sendingVoucherId === v.id}
+                    title={`Odeslat klientovi${v.suppliers?.email ? ` a dodavateli (${v.suppliers.email})` : ""}`}
+                  >
+                    {sendingVoucherId === v.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Mail className="h-3 w-3" />
+                    )}
+                    {v.sent_at ? "Znovu" : "Odeslat"}
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
