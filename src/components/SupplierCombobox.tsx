@@ -36,9 +36,10 @@ interface Supplier {
 interface SupplierComboboxProps {
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (supplierId: string) => void;
 }
 
-export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
+export function SupplierCombobox({ value, onChange, onSelect }: SupplierComboboxProps) {
   const [open, setOpen] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +162,7 @@ export function SupplierCombobox({ value, onChange }: SupplierComboboxProps) {
                       value={supplier.name}
                       onSelect={() => {
                         onChange(supplier.id);
+                        if (onSelect) onSelect(supplier.id);
                         setOpen(false);
                         setSearchValue("");
                       }}
