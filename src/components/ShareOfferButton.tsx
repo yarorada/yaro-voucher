@@ -9,11 +9,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ShareOfferButtonProps {
   dealId: string;
   shareToken: string | null;
   onTokenGenerated: (token: string) => void;
+  hasMultipleVariants?: boolean;
 }
 
 function generateToken(length = 12): string {
@@ -26,14 +29,16 @@ function generateToken(length = 12): string {
   return result;
 }
 
-export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: ShareOfferButtonProps) {
+export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, hasMultipleVariants }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [allVariants, setAllVariants] = useState(false);
 
   const getPublicUrl = (token: string) => {
-    return `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(token)}`;
+    const base = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(token)}`;
+    return allVariants ? `${base}?all=1` : base;
   };
 
   const ensureShareToken = async (): Promise<string | null> => {
@@ -68,14 +73,13 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: Share
   };
 
   const handleSendEmail = async () => {
-    // Ensure share token exists first
     const token = await ensureShareToken();
     if (!token) return;
 
     setSendingEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-offer-email', {
-        body: { dealId },
+        body: { dealId, allVariants },
       });
 
       if (error) throw error;
@@ -142,6 +146,20 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: Share
         <PopoverContent className="w-80" align="end">
           <div className="space-y-3">
             <p className="text-sm font-medium">Veřejný odkaz na nabídku</p>
+            
+            {hasMultipleVariants && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="all-variants"
+                  checked={allVariants}
+                  onCheckedChange={(checked) => setAllVariants(!!checked)}
+                />
+                <Label htmlFor="all-variants" className="text-sm cursor-pointer">
+                  Poslat všechny varianty
+                </Label>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Input
                 value={publicUrl}
@@ -167,7 +185,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated }: Share
               {sendingEmail ? "Odesílám..." : "Odeslat mailem"}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Klient uvidí varianty nabídky s fotkami hotelů
+              {allVariants 
+                ? "Klient uvidí všechny varianty nabídky" 
+                : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
             </p>
           </div>
         </PopoverContent>

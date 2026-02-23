@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
     const format = url.searchParams.get('format'); // 'json' or empty
+    const showAll = url.searchParams.get('all') === '1'; // show all variants regardless of selection
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'Token is required' }), {
@@ -185,7 +186,7 @@ Deno.serve(async (req) => {
 
     // Determine which variants to show
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    const displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
+    const displayVariants = (showAll || !selectedVariant) ? (variants || []) : [selectedVariant];
 
     return new Response(JSON.stringify({
       deal: {

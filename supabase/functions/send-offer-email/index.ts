@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { dealId } = await req.json();
+    const { dealId, allVariants } = await req.json();
     if (!dealId) {
       return new Response(JSON.stringify({ error: 'dealId is required' }), {
         status: 400,
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     const salutation = isFemale ? 'paní' : 'pane';
 
     // Build public URL
-    const publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}`;
+    const publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}${allVariants ? '?all=1' : ''}`;
 
     // Fetch variants with services for the email body
     const { data: variants } = await supabase
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
       .order('order_index', { ascending: true });
 
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    const displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
+    const displayVariants = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
 
     // Collect hotel names for images and descriptions
     const hotelNames = new Set<string>();
