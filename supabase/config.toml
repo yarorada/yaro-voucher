@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.suggest-hotel-destination]
 verify_jwt = true
+
+[functions.submit-offer-response]
+verify_jwt = false
