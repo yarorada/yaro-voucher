@@ -47,49 +47,37 @@ export function StatsClientTable() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch lead travelers with deal info
-      const { data: leadData, error: leadError } = await supabase
-        .from("deal_travelers")
-        .select(`
-          client_id,
-          deal_id,
-          is_lead_traveler,
-          clients(id, first_name, last_name),
-          deals(id, total_price, status, start_date)
-        `)
-        .eq("is_lead_traveler", true);
+      // Use deal_profitability view which correctly calculates revenue/costs
+      const { data: profitData, error: profitError } = await supabase
+        .from("deal_profitability")
+        .select("deal_id, deal_number, revenue, total_costs, profit, start_date, status, lead_client_id");
 
-      if (leadError) throw leadError;
+      if (profitError) throw profitError;
 
-      // Get all deal IDs from lead data
-      const validLeadData = (leadData || []).filter(
-        (dt: any) => dt.clients && dt.deals && dt.deals.status !== "cancelled" && dt.deals.start_date
-      );
-      const dealIds = validLeadData.map((dt: any) => dt.deal_id);
-
-      // Fetch deal services for cost calculation
-      let dealServicesMap = new Map<string, number>();
-      if (dealIds.length > 0) {
-        const { data: servicesData } = await supabase
-          .from("deal_services")
-          .select("deal_id, cost_price, quantity")
-          .in("deal_id", dealIds);
-
-        (servicesData || []).forEach((s: any) => {
-          const cost = (s.cost_price || 0) * (s.quantity || 1);
-          dealServicesMap.set(s.deal_id, (dealServicesMap.get(s.deal_id) || 0) + cost);
+      // Get client names for lead clients
+      const clientIds = [...new Set((profitData || []).filter(d => d.lead_client_id).map(d => d.lead_client_id!))];
+      let clientMap = new Map<string, string>();
+      if (clientIds.length > 0) {
+        const { data: clientsData } = await supabase
+          .from("clients")
+          .select("id, first_name, last_name")
+          .in("id", clientIds);
+        (clientsData || []).forEach((c: any) => {
+          clientMap.set(c.id, `${c.first_name} ${c.last_name}`);
         });
       }
 
-      // Build per-deal records with year
-      const deals: LeadClientDeal[] = validLeadData.map((dt: any) => ({
-        clientId: dt.client_id,
-        clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
-        dealId: dt.deal_id,
-        revenue: dt.deals.total_price || 0,
-        cost: dealServicesMap.get(dt.deal_id) || 0,
-        year: new Date(dt.deals.start_date).getFullYear(),
-      }));
+      // Build per-deal records
+      const deals: LeadClientDeal[] = (profitData || [])
+        .filter((d: any) => d.lead_client_id && d.status !== "cancelled" && d.start_date)
+        .map((d: any) => ({
+          clientId: d.lead_client_id!,
+          clientName: clientMap.get(d.lead_client_id!) || "Neznámý",
+          dealId: d.deal_id!,
+          revenue: Number(d.revenue) || 0,
+          cost: Number(d.total_costs) || 0,
+          year: new Date(d.start_date!).getFullYear(),
+        }));
 
       // Extract available years
       const years = new Set(deals.map((d) => d.year));
