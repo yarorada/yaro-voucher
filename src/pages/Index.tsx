@@ -21,16 +21,12 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Check } from "lucide-react";
+import { GripVertical, Pencil, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 
 const STORAGE_KEY = "yaro-dashboard-order";
-
-interface TileDef {
-  id: string;
-  component: ReactNode;
-}
+const HIDDEN_KEY = "yaro-dashboard-hidden";
 
 const DEFAULT_ORDER = [
   "bank_notifications",
@@ -41,6 +37,16 @@ const DEFAULT_ORDER = [
   "vouchers",
   "contracts",
 ];
+
+const TILE_LABELS: Record<string, string> = {
+  bank_notifications: "Příchozí platby",
+  tasks: "Úkoly",
+  stats: "Statistiky",
+  overdue: "Nezaplacené",
+  deals: "Obchodní případy",
+  vouchers: "Vouchery",
+  contracts: "Smlouvy",
+};
 
 const TILE_COMPONENTS: Record<string, ReactNode> = {
   bank_notifications: <BankNotificationsCard />,
@@ -57,7 +63,6 @@ function loadOrder(): string[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as string[];
-      // Ensure all tiles are present
       const valid = parsed.filter((id) => DEFAULT_ORDER.includes(id));
       const missing = DEFAULT_ORDER.filter((id) => !valid.includes(id));
       return [...valid, ...missing];
@@ -68,7 +73,31 @@ function loadOrder(): string[] {
   return DEFAULT_ORDER;
 }
 
-function SortableTile({ id, children, editing }: { id: string; children: ReactNode; editing: boolean }) {
+function loadHidden(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_KEY);
+    if (raw) {
+      return JSON.parse(raw) as string[];
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function SortableTile({
+  id,
+  children,
+  editing,
+  hidden,
+  onToggleVisibility,
+}: {
+  id: string;
+  children: ReactNode;
+  editing: boolean;
+  hidden: boolean;
+  onToggleVisibility: () => void;
+}) {
   const {
     attributes,
     listeners,
@@ -82,20 +111,38 @@ function SortableTile({ id, children, editing }: { id: string; children: ReactNo
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.8 : 1,
+    opacity: isDragging ? 0.8 : hidden ? 0.4 : 1,
   };
 
   return (
     <div ref={setNodeRef} style={style} className={`relative ${editing ? "ring-2 ring-primary/30 rounded-lg" : ""}`}>
       {editing && (
-        <button
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 right-2 z-10 p-1 rounded-md bg-muted/80 cursor-grab active:cursor-grabbing"
-          aria-label="Přesunout dlaždici"
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+          <button
+            onClick={onToggleVisibility}
+            className="p-1 rounded-md bg-muted/80 hover:bg-muted transition-colors"
+            aria-label={hidden ? "Zobrazit dlaždici" : "Skrýt dlaždici"}
+          >
+            {hidden ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 rounded-md bg-muted/80 cursor-grab active:cursor-grabbing"
+            aria-label="Přesunout dlaždici"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+      {editing && hidden && (
+        <div className="absolute inset-0 z-[5] rounded-lg bg-background/60 flex items-center justify-center pointer-events-none">
+          <span className="text-sm font-medium text-muted-foreground">Skryto</span>
+        </div>
       )}
       {children}
     </div>
@@ -104,6 +151,7 @@ function SortableTile({ id, children, editing }: { id: string; children: ReactNo
 
 const Index = () => {
   const [order, setOrder] = useState<string[]>(loadOrder);
+  const [hiddenTiles, setHiddenTiles] = useState<string[]>(loadHidden);
   const [editing, setEditing] = useState(false);
 
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
@@ -138,6 +186,21 @@ const Index = () => {
     });
   }, []);
 
+  const toggleVisibility = useCallback((tileId: string) => {
+    setHiddenTiles((prev) => {
+      const next = prev.includes(tileId)
+        ? prev.filter((id) => id !== tileId)
+        : [...prev, tileId];
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // In edit mode show all tiles; otherwise filter out hidden ones
+  const visibleOrder = editing
+    ? order
+    : order.filter((id) => !hiddenTiles.includes(id));
+
   return (
     <div className="min-h-full bg-[var(--gradient-subtle)]">
       <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
@@ -148,10 +211,16 @@ const Index = () => {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={order} strategy={rectSortingStrategy}>
+          <SortableContext items={visibleOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {order.map((id) => (
-                <SortableTile key={id} id={id} editing={editing}>
+              {visibleOrder.map((id) => (
+                <SortableTile
+                  key={id}
+                  id={id}
+                  editing={editing}
+                  hidden={hiddenTiles.includes(id)}
+                  onToggleVisibility={() => toggleVisibility(id)}
+                >
                   <div className="aspect-square [&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
                     {TILE_COMPONENTS[id]}
                   </div>
