@@ -113,17 +113,19 @@ const Statistics = () => {
       // Fetch flight services for exclude-flights toggle
       const { data: flightData, error: flightError } = await supabase
         .from("deal_services")
-        .select("deal_id, price, cost_price")
+        .select("deal_id, price, cost_price, quantity, person_count, details")
         .eq("service_type", "flight");
 
       if (flightError) throw flightError;
 
-      // Aggregate flight costs per deal
+      // Aggregate flight costs per deal (respecting price_mode)
       const flightMap = new Map<string, { revenue: number; cost: number }>();
-      (flightData || []).forEach((f) => {
+      (flightData || []).forEach((f: any) => {
+        const priceMode = f.details?.price_mode || "per_service";
+        const multiplier = priceMode === "per_person" ? (f.person_count || 1) : (f.quantity || 1);
         const existing = flightMap.get(f.deal_id) || { revenue: 0, cost: 0 };
-        existing.revenue += f.price || 0;
-        existing.cost += f.cost_price || 0;
+        existing.revenue += (f.price || 0) * multiplier;
+        existing.cost += (f.cost_price || 0) * multiplier;
         flightMap.set(f.deal_id, existing);
       });
       const flightCostsArr: FlightCostPerDeal[] = Array.from(flightMap.entries()).map(([deal_id, v]) => ({
