@@ -86,6 +86,8 @@ export default function Hotels() {
     country: string;
     iso_code: string;
     confidence: string;
+    subtitle?: string;
+    golf_courses?: string;
   } | null>(null);
 
   // Form state for editing
@@ -369,7 +371,7 @@ export default function Hotels() {
           </DialogHeader>
           {editHotel && (
             <div className="space-y-6">
-              {/* Basic info */}
+              {/* Basic info - Name & Slug */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Název hotelu *</Label>
@@ -386,143 +388,9 @@ export default function Hotels() {
                     placeholder="gloria-verde"
                   />
                 </div>
-                <div>
-                  <Label>Podtitulek</Label>
-                  <Input
-                    value={formData.subtitle}
-                    onChange={(e) => setFormData((f) => ({ ...f, subtitle: e.target.value }))}
-                    placeholder="5* golf resort v Belek"
-                  />
-                </div>
-                <div>
-                  <Label>Počet nocí</Label>
-                  <Input
-                    value={formData.nights}
-                    onChange={(e) => setFormData((f) => ({ ...f, nights: e.target.value }))}
-                    placeholder="7 nocí"
-                  />
-                </div>
-                <div>
-                  <Label>Green fees</Label>
-                  <Input
-                    value={formData.green_fees}
-                    onChange={(e) => setFormData((f) => ({ ...f, green_fees: e.target.value }))}
-                    placeholder="Unlimited green fees"
-                  />
-                </div>
-                <div>
-                  <Label>Cena</Label>
-                  <Input
-                    value={formData.price_label}
-                    onChange={(e) => setFormData((f) => ({ ...f, price_label: e.target.value }))}
-                    placeholder="37 900 Kč / os."
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Golfová hřiště</Label>
-                  <Input
-                    value={formData.golf_courses}
-                    onChange={(e) => setFormData((f) => ({ ...f, golf_courses: e.target.value }))}
-                    placeholder="Gloria Old, Gloria New, Gloria Verde"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Oficiální web hotelu</Label>
-                  <Input
-                    value={formData.website_url}
-                    onChange={(e) => setFormData((f) => ({ ...f, website_url: e.target.value }))}
-                    placeholder="https://www.gloriagolf.com"
-                  />
-                </div>
-                <div className="sm:col-span-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Destinace / Země</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
-                      disabled={suggesting || !formData.name.trim()}
-                      onClick={async () => {
-                        setSuggesting(true);
-                        setAiSuggestion(null);
-                        try {
-                          const { data, error } = await supabase.functions.invoke("suggest-hotel-destination", {
-                            body: { hotelName: formData.name },
-                          });
-                          if (error) throw error;
-                          if (data?.error) throw new Error(data.error);
-                          setAiSuggestion(data);
-                          // Try to find existing destination match
-                          const { data: destinations } = await supabase
-                            .from("destinations")
-                            .select("id, name, countries:country_id(name, iso_code)")
-                            .ilike("name", data.destination);
-                          const match = destinations?.find(
-                            (d: any) => d.name.toLowerCase() === data.destination.toLowerCase()
-                          );
-                          if (match) {
-                            setFormData((f) => ({ ...f, destination_id: match.id }));
-                            toast.success(`Nalezena existující destinace: ${match.name}`);
-                            setAiSuggestion(null);
-                          }
-                        } catch (e: any) {
-                          console.error(e);
-                          toast.error("Nepodařilo se získat návrh");
-                        } finally {
-                          setSuggesting(false);
-                        }
-                      }}
-                    >
-                      {suggesting ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3 w-3" />
-                      )}
-                      Navrhnout
-                    </Button>
-                  </div>
-                  {aiSuggestion && !formData.destination_id && (
-                    <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
-                      <p>
-                        AI návrh: <strong>{aiSuggestion.destination}</strong> – {aiSuggestion.country} ({aiSuggestion.iso_code})
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          ({aiSuggestion.confidence === "high" ? "vysoká jistota" : aiSuggestion.confidence === "medium" ? "střední jistota" : "nízká jistota"})
-                        </span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">Vyberte destinaci níže nebo vytvořte novou zadáním názvu do pole</p>
-                    </div>
-                  )}
-                  <DestinationCombobox
-                    value={formData.destination_id}
-                    onValueChange={(v) => {
-                      setFormData((f) => ({ ...f, destination_id: v }));
-                      setAiSuggestion(null);
-                    }}
-                  />
-                </div>
               </div>
 
-              {/* Published toggle */}
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <Label className="text-sm font-medium">Publikovat na web</Label>
-                  <p className="text-xs text-muted-foreground">Hotel bude viditelný na webových stránkách</p>
-                </div>
-                <Switch
-                  checked={formData.is_published}
-                  onCheckedChange={(v) => setFormData((f) => ({ ...f, is_published: v }))}
-                />
-              </div>
-
-              {/* Save button */}
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "Ukládám..." : "Uložit údaje"}
-                </Button>
-              </div>
-
-              {/* Photos & description */}
+              {/* Photos & description - moved here */}
               <div className="border-t pt-4">
                 <Label className="text-base font-semibold">Fotky a popis</Label>
                 <div className="mt-3">
@@ -558,6 +426,179 @@ export default function Hotels() {
                     }}
                   />
                 </div>
+              </div>
+
+              {/* Detail fields */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-base font-semibold">Detaily hotelu</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    disabled={suggesting || !formData.name.trim()}
+                    onClick={async () => {
+                      setSuggesting(true);
+                      setAiSuggestion(null);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("suggest-hotel-destination", {
+                          body: { hotelName: formData.name },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        setAiSuggestion(data);
+
+                        // Auto-fill subtitle if empty
+                        if (data.subtitle && !formData.subtitle.trim()) {
+                          setFormData((f) => ({ ...f, subtitle: data.subtitle }));
+                          toast.success("Podtitulek navržen");
+                        }
+
+                        // Auto-fill golf courses if empty
+                        if (data.golf_courses && !formData.golf_courses.trim()) {
+                          setFormData((f) => ({ ...f, golf_courses: data.golf_courses }));
+                          toast.success("Golfová hřiště navržena");
+                        }
+
+                        // Try to find existing destination match
+                        const { data: destinations } = await supabase
+                          .from("destinations")
+                          .select("id, name, countries:country_id(name, iso_code)")
+                          .ilike("name", data.destination);
+                        const match = destinations?.find(
+                          (d: any) => d.name.toLowerCase() === data.destination.toLowerCase()
+                        );
+                        if (match) {
+                          setFormData((f) => ({ ...f, destination_id: match.id }));
+                          toast.success(`Nalezena existující destinace: ${match.name}`);
+                          setAiSuggestion(null);
+                        }
+                      } catch (e: any) {
+                        console.error(e);
+                        toast.error("Nepodařilo se získat návrh");
+                      } finally {
+                        setSuggesting(false);
+                      }
+                    }}
+                  >
+                    {suggesting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Navrhnout vše z AI
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Podtitulek</Label>
+                    <Input
+                      value={formData.subtitle}
+                      onChange={(e) => setFormData((f) => ({ ...f, subtitle: e.target.value }))}
+                      placeholder="5* golf resort v Belek"
+                    />
+                    {aiSuggestion?.subtitle && formData.subtitle !== aiSuggestion.subtitle && (
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline mt-1"
+                        onClick={() => setFormData((f) => ({ ...f, subtitle: aiSuggestion.subtitle! }))}
+                      >
+                        AI návrh: {aiSuggestion.subtitle}
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Počet nocí</Label>
+                    <Input
+                      value={formData.nights}
+                      onChange={(e) => setFormData((f) => ({ ...f, nights: e.target.value }))}
+                      placeholder="7 nocí"
+                    />
+                  </div>
+                  <div>
+                    <Label>Green fees</Label>
+                    <Input
+                      value={formData.green_fees}
+                      onChange={(e) => setFormData((f) => ({ ...f, green_fees: e.target.value }))}
+                      placeholder="Unlimited green fees"
+                    />
+                  </div>
+                  <div>
+                    <Label>Cena</Label>
+                    <Input
+                      value={formData.price_label}
+                      onChange={(e) => setFormData((f) => ({ ...f, price_label: e.target.value }))}
+                      placeholder="37 900 Kč / os."
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Golfová hřiště</Label>
+                    <Input
+                      value={formData.golf_courses}
+                      onChange={(e) => setFormData((f) => ({ ...f, golf_courses: e.target.value }))}
+                      placeholder="Gloria Old, Gloria New, Gloria Verde"
+                    />
+                    {aiSuggestion?.golf_courses && formData.golf_courses !== aiSuggestion.golf_courses && (
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline mt-1"
+                        onClick={() => setFormData((f) => ({ ...f, golf_courses: aiSuggestion.golf_courses! }))}
+                      >
+                        AI návrh: {aiSuggestion.golf_courses}
+                      </button>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Oficiální web hotelu</Label>
+                    <Input
+                      value={formData.website_url}
+                      onChange={(e) => setFormData((f) => ({ ...f, website_url: e.target.value }))}
+                      placeholder="https://www.gloriagolf.com"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label>Destinace / Země</Label>
+                    {aiSuggestion && !formData.destination_id && (
+                      <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
+                        <p>
+                          AI návrh: <strong>{aiSuggestion.destination}</strong> – {aiSuggestion.country} ({aiSuggestion.iso_code})
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            ({aiSuggestion.confidence === "high" ? "vysoká jistota" : aiSuggestion.confidence === "medium" ? "střední jistota" : "nízká jistota"})
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">Vyberte destinaci níže nebo vytvořte novou zadáním názvu do pole</p>
+                      </div>
+                    )}
+                    <DestinationCombobox
+                      value={formData.destination_id}
+                      onValueChange={(v) => {
+                        setFormData((f) => ({ ...f, destination_id: v }));
+                        setAiSuggestion(null);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Published toggle */}
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <Label className="text-sm font-medium">Publikovat na web</Label>
+                  <p className="text-xs text-muted-foreground">Hotel bude viditelný na webových stránkách</p>
+                </div>
+                <Switch
+                  checked={formData.is_published}
+                  onCheckedChange={(v) => setFormData((f) => ({ ...f, is_published: v }))}
+                />
+              </div>
+
+              {/* Save button */}
+              <div className="flex justify-end">
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Ukládám..." : "Uložit údaje"}
+                </Button>
               </div>
             </div>
           )}
