@@ -279,8 +279,10 @@ export default function PublicOffer() {
     const fetchOffer = async () => {
       try {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const urlParams = new URLSearchParams(window.location.search);
+        const allParam = urlParams.get('all') === '1' ? '&all=1' : '';
         const res = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}`,
+          `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}${allParam}`,
           { headers: { "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
         );
         if (!res.ok) {

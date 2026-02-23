@@ -282,6 +282,7 @@ const DealDetail = () => {
   const [services, setServices] = useState<DealService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [paymentRefreshKey, setPaymentRefreshKey] = useState(0);
+  const [variantCount, setVariantCount] = useState(0);
 
   // Dialog states
   const [travelerDialogOpen, setTravelerDialogOpen] = useState(false);
@@ -627,6 +628,13 @@ const DealDetail = () => {
       if (leadTraveler) {
         setLeadTravelerId(leadTraveler.client_id);
       }
+
+      // Fetch variant count
+      const { count } = await supabase
+        .from("deal_variants")
+        .select("id", { count: "exact", head: true })
+        .eq("deal_id", id);
+      setVariantCount(count || 0);
     } catch (error) {
       console.error("Error fetching deal:", error);
       toast({
@@ -2015,6 +2023,7 @@ const DealDetail = () => {
           dealId={deal.id}
           shareToken={shareToken}
           onTokenGenerated={setShareToken}
+          hasMultipleVariants={variantCount > 1}
         />
         <Button
           variant="outline"
