@@ -41,6 +41,7 @@ import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "@/components/FlightSegmentForm";
 import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 import { FlightAiImport } from "@/components/FlightAiImport";
+import { HotelAiImport, type ParsedHotelData } from "@/components/HotelAiImport";
 import { DealVariants } from "@/components/DealVariants";
 import { DealPaymentSchedule } from "@/components/DealPaymentSchedule";
 import { DealBulkTravelerImport } from "@/components/DealBulkTravelerImport";
@@ -2527,8 +2528,8 @@ const DealDetail = () => {
                     </div>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Typ služby</Label>
+                    <div>
+                      <Label>Typ služby *</Label>
                       <Select
                         value={
                           serviceForm.service_type === 'other' 
@@ -2588,19 +2589,45 @@ const DealDetail = () => {
                     {/* Flight-specific form */}
                     {serviceForm.service_type === "flight" ? (
                       <>
-                        <FlightSegmentForm
-                          data={flightFormData}
-                          onChange={setFlightFormData}
-                        />
                         <FlightAiImport onImport={(data, price, personCount) => {
                           setFlightFormData(data);
                           if (price) setServiceForm(prev => ({ ...prev, price: price.toString() }));
                           if (personCount) setServiceForm(prev => ({ ...prev, person_count: personCount.toString() }));
                         }} />
+                        <FlightSegmentForm
+                          data={flightFormData}
+                          onChange={setFlightFormData}
+                        />
                       </>
                     ) : (
                       <>
-                        <div className="space-y-2">
+                        {serviceForm.service_type === 'hotel' && (
+                          <HotelAiImport
+                            onImport={(data: ParsedHotelData) => {
+                              if (data.hotel_name) setServiceForm(prev => ({ ...prev, service_name: data.hotel_name! }));
+                              if (data.room_type) {
+                                const desc = data.meal_plan ? `${data.room_type} (${data.meal_plan})` : data.room_type;
+                                setServiceForm(prev => ({ ...prev, description: desc }));
+                              } else if (data.meal_plan) {
+                                setServiceForm(prev => ({ ...prev, description: data.meal_plan! }));
+                              }
+                              if (data.check_in) setServiceForm(prev => ({ ...prev, start_date: new Date(data.check_in!) }));
+                              if (data.check_out) setServiceForm(prev => ({ ...prev, end_date: new Date(data.check_out!) }));
+                              if (data.persons) setServiceForm(prev => ({ ...prev, person_count: data.persons!.toString(), quantity: data.persons!.toString() }));
+                              if (data.total_price) {
+                                if (data.currency && data.currency !== "CZK") {
+                                  setServiceForm(prev => ({ ...prev, cost_currency: data.currency!, cost_price_original: data.total_price!.toString(), cost_price: data.total_price!.toString() }));
+                                } else {
+                                  setServiceForm(prev => ({ ...prev, cost_price: data.total_price!.toString(), cost_price_original: data.total_price!.toString() }));
+                                }
+                              }
+                            }}
+                          />
+                        )}
+                        {serviceForm.service_type === 'golf' && (
+                          <GolfAiImport onImport={handleGolfAiImport} />
+                        )}
+                        <div>
                           <Label>{serviceForm.service_type === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
                           {serviceForm.service_type === 'hotel' ? (
                             <HotelCombobox
@@ -2616,8 +2643,8 @@ const DealDetail = () => {
                           )}
                         </div>
 
-                        {serviceForm.service_type === 'hotel' && (
-                          <div className="space-y-2">
+                        {serviceForm.service_type === 'hotel' ? (
+                          <div>
                             <Label>Název a Typ pokoje</Label>
                             <Input
                               value={serviceForm.description}
@@ -2625,10 +2652,8 @@ const DealDetail = () => {
                               placeholder="např. Deluxe Double Room"
                             />
                           </div>
-                        )}
-
-                        {serviceForm.service_type !== 'hotel' && (
-                          <div className="space-y-2">
+                        ) : (
+                          <div>
                             <Label>Popis</Label>
                             <Textarea
                               value={serviceForm.description}
@@ -2638,24 +2663,29 @@ const DealDetail = () => {
                             />
                           </div>
                         )}
-
-                        {serviceForm.service_type === 'golf' && (
-                          <GolfAiImport onImport={handleGolfAiImport} />
-                        )}
                       </>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 items-end">
-                      <div className="space-y-2">
-                        <Label>Datum</Label>
-                        <DateRangePicker
-                          dateFrom={serviceForm.start_date}
-                          dateTo={serviceForm.end_date}
-                          onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
-                          onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
+                    <div>
+                      <Label>Dodavatel</Label>
+                      <SupplierCombobox
+                        value={serviceForm.supplier_id}
+                        onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Datum</Label>
+                      <DateRangePicker
+                        dateFrom={serviceForm.start_date}
+                        dateTo={serviceForm.end_date}
+                        onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
+                        onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
+                      />
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="w-20">
                         <Label>Osoby</Label>
                         <Input
                           type="number"
@@ -2666,10 +2696,10 @@ const DealDetail = () => {
                             setServiceForm(prev => ({ ...prev, person_count: val, quantity: val }));
                           }}
                           placeholder="1"
-                          className="w-20"
+                          className="text-center"
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="w-20">
                         <Label>Počet</Label>
                         <Input
                           type="number"
@@ -2677,21 +2707,13 @@ const DealDetail = () => {
                           value={serviceForm.quantity}
                           onChange={(e) => setServiceForm({ ...serviceForm, quantity: e.target.value })}
                           placeholder="1"
-                          className="w-20"
+                          className="text-center"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Dodavatel</Label>
-                      <SupplierCombobox
-                        value={serviceForm.supplier_id}
-                        onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
                         <Label>Prodejní cena</Label>
                         <div className="flex gap-2">
                           <Input
@@ -2704,11 +2726,11 @@ const DealDetail = () => {
                           <CurrencySelect
                             value={serviceForm.price_currency}
                             onChange={(value) => setServiceForm({ ...serviceForm, price_currency: value })}
-                            className="w-20 shrink-0"
+                            className="w-24"
                           />
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      <div>
                         <Label>Nákupní cena</Label>
                         <div className="flex gap-2">
                           <Input
@@ -2729,18 +2751,26 @@ const DealDetail = () => {
                               cost_currency: value,
                               cost_price: value === "CZK" ? serviceForm.cost_price_original : ""
                             })}
-                            className="w-20 shrink-0"
+                            className="w-24"
                           />
                         </div>
                         {serviceForm.cost_currency !== "CZK" && serviceForm.cost_price && (
-                          <p className="text-xs text-muted-foreground">
-                            ≈ {formatPriceCurrency(parseFloat(serviceForm.cost_price))} (přepočteno)
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ≈ {formatPriceCurrency(parseFloat(serviceForm.cost_price))} (přepočteno do Kč)
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2">
+                    {serviceForm.price && serviceForm.quantity && (
+                      <div className="bg-muted p-3 rounded-md">
+                        <p className="text-sm font-medium">
+                          Celková cena: {formatPriceCurrency(parseFloat(serviceForm.price) * parseInt(serviceForm.quantity || "1"))}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-4">
                       <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>
                         Zrušit
                       </Button>
@@ -2755,7 +2785,7 @@ const DealDetail = () => {
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Přepočítávám...
                           </>
-                        ) : serviceForm.id ? "Uložit" : "Přidat"}
+                        ) : serviceForm.id ? "Uložit změny" : "Přidat službu"}
                       </Button>
                     </div>
                   </div>
