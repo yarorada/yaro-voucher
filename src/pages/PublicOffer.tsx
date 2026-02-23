@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
-import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight, CheckCircle2, Send } from "lucide-react";
+import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight, CheckCircle2, Send, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -54,7 +54,7 @@ interface OfferData {
     start_date: string | null;
     end_date: string | null;
   }>;
-  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null }>;
+  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null; golf_courses_data: any[] | null }>;
   hasSelectedVariant: boolean;
 }
 
@@ -496,6 +496,52 @@ export default function PublicOffer() {
   );
 }
 
+function GolfCoursesTable({ courses }: { courses: any[] }) {
+  if (!courses || courses.length === 0) return null;
+  // Show up to 5 courses, sorted by distance
+  const sorted = [...courses]
+    .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
+    .slice(0, 5);
+
+  return (
+    <div className="space-y-2 pt-2">
+      <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+        <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+        Golfová hřiště v okolí
+      </h4>
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-200 text-slate-500">
+              <th className="text-left font-medium py-1.5 px-1">Hřiště</th>
+              <th className="text-right font-medium py-1.5 px-1 whitespace-nowrap">Délka (m)</th>
+              <th className="text-right font-medium py-1.5 px-1">Rating</th>
+              <th className="text-left font-medium py-1.5 px-1">Architekt</th>
+              <th className="text-right font-medium py-1.5 px-1 whitespace-nowrap">Vzdálenost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((c, i) => (
+              <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
+                <td className="py-1.5 px-1 text-slate-700 font-medium">
+                  {c.name}
+                  {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
+                </td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{c.length_m ? `${c.length_m.toLocaleString("cs-CZ")}` : "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
+                <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
+                  {c.is_hotel_course ? "resort" : c.distance_km ? `${c.distance_km} km` : "–"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted }: {
   variant: OfferData["variants"][0];
   hotelImages: OfferData["hotelImages"];
@@ -572,6 +618,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         {/* Hotel description from website */}
         {isValidDescription(hotelImgData?.description ?? null) && (
           <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+        )}
+
+        {/* Golf courses table */}
+        {hotelImgData?.golf_courses_data && (
+          <GolfCoursesTable courses={hotelImgData.golf_courses_data} />
         )}
 
         {/* Services heading */}
@@ -691,6 +742,10 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         {/* Hotel description */}
         {hotelService && isValidDescription(hotelImgData?.description ?? null) && (
           <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+        )}
+        {/* Golf courses table */}
+        {hotelImgData?.golf_courses_data && (
+          <GolfCoursesTable courses={hotelImgData.golf_courses_data} />
         )}
         <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider pt-2">Cena zahrnuje</h4>
         <div className="space-y-2">
