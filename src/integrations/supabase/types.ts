@@ -1037,6 +1037,7 @@ export type Database = {
           description: string | null
           destination_id: string | null
           golf_courses: string | null
+          golf_courses_data: Json | null
           green_fees: string | null
           highlights: Json | null
           id: string
@@ -1066,6 +1067,7 @@ export type Database = {
           description?: string | null
           destination_id?: string | null
           golf_courses?: string | null
+          golf_courses_data?: Json | null
           green_fees?: string | null
           highlights?: Json | null
           id?: string
@@ -1095,6 +1097,7 @@ export type Database = {
           description?: string | null
           destination_id?: string | null
           golf_courses?: string | null
+          golf_courses_data?: Json | null
           green_fees?: string | null
           highlights?: Json | null
           id?: string

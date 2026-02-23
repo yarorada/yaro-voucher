@@ -40,6 +40,15 @@ import {
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 
+interface GolfCourseData {
+  name: string;
+  par: number | null;
+  length: string | null;
+  architect: string | null;
+  is_hotel_course: boolean;
+  distance_km: number | null;
+}
+
 interface HotelTemplate {
   id: string;
   name: string;
@@ -50,6 +59,7 @@ interface HotelTemplate {
   green_fees: string | null;
   price_label: string | null;
   golf_courses: string | null;
+  golf_courses_data: any;
   benefits: any;
   room_types: any;
   highlights: any;
@@ -89,6 +99,7 @@ export default function Hotels() {
     confidence: string;
     subtitle?: string;
     golf_courses?: string;
+    golf_courses_data?: GolfCourseData[];
     highlights?: Array<{ icon: string; title: string; text: string }>;
   } | null>(null);
 
@@ -101,6 +112,7 @@ export default function Hotels() {
     green_fees: "",
     price_label: "",
     golf_courses: "",
+    golf_courses_data: [] as GolfCourseData[],
     website_url: "",
     is_published: false,
     destination_id: "",
@@ -165,6 +177,7 @@ export default function Hotels() {
   const openEditDialog = (hotel: HotelTemplate) => {
     setEditHotel(hotel);
     const parsedHighlights = Array.isArray(hotel.highlights) ? hotel.highlights : [];
+    const parsedGolfCourses = Array.isArray(hotel.golf_courses_data) ? hotel.golf_courses_data : [];
     setFormData({
       name: hotel.name || "",
       slug: hotel.slug || "",
@@ -173,6 +186,7 @@ export default function Hotels() {
       green_fees: hotel.green_fees || "",
       price_label: hotel.price_label || "",
       golf_courses: hotel.golf_courses || "",
+      golf_courses_data: parsedGolfCourses,
       website_url: hotel.website_url || "",
       is_published: hotel.is_published || false,
       destination_id: hotel.destination_id || "",
@@ -195,6 +209,7 @@ export default function Hotels() {
           green_fees: formData.green_fees.trim() || null,
           price_label: formData.price_label.trim() || null,
           golf_courses: formData.golf_courses.trim() || null,
+          golf_courses_data: formData.golf_courses_data.length > 0 ? (formData.golf_courses_data as any) : null,
           website_url: formData.website_url.trim() || null,
           is_published: formData.is_published,
           destination_id: formData.destination_id || null,
@@ -464,6 +479,9 @@ export default function Hotels() {
                         // Auto-fill golf courses if empty
                         if (data.golf_courses && !formData.golf_courses.trim()) {
                           setFormData((f) => ({ ...f, golf_courses: data.golf_courses }));
+                        }
+                        if (data.golf_courses_data?.length > 0 && formData.golf_courses_data.length === 0) {
+                          setFormData((f) => ({ ...f, golf_courses_data: data.golf_courses_data }));
                           toast.success("Golfová hřiště navržena");
                         }
 
@@ -546,7 +564,7 @@ export default function Hotels() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Golfová hřiště</Label>
+                    <Label>Golfová hřiště (text)</Label>
                     <Input
                       value={formData.golf_courses}
                       onChange={(e) => setFormData((f) => ({ ...f, golf_courses: e.target.value }))}
@@ -562,6 +580,131 @@ export default function Hotels() {
                       </button>
                     )}
                   </div>
+
+              {/* Structured golf courses */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-semibold">Golfová hřiště – detaily</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setFormData((f) => ({
+                        ...f,
+                        golf_courses_data: [...f.golf_courses_data, { name: "", par: null, length: null, architect: null, is_hotel_course: true, distance_km: null }],
+                      }))
+                    }
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Přidat hřiště
+                  </Button>
+                </div>
+                {aiSuggestion?.golf_courses_data && aiSuggestion.golf_courses_data.length > 0 && formData.golf_courses_data.length === 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mb-3 gap-1"
+                    onClick={() => setFormData((f) => ({ ...f, golf_courses_data: aiSuggestion.golf_courses_data! }))}
+                  >
+                    <Sparkles className="h-3 w-3" /> Použít AI návrh ({aiSuggestion.golf_courses_data.length} hřišť)
+                  </Button>
+                )}
+                <div className="space-y-3">
+                  {formData.golf_courses_data.map((gc, idx) => (
+                    <div key={idx} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={gc.name}
+                          onChange={(e) => {
+                            const updated = [...formData.golf_courses_data];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                          }}
+                          placeholder="Název hřiště"
+                          className="font-medium"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-destructive"
+                          onClick={() => {
+                            const updated = formData.golf_courses_data.filter((_, i) => i !== idx);
+                            setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <Label className="text-xs">PAR</Label>
+                          <Input
+                            type="number"
+                            value={gc.par ?? ""}
+                            onChange={(e) => {
+                              const updated = [...formData.golf_courses_data];
+                              updated[idx] = { ...updated[idx], par: e.target.value ? Number(e.target.value) : null };
+                              setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                            }}
+                            placeholder="72"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Délka</Label>
+                          <Input
+                            value={gc.length ?? ""}
+                            onChange={(e) => {
+                              const updated = [...formData.golf_courses_data];
+                              updated[idx] = { ...updated[idx], length: e.target.value || null };
+                              setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                            }}
+                            placeholder="6321 m"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Architekt</Label>
+                          <Input
+                            value={gc.architect ?? ""}
+                            onChange={(e) => {
+                              const updated = [...formData.golf_courses_data];
+                              updated[idx] = { ...updated[idx], architect: e.target.value || null };
+                              setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                            }}
+                            placeholder="Michel Gayon"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Vzdálenost (km)</Label>
+                          <Input
+                            type="number"
+                            value={gc.distance_km ?? ""}
+                            onChange={(e) => {
+                              const updated = [...formData.golf_courses_data];
+                              updated[idx] = { ...updated[idx], distance_km: e.target.value ? Number(e.target.value) : null };
+                              setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                            }}
+                            placeholder="0"
+                            disabled={gc.is_hotel_course}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={gc.is_hotel_course}
+                          onCheckedChange={(v) => {
+                            const updated = [...formData.golf_courses_data];
+                            updated[idx] = { ...updated[idx], is_hotel_course: v, distance_km: v ? null : updated[idx].distance_km };
+                            setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                          }}
+                        />
+                        <Label className="text-xs">Vlastní hřiště hotelu</Label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
                   <div className="sm:col-span-2">
                     <Label>Oficiální web hotelu</Label>
                     <Input
