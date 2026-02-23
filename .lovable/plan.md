@@ -1,51 +1,40 @@
 
 
-# Oprava: Nelze vybrat variantu jako finalni
+# Sloučení uživatelů: propojení Apple identity k hlavnímu účtu
 
-## Problem
+## Situace
 
-Databazova funkce `select_deal_variant` kontroluje, zda prihlaseny uzivatel je vlastnikem **varianty** (`deal_variants.user_id`). Ale nektere varianty byly vytvoreny jinym uzivatelem nez tim, kdo se pokusi variantu vybrat. Napr. varianta "Sueno Golf Hotel" ma `user_id` jineho uzivatele nez je vlastnik dealu.
+- **Hlavní účet**: `radek@yarotravel.cz` (ID: `c744a7af-...`, vytvořen 22.10.2025, veškerá data)
+- **Apple účet**: `8xxyq7v4br@privaterelay.appleid.com` (ID: `a8a9f7f4-...`, vytvořen dnes, 0 dat)
 
-RLS politiky na tabulce `deal_variants` pritom povolují update vsem prihlasenym uzivatelum -- funkce je tedy zbytecne restriktivni.
+Apple účet nemá žádné záznamy (vouchery, dealy, smlouvy, varianty, úkoly) -- je zcela prázdný.
 
-## Reseni
+## Postup
 
-Upravit databazovou funkci `select_deal_variant` tak, aby kontrolovala vlastnictvi **dealu** (ne varianty), nebo aby jednodusse povolila operaci kazdemu prihlaseneho uzivateli (coz odpovida existujicim RLS politikam).
+Protože Apple účet neobsahuje žádná data, stačí:
 
-## Technicke zmeny
+1. **Smazat Apple účet** z autentizační tabulky a profilu
+2. **Smazat profil** Apple uživatele z tabulky `profiles`
 
-### 1. Migrace - uprava funkce `select_deal_variant`
-
-Zmena kontroly z `v_user_id != auth.uid()` na overeni, ze uzivatel je autentifikovany (coz uz funkce dela). Odstraníme kontrolu vlastnictvi varianty, protoze RLS politiky uz umoznuji update vsem prihlasenym uzivatelum.
+To se provede jedinou SQL migrací:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.select_deal_variant(p_variant_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  v_deal_id uuid;
-BEGIN
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Authentication required';
-  END IF;
+-- Smazat profil Apple uzivatele
+DELETE FROM public.profiles WHERE id = 'a8a9f7f4-7586-4c78-ac04-3f6030c3a05b';
 
-  SELECT deal_id INTO v_deal_id
-  FROM deal_variants
-  WHERE id = p_variant_id;
-
-  IF v_deal_id IS NULL THEN
-    RAISE EXCEPTION 'Variant not found';
-  END IF;
-
-  UPDATE deal_variants SET is_selected = false WHERE deal_id = v_deal_id;
-  UPDATE deal_variants SET is_selected = true WHERE id = p_variant_id;
-
-  RETURN true;
-END;
-$$;
+-- Smazat Apple uzivatele z auth
+DELETE FROM auth.users WHERE id = 'a8a9f7f4-7586-4c78-ac04-3f6030c3a05b';
 ```
 
-Zadne zmeny ve frontendu nejsou potreba -- kod v `DealVariants.tsx` uz vola `supabase.rpc("select_deal_variant", ...)` spravne.
+Po smazání, když se Radek příště přihlásí přes Apple, systém automaticky vytvoří novou identitu propojenou s existujícím účtem (pokud má Apple nakonfigurovaný stejný e-mail), nebo vytvoří nový účet, který pak bude potřeba znovu propojit.
+
+## Alternativní přístup (lepší dlouhodobě)
+
+Pokud chcete, aby se Radek mohl přihlašovat přes Apple **i** přes e-mail pod jedním účtem, je lepší řešení nakonfigurovat Apple Sign-In tak, aby sdílel skutečný e-mail (`radek@yarotravel.cz`) místo Apple relay adresy. To ale závisí na nastavení Apple ID na straně uživatele.
+
+## Technické detaily
+
+- Migrace smaže pouze prázdný Apple účet
+- Hlavní účet `radek@yarotravel.cz` zůstane beze změn
+- Žádné změny ve frontendu nejsou potřeba
+
