@@ -47,6 +47,7 @@ interface GolfCourseData {
   architect: string | null;
   is_hotel_course: boolean;
   distance_km: number | null;
+  rating: number | null;
 }
 
 interface HotelTemplate {
@@ -575,7 +576,7 @@ export default function Hotels() {
                     onClick={() =>
                       setFormData((f) => ({
                         ...f,
-                        golf_courses_data: [...f.golf_courses_data, { name: "", par: null, length: null, architect: null, is_hotel_course: true, distance_km: null }],
+                        golf_courses_data: [...f.golf_courses_data, { name: "", par: null, length: null, architect: null, is_hotel_course: true, distance_km: null, rating: null }],
                       }))
                     }
                   >
@@ -620,7 +621,7 @@ export default function Hotels() {
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         <div>
                           <Label className="text-xs">PAR</Label>
                           <Input
@@ -670,6 +671,22 @@ export default function Hotels() {
                             }}
                             placeholder="0"
                             disabled={gc.is_hotel_course}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Rating (0-10)</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            value={gc.rating ?? ""}
+                            onChange={(e) => {
+                              const updated = [...formData.golf_courses_data];
+                              updated[idx] = { ...updated[idx], rating: e.target.value ? Number(e.target.value) : null };
+                              setFormData((f) => ({ ...f, golf_courses_data: updated }));
+                            }}
+                            placeholder="8.5"
                           />
                         </div>
                       </div>
