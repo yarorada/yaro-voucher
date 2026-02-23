@@ -566,7 +566,7 @@ export default function Hotels() {
                   </div>
 
               {/* Structured golf courses */}
-              <div className="border-t pt-4">
+              <div className="sm:col-span-2 border-t pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <Label className="text-base font-semibold">Golfová hřiště – detaily</Label>
                   <Button
