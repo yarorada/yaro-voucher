@@ -375,7 +375,7 @@ const Statistics = () => {
         <StatsCountryTable data={statsData} />
       </div>
 
-      <StatsClientTable />
+      <StatsClientTable excludeFlights={excludeFlights} flightCosts={flightCosts} />
     </div>
   );
 };
