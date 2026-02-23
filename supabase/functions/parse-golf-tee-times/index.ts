@@ -32,7 +32,7 @@ serve(async (req: Request) => {
           {
             role: "system",
             content:
-              "Jsi expert na extrakci strukturovaných dat o golfových tee times z různých formátů textu (emaily, tabulky, seznamy). Extrahuj všechny tee times včetně data, názvu golfového klubu, času a počtu golfistů. Pokud text obsahuje informace o ceně za osobu nebo celkové ceně, extrahuj je také.",
+              "Jsi expert na extrakci strukturovaných dat o golfových tee times z různých formátů textu (emaily, tabulky, seznamy). Extrahuj všechny tee times včetně data, názvu golfového klubu, času a počtu golfistů. Pokud text obsahuje informace o ceně za osobu nebo celkové ceně, extrahuj je také. Pokud je uveden časový rozsah (např. 09:30 - 14:00), zapiš ho celý do pole time ve formátu 'HH:MM - HH:MM'.",
           },
           {
             role: "user",
@@ -63,7 +63,7 @@ serve(async (req: Request) => {
                         },
                         time: {
                           type: "string",
-                          description: "Čas startu (např. 09:30)",
+                          description: "Čas startu nebo časový rozsah (např. '09:30' nebo '09:30 - 14:00')",
                         },
                         golfers: {
                           type: "string",

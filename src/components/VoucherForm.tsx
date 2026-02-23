@@ -1481,7 +1481,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
                     <Input
                       value={teeTime.time}
                       onChange={(e) => updateTeeTime(index, "time", e.target.value)}
-                      placeholder="např. 13:45h"
+                      placeholder="např. 09:30 - 14:00"
                       maxLength={20}
                     />
                   </div>

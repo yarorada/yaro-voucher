@@ -108,10 +108,10 @@ export const DealTeeTimesEditor = ({ dealId, teeTimes, onUpdate }: DealTeeTimesE
               className="flex-1 h-8 text-xs"
             />
             <Input
-              placeholder="HH:MM"
+              placeholder="HH:MM - HH:MM"
               value={item.time}
               onChange={e => updateItem(idx, "time", e.target.value)}
-              className="w-[80px] shrink-0 h-8 text-xs"
+              className="w-[120px] shrink-0 h-8 text-xs"
             />
             <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} className="shrink-0 h-7 w-7">
               <Trash2 className="h-3 w-3 text-destructive" />

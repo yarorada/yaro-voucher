@@ -35,11 +35,19 @@ interface SupplierGroup {
   isYaro: boolean;
 }
 
+interface TeeTimeData {
+  date: string | null;
+  club: string;
+  time: string;
+  golfers?: string;
+}
+
 interface CreateVouchersFromDealProps {
   dealId: string;
   services: DealService[];
   clientId: string | null;
   clientName: string;
+  teeTimes?: TeeTimeData[];
   onComplete?: () => void;
 }
 
@@ -48,6 +56,7 @@ export function CreateVouchersFromDeal({
   services,
   clientId,
   clientName,
+  teeTimes,
   onComplete,
 }: CreateVouchersFromDealProps) {
   const { toast } = useToast();
@@ -156,6 +165,7 @@ export function CreateVouchersFromDeal({
               expiration_date: latestEndDate,
               other_travelers: otherTravelerNames.length > 0 ? otherTravelerNames : null,
               voucher_number: Math.floor(Math.random() * 10000),
+              tee_times: teeTimes && teeTimes.length > 0 ? teeTimes : null,
             } as any)
             .select()
             .single();

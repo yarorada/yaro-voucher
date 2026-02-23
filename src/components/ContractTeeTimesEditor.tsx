@@ -119,10 +119,10 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
                 className="flex-1"
               />
               <Input
-                placeholder="HH:MM"
+                placeholder="HH:MM - HH:MM"
                 value={item.time}
                 onChange={e => updateItem(idx, "time", e.target.value)}
-                className="w-[100px] shrink-0"
+                className="w-[130px] shrink-0"
               />
               <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} className="shrink-0">
                 <Trash2 className="h-4 w-4 text-destructive" />
