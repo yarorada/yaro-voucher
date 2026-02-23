@@ -28,6 +28,7 @@ import { ServiceCombobox } from "./ServiceCombobox";
 import { HotelCombobox } from "./HotelCombobox";
 import { CurrencySelect } from "./CurrencySelect";
 import { HotelAiImport, type ParsedHotelData } from "./HotelAiImport";
+import { GolfAiImport, type ParsedTeeTime } from "./GolfAiImport";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 
 interface FlightDetails {
@@ -484,6 +485,67 @@ export const VariantServiceDialog = ({
                       setDescription(`${data.room_type} (${data.meal_plan})`);
                     } else if (data.meal_plan) {
                       setDescription(data.meal_plan);
+                    }
+                  }}
+                />
+              )}
+              {serviceType === 'golf' && (
+                <GolfAiImport
+                  onImport={async (teeTimes: ParsedTeeTime[], supplierNameFromAi?: string) => {
+                    if (teeTimes.length === 0) return;
+
+                    try {
+                      // Look up supplier by name if provided
+                      let foundSupplierId: string | null = null;
+                      if (supplierNameFromAi) {
+                        const { data: suppliers } = await supabase
+                          .from("suppliers")
+                          .select("id, name")
+                          .ilike("name", `%${supplierNameFromAi}%`)
+                          .limit(1);
+                        if (suppliers && suppliers.length > 0) {
+                          foundSupplierId = suppliers[0].id;
+                        }
+                      }
+
+                      const servicesToInsert = teeTimes.map((tt, idx) => ({
+                        variant_id: variantId,
+                        service_type: "golf" as const,
+                        service_name: tt.club || "Green Fee",
+                        description: [tt.time && `Čas: ${tt.time}`, tt.golfers && `Golfisté: ${tt.golfers}`]
+                          .filter(Boolean)
+                          .join(", ") || null,
+                        start_date: tt.date || null,
+                        end_date: tt.date || null,
+                        price: tt.price_per_person || null,
+                        cost_price: null,
+                        cost_currency: tt.currency || "CZK",
+                        cost_price_original: null,
+                        supplier_id: foundSupplierId,
+                        person_count: parseInt(tt.golfers) || parseInt(personCount) || 1,
+                        quantity: 1,
+                        order_index: idx,
+                      }));
+
+                      const { error } = await supabase
+                        .from("deal_variant_services")
+                        .insert(servicesToInsert as any);
+                      if (error) throw error;
+
+                      toast({
+                        title: "Úspěch",
+                        description: `Vytvořeno ${teeTimes.length} Green Fee služeb`,
+                      });
+
+                      onClose(true);
+                      resetForm();
+                    } catch (error) {
+                      console.error("Error importing golf tee times:", error);
+                      toast({
+                        title: "Chyba",
+                        description: "Nepodařilo se importovat tee times",
+                        variant: "destructive",
+                      });
                     }
                   }}
                 />
