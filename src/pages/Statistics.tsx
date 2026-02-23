@@ -9,6 +9,7 @@ import { StatsTimeChart } from "@/components/statistics/StatsTimeChart";
 import { StatsCountryChart } from "@/components/statistics/StatsCountryChart";
 import { StatsPeriodTable } from "@/components/statistics/StatsPeriodTable";
 import { StatsCountryTable } from "@/components/statistics/StatsCountryTable";
+import { StatsClientTable } from "@/components/statistics/StatsClientTable";
 import { Loader2 } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 
@@ -373,6 +374,8 @@ const Statistics = () => {
         <StatsPeriodTable data={statsData} periodType={periodType} />
         <StatsCountryTable data={statsData} />
       </div>
+
+      <StatsClientTable />
     </div>
   );
 };
