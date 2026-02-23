@@ -76,9 +76,10 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
 
   const getPublicUrl = (token: string) => {
     const base = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(token)}`;
-    if (!hasMultipleVariants || allSelected) {
-      return allSelected && hasMultipleVariants ? `${base}?all=1` : base;
+    if (!hasMultipleVariants) {
+      return base;
     }
+    // Always use explicit variant IDs to ensure correct filtering
     return `${base}?variants=${Array.from(selectedVariantIds).join(",")}`;
   };
 
@@ -122,8 +123,8 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       const { data, error } = await supabase.functions.invoke('send-offer-email', {
         body: {
           dealId,
-          allVariants: allSelected && hasMultipleVariants,
-          variantIds: hasMultipleVariants && !allSelected ? Array.from(selectedVariantIds) : undefined,
+          allVariants: false,
+          variantIds: hasMultipleVariants ? Array.from(selectedVariantIds) : undefined,
         },
       });
 
