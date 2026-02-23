@@ -88,6 +88,18 @@ export function CreateVouchersFromDeal({
     const newResults: typeof results = [];
 
     try {
+      // Fetch all travelers for this deal (lead first)
+      const { data: dealTravelers } = await supabase
+        .from("deal_travelers")
+        .select("client_id, is_lead_traveler, clients(id, first_name, last_name)")
+        .eq("deal_id", dealId)
+        .order("is_lead_traveler", { ascending: false });
+
+      const sortedTravelers = dealTravelers || [];
+      const otherTravelerNames = sortedTravelers
+        .filter((t: any) => !t.is_lead_traveler && t.clients)
+        .map((t: any) => `${t.clients.first_name} ${t.clients.last_name}`);
+
       for (const group of nonYaroGroups) {
         try {
           // Prepare services for translation
@@ -142,12 +154,28 @@ export function CreateVouchersFromDeal({
               services: translatedServices,
               issue_date: new Date().toISOString().split("T")[0],
               expiration_date: latestEndDate,
+              other_travelers: otherTravelerNames.length > 0 ? otherTravelerNames : null,
               voucher_number: Math.floor(Math.random() * 10000),
             } as any)
             .select()
             .single();
 
           if (voucherError) throw voucherError;
+
+          // Insert voucher_travelers – lead first, then others
+          if (sortedTravelers.length > 0) {
+            const travelerInserts = sortedTravelers
+              .filter((t: any) => t.clients)
+              .map((t: any) => ({
+                voucher_id: voucher.id,
+                client_id: t.client_id,
+                is_main_client: t.is_lead_traveler,
+              }));
+
+            if (travelerInserts.length > 0) {
+              await supabase.from("voucher_travelers").insert(travelerInserts);
+            }
+          }
 
           newResults.push({
             supplierName: group.supplierName,
