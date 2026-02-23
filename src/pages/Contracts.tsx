@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, FileText, Search, Trash2, Filter } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Search, Trash2, Filter, Download } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -73,7 +73,7 @@ const Contracts = () => {
               name,
               countries:country_id(iso_code)
             ),
-            deal_services(service_name, service_type)
+            deal_services(service_name, service_type, price, cost_price)
           )
         `)
         .order("created_at", { ascending: false });
@@ -102,6 +102,57 @@ const Contracts = () => {
       toast.error("Nepodařilo se smazat smlouvu");
     },
   });
+
+  const handleExportCSV = () => {
+    if (!filteredContracts || filteredContracts.length === 0) {
+      toast.error("Žádné smlouvy k exportu");
+      return;
+    }
+
+    const headers = ["Číslo smlouvy", "Klient", "Destinace", "Datum odjezdu", "Datum návratu", "Prodejní cena", "Měna", "Nákupní cena", "Marže", "Status"];
+    
+    const rows = filteredContracts.map((contract) => {
+      const client = contract.client as any;
+      const clientName = client ? `${client.first_name} ${client.last_name}` : "";
+      const destination = (contract.deal as any)?.destination?.name || "";
+      const startDate = formatDateShort((contract.deal as any)?.start_date);
+      const endDate = formatDateShort((contract.deal as any)?.end_date);
+      const salesPrice = contract.total_price || 0;
+      const currency = contract.currency || "CZK";
+      const costPrice = ((contract.deal as any)?.deal_services || []).reduce(
+        (sum: number, s: any) => sum + (s.cost_price || 0), 0
+      );
+      const margin = salesPrice - costPrice;
+      const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
+
+      return [
+        contract.contract_number,
+        clientName,
+        destination,
+        startDate,
+        endDate,
+        salesPrice.toString(),
+        currency,
+        costPrice.toString(),
+        margin.toString(),
+        config.label,
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `smlouvy-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Export dokončen");
+  };
 
   const handleDeleteClick = (e: React.MouseEvent, contractId: string, contractNumber: string) => {
     e.stopPropagation();
@@ -187,6 +238,10 @@ const Contracts = () => {
         </SelectContent>
       </Select>
       <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+      <Button onClick={handleExportCSV} className={toolbarButtonClass + " gap-1"}>
+        <Download className="h-3.5 w-3.5" />
+        Export CSV
+      </Button>
       <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " gap-1"}>
         <Plus className="h-3.5 w-3.5" />
         Nová smlouva
