@@ -236,7 +236,7 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
               </TableCell>
               <TableCell className="text-right text-body">
                 <span className={margin > 0 ? "text-green-600 dark:text-green-400" : margin < 0 ? "text-destructive" : ""}>
-                  {margin.toFixed(1)} %
+                  {margin.toFixed(0)} %
                 </span>
               </TableCell>
             </TableRow>

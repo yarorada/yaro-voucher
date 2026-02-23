@@ -24,7 +24,7 @@ const formatCurrency = (value: number) => {
 
 const formatPercent = (value: number | null) => {
   if (value === null) return null;
-  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+  return `${value >= 0 ? "+" : ""}${value.toFixed(0)}%`;
 };
 
 const ChangeIndicator = ({ value, inverted = false }: { value: number | null; inverted?: boolean }) => {
@@ -52,7 +52,7 @@ const ChangeIndicator = ({ value, inverted = false }: { value: number | null; in
 
 export const StatsSummaryCards = ({ stats }: StatsSummaryCardsProps) => {
   const margin = stats.totalRevenue > 0 
-    ? ((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1) 
+    ? ((stats.totalProfit / stats.totalRevenue) * 100).toFixed(0) 
     : "0";
 
   return (
