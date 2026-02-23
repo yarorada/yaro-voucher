@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const { data: contract, error } = await supabase
       .from('travel_contracts')
       .select(`
-        id, contract_number, status, contract_date, total_price, deposit_amount, currency, terms,
+        id, contract_number, status, contract_date, total_price, deposit_amount, currency, terms, tee_times,
         signed_at, signature_url,
         agency_name, agency_address, agency_ico, agency_contact, agency_bank_account,
         client:clients(first_name, last_name, email, address, date_of_birth),

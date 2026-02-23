@@ -340,11 +340,32 @@ const SignContract = () => {
           </Card>
         )}
 
-        {/* Terms */}
-        {contract.terms && (
+        {/* Notes: Tee Times + Terms */}
+        {(contract.tee_times?.length > 0 || contract.terms) && (
           <Card className="p-5 space-y-3">
-            <h2 className="font-semibold text-lg">Podmínky smlouvy</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{contract.terms}</p>
+            <h2 className="font-semibold text-lg">Poznámky</h2>
+            {contract.tee_times?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Startovací časy (Tee Times)</p>
+                <div className="text-sm text-muted-foreground space-y-0.5">
+                  {contract.tee_times.map((tt: any, i: number) => {
+                    const dateStr = tt.date
+                      ? new Date(tt.date).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "2-digit" })
+                      : "—";
+                    return (
+                      <p key={i}>
+                        {dateStr} – {tt.course || "—"}{tt.time ? ` – ${tt.time}` : ""}{tt.players ? ` (${tt.players}x)` : ""}
+                      </p>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {contract.terms && (
+              <div>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{contract.terms}</p>
+              </div>
+            )}
           </Card>
         )}
 
