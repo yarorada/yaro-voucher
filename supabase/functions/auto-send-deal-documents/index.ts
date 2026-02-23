@@ -191,6 +191,19 @@ Deno.serve(async (req) => {
           .update({ documents_auto_sent_at: new Date().toISOString() })
           .eq("id", deal.id);
 
+        // Insert notification
+        try {
+          await supabase.from("notifications").insert({
+            event_type: "documents_auto_sent",
+            title: `Dokumenty automaticky odeslány pro ${deal.deal_number}`,
+            message: `${attachments.length} příloha(y) odeslány na ${clientEmail}`,
+            deal_id: deal.id,
+            link: `/deals/${deal.id}`,
+          });
+        } catch (e) {
+          console.error("Notification insert error:", e);
+        }
+
         console.log(`[auto-send] Deal ${deal.deal_number}: sent successfully`);
         results.push({ dealId: deal.id, success: true });
       } catch (err: any) {

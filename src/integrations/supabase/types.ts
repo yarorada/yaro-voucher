@@ -1131,6 +1131,67 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          deal_id: string | null
+          event_type: string
+          id: string
+          link: string | null
+          message: string | null
+          read: boolean
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          event_type: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          event_type?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "travel_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "notifications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_responses: {
         Row: {
           client_email: string | null

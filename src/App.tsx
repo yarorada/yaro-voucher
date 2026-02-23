@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingTaskButton } from "@/components/FloatingTaskButton";
 import { PageToolbarProvider, usePageToolbarContent } from "@/hooks/usePageToolbar";
 import { Menu } from "lucide-react";
@@ -52,6 +53,7 @@ const LayoutHeader = () => {
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
               <Breadcrumbs />
+              <NotificationBell />
             </div>
             {toolbarContent && (
               <div className="flex flex-wrap items-center gap-2">

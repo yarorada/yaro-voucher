@@ -108,6 +108,19 @@ Deno.serve(async (req) => {
       console.error('Status update error:', statusError);
     }
 
+    // Insert notification
+    try {
+      await supabase.from('notifications').insert({
+        event_type: 'offer_approved',
+        title: `Klient ${clientName} schválil nabídku ${deal.deal_number}`,
+        message: variant_name ? `Vybraná varianta: ${variant_name}` : null,
+        deal_id: deal.id,
+        link: `/deals/${deal.id}`,
+      });
+    } catch (e) {
+      console.error('Notification insert error:', e);
+    }
+
     // Send notification email via Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (resendApiKey) {

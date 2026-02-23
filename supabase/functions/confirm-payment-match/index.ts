@@ -131,6 +131,25 @@ serve(async (req) => {
       }
     }
 
+    // Insert notification for payment confirmation
+    try {
+      const { data: contractInfo } = await serviceClient
+        .from('travel_contracts')
+        .select('contract_number')
+        .eq('id', contractPayment.contract_id)
+        .single();
+
+      await serviceClient.from('notifications').insert({
+        event_type: 'payment_confirmed',
+        title: `Platba ${contractPayment.amount.toLocaleString('cs-CZ')} Kč spárována se smlouvou ${contractInfo?.contract_number || ''}`,
+        contract_id: contractPayment.contract_id,
+        deal_id: dealId,
+        link: dealId ? `/deals/${dealId}` : `/contracts/${contractPayment.contract_id}`,
+      });
+    } catch (e) {
+      console.error('Notification insert error:', e);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       deal_propagated: dealPropagated,
