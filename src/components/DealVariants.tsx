@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, CheckCircle2, Copy, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
 import { formatPrice } from "@/lib/utils";
+import { getServiceTotal } from "@/lib/servicePrice";
 
 interface DealVariant {
   id: string;
@@ -28,6 +29,7 @@ interface DealVariant {
     quantity: number;
     person_count: number | null;
     price_currency: string | null;
+    details: any;
   }>;
 }
 
@@ -95,7 +97,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
         .select(`
           *,
           destination:destinations(name),
-          deal_variant_services(price, cost_price, cost_price_original, cost_currency, quantity, person_count, price_currency)
+          deal_variant_services(price, cost_price, cost_price_original, cost_currency, quantity, person_count, price_currency, details)
         `)
         .eq("deal_id", dealId)
         .order("created_at", { ascending: false });
@@ -204,7 +206,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     // Fetch variant info (destination) and its services (dates, prices)
     const [{ data: variant }, { data: services }] = await Promise.all([
       supabase.from("deal_variants").select("destination_id").eq("id", variantId).single(),
-      supabase.from("deal_variant_services").select("start_date, end_date, price, cost_price, quantity, price_currency").eq("variant_id", variantId),
+      supabase.from("deal_variant_services").select("start_date, end_date, price, cost_price, quantity, person_count, price_currency, details").eq("variant_id", variantId),
     ]);
 
     const updateData: Record<string, any> = {};
@@ -222,7 +224,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       if (endDates[endDates.length - 1]) updateData.end_date = endDates[endDates.length - 1];
 
       // Propagate total_price and currency
-      const totalPrice = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+      const totalPrice = services.reduce((sum, s) => sum + getServiceTotal(s), 0);
       if (totalPrice > 0) updateData.total_price = totalPrice;
       const serviceCurrency = services.find(s => (s as any).price_currency)?.price_currency;
       if (serviceCurrency) updateData.currency = serviceCurrency;
@@ -242,7 +244,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
 
     if (!variantServices || variantServices.length === 0) return;
 
-    const totalPrice = variantServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+    const totalPrice = variantServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0); // payment schedule uses raw price*qty
     if (totalPrice <= 0) return;
 
     // Delete existing payments so we can recreate them for the new variant
@@ -580,29 +582,25 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                 {(() => {
                   const services = variant.deal_variant_services || [];
                   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
-                  const revenue = services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+                  const revenue = services.reduce((sum, s) => sum + getServiceTotal(s), 0);
 
                   // Convert cost prices to selling currency
                   const costs = services.reduce((sum, s) => {
+                    const mult = s.details?.price_mode === "per_person" ? (s.person_count || 1) : (s.quantity || 1);
                     const costCur = s.cost_currency || "CZK";
                     if (costCur === currency) {
-                      // Same currency as selling — use original cost
                       const costVal = s.cost_price_original != null ? s.cost_price_original : (s.cost_price || 0);
-                      return sum + costVal * (s.quantity || 1);
+                      return sum + costVal * mult;
                     }
                     if (currency === "CZK") {
-                      // Selling in CZK — cost_price is already CZK
-                      return sum + (s.cost_price || 0) * (s.quantity || 1);
+                      return sum + (s.cost_price || 0) * mult;
                     }
-                    // Selling in foreign currency, cost in different currency — convert CZK cost to selling currency
-                    // Derive rate: find any service with cost_price_original and cost_price to get CZK->selling rate
                     const rateService = services.find(rs => rs.cost_price_original && rs.cost_price_original > 0 && rs.cost_price && rs.cost_price > 0 && rs.cost_currency === currency);
                     if (rateService) {
-                      const rate = rateService.cost_price! / rateService.cost_price_original!; // CZK per 1 unit of selling currency
-                      return sum + ((s.cost_price || 0) / rate) * (s.quantity || 1);
+                      const rate = rateService.cost_price! / rateService.cost_price_original!;
+                      return sum + ((s.cost_price || 0) / rate) * mult;
                     }
-                    // Fallback: use CZK cost_price as-is (best effort)
-                    return sum + (s.cost_price || 0) * (s.quantity || 1);
+                    return sum + (s.cost_price || 0) * mult;
                   }, 0);
 
                   const profit = revenue - costs;

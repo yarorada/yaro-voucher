@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { getServiceTotal } from "@/lib/servicePrice";
 
 interface OfferData {
   deal: {
@@ -246,7 +247,7 @@ function computePerPersonPrices(services: Array<{
   // Sum of shared services cost per person: each shared service total / its person_count
   let sharedPerPerson = 0;
   shared.forEach(s => {
-    const total = (s.price || 0) * (s.quantity || 1);
+    const total = getServiceTotal(s);
     const persons = s.person_count || 1;
     sharedPerPerson += total / persons;
   });
@@ -254,7 +255,7 @@ function computePerPersonPrices(services: Array<{
 
   return hotels.map(h => {
     const persons = h.person_count || 1;
-    const hotelTotal = (h.price || 0) * (h.quantity || 1);
+    const hotelTotal = getServiceTotal(h);
     const hotelPerPerson = hotelTotal / persons;
     return {
       label: h.description || h.service_name,
@@ -560,7 +561,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   const dest = variant.destination;
 
   const totalPrice = variant.total_price || variant.deal_variant_services.reduce(
-    (sum, s) => sum + (s.price || 0) * ((s as any).quantity || 1), 0
+    (sum, s) => sum + getServiceTotal(s), 0
   );
 
   const currency = variant.deal_variant_services.find(s => s.price_currency)?.price_currency || "CZK";
