@@ -41,7 +41,7 @@ interface Deal {
   id: string;
   deal_number: string;
   name: string | null;
-  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled" | "dispatched";
+  status: "inquiry" | "quote" | "approved" | "confirmed" | "completed" | "cancelled" | "dispatched";
   start_date: string | null;
   end_date: string | null;
   total_price: number | null;
@@ -403,6 +403,7 @@ const Deals = () => {
           <SelectItem value="all">Všechny statusy</SelectItem>
           <SelectItem value="inquiry">Poptávka</SelectItem>
           <SelectItem value="quote">Nabídka odeslána</SelectItem>
+          <SelectItem value="approved">Schváleno</SelectItem>
           <SelectItem value="confirmed">Potvrzeno</SelectItem>
           <SelectItem value="dispatched">Expedováno</SelectItem>
           <SelectItem value="completed">Dokončeno</SelectItem>

@@ -1645,6 +1645,7 @@ export type Database = {
       deal_status:
         | "inquiry"
         | "quote"
+        | "approved"
         | "confirmed"
         | "completed"
         | "cancelled"
@@ -1787,6 +1788,7 @@ export const Constants = {
       deal_status: [
         "inquiry",
         "quote",
+        "approved",
         "confirmed",
         "completed",
         "cancelled",

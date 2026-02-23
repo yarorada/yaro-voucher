@@ -251,7 +251,7 @@ interface Deal {
   id: string;
   deal_number: string;
   name: string | null;
-  status: "inquiry" | "quote" | "confirmed" | "cancelled" | "completed" | "dispatched";
+  status: "inquiry" | "quote" | "approved" | "confirmed" | "cancelled" | "completed" | "dispatched";
   start_date: string | null;
   end_date: string | null;
   total_price: number | null;
@@ -463,7 +463,7 @@ const DealDetail = () => {
 
   // Form state
   const handleSaveRef = useRef<() => Promise<void>>();
-  const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
+  const [status, setStatus] = useState<"inquiry" | "quote" | "approved" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -2134,6 +2134,7 @@ const DealDetail = () => {
                     <SelectContent>
                       <SelectItem value="inquiry">Poptávka</SelectItem>
                       <SelectItem value="quote">Nabídka odeslána</SelectItem>
+                      <SelectItem value="approved">Schváleno</SelectItem>
                       <SelectItem value="confirmed">Potvrzeno</SelectItem>
                       <SelectItem value="dispatched">Odbaveno</SelectItem>
                       <SelectItem value="cancelled">Zrušeno</SelectItem>
