@@ -94,20 +94,23 @@ const handler = async (req: Request): Promise<Response> => {
     const searchData = await searchResponse.json();
     const existingRecord = searchData.records?.[0];
 
-    const fields = {
+    const fields: Record<string, any> = {
       "Číslo smlouvy": contract.contract_number,
       "Klient": clientName,
       "Email klienta": contract.client?.email || "",
       "Destinace": destination,
-      "Datum odjezdu": startDate,
-      "Datum návratu": endDate,
       "Prodejní cena": salesPrice,
       "Měna": currency,
       "Nákupní cena": costPrice,
       "Marže": margin,
       "Status": contract.status,
-      "Odesláno dne": formatDate(contract.sent_at),
     };
+
+    // Only include date fields if they have actual values (Airtable rejects empty strings for date fields)
+    if (startDate) fields["Datum odjezdu"] = startDate;
+    if (endDate) fields["Datum návratu"] = endDate;
+    const sentDate = formatDate(contract.sent_at);
+    if (sentDate) fields["Odesláno dne"] = sentDate;
 
     let airtableResponse: Response;
 
