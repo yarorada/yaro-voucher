@@ -169,7 +169,7 @@ export const RecentDealsCard = () => {
                   <DealStatusBadge status={deal.status} />
                   <span className="font-bold text-sm">{getBaseNumber(deal.deal_number)}</span>
                 </div>
-                <div className="text-xs text-muted-foreground pl-1 truncate">
+                <div className="text-xs text-muted-foreground pl-1 break-words">
                   {(() => {
                     const parts: string[] = [];
                     const client = getLeadClient(deal);
