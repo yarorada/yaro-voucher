@@ -273,6 +273,9 @@ export default function PublicOffer() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [variantComments, setVariantComments] = useState<Record<string, string>>({});
+  const [variantSubmitting, setVariantSubmitting] = useState<Record<string, boolean>>({});
+  const [variantSubmitted, setVariantSubmitted] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!token) return;
@@ -302,9 +305,18 @@ export default function PublicOffer() {
     };
     fetchOffer();
   }, [token]);
-  const handleSubmitResponse = async () => {
-    if (!token || submitting) return;
-    setSubmitting(true);
+
+  const submitResponse = async (variantName?: string, variantId?: string) => {
+    if (!token) return;
+    const isVariant = !!variantId;
+    const currentComment = isVariant ? (variantComments[variantId] || "") : comment;
+
+    if (isVariant) {
+      setVariantSubmitting(prev => ({ ...prev, [variantId]: true }));
+    } else {
+      setSubmitting(true);
+    }
+
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
@@ -315,18 +327,28 @@ export default function PublicOffer() {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ token, comment }),
+          body: JSON.stringify({ token, comment: currentComment, variant_name: variantName || undefined }),
         }
       );
       if (res.ok) {
-        setSubmitted(true);
+        if (isVariant) {
+          setVariantSubmitted(prev => ({ ...prev, [variantId]: true }));
+        } else {
+          setSubmitted(true);
+        }
       }
     } catch (err) {
       console.error('Submit error:', err);
     } finally {
-      setSubmitting(false);
+      if (isVariant) {
+        setVariantSubmitting(prev => ({ ...prev, [variantId]: false }));
+      } else {
+        setSubmitting(false);
+      }
     }
   };
+
+  const handleSubmitResponse = () => submitResponse();
 
   if (loading) {
     return (
@@ -397,6 +419,12 @@ export default function PublicOffer() {
                 hotelImages={hotelImages}
                 isSelected={variant.is_selected}
                 showBadge={!hasSelectedVariant && variants.length > 1}
+                showResponseForm={variants.length > 1}
+                comment={variantComments[variant.id] || ""}
+                onCommentChange={(val) => setVariantComments(prev => ({ ...prev, [variant.id]: val }))}
+                onSubmit={() => submitResponse(variant.variant_name, variant.id)}
+                isSubmitting={variantSubmitting[variant.id] || false}
+                isSubmitted={variantSubmitted[variant.id] || false}
               />
             ))}
           </div>
@@ -406,7 +434,8 @@ export default function PublicOffer() {
           <div className="text-center py-12 text-slate-400">Žádné služby</div>
         )}
 
-        {/* Offer Response Section */}
+        {/* Offer Response Section - only show global form when single variant or no variants */}
+        {variants.length <= 1 && (
         <div className="max-w-2xl mx-auto">
           <div className="rounded-2xl overflow-hidden bg-white shadow-lg border border-slate-200 p-6 md:p-8">
             {submitted ? (
@@ -445,6 +474,7 @@ export default function PublicOffer() {
             )}
           </div>
         </div>
+        )}
       </main>
 
       {/* Footer */}
@@ -459,11 +489,17 @@ export default function PublicOffer() {
   );
 }
 
-function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
+function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted }: {
   variant: OfferData["variants"][0];
   hotelImages: OfferData["hotelImages"];
   isSelected: boolean;
   showBadge: boolean;
+  showResponseForm?: boolean;
+  comment?: string;
+  onCommentChange?: (val: string) => void;
+  onSubmit?: () => void;
+  isSubmitting?: boolean;
+  isSubmitted?: boolean;
 }) {
   const hotelService = variant.deal_variant_services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
@@ -477,7 +513,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
   const currency = variant.deal_variant_services.find(s => s.price_currency)?.price_currency || "CZK";
 
   return (
-    <div className={`rounded-2xl overflow-hidden bg-white shadow-lg border transition-all ${
+    <div className={`rounded-2xl overflow-hidden bg-white shadow-lg border transition-all flex flex-col ${
       isSelected ? "ring-2 ring-blue-500 shadow-blue-100" : "border-slate-200"
     }`}>
       {/* Image carousel */}
@@ -511,7 +547,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
       )}
 
       {/* Content */}
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-4 flex-1 flex flex-col">
         {/* Destination & dates */}
         {dest && (
           <div>
@@ -587,6 +623,40 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge }: {
               <span className="text-sm text-slate-500">Celková cena</span>
                <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
             </div>
+          </div>
+        )}
+
+        {/* Per-variant response form */}
+        {showResponseForm && (
+          <div className="border-t pt-4 mt-auto space-y-3">
+            {isSubmitted ? (
+              <div className="text-center space-y-2 py-2">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
+                <p className="text-sm font-semibold text-slate-700">Děkujeme!</p>
+                <p className="text-xs text-slate-500">Vaše odpověď byla odeslána.</p>
+              </div>
+            ) : (
+              <>
+                <Textarea
+                  placeholder="Poznámky nebo požadavky (nepovinné)..."
+                  value={comment || ""}
+                  onChange={(e) => onCommentChange?.(e.target.value)}
+                  className="min-h-[70px] text-sm bg-slate-50 border-slate-200 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
+                />
+                <Button
+                  onClick={onSubmit}
+                  disabled={isSubmitting}
+                  className="w-full h-10 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md"
+                >
+                  {isSubmitting ? "Odesílání..." : (
+                    <>
+                      <Send className="h-3.5 w-3.5 mr-1.5" />
+                      Souhlasím s touto variantou
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, comment } = await req.json();
+    const { token, comment, variant_name } = await req.json();
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'Token is required' }), {
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         deal_id: deal.id,
         client_name: clientName,
         client_email: clientEmail,
-        comment: comment || null,
+        comment: variant_name ? `[Varianta: ${variant_name}] ${comment || ''}`.trim() : (comment || null),
       });
 
     if (insertError) {
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
       const emailHtml = `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h2 style="color:#1e293b;margin-bottom:4px;">✅ Klient souhlasí s nabídkou</h2>
+          <h2 style="color:#1e293b;margin-bottom:4px;">✅ Klient souhlasí s nabídkou${variant_name ? ` – ${variant_name}` : ''}</h2>
           <p style="color:#64748b;margin-top:0;">Deal: <strong>${deal.deal_number}</strong></p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0;">
             <tr>
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: 'YARO CRM <crm@yarotravel.cz>',
             to: ['zajezdy@yarotravel.cz'],
-            subject: `✅ Souhlas s nabídkou – ${deal.deal_number} – ${clientName}`,
+            subject: `✅ Souhlas s nabídkou${variant_name ? ' – ' + variant_name : ''} – ${deal.deal_number} – ${clientName}`,
             html: emailHtml,
           }),
         });
