@@ -6,10 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const formatDate = (dateString: string | null) => {
+const formatDateIso = (dateString: string | null) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
+  return date.toISOString().split("T")[0]; // YYYY-MM-DD for Airtable
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -57,8 +57,8 @@ const handler = async (req: Request): Promise<Response> => {
       ? `${contract.client.first_name} ${contract.client.last_name}`
       : "";
     const destination = (contract.deal as any)?.destination?.name || "";
-    const startDate = formatDate((contract.deal as any)?.start_date);
-    const endDate = formatDate((contract.deal as any)?.end_date);
+    const startDate = formatDateIso((contract.deal as any)?.start_date);
+    const endDate = formatDateIso((contract.deal as any)?.end_date);
     const salesPrice = contract.total_price || 0;
     const currency = contract.currency || "CZK";
     const costPrice = ((contract.deal as any)?.deal_services || []).reduce(
@@ -103,13 +103,13 @@ const handler = async (req: Request): Promise<Response> => {
       "Měna": currency,
       "Nákupní cena": costPrice,
       "Marže": margin,
-      "Status": contract.status,
+      
     };
 
     // Only include date fields if they have actual values (Airtable rejects empty strings for date fields)
     if (startDate) fields["Datum odjezdu"] = startDate;
     if (endDate) fields["Datum návratu"] = endDate;
-    const sentDate = formatDate(contract.sent_at);
+    const sentDate = formatDateIso(contract.sent_at);
     if (sentDate) fields["Odesláno dne"] = sentDate;
 
     let airtableResponse: Response;
