@@ -72,7 +72,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <LayoutHeader />
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
             {children}
           </main>
           <FloatingTaskButton />
