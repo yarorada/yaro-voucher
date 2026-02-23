@@ -366,7 +366,7 @@ export default function PublicOffer() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <main className={`mx-auto px-4 py-8 space-y-8 ${variants.length >= 3 ? "max-w-7xl" : "max-w-5xl"}`}>
         {/* Deal header */}
         <div className="text-center space-y-1">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
@@ -389,7 +389,7 @@ export default function PublicOffer() {
 
         {/* Variants */}
         {variants.length > 0 ? (
-          <div className={`grid gap-8 ${variants.length > 1 ? "md:grid-cols-2" : ""}`}>
+          <div className={`grid gap-6 ${variants.length >= 3 ? "lg:grid-cols-3 md:grid-cols-2" : variants.length > 1 ? "md:grid-cols-2" : ""}`}>
             {variants.map((variant) => (
               <VariantCard
                 key={variant.id}
