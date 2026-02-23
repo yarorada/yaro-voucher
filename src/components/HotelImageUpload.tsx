@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { compressImage, isImageFile } from "@/lib/imageCompression";
+import { compressImage, ensureMinimumQuality, isImageFile } from "@/lib/imageCompression";
 import {
   Dialog,
   DialogContent,
@@ -223,12 +223,21 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
       const file = new File([blob], "downloaded.jpg", { type: blob.type });
 
-      const compressed = await compressImage(file, 1920, 1080, 0.85);
+      // Upscale small web images, then compress if too large
+      const upscaled = await ensureMinimumQuality(file, 1024, 1024, 300 * 1024);
+      let finalBlob = upscaled.blob;
+      if (upscaled.width > 1920 || upscaled.height > 1920) {
+        const compressed = await compressImage(
+          new File([upscaled.blob], "img.jpg", { type: "image/jpeg" }),
+          1920, 1920, 0.85
+        );
+        finalBlob = compressed.blob;
+      }
       const fileName = `${hotelId}/${field}_${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("hotel-images")
-        .upload(fileName, compressed.blob, { contentType: "image/jpeg", upsert: true });
+        .upload(fileName, finalBlob, { contentType: "image/jpeg", upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -411,12 +420,21 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
       const file = new File([blob], "downloaded.jpg", { type: blob.type });
       
-      const compressed = await compressImage(file, 1920, 1080, 0.85);
+      // Upscale small web images, then compress if too large
+      const upscaled = await ensureMinimumQuality(file, 1024, 1024, 300 * 1024);
+      let finalBlob = upscaled.blob;
+      if (upscaled.width > 1920 || upscaled.height > 1920) {
+        const compressed = await compressImage(
+          new File([upscaled.blob], "img.jpg", { type: "image/jpeg" }),
+          1920, 1920, 0.85
+        );
+        finalBlob = compressed.blob;
+      }
       const fileName = `${hotelId}/${slot}_${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("hotel-images")
-        .upload(fileName, compressed.blob, { contentType: "image/jpeg", upsert: true });
+        .upload(fileName, finalBlob, { contentType: "image/jpeg", upsert: true });
 
       if (uploadError) throw uploadError;
 

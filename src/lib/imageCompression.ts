@@ -137,6 +137,91 @@ export async function compressImage(
 }
 
 /**
+ * Ensure minimum quality/dimensions for web-scraped images.
+ * Upscales small images to at least minWidth/minHeight and ensures minimum file size.
+ */
+export async function ensureMinimumQuality(
+  file: File,
+  minWidth = 1024,
+  minHeight = 1024,
+  minBytes = 300 * 1024
+): Promise<{ blob: Blob; width: number; height: number; upscaled: boolean }> {
+  // Auto-convert HEIC files first
+  let processedFile = file;
+  if (isHeicFile(file)) {
+    processedFile = await convertHeicToJpeg(file);
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Obrázek nelze načíst."));
+      img.onload = () => {
+        try {
+          let width = img.width;
+          let height = img.height;
+          let upscaled = false;
+
+          // Upscale if either dimension is below minimum
+          if (width < minWidth || height < minHeight) {
+            const aspectRatio = width / height;
+            if (aspectRatio >= 1) {
+              // Landscape or square: scale based on the shorter side (height)
+              const newHeight = Math.max(minHeight, minWidth / aspectRatio);
+              height = Math.round(newHeight);
+              width = Math.round(newHeight * aspectRatio);
+            } else {
+              // Portrait: scale based on width
+              const newWidth = Math.max(minWidth, minHeight * aspectRatio);
+              width = Math.round(newWidth);
+              height = Math.round(newWidth / aspectRatio);
+            }
+            upscaled = true;
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Failed to get canvas context")); return; }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Try increasing quality levels to meet minimum byte size
+          const qualities = [0.92, 0.97, 1.0];
+          let qualityIndex = 0;
+
+          const tryExport = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) { reject(new Error("Failed to create blob")); return; }
+                if (blob.size < minBytes && qualityIndex < qualities.length - 1) {
+                  qualityIndex++;
+                  tryExport();
+                  return;
+                }
+                resolve({ blob, width, height, upscaled });
+              },
+              "image/jpeg",
+              qualities[qualityIndex]
+            );
+          };
+          tryExport();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(processedFile);
+  });
+}
+
+/**
  * Check if a file is an image (including HEIC)
  */
 export function isImageFile(file: File): boolean {
