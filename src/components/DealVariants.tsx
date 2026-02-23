@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, CheckCircle2, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, Copy, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { VariantDetailDialog } from "./VariantDetailDialog";
 import { formatPrice } from "@/lib/utils";
@@ -145,6 +145,56 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       toast({
         title: "Chyba",
         description: "Nepodařilo se vybrat variantu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnselectVariant = async (variantId: string) => {
+    if (!confirm("Opravdu chcete zrušit výběr varianty? Služby v obchodním případu budou smazány.")) return;
+
+    try {
+      // Deselect the variant
+      await supabase
+        .from("deal_variants")
+        .update({ is_selected: false })
+        .eq("id", variantId);
+
+      // Delete copied deal services
+      await supabase
+        .from("deal_services")
+        .delete()
+        .eq("deal_id", dealId);
+
+      // Delete deal payments
+      await supabase
+        .from("deal_payments")
+        .delete()
+        .eq("deal_id", dealId);
+
+      // Clear deal-level dates/price/destination
+      await supabase
+        .from("deals")
+        .update({
+          total_price: null,
+          start_date: null,
+          end_date: null,
+          destination_id: null,
+        })
+        .eq("id", dealId);
+
+      toast({
+        title: "Úspěch",
+        description: "Výběr varianty byl zrušen a služby smazány",
+      });
+
+      fetchVariants();
+      onVariantSelected?.();
+    } catch (error) {
+      console.error("Error unselecting variant:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se zrušit výběr varianty",
         variant: "destructive",
       });
     }
@@ -493,7 +543,7 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                       <CardDescription>{variant.destination.name}</CardDescription>
                     )}
                   </div>
-                  {!variant.is_selected && (
+                  {!variant.is_selected ? (
                     <Button
                       onClick={() => handleSelectVariant(variant.id)}
                       size="sm"
@@ -501,6 +551,16 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                     >
                       <CheckCircle2 className="h-4 w-4 mr-1" />
                       Vybrat jako finální
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleUnselectVariant(variant.id)}
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive border-destructive hover:bg-destructive/10 shrink-0"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Zrušit výběr
                     </Button>
                   )}
                 </div>
