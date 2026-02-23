@@ -720,6 +720,61 @@ const DealDetail = () => {
     }
   };
 
+  // Sync deal_services → selected variant's deal_variant_services
+  const syncServicesToSelectedVariant = async () => {
+    if (!id) return;
+    try {
+      // Find the selected variant for this deal
+      const { data: selectedVariant } = await supabase
+        .from("deal_variants")
+        .select("id")
+        .eq("deal_id", id)
+        .eq("is_selected", true)
+        .maybeSingle();
+
+      if (!selectedVariant) return;
+
+      // Get current deal services
+      const { data: dealServices } = await supabase
+        .from("deal_services")
+        .select("*")
+        .eq("deal_id", id)
+        .order("order_index", { ascending: true });
+
+      // Delete existing variant services
+      await supabase
+        .from("deal_variant_services")
+        .delete()
+        .eq("variant_id", selectedVariant.id);
+
+      // Copy deal services to variant
+      if (dealServices && dealServices.length > 0) {
+        const variantServices = dealServices.map((ds) => ({
+          variant_id: selectedVariant.id,
+          service_type: ds.service_type,
+          service_name: ds.service_name,
+          description: ds.description,
+          supplier_id: ds.supplier_id,
+          start_date: ds.start_date,
+          end_date: ds.end_date,
+          person_count: ds.person_count,
+          quantity: ds.quantity || 1,
+          price: ds.price,
+          price_currency: ds.price_currency || "CZK",
+          cost_price: ds.cost_price,
+          cost_currency: ds.cost_currency || "CZK",
+          cost_price_original: ds.cost_price_original,
+          details: ds.details,
+          order_index: ds.order_index,
+        }));
+
+        await supabase.from("deal_variant_services").insert(variantServices as any);
+      }
+    } catch (error) {
+      console.error("Error syncing services to selected variant:", error);
+    }
+  };
+
   const handleServiceDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -745,6 +800,9 @@ const DealDetail = () => {
         title: "Pořadí uloženo",
         description: "Pořadí služeb bylo uloženo",
       });
+      
+      // Sync to selected variant
+      await syncServicesToSelectedVariant();
     } catch (error) {
       console.error("Error saving order:", error);
       toast({
@@ -1097,6 +1155,9 @@ const DealDetail = () => {
         
         // Re-fetch deal to sync all state
         fetchDeal();
+        
+        // Sync to selected variant
+        await syncServicesToSelectedVariant();
       }
     } catch (error) {
       console.error("Error saving service:", error);
@@ -1175,6 +1236,9 @@ const DealDetail = () => {
       resetServiceForm();
       await fetchServices();
       await fetchDeal();
+      
+      // Sync to selected variant
+      await syncServicesToSelectedVariant();
     } catch (error) {
       console.error("Error importing golf tee times:", error);
       toast({
@@ -1221,6 +1285,9 @@ const DealDetail = () => {
           setPaymentRefreshKey(k => k + 1);
         }
         fetchDeal();
+        
+        // Sync to selected variant
+        await syncServicesToSelectedVariant();
       }
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -1287,6 +1354,9 @@ const DealDetail = () => {
           setPaymentRefreshKey(k => k + 1);
         }
         fetchDeal();
+        
+        // Sync to selected variant
+        await syncServicesToSelectedVariant();
       }
     } catch (error) {
       console.error("Error duplicating service:", error);
