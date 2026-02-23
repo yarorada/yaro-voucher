@@ -30,3 +30,20 @@ export function getServiceMultiplier(service: {
     ? (service.person_count || 1)
     : (service.quantity || 1);
 }
+
+/**
+ * Calculate the total cost price for a service based on its price_mode.
+ */
+export function getServiceCostTotal(service: {
+  cost_price?: number | null;
+  quantity?: number | null;
+  person_count?: number | null;
+  details?: any;
+}): number {
+  const cost = service.cost_price || 0;
+  const priceMode = service.details?.price_mode || "per_service";
+  const multiplier = priceMode === "per_person"
+    ? (service.person_count || 1)
+    : (service.quantity || 1);
+  return cost * multiplier;
+}

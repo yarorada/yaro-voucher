@@ -29,7 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
-import { getServiceTotal, getServiceMultiplier } from "@/lib/servicePrice";
+import { getServiceTotal, getServiceMultiplier, getServiceCostTotal } from "@/lib/servicePrice";
 import { format, addDays, addMonths } from "date-fns";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
@@ -711,8 +711,7 @@ const DealDetail = () => {
 
   // Calculate total cost price from services (already in CZK)
   const totalCostPrice = services.reduce((sum, service) => {
-    const serviceCost = (service.cost_price || 0) * (service.quantity || 1);
-    return sum + serviceCost;
+    return sum + getServiceCostTotal(service);
   }, 0);
 
   // Derive CZK exchange rate from cost data for converting selling prices
@@ -727,13 +726,12 @@ const DealDetail = () => {
 
   // Calculate total selling price in CZK
   const totalSellingPriceCzk = services.reduce((sum, service) => {
-    const unitPrice = service.price || 0;
-    const qty = service.quantity || 1;
+    const serviceTotal = getServiceTotal(service);
     const currency = service.price_currency || "CZK";
     if (currency === "CZK" || !derivedCzkRate) {
-      return sum + unitPrice * qty;
+      return sum + serviceTotal;
     }
-    return sum + unitPrice * qty * derivedCzkRate;
+    return sum + serviceTotal * derivedCzkRate;
   }, 0);
 
   // Apply discount and adjustment in CZK
