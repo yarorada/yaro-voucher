@@ -1,65 +1,44 @@
 
-# Tlacitko "Souhlasim s nabidkou" a pole pro komentar klienta
+
+# Auto-select schvalene varianty a zobrazeni poznamky klienta
 
 ## Co se zmeni
 
-Na verejne strance nabidky (`/offer/:token`) pribudne ve spodni casti formular, kde klient muze:
-1. Napsat volny text (komentar, poznamky, pozadavky)
-2. Kliknout na tlacitko **"Souhlasim s nabidkou"**
-
-Po odeslani se:
-- Ulozi odpoved do nove databazove tabulky `offer_responses`
-- Odesle e-mail na `zajezdy@yarotravel.cz` s informaci, ktery klient souhlasil, ke kteremu dealu, a s jeho komentarem
-- Klientovi se zobrazi potvrzeni, ze jeho souhlas byl odeslan
-
-V CRM dashboardu bude souhlas videt jako notifikace (volitelne rozsireni).
+Kdyz klient na verejne strance schvali nabidku (klikne na zelene tlacitko u konkretni varianty), system automaticky:
+1. Oznaci danou variantu jako finalní (is_selected = true)
+2. Ulozi komentar klienta do pole `notes` na tabulce `deals` (s prefixem, aby bylo jasne, ze jde o poznamku od klienta)
+3. V detailu obchodniho pripadu se zobrazi zvyrazneny blok s poznamkou klienta (pokud existuje odpoved v `offer_responses`)
 
 ## Technicke zmeny
 
-### 1. Nova databazova tabulka `offer_responses`
+### 1. Uprava PublicOffer.tsx - posilat variant_id
 
-```sql
-CREATE TABLE offer_responses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deal_id UUID NOT NULL REFERENCES deals(id),
-  client_name TEXT,
-  client_email TEXT,
-  comment TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+Aktualne se posila pouze `variant_name`. Pridame `variant_id` do requestu, aby edge funkce vedela, kterou variantu oznacit.
 
-ALTER TABLE offer_responses ENABLE ROW LEVEL SECURITY;
+### 2. Uprava edge funkce `submit-offer-response`
 
--- Anonymni INSERT (klient neni prihlaseny)
-CREATE POLICY "Anyone can insert offer_responses"
-  ON offer_responses FOR INSERT
-  WITH CHECK (true);
+- Prijme novy parametr `variant_id`
+- Pokud je `variant_id` vyplnene:
+  - Nastavi `is_selected = false` u vsech variant daneho dealu
+  - Nastavi `is_selected = true` u schvalene varianty
+- Ulozi komentar klienta do `deals.notes` (prida ho k existujicim poznamkam s prefixem "Poznamka klienta: ")
 
--- Cteni jen pro prihlasene uzivatele (CRM)
-CREATE POLICY "Authenticated users can view offer_responses"
-  ON offer_responses FOR SELECT
-  USING (true);
-```
+### 3. Zobrazeni poznamky klienta v DealDetail.tsx
 
-### 2. Nova Edge funkce `submit-offer-response`
+Na detailu obchodniho pripadu se prida nova sekce (karta) s nadpisem "Odpoved klienta", ktera:
+- Nacte posledni zaznam z `offer_responses` pro dany deal
+- Zobrazi jmeno klienta, datum odpovedi a komentar
+- Bude vizualne odlisena (zeleny lem, ikona CheckCircle2)
+- Zobrazi se pouze pokud odpoved existuje
 
-- Prijme `{ token, comment }` (bez autentizace - verejny endpoint)
-- Overi, ze deal s danym `share_token` existuje
-- Ulozi zaznam do `offer_responses` (deal_id, jmeno klienta, email, komentar)
-- Odesle e-mail pres Resend na `zajezdy@yarotravel.cz` s obsahem:
-  - Cislo dealu, jmeno klienta
-  - Text komentare klienta
-  - Odkaz na deal v CRM
-- Vrati `{ success: true }`
+### Shrhnuti toku
 
-### 3. Uprava `src/pages/PublicOffer.tsx`
-
-Na konec stranky (pred footer) se prida sekce:
-- Textarea pro komentar (nepovinny)
-- Zelene tlacitko "Souhlasim s nabidkou"
-- Po odeslani se formular nahradi potvrzovaci zpravou ("Dekujeme, Vas souhlas byl odeslan.")
-- Volani edge funkce `submit-offer-response` s tokenem a komentarem
-
-### 4. Konfigurace
-
-- V `supabase/config.toml` pridat `[functions.submit-offer-response]` s `verify_jwt = false` (verejny endpoint)
+1. Klient na webu vybere variantu a klikne "Souhlasim"
+2. Frontend posle `{ token, comment, variant_name, variant_id }` do edge funkce
+3. Edge funkce:
+   - Ulozi odpoved do `offer_responses`
+   - Oznaci variantu jako finalní (`is_selected = true`)
+   - Ulozi poznamku do `deals.notes`
+   - Zmeni status na "approved"
+   - Posle notifikacni e-mail
+4. V CRM se na detailu dealu objevi karta s odpovedi klienta a varianta bude oznacena jako finální
