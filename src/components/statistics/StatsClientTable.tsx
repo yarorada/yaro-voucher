@@ -207,6 +207,7 @@ export function StatsClientTable() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px] text-center">#</TableHead>
                   <TableHead>Klient</TableHead>
                   <TableHead className="text-center">Cest</TableHead>
                   <TableHead className="text-right">
@@ -215,8 +216,11 @@ export function StatsClientTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedLeadStats.map((stat) => (
+                {sortedLeadStats.map((stat, index) => (
                   <TableRow key={stat.clientId}>
+                    <TableCell className="text-center text-muted-foreground font-medium text-sm">
+                      {index + 1}.
+                    </TableCell>
                     <TableCell className="text-body font-medium break-words">
                       {stat.clientName}
                     </TableCell>
