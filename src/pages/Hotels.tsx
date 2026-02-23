@@ -52,6 +52,7 @@ interface HotelTemplate {
   golf_courses: string | null;
   benefits: any;
   room_types: any;
+  highlights: any;
   is_published: boolean | null;
   image_url: string | null;
   image_url_2: string | null;
@@ -88,6 +89,7 @@ export default function Hotels() {
     confidence: string;
     subtitle?: string;
     golf_courses?: string;
+    highlights?: Array<{ icon: string; title: string; text: string }>;
   } | null>(null);
 
   // Form state for editing
@@ -102,6 +104,7 @@ export default function Hotels() {
     website_url: "",
     is_published: false,
     destination_id: "",
+    highlights: [] as Array<{ icon: string; title: string; text: string }>,
   });
 
   usePageToolbar(
@@ -161,6 +164,7 @@ export default function Hotels() {
 
   const openEditDialog = (hotel: HotelTemplate) => {
     setEditHotel(hotel);
+    const parsedHighlights = Array.isArray(hotel.highlights) ? hotel.highlights : [];
     setFormData({
       name: hotel.name || "",
       slug: hotel.slug || "",
@@ -172,6 +176,7 @@ export default function Hotels() {
       website_url: hotel.website_url || "",
       is_published: hotel.is_published || false,
       destination_id: hotel.destination_id || "",
+      highlights: parsedHighlights,
     });
     setEditDialogOpen(true);
   };
@@ -193,6 +198,7 @@ export default function Hotels() {
           website_url: formData.website_url.trim() || null,
           is_published: formData.is_published,
           destination_id: formData.destination_id || null,
+          highlights: formData.highlights.length > 0 ? formData.highlights : null,
         })
         .eq("id", editHotel.id);
       if (error) throw error;
@@ -461,6 +467,12 @@ export default function Hotels() {
                           toast.success("Golfová hřiště navržena");
                         }
 
+                        // Auto-fill highlights if empty
+                        if (data.highlights?.length > 0 && formData.highlights.length === 0) {
+                          setFormData((f) => ({ ...f, highlights: data.highlights }));
+                          toast.success("Důvody pro výběr hotelu navrženy");
+                        }
+
                         // Try to find existing destination match
                         const { data: destinations } = await supabase
                           .from("destinations")
@@ -579,6 +591,92 @@ export default function Hotels() {
                       }}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Highlights - reasons to choose */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-semibold">Proč si vybrat tento hotel</Label>
+                  {formData.highlights.length < 6 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setFormData((f) => ({
+                          ...f,
+                          highlights: [...f.highlights, { icon: "Star", title: "", text: "" }],
+                        }))
+                      }
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Přidat důvod
+                    </Button>
+                  )}
+                </div>
+                {aiSuggestion?.highlights && aiSuggestion.highlights.length > 0 && formData.highlights.length === 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mb-3 gap-1"
+                    onClick={() => setFormData((f) => ({ ...f, highlights: aiSuggestion.highlights! }))}
+                  >
+                    <Sparkles className="h-3 w-3" /> Použít AI návrh ({aiSuggestion.highlights.length} důvodů)
+                  </Button>
+                )}
+                <div className="space-y-3">
+                  {formData.highlights.map((h, idx) => (
+                    <div key={idx} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={h.title}
+                          onChange={(e) => {
+                            const updated = [...formData.highlights];
+                            updated[idx] = { ...updated[idx], title: e.target.value };
+                            setFormData((f) => ({ ...f, highlights: updated }));
+                          }}
+                          placeholder="Nadpis důvodu"
+                          className="font-medium"
+                        />
+                        <select
+                          value={h.icon}
+                          onChange={(e) => {
+                            const updated = [...formData.highlights];
+                            updated[idx] = { ...updated[idx], icon: e.target.value };
+                            setFormData((f) => ({ ...f, highlights: updated }));
+                          }}
+                          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        >
+                          {["MapPin","Target","Star","UtensilsCrossed","Users","Calendar","Waves","Sun","Mountain","Trophy","Heart","Gem","Shield","Compass","Palmtree","Building"].map(ic => (
+                            <option key={ic} value={ic}>{ic}</option>
+                          ))}
+                        </select>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-destructive"
+                          onClick={() => {
+                            const updated = formData.highlights.filter((_, i) => i !== idx);
+                            setFormData((f) => ({ ...f, highlights: updated }));
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <Input
+                        value={h.text}
+                        onChange={(e) => {
+                          const updated = [...formData.highlights];
+                          updated[idx] = { ...updated[idx], text: e.target.value };
+                          setFormData((f) => ({ ...f, highlights: updated }));
+                        }}
+                        placeholder="Popis důvodu (max 120 znaků)"
+                        maxLength={120}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
