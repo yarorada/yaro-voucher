@@ -55,7 +55,7 @@ export function StatsClientTable() {
           deal_id,
           is_lead_traveler,
           clients(id, first_name, last_name),
-          deals(id, total_price, status)
+          deals(id, total_price, status, start_date)
         `)
         .eq("is_lead_traveler", true);
 
