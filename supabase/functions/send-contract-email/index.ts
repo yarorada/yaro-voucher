@@ -232,6 +232,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     const allSuccessful = emailResults.every((r) => r.success);
 
+    // Sync to Airtable (fire and forget - don't block the response)
+    if (allSuccessful) {
+      try {
+        const airtableSyncUrl = `${supabaseUrl}/functions/v1/sync-contract-airtable`;
+        fetch(airtableSyncUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+          },
+          body: JSON.stringify({ contractId }),
+        }).catch((err) => console.error("Airtable sync failed (non-blocking):", err));
+      } catch (e) {
+        console.error("Airtable sync trigger failed:", e);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: allSuccessful,
       message: allSuccessful ? "Emails sent successfully" : "Some emails failed",
