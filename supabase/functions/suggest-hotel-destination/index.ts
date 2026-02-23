@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 5. Golf courses: ALWAYS list ALL of the hotel's own courses AND enough nearby courses so that the TOTAL is at least 5 courses. For example, if the hotel has 3 own courses, add at least 2 nearby courses. If the hotel has no own courses, list the 5 nearest. For each course provide:
    - "name": course name
    - "par": par value (number, e.g. 72). If unknown, use null.
-   - "length": course length as string (e.g. "6321 m" or "7100 yds"). If unknown, use null.
+   - "length": course length as string ALWAYS in meters (e.g. "6321 m"). If the source data is in yards, convert to meters (1 yard = 0.9144 m) and round to whole number. If unknown, use null.
    - "architect": course architect/designer name. If unknown, use null.
    - "is_hotel_course": boolean, true if the course belongs to the hotel/resort
    - "distance_km": distance from hotel in km (number, e.g. 5). Only for nearby courses (is_hotel_course=false). Use null for hotel's own courses.
