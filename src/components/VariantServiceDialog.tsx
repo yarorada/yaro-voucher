@@ -618,9 +618,9 @@ export const VariantServiceDialog = ({
                   className="w-24"
                 />
               </div>
-              {costCurrency !== "CZK" && costPrice && (
+              {costCurrency !== "CZK" && costPrice && service?.cost_price != null && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  ≈ {formatPriceCurrency(parseFloat(costPrice))} (přepočteno)
+                  ≈ {formatPriceCurrency(service.cost_price)} (přepočteno do Kč)
                 </p>
               )}
             </div>
