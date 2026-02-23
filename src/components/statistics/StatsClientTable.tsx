@@ -227,11 +227,11 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
               <TableCell className="text-body font-medium break-words">{stat.clientName}</TableCell>
               <TableCell className="text-center text-body">{stat.dealCount}</TableCell>
               <TableCell className="text-right text-body">
-                {stat.totalRevenue.toLocaleString("cs-CZ")} Kč
+                {Math.round(stat.totalRevenue).toLocaleString("cs-CZ")} Kč
               </TableCell>
               <TableCell className="text-right text-body">
                 <span className={stat.profit > 0 ? "text-green-600 dark:text-green-400" : stat.profit < 0 ? "text-destructive" : ""}>
-                  {stat.profit.toLocaleString("cs-CZ")} Kč
+                  {Math.round(stat.profit).toLocaleString("cs-CZ")} Kč
                 </span>
               </TableCell>
               <TableCell className="text-right text-body">
