@@ -1110,7 +1110,7 @@ export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>
             <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
               <ul className="space-y-0.5 print:space-y-0">
                 {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club} at <span className="font-semibold text-foreground">{teeTime.time}</span> ({teeTime.golfers} golfers)
+                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club}{teeTime.time ? <> at <span className="font-semibold text-foreground">{teeTime.time}</span></> : ''}{teeTime.golfers ? ` (${teeTime.golfers} golfers)` : ''}
                   </li>)}
               </ul>
             </div>

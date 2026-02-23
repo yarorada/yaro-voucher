@@ -159,7 +159,7 @@ export const GolfAiImport = ({ onImport }: GolfAiImportProps) => {
                   <Input
                     value={tt.time || ""}
                     onChange={(e) => updateTeeTime(idx, "time", e.target.value)}
-                    placeholder="09:30"
+                    placeholder="09:30 - 14:00"
                     className="h-8 text-xs"
                   />
                 </div>

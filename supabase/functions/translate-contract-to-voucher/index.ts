@@ -184,6 +184,7 @@ Expected output format:
         issue_date: new Date().toISOString().split('T')[0],
         voucher_number: Math.floor(Math.random() * 10000), // Temporary, will be set by trigger
         user_id: userId, // Use the authenticated user's ID, not from contract
+        tee_times: contract.tee_times || null,
       })
       .select()
       .single()

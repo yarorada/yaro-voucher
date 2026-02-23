@@ -2071,6 +2071,7 @@ const DealDetail = () => {
             const lead = deal.deal_travelers.find(t => t.is_lead_traveler);
             return lead ? `${lead.clients.first_name} ${lead.clients.last_name}` : "";
           })()}
+          teeTimes={deal.tee_times as any}
           onComplete={fetchDeal}
         />
         <ShareOfferButton
