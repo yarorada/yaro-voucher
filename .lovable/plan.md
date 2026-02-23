@@ -1,44 +1,51 @@
 
 
-# Auto-select schvalene varianty a zobrazeni poznamky klienta
+# Oprava: Nelze vybrat variantu jako finalni
 
-## Co se zmeni
+## Problem
 
-Kdyz klient na verejne strance schvali nabidku (klikne na zelene tlacitko u konkretni varianty), system automaticky:
-1. Oznaci danou variantu jako finalní (is_selected = true)
-2. Ulozi komentar klienta do pole `notes` na tabulce `deals` (s prefixem, aby bylo jasne, ze jde o poznamku od klienta)
-3. V detailu obchodniho pripadu se zobrazi zvyrazneny blok s poznamkou klienta (pokud existuje odpoved v `offer_responses`)
+Databazova funkce `select_deal_variant` kontroluje, zda prihlaseny uzivatel je vlastnikem **varianty** (`deal_variants.user_id`). Ale nektere varianty byly vytvoreny jinym uzivatelem nez tim, kdo se pokusi variantu vybrat. Napr. varianta "Sueno Golf Hotel" ma `user_id` jineho uzivatele nez je vlastnik dealu.
+
+RLS politiky na tabulce `deal_variants` pritom povolují update vsem prihlasenym uzivatelum -- funkce je tedy zbytecne restriktivni.
+
+## Reseni
+
+Upravit databazovou funkci `select_deal_variant` tak, aby kontrolovala vlastnictvi **dealu** (ne varianty), nebo aby jednodusse povolila operaci kazdemu prihlaseneho uzivateli (coz odpovida existujicim RLS politikam).
 
 ## Technicke zmeny
 
-### 1. Uprava PublicOffer.tsx - posilat variant_id
+### 1. Migrace - uprava funkce `select_deal_variant`
 
-Aktualne se posila pouze `variant_name`. Pridame `variant_id` do requestu, aby edge funkce vedela, kterou variantu oznacit.
+Zmena kontroly z `v_user_id != auth.uid()` na overeni, ze uzivatel je autentifikovany (coz uz funkce dela). Odstraníme kontrolu vlastnictvi varianty, protoze RLS politiky uz umoznuji update vsem prihlasenym uzivatelum.
 
-### 2. Uprava edge funkce `submit-offer-response`
+```sql
+CREATE OR REPLACE FUNCTION public.select_deal_variant(p_variant_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_deal_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-- Prijme novy parametr `variant_id`
-- Pokud je `variant_id` vyplnene:
-  - Nastavi `is_selected = false` u vsech variant daneho dealu
-  - Nastavi `is_selected = true` u schvalene varianty
-- Ulozi komentar klienta do `deals.notes` (prida ho k existujicim poznamkam s prefixem "Poznamka klienta: ")
+  SELECT deal_id INTO v_deal_id
+  FROM deal_variants
+  WHERE id = p_variant_id;
 
-### 3. Zobrazeni poznamky klienta v DealDetail.tsx
+  IF v_deal_id IS NULL THEN
+    RAISE EXCEPTION 'Variant not found';
+  END IF;
 
-Na detailu obchodniho pripadu se prida nova sekce (karta) s nadpisem "Odpoved klienta", ktera:
-- Nacte posledni zaznam z `offer_responses` pro dany deal
-- Zobrazi jmeno klienta, datum odpovedi a komentar
-- Bude vizualne odlisena (zeleny lem, ikona CheckCircle2)
-- Zobrazi se pouze pokud odpoved existuje
+  UPDATE deal_variants SET is_selected = false WHERE deal_id = v_deal_id;
+  UPDATE deal_variants SET is_selected = true WHERE id = p_variant_id;
 
-### Shrhnuti toku
+  RETURN true;
+END;
+$$;
+```
 
-1. Klient na webu vybere variantu a klikne "Souhlasim"
-2. Frontend posle `{ token, comment, variant_name, variant_id }` do edge funkce
-3. Edge funkce:
-   - Ulozi odpoved do `offer_responses`
-   - Oznaci variantu jako finalní (`is_selected = true`)
-   - Ulozi poznamku do `deals.notes`
-   - Zmeni status na "approved"
-   - Posle notifikacni e-mail
-4. V CRM se na detailu dealu objevi karta s odpovedi klienta a varianta bude oznacena jako finální
+Zadne zmeny ve frontendu nejsou potreba -- kod v `DealVariants.tsx` uz vola `supabase.rpc("select_deal_variant", ...)` spravne.
