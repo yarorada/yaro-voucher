@@ -24,14 +24,16 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
-            content: `You are a travel industry expert. Given a hotel or resort name, determine:
+            content: `You are a golf travel industry expert specializing in golf resorts worldwide. Given a hotel or resort name, determine:
 1. The destination/region name (e.g. "Belek", "Hurghada", "Algarve", "Costa del Sol")
 2. The country name in Czech (e.g. "Turecko", "Egypt", "Portugalsko", "Španělsko")
 3. The ISO 3166-1 alpha-3 country code (e.g. "TUR", "EGY", "PRT", "ESP")
+4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
+5. Golf courses associated with or near the hotel. If the hotel/resort has its own golf course(s), list them. If not, suggest the 3 nearest golf courses with approximate driving distance in minutes (e.g. "Royal Golf Marrakech (15 min)", "Amelkis Golf Club (20 min)"). Separate multiple courses with comma.
 
 Use the tool to return your answer.`,
           },
@@ -45,7 +47,7 @@ Use the tool to return your answer.`,
             type: "function",
             function: {
               name: "suggest_destination",
-              description: "Return the suggested destination and country for the hotel",
+              description: "Return the suggested destination, country, subtitle and golf courses for the hotel",
               parameters: {
                 type: "object",
                 properties: {
@@ -66,8 +68,16 @@ Use the tool to return your answer.`,
                     enum: ["high", "medium", "low"],
                     description: "How confident you are about this suggestion",
                   },
+                  subtitle: {
+                    type: "string",
+                    description: "Short catchy subtitle in Czech for marketing, under 60 chars",
+                  },
+                  golf_courses: {
+                    type: "string",
+                    description: "Comma-separated golf courses. Own courses listed by name, nearby courses with driving time in parentheses",
+                  },
                 },
-                required: ["destination", "country", "iso_code", "confidence"],
+                required: ["destination", "country", "iso_code", "confidence", "subtitle", "golf_courses"],
                 additionalProperties: false,
               },
             },
