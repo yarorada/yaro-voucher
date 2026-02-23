@@ -92,25 +92,27 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
         travelerCountMap.set(dt.deal_id, (travelerCountMap.get(dt.deal_id) || 0) + 1);
       });
 
-      // Build all traveler-deal records with proportional share
+      // Build all traveler-deal records
+      // Lead travelers get FULL deal price, non-lead get proportional share
       const allDeals: AllTravelerDeal[] = [];
       (travelersData || []).forEach((dt: any) => {
         if (!dt.clients) return;
         const prof = profitMap.get(dt.deal_id);
         if (!prof || prof.status === "cancelled" || !prof.start_date) return;
         const travelerCount = travelerCountMap.get(dt.deal_id) || 1;
+        const isLead = dt.is_lead_traveler;
         allDeals.push({
           clientId: dt.client_id,
           clientName: `${dt.clients.first_name} ${dt.clients.last_name}`,
           dealId: dt.deal_id,
-          revenue: prof.revenue / travelerCount,
-          cost: prof.cost / travelerCount,
+          revenue: isLead ? prof.revenue : prof.revenue / travelerCount,
+          cost: isLead ? prof.cost : prof.cost / travelerCount,
           year: new Date(prof.start_date).getFullYear(),
-          isLead: dt.is_lead_traveler,
+          isLead,
         });
       });
 
-      // Lead deals (for first table)
+      // Lead deals (for first table) - always full price
       const leadOnly: LeadClientDeal[] = allDeals
         .filter((d) => d.isLead)
         .map((d) => ({ ...d }));
