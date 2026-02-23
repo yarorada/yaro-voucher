@@ -20,6 +20,7 @@ interface GolfCourseData {
   architect: string | null;
   is_hotel_course: boolean;
   distance_km: number | null;
+  rating: number | null;
 }
 
 interface HotelDetail {
@@ -279,6 +280,9 @@ export default function PublicHotelDetail() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-3 mt-1 text-sm text-slate-500">
+                    {gc.rating != null && (
+                      <span className="font-semibold text-amber-600">⭐ {gc.rating.toFixed(1)}</span>
+                    )}
                     {gc.par != null && <span>PAR {gc.par}</span>}
                     {gc.length && <span>{gc.length}</span>}
                     {gc.architect && <span>Architekt: {gc.architect}</span>}

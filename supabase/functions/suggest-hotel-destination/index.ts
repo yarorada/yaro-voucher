@@ -33,14 +33,14 @@ Deno.serve(async (req) => {
 2. The country name in Czech (e.g. "Turecko", "Egypt", "Portugalsko", "Španělsko")
 3. The ISO 3166-1 alpha-3 country code (e.g. "TUR", "EGY", "PRT", "ESP")
 4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
-5. Golf courses associated with or near the hotel as structured data. For each course provide:
+5. Golf courses: ALWAYS list the hotel's own courses (if any) PLUS enough nearby courses to reach a total of at least 5 courses. For each course provide:
    - "name": course name
    - "par": par value (number, e.g. 72). If unknown, use null.
    - "length": course length as string (e.g. "6321 m" or "7100 yds"). If unknown, use null.
    - "architect": course architect/designer name. If unknown, use null.
    - "is_hotel_course": boolean, true if the course belongs to the hotel/resort
    - "distance_km": distance from hotel in km (number, e.g. 5). Only for nearby courses (is_hotel_course=false). Use null for hotel's own courses.
-   If the hotel has its own courses, list all of them. If not, suggest the 3 nearest golf courses.
+   - "rating": average rating on a 0-10 scale, calculated as the average of known ratings from tripadvisor.com, leadingcourses.com, 1golf.eu and top100golfcourses.com. Normalize all ratings to a 0-10 scale before averaging. If no rating data is available, use null. Round to one decimal place.
 6. Exactly 6 compelling reasons (highlights) why a golf traveler should choose this hotel. Each highlight has:
    - "icon": one of these icon names: MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building
    - "title": short catchy title in Czech (max 4 words)
@@ -100,6 +100,7 @@ Use the tool to return your answer.`,
                         architect: { type: ["string", "null"], description: "Course architect/designer" },
                         is_hotel_course: { type: "boolean", description: "True if course belongs to hotel" },
                         distance_km: { type: ["number", "null"], description: "Distance from hotel in km (only for nearby courses)" },
+                        rating: { type: ["number", "null"], description: "Average rating 0-10 from tripadvisor, leadingcourses, 1golf.eu, top100golfcourses. Rounded to 1 decimal." },
                       },
                       required: ["name", "is_hotel_course"],
                     },
