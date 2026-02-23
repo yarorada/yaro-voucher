@@ -556,12 +556,18 @@ export const VariantServiceDialog = ({
                   <HotelCombobox
                     value={serviceName}
                     onChange={setServiceName}
+                    onSelect={() => {
+                      setTimeout(() => document.getElementById('description')?.focus(), 50);
+                    }}
                   />
                 ) : (
                   <ServiceCombobox
                     value={serviceName}
                     onChange={setServiceName}
                     serviceType={serviceType}
+                    onSelect={() => {
+                      setTimeout(() => document.getElementById('description')?.focus(), 50);
+                    }}
                   />
                 )}
               </div>
@@ -595,6 +601,9 @@ export const VariantServiceDialog = ({
             <SupplierCombobox
               value={supplierId}
               onChange={setSupplierId}
+              onSelect={() => {
+                setTimeout(() => document.getElementById('persons')?.focus(), 50);
+              }}
             />
           </div>
 

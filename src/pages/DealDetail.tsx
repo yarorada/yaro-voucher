@@ -2629,16 +2629,22 @@ const DealDetail = () => {
                         )}
                         <div>
                           <Label>{serviceForm.service_type === 'hotel' ? 'Název hotelu *' : 'Název služby *'}</Label>
-                          {serviceForm.service_type === 'hotel' ? (
+                            {serviceForm.service_type === 'hotel' ? (
                             <HotelCombobox
                               value={serviceForm.service_name}
                               onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
+                              onSelect={() => {
+                                setTimeout(() => document.getElementById('deal-service-description')?.focus(), 50);
+                              }}
                             />
                           ) : (
                             <ServiceCombobox
                               value={serviceForm.service_name}
                               onChange={(value) => setServiceForm({ ...serviceForm, service_name: value })}
                               serviceType={serviceForm.service_type}
+                              onSelect={() => {
+                                setTimeout(() => document.getElementById('deal-service-description')?.focus(), 50);
+                              }}
                             />
                           )}
                         </div>
@@ -2647,6 +2653,7 @@ const DealDetail = () => {
                           <div>
                             <Label>Název a Typ pokoje</Label>
                             <Input
+                              id="deal-service-description"
                               value={serviceForm.description}
                               onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
                               placeholder="např. Deluxe Double Room"
@@ -2656,6 +2663,7 @@ const DealDetail = () => {
                           <div>
                             <Label>Popis</Label>
                             <Textarea
+                              id="deal-service-description"
                               value={serviceForm.description}
                               onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
                               placeholder="Detaily služby..."
@@ -2671,6 +2679,9 @@ const DealDetail = () => {
                       <SupplierCombobox
                         value={serviceForm.supplier_id}
                         onChange={(value) => setServiceForm({ ...serviceForm, supplier_id: value })}
+                        onSelect={() => {
+                          setTimeout(() => document.getElementById('deal-service-persons')?.focus(), 50);
+                        }}
                       />
                     </div>
 
@@ -2688,6 +2699,7 @@ const DealDetail = () => {
                       <div className="w-20">
                         <Label>Osoby</Label>
                         <Input
+                          id="deal-service-persons"
                           type="number"
                           min="1"
                           value={serviceForm.person_count}

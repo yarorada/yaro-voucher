@@ -57,9 +57,10 @@ interface HotelTemplate {
 interface HotelComboboxProps {
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (hotelName: string) => void;
 }
 
-export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
+export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps) {
   const [open, setOpen] = useState(false);
   const [hotels, setHotels] = useState<HotelTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -258,9 +259,9 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
                     value={hotel.name}
                     onSelect={() => {
                       onChange(hotel.name);
+                      if (onSelect) onSelect(hotel.name);
                       setOpen(false);
                       setSearchValue("");
-                      inputRef.current?.focus();
                     }}
                     className="flex items-center justify-between"
                   >
