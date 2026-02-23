@@ -69,19 +69,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auto-select variant if variant_id provided
+    // Auto-select variant using the DB function that syncs services
     if (variant_id) {
-      // Deselect all variants for this deal
-      await supabase
-        .from('deal_variants')
-        .update({ is_selected: false })
-        .eq('deal_id', deal.id);
-
-      // Select the approved variant
-      await supabase
-        .from('deal_variants')
-        .update({ is_selected: true })
-        .eq('id', variant_id);
+      const { error: rpcError } = await supabase.rpc('select_deal_variant', {
+        p_variant_id: variant_id,
+      });
+      if (rpcError) {
+        console.error('Variant selection RPC error:', rpcError);
+      }
     }
 
     // Save client comment to deals.notes
