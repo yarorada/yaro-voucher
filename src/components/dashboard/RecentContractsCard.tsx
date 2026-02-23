@@ -97,7 +97,7 @@ export const RecentContractsCard = () => {
                     </Badge>
                     <span className="font-bold text-sm">{contract.contract_number}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground pl-1 truncate">
+                  <div className="text-xs text-muted-foreground pl-1 break-words">
                     {(() => {
                       const parts: string[] = [];
                       if (contract.clients) parts.push(`${contract.clients.first_name} ${contract.clients.last_name}`);

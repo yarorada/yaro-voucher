@@ -94,7 +94,7 @@ export const RecentVouchersCard = () => {
                   )}
                   <span className="font-bold text-sm">{voucher.voucher_code}</span>
                 </div>
-                <div className="text-xs text-muted-foreground pl-1 truncate">
+                <div className="text-xs text-muted-foreground pl-1 break-words">
                   {[
                     getClientName(voucher),
                     voucher.deals?.destinations?.name || voucher.hotel_name,
