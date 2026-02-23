@@ -62,7 +62,6 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch profitability view
       const { data: profitData, error: profitError } = await supabase
         .from("deal_profitability")
         .select("deal_id, revenue, total_costs, start_date, status, lead_client_id");
@@ -79,21 +78,17 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
         });
       });
 
-      // Fetch ALL deal_travelers (not just lead)
       const { data: travelersData, error: travelersError } = await supabase
         .from("deal_travelers")
         .select("deal_id, client_id, is_lead_traveler, clients(id, first_name, last_name)");
 
       if (travelersError) throw travelersError;
 
-      // Count travelers per deal
       const travelerCountMap = new Map<string, number>();
       (travelersData || []).forEach((dt: any) => {
         travelerCountMap.set(dt.deal_id, (travelerCountMap.get(dt.deal_id) || 0) + 1);
       });
 
-      // Build all traveler-deal records
-      // Lead travelers get FULL deal price, non-lead get proportional share
       const allDeals: AllTravelerDeal[] = [];
       (travelersData || []).forEach((dt: any) => {
         if (!dt.clients) return;
@@ -112,12 +107,10 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
         });
       });
 
-      // Lead deals (for first table) - always full price
       const leadOnly: LeadClientDeal[] = allDeals
         .filter((d) => d.isLead)
         .map((d) => ({ ...d }));
 
-      // Extract available years
       const years = new Set(allDeals.map((d) => d.year));
       const sortedYears = Array.from(years).sort((a, b) => b - a);
       setAvailableYears(sortedYears);
@@ -138,7 +131,6 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
     }
   };
 
-  // Helper: apply flight deduction to a deal's revenue/cost
   const applyFlightDeduction = (dealId: string, rev: number, cost: number) => {
     if (!excludeFlights) return { rev, cost };
     const fc = flightCosts.find((f) => f.deal_id === dealId);
@@ -211,8 +203,7 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
   );
 
   const clientTableBody = (
-    stats: typeof sortedLeadStats,
-    metric: SortMetric
+    stats: typeof sortedLeadStats
   ) => (
     <Table>
       <TableHeader>
@@ -220,33 +211,44 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
           <TableHead className="w-[40px] text-center">#</TableHead>
           <TableHead>Klient</TableHead>
           <TableHead className="text-center">Cest</TableHead>
-          <TableHead className="text-right">{metric === "revenue" ? "Obrat" : "Zisk"}</TableHead>
+          <TableHead className="text-right">Obrat</TableHead>
+          <TableHead className="text-right">Zisk</TableHead>
+          <TableHead className="text-right">Marže</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {stats.map((stat, index) => (
-          <TableRow key={stat.clientId}>
-            <TableCell className="text-center text-muted-foreground font-medium text-sm">{index + 1}.</TableCell>
-            <TableCell className="text-body font-medium break-words">{stat.clientName}</TableCell>
-            <TableCell className="text-center text-body">{stat.dealCount}</TableCell>
-            <TableCell className="text-right text-body">
-              {metric === "revenue" ? (
-                <span>{stat.totalRevenue.toLocaleString("cs-CZ")} Kč</span>
-              ) : (
+        {stats.map((stat, index) => {
+          const margin = stat.totalRevenue > 0
+            ? (stat.profit / stat.totalRevenue) * 100
+            : 0;
+          return (
+            <TableRow key={stat.clientId}>
+              <TableCell className="text-center text-muted-foreground font-medium text-sm">{index + 1}.</TableCell>
+              <TableCell className="text-body font-medium break-words">{stat.clientName}</TableCell>
+              <TableCell className="text-center text-body">{stat.dealCount}</TableCell>
+              <TableCell className="text-right text-body">
+                {stat.totalRevenue.toLocaleString("cs-CZ")} Kč
+              </TableCell>
+              <TableCell className="text-right text-body">
                 <span className={stat.profit > 0 ? "text-green-600 dark:text-green-400" : stat.profit < 0 ? "text-destructive" : ""}>
                   {stat.profit.toLocaleString("cs-CZ")} Kč
                 </span>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
+              </TableCell>
+              <TableCell className="text-right text-body">
+                <span className={margin > 0 ? "text-green-600 dark:text-green-400" : margin < 0 ? "text-destructive" : ""}>
+                  {margin.toFixed(1)} %
+                </span>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {[0, 1].map((i) => (
           <Card key={i}>
             <CardContent className="flex items-center justify-center h-48">
@@ -259,8 +261,8 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Lead client stats */}
+    <div className="space-y-6">
+      {/* Lead client stats - full width */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -282,11 +284,11 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
         <CardContent>
           {sortedLeadStats.length === 0 ? (
             <p className="text-body text-muted-foreground">Žádná data</p>
-          ) : clientTableBody(sortedLeadStats, sortMetric)}
+          ) : clientTableBody(sortedLeadStats)}
         </CardContent>
       </Card>
 
-      {/* All travelers stats */}
+      {/* All travelers stats - full width */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -307,7 +309,7 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
         <CardContent>
           {sortedAllTravelerStats.length === 0 ? (
             <p className="text-body text-muted-foreground">Žádná data</p>
-          ) : clientTableBody(sortedAllTravelerStats, allSortMetric)}
+          ) : clientTableBody(sortedAllTravelerStats)}
         </CardContent>
       </Card>
     </div>
