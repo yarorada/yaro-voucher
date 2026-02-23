@@ -157,7 +157,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[320px] p-0 bg-popover z-50" align="start">
+      <PopoverContent className="w-full min-w-[320px] p-0 bg-popover z-50" align="start" onWheel={(e) => e.stopPropagation()}>
         <div className="flex items-center border-b px-3">
           <Input
             ref={inputRef}
@@ -167,7 +167,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
             className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto p-1">
+        <div className="max-h-[300px] overflow-y-auto p-1" onWheel={(e) => e.stopPropagation()}>
           {loading && (
             <div className="py-4 text-center text-sm text-muted-foreground">Načítání...</div>
           )}

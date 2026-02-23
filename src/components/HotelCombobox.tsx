@@ -224,6 +224,7 @@ export function HotelCombobox({ value, onChange }: HotelComboboxProps) {
           style={{ width: 'var(--radix-popover-trigger-width)', minWidth: '300px' }}
           align="start"
           sideOffset={4}
+          onWheel={(e) => e.stopPropagation()}
         >
           <Command>
             <CommandInput
