@@ -563,23 +563,6 @@ export default function Hotels() {
                       placeholder="37 900 Kč / os."
                     />
                   </div>
-                  <div className="sm:col-span-2">
-                    <Label>Golfová hřiště (text)</Label>
-                    <Input
-                      value={formData.golf_courses}
-                      onChange={(e) => setFormData((f) => ({ ...f, golf_courses: e.target.value }))}
-                      placeholder="Gloria Old, Gloria New, Gloria Verde"
-                    />
-                    {aiSuggestion?.golf_courses && formData.golf_courses !== aiSuggestion.golf_courses && (
-                      <button
-                        type="button"
-                        className="text-xs text-primary hover:underline mt-1"
-                        onClick={() => setFormData((f) => ({ ...f, golf_courses: aiSuggestion.golf_courses! }))}
-                      >
-                        AI návrh: {aiSuggestion.golf_courses}
-                      </button>
-                    )}
-                  </div>
 
               {/* Structured golf courses */}
               <div className="border-t pt-4">
