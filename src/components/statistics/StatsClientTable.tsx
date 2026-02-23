@@ -30,9 +30,20 @@ interface TravelerServiceStat {
   serviceTypes: Record<string, number>;
 }
 
+interface FlightCostPerDeal {
+  deal_id: string;
+  flightRevenue: number;
+  flightCost: number;
+}
+
+interface StatsClientTableProps {
+  excludeFlights: boolean;
+  flightCosts: FlightCostPerDeal[];
+}
+
 type SortMetric = "revenue" | "profit";
 
-export function StatsClientTable() {
+export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTableProps) {
   const [loading, setLoading] = useState(true);
   const [leadDeals, setLeadDeals] = useState<LeadClientDeal[]>([]);
   const [travelerStats, setTravelerStats] = useState<TravelerServiceStat[]>([]);
@@ -146,20 +157,33 @@ export function StatsClientTable() {
     // Aggregate by client
     const map = new Map<string, { clientId: string; clientName: string; dealCount: number; totalRevenue: number; totalCost: number; profit: number }>();
     filtered.forEach((d) => {
+      let rev = d.revenue;
+      let cost = d.cost;
+
+      // Subtract flight costs if toggle is on
+      if (excludeFlights) {
+        const fc = flightCosts.find((f) => f.deal_id === d.dealId);
+        if (fc) {
+          rev -= fc.flightRevenue;
+          cost -= fc.flightCost;
+        }
+      }
+
+      const profit = rev - cost;
       const existing = map.get(d.clientId);
       if (existing) {
         existing.dealCount += 1;
-        existing.totalRevenue += d.revenue;
-        existing.totalCost += d.cost;
-        existing.profit += d.revenue - d.cost;
+        existing.totalRevenue += rev;
+        existing.totalCost += cost;
+        existing.profit += profit;
       } else {
         map.set(d.clientId, {
           clientId: d.clientId,
           clientName: d.clientName,
           dealCount: 1,
-          totalRevenue: d.revenue,
-          totalCost: d.cost,
-          profit: d.revenue - d.cost,
+          totalRevenue: rev,
+          totalCost: cost,
+          profit,
         });
       }
     });
@@ -168,7 +192,7 @@ export function StatsClientTable() {
       if (sortMetric === "revenue") return b.totalRevenue - a.totalRevenue;
       return b.profit - a.profit;
     });
-  }, [leadDeals, sortMetric, selectedYear]);
+  }, [leadDeals, sortMetric, selectedYear, excludeFlights, flightCosts]);
 
   const serviceTypeLabels: Record<string, string> = {
     hotel: "Hotel",
