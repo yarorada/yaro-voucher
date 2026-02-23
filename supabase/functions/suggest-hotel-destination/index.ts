@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 2. The country name in Czech (e.g. "Turecko", "Egypt", "Portugalsko", "Španělsko")
 3. The ISO 3166-1 alpha-3 country code (e.g. "TUR", "EGY", "PRT", "ESP")
 4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
-5. Golf courses: ALWAYS list the hotel's own courses (if any) PLUS enough nearby courses to reach a total of at least 5 courses. For each course provide:
+5. Golf courses: ALWAYS list ALL of the hotel's own courses AND enough nearby courses so that the TOTAL is at least 5 courses. For example, if the hotel has 3 own courses, add at least 2 nearby courses. If the hotel has no own courses, list the 5 nearest. For each course provide:
    - "name": course name
    - "par": par value (number, e.g. 72). If unknown, use null.
    - "length": course length as string (e.g. "6321 m" or "7100 yds"). If unknown, use null.
