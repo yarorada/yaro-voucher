@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
+import { getServiceTotal } from "@/lib/servicePrice";
 import {
   DndContext,
   closestCenter,
@@ -152,7 +153,7 @@ const SortableServiceRow = ({
       </TableCell>
       <TableCell>{service.person_count || 1}</TableCell>
       <TableCell className="font-medium">
-        {formatPrice((service.price || 0) * (service.quantity || 1), service.price_currency)}
+        {formatPrice(getServiceTotal(service), service.price_currency)}
       </TableCell>
       <TableCell>
         <div className="flex gap-1">
@@ -245,8 +246,7 @@ export const VariantDetailDialog = ({
 
   const calculateTotalPrice = () => {
     return services.reduce((sum, service) => {
-      const servicePrice = (service.price || 0) * (service.quantity || 1);
-      return sum + servicePrice;
+      return sum + getServiceTotal(service);
     }, 0);
   };
 
@@ -424,7 +424,7 @@ export const VariantDetailDialog = ({
     try {
       const { data: svcData } = await supabase
         .from("deal_variant_services")
-        .select("start_date, end_date, price, cost_price, quantity, price_currency")
+        .select("start_date, end_date, price, cost_price, quantity, price_currency, person_count, details")
         .eq("variant_id", variantId);
 
       if (!svcData || svcData.length === 0) return;
@@ -433,7 +433,7 @@ export const VariantDetailDialog = ({
       const endDates = svcData.map(s => s.end_date).filter(Boolean).sort();
       const newStart = startDates[0] || null;
       const newEnd = endDates[endDates.length - 1] || null;
-      const totalPrice = svcData.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+      const totalPrice = svcData.reduce((sum, s) => sum + getServiceTotal(s), 0);
       const serviceCurrency = svcData.find(s => (s as any).price_currency)?.price_currency;
 
       // Update variant dates and total_price in DB

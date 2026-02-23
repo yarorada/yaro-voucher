@@ -29,6 +29,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
+import { getServiceTotal, getServiceMultiplier } from "@/lib/servicePrice";
 import { format, addDays, addMonths } from "date-fns";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
 import { ClientCombobox } from "@/components/ClientCombobox";
@@ -205,11 +206,11 @@ const SortableServiceRow = ({
       </TableCell>
       <TableCell className="text-right">
         <div className="text-sm font-medium">
-        {service.price ? formatPriceCurrency(service.price * (service.quantity || 1), service.price_currency || "CZK") : '-'}
+        {service.price ? formatPriceCurrency(getServiceTotal(service), service.price_currency || "CZK") : '-'}
         </div>
-        {service.price && (service.quantity || 1) > 1 && (
+        {service.price && getServiceMultiplier(service) > 1 && (
           <div className="text-xs text-muted-foreground">
-            {formatPriceCurrency(service.price, service.price_currency || "CZK")} × {service.quantity}
+            {formatPriceCurrency(service.price, service.price_currency || "CZK")} × {getServiceMultiplier(service)}
           </div>
         )}
       </TableCell>
@@ -700,8 +701,7 @@ const DealDetail = () => {
 
   const calculateTotalPrice = (servicesList: DealService[], discount: number, adjustment: number) => {
     const servicesTotal = servicesList.reduce((sum, service) => {
-      const servicePrice = (service.price || 0) * (service.quantity || 1);
-      return sum + servicePrice;
+      return sum + getServiceTotal(service);
     }, 0);
     
     const finalTotal = servicesTotal - discount + adjustment;
@@ -1195,7 +1195,7 @@ const DealDetail = () => {
       const servicesForCalc = freshServices || services;
       const discount = parseFloat(discountAmount) || 0;
       const adjustment = parseFloat(adjustmentAmount) || 0;
-      const servicesTotal = servicesForCalc.reduce((sum, s: any) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
+      const servicesTotal = servicesForCalc.reduce((sum, s: any) => sum + getServiceTotal(s), 0);
       const newTotal = servicesTotal - discount + adjustment;
       setTotalPrice(newTotal.toString());
       
@@ -1984,8 +1984,7 @@ const DealDetail = () => {
       
       // Calculate and update total price
       const servicesTotal = services.reduce((sum, service) => {
-        const servicePrice = (service.price || 0) * (service.quantity || 1);
-        return sum + servicePrice;
+        return sum + getServiceTotal(service);
       }, 0);
       const finalTotal = servicesTotal - (deal.discount_amount || 0) + (deal.adjustment_amount || 0);
       
@@ -2890,7 +2889,7 @@ const DealDetail = () => {
                   <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
                   <span className="font-bold text-base sm:text-lg text-primary">
                     {formatPriceCurrency(
-                      services.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0),
+                      services.reduce((sum, s) => sum + getServiceTotal(s), 0),
                       services[0]?.price_currency || "CZK"
                     )}
                   </span>
