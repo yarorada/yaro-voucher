@@ -2024,6 +2024,7 @@ const DealDetail = () => {
           shareToken={shareToken}
           onTokenGenerated={setShareToken}
           hasMultipleVariants={variantCount > 1}
+          key={`share-${variantCount}`}
         />
         <Button
           variant="outline"
