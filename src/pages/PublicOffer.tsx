@@ -284,8 +284,9 @@ export default function PublicOffer() {
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const urlParams = new URLSearchParams(window.location.search);
         const allParam = urlParams.get('all') === '1' ? '&all=1' : '';
+        const variantsParam = urlParams.get('variants') ? `&variants=${urlParams.get('variants')}` : '';
         const res = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}${allParam}`,
+          `https://${projectId}.supabase.co/functions/v1/get-public-offer?token=${encodeURIComponent(token)}${allParam}${variantsParam}`,
           { headers: { "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
         );
         if (!res.ok) {
