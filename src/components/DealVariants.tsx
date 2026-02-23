@@ -359,12 +359,10 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     const wasSelectedVariant = editingVariant?.is_selected;
     setDialogOpen(false);
     setEditingVariant(null);
-    if (success) {
-      fetchVariants();
-      // If the edited variant was the selected one, notify parent to refetch deal data
-      if (wasSelectedVariant) {
-        onVariantSelected?.();
-      }
+    // Always refetch — services may have been modified directly without clicking Save
+    fetchVariants();
+    if (success || wasSelectedVariant) {
+      onVariantSelected?.();
     }
   };
 
