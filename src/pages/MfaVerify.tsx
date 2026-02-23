@@ -23,6 +23,15 @@ const MfaVerify = () => {
 
   const checkMfaStatus = async () => {
     try {
+      // Skip MFA for Apple OAuth users
+      const { data: { user } } = await supabase.auth.getUser();
+      const isApple = user?.app_metadata?.provider === 'apple' || 
+        (Array.isArray(user?.app_metadata?.providers) && user.app_metadata.providers.includes('apple'));
+      if (isApple) {
+        navigate("/");
+        return;
+      }
+
       // Check current AAL level
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       

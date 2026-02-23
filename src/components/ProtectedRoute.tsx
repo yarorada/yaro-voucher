@@ -28,6 +28,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
 
       try {
+        // Skip MFA for Apple OAuth users (Apple provides strong auth via Face ID/Touch ID)
+        const isApple = user.app_metadata?.provider === 'apple' || 
+          (Array.isArray(user.app_metadata?.providers) && user.app_metadata.providers.includes('apple'));
+        if (isApple) {
+          setMfaVerified(true);
+          setMfaChecking(false);
+          return;
+        }
+
         // Check current AAL level
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         

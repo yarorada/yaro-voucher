@@ -26,6 +26,15 @@ const MfaSetup = () => {
   const enrollMfa = async () => {
     try {
       setLoading(true);
+
+      // Skip MFA for Apple OAuth users
+      const { data: { user } } = await supabase.auth.getUser();
+      const isApple = user?.app_metadata?.provider === 'apple' || 
+        (Array.isArray(user?.app_metadata?.providers) && user.app_metadata.providers.includes('apple'));
+      if (isApple) {
+        navigate("/");
+        return;
+      }
       
       // Check if user already has MFA enrolled
       const { data: factors } = await supabase.auth.mfa.listFactors();
