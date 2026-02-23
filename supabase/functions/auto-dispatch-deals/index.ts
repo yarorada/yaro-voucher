@@ -58,6 +58,58 @@ Deno.serve(async (req) => {
       }
     }
 
+    // === Phase 2: dispatched → completed ===
+    // Deals that are "dispatched" and end_date has passed → completed
+    const { data: dispatchedCandidates, error: fetchError2 } = await supabase
+      .from("deals")
+      .select(`id, deal_number, end_date, deal_services(end_date, start_date)`)
+      .eq("status", "dispatched");
+
+    if (fetchError2) throw fetchError2;
+
+    const toComplete: string[] = [];
+
+    for (const deal of dispatchedCandidates || []) {
+      // Use deal.end_date first, otherwise find latest service date
+      let latestDate = deal.end_date;
+      if (!latestDate) {
+        const services = deal.deal_services as any[];
+        latestDate = (services || []).reduce((latest: string | null, svc: any) => {
+          const d = svc.end_date || svc.start_date;
+          if (!d) return latest;
+          if (!latest) return d;
+          return d > latest ? d : latest;
+        }, null);
+      }
+
+      if (latestDate && latestDate < today) {
+        toComplete.push(deal.id);
+      }
+    }
+
+    if (toComplete.length > 0) {
+      const { error: updateError2 } = await supabase
+        .from("deals")
+        .update({ status: "completed" })
+        .in("id", toComplete);
+
+      if (updateError2) throw updateError2;
+
+      for (const dealId of toComplete) {
+        const deal = dispatchedCandidates?.find((d: any) => d.id === dealId);
+        try {
+          await supabase.from("notifications").insert({
+            event_type: "deal_status_changed",
+            title: `Deal ${deal?.deal_number || dealId} automaticky přepnut na Dokončeno`,
+            deal_id: dealId,
+            link: `/deals/${dealId}`,
+          });
+        } catch (e) {
+          console.error("Notification insert error:", e);
+        }
+      }
+    }
+
     if (toDispatch.length > 0) {
       const { error: updateError } = await supabase
         .from("deals")
@@ -66,9 +118,7 @@ Deno.serve(async (req) => {
 
       if (updateError) throw updateError;
 
-      // Insert notifications for each dispatched deal
       for (const dealId of toDispatch) {
-        const deal = candidates?.find((d: any) => d.id === dealId);
         try {
           const { data: dealInfo } = await supabase
             .from("deals")
@@ -91,7 +141,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         dispatched: toDispatch.length,
-        ids: toDispatch,
+        completed: toComplete.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
