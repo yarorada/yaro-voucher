@@ -1,25 +1,65 @@
 
-
-# Preskocit MFA pro prihlaseni pres Apple
+# Tlacitko "Souhlasim s nabidkou" a pole pro komentar klienta
 
 ## Co se zmeni
 
-Upravim komponentu `ProtectedRoute.tsx` tak, aby pri prihlaseni pres Apple (OAuth provider) automaticky preskocila kontrolu MFA a povazovala uzivatele za overeneho.
+Na verejne strance nabidky (`/offer/:token`) pribudne ve spodni casti formular, kde klient muze:
+1. Napsat volny text (komentar, poznamky, pozadavky)
+2. Kliknout na tlacitko **"Souhlasim s nabidkou"**
 
-Apple Sign-In uz sam o sobe poskytuje silne overeni (Face ID, Touch ID, heslo zarizeni), takze dalsi 2FA neni nutne.
+Po odeslani se:
+- Ulozi odpoved do nove databazove tabulky `offer_responses`
+- Odesle e-mail na `zajezdy@yarotravel.cz` s informaci, ktery klient souhlasil, ke kteremu dealu, a s jeho komentarem
+- Klientovi se zobrazi potvrzeni, ze jeho souhlas byl odeslan
 
-## Technicke detaily
+V CRM dashboardu bude souhlas videt jako notifikace (volitelne rozsireni).
 
-### Soubor: `src/components/ProtectedRoute.tsx`
+## Technicke zmeny
 
-V metode `checkMfa` pridam detekci OAuth providera. Pokud uzivatel pouzil Apple prihlaseni (`user.app_metadata.provider === 'apple'`), MFA se preskoci a uzivatel bude rovnou vpusten do aplikace.
+### 1. Nova databazova tabulka `offer_responses`
 
-Logika:
-1. Zkontrolovat `user.app_metadata.provider` nebo `user.app_metadata.providers` 
-2. Pokud obsahuje `"apple"`, nastavit `mfaVerified = true` a `mfaChecking = false`
-3. Jinak pokracovat se standardni MFA kontrolou
+```sql
+CREATE TABLE offer_responses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id),
+  client_name TEXT,
+  client_email TEXT,
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-### Soubor: `src/pages/MfaSetup.tsx`
+ALTER TABLE offer_responses ENABLE ROW LEVEL SECURITY;
 
-Pridam stejnou kontrolu - pokud je uzivatel prihlasen pres Apple, presmeruji ho rovnou na hlavni stranku misto vynuceni nastaveni MFA.
+-- Anonymni INSERT (klient neni prihlaseny)
+CREATE POLICY "Anyone can insert offer_responses"
+  ON offer_responses FOR INSERT
+  WITH CHECK (true);
 
+-- Cteni jen pro prihlasene uzivatele (CRM)
+CREATE POLICY "Authenticated users can view offer_responses"
+  ON offer_responses FOR SELECT
+  USING (true);
+```
+
+### 2. Nova Edge funkce `submit-offer-response`
+
+- Prijme `{ token, comment }` (bez autentizace - verejny endpoint)
+- Overi, ze deal s danym `share_token` existuje
+- Ulozi zaznam do `offer_responses` (deal_id, jmeno klienta, email, komentar)
+- Odesle e-mail pres Resend na `zajezdy@yarotravel.cz` s obsahem:
+  - Cislo dealu, jmeno klienta
+  - Text komentare klienta
+  - Odkaz na deal v CRM
+- Vrati `{ success: true }`
+
+### 3. Uprava `src/pages/PublicOffer.tsx`
+
+Na konec stranky (pred footer) se prida sekce:
+- Textarea pro komentar (nepovinny)
+- Zelene tlacitko "Souhlasim s nabidkou"
+- Po odeslani se formular nahradi potvrzovaci zpravou ("Dekujeme, Vas souhlas byl odeslan.")
+- Volani edge funkce `submit-offer-response` s tokenem a komentarem
+
+### 4. Konfigurace
+
+- V `supabase/config.toml` pridat `[functions.submit-offer-response]` s `verify_jwt = false` (verejny endpoint)
