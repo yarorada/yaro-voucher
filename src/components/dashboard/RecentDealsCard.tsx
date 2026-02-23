@@ -19,7 +19,7 @@ type SortMode = "departure_asc" | "departure_desc" | "return_asc" | "updated_at"
 interface Deal {
   id: string;
   deal_number: string;
-  status: "inquiry" | "quote" | "confirmed" | "completed" | "cancelled" | "dispatched";
+  status: "inquiry" | "quote" | "approved" | "confirmed" | "completed" | "cancelled" | "dispatched";
   created_at: string;
   updated_at: string;
   start_date: string | null;

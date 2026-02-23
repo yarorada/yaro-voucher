@@ -69,6 +69,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Update deal status to "approved"
+    const { error: statusError } = await supabase
+      .from('deals')
+      .update({ status: 'approved' })
+      .eq('id', deal.id);
+
+    if (statusError) {
+      console.error('Status update error:', statusError);
+    }
+
     // Send notification email via Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (resendApiKey) {
