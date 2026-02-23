@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DestinationCombobox } from "./DestinationCombobox";
 import { VariantServiceDialog } from "./VariantServiceDialog";
-import { Plus, Edit, Trash2, Plane, Hotel, Navigation, Car, Shield, FileText, ChevronDown, GripVertical } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Plane, Hotel, Navigation, Car, Shield, FileText, ChevronDown, GripVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,6 +105,7 @@ interface SortableServiceRowProps {
   renderFlightSegments: (s: VariantService) => React.ReactNode;
   onEdit: (s: VariantService) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (s: VariantService) => void;
 }
 
 const SortableServiceRow = ({
@@ -116,6 +117,7 @@ const SortableServiceRow = ({
   renderFlightSegments,
   onEdit,
   onDelete,
+  onDuplicate,
 }: SortableServiceRowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
   const style = {
@@ -156,6 +158,9 @@ const SortableServiceRow = ({
         <div className="flex gap-1">
           <Button onClick={() => onEdit(service)} size="sm" variant="ghost">
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button onClick={() => onDuplicate(service)} size="sm" variant="ghost" title="Duplikovat">
+            <Copy className="h-4 w-4" />
           </Button>
           <Button onClick={() => onDelete(service.id)} size="sm" variant="ghost" className="text-destructive hover:text-destructive">
             <Trash2 className="h-4 w-4" />
@@ -491,6 +496,41 @@ export const VariantDetailDialog = ({
         description: "Nepodařilo se smazat službu",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDuplicateService = async (service: VariantService) => {
+    if (!variant) return;
+    try {
+      const { error } = await supabase
+        .from("deal_variant_services")
+        .insert({
+          variant_id: variant.id,
+          service_type: service.service_type,
+          service_name: service.service_name,
+          description: service.description || null,
+          start_date: service.start_date || null,
+          end_date: service.end_date || null,
+          price: service.price,
+          price_currency: service.price_currency || "CZK",
+          cost_price: service.cost_price,
+          cost_currency: service.cost_currency || "CZK",
+          cost_price_original: (service as any).cost_price_original ?? null,
+          supplier_id: service.supplier_id || null,
+          person_count: service.person_count || 1,
+          quantity: service.quantity || 1,
+          details: service.details as any,
+          order_index: services.length,
+        } as any);
+
+      if (error) throw error;
+
+      toast({ title: "Úspěch", description: "Služba byla duplikována" });
+      await fetchServices(variant.id);
+      await recalcDatesFromServices(variant.id);
+    } catch (error) {
+      console.error("Error duplicating service:", error);
+      toast({ title: "Chyba", description: "Nepodařilo se duplikovat službu", variant: "destructive" });
     }
   };
 
@@ -833,6 +873,7 @@ export const VariantDetailDialog = ({
                                 setServiceDialogOpen(true);
                               }}
                               onDelete={handleDeleteService}
+                              onDuplicate={handleDuplicateService}
                             />
                           ))}
                         </SortableContext>
