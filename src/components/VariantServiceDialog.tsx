@@ -75,6 +75,8 @@ export const VariantServiceDialog = ({
   const [personCountUnit, setPersonCountUnit] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [supplierId, setSupplierId] = useState("");
+  const [priceMode, setPriceMode] = useState<"per_person" | "per_service">("per_person");
+  const [priceManuallySet, setPriceManuallySet] = useState(false);
 
   // Flight-specific fields - multi-segment support
   const [outboundSegments, setOutboundSegments] = useState<FlightSegment[]>([emptySegment()]);
@@ -108,6 +110,8 @@ export const VariantServiceDialog = ({
       setPersonCountUnit((service.details as any)?.person_count_unit?.toString() || "");
       setQuantity((service as any).quantity?.toString() || "1");
       setSupplierId(service.supplier_id || "");
+      setPriceMode((service.details as any)?.price_mode || "per_person");
+      setPriceManuallySet(true); // Existing service - don't auto-calculate
 
       // Load flight details if exists
       const details = service.details as FlightDetails | null;
@@ -166,6 +170,8 @@ export const VariantServiceDialog = ({
     setPersonCountUnit("");
     setQuantity("1");
     setSupplierId("");
+    setPriceMode("per_person");
+    setPriceManuallySet(false);
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
     setIsOneWay(false);
@@ -345,7 +351,7 @@ export const VariantServiceDialog = ({
         person_count: personCount ? parseInt(personCount) : 1,
         quantity: quantity ? parseInt(quantity) : 1,
         supplier_id: supplierId || null,
-        details: { ...(flightDetails || {}), person_count_unit: personCountUnit } as any,
+        details: { ...(flightDetails || {}), person_count_unit: personCountUnit, price_mode: priceMode } as any,
       };
 
       if (service) {
@@ -607,18 +613,18 @@ export const VariantServiceDialog = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Datum</Label>
-            <DateRangePicker
-              dateFrom={startDate}
-              dateTo={endDate}
-              onDateFromChange={setStartDate}
-              onDateToChange={setEndDate}
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="w-20">
+          {/* Row 1: Date | Persons | Quantity */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-2">
+              <Label>Datum</Label>
+              <DateRangePicker
+                dateFrom={startDate}
+                dateTo={endDate}
+                onDateFromChange={setStartDate}
+                onDateToChange={setEndDate}
+              />
+            </div>
+            <div className="w-16">
               <Label htmlFor="persons">Osoby</Label>
               <Input
                 id="persons"
@@ -634,7 +640,7 @@ export const VariantServiceDialog = ({
                 className="text-center"
               />
             </div>
-            <div className="w-20">
+            <div className="w-16">
               <Label htmlFor="quantity">Počet</Label>
               <Input
                 id="quantity"
@@ -647,35 +653,22 @@ export const VariantServiceDialog = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Prodejní cena</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0"
-                  className="flex-1"
-                />
-                <CurrencySelect
-                  value={priceCurrency}
-                  onChange={setPriceCurrency}
-                  className="w-24"
-                />
-              </div>
-            </div>
-            <div>
+          {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
               <Label>Nákupní cena</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Input
                   type="number"
                   value={costPriceOriginal || costPrice}
                   onChange={(e) => {
-                    setCostPriceOriginal(e.target.value);
-                    if (costCurrency === "CZK") setCostPrice(e.target.value);
+                    const val = e.target.value;
+                    setCostPriceOriginal(val);
+                    if (costCurrency === "CZK") setCostPrice(val);
+                    // Auto-margin 15%
+                    if (val && !priceManuallySet) {
+                      setPrice(Math.round(parseFloat(val) * 1.15).toString());
+                    }
                   }}
                   placeholder="0"
                   className="flex-1"
@@ -689,18 +682,56 @@ export const VariantServiceDialog = ({
                   className="w-24"
                 />
               </div>
-              {costCurrency !== "CZK" && costPrice && service?.cost_price != null && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  ≈ {formatPriceCurrency(service.cost_price)} (přepočteno do Kč)
-                </p>
-              )}
+            </div>
+            <div className="flex-1">
+              <Label>Prodejní cena</Label>
+              <div className="flex gap-1">
+                <Input
+                  id="price"
+                  type="number"
+                  value={price}
+                  onChange={(e) => {
+                    setPrice(e.target.value);
+                    setPriceManuallySet(true);
+                  }}
+                  placeholder="0"
+                  className="flex-1"
+                />
+                <CurrencySelect
+                  value={priceCurrency}
+                  onChange={setPriceCurrency}
+                  className="w-24"
+                />
+              </div>
+            </div>
+            <div className="w-32">
+              <Label>Režim</Label>
+              <Select value={priceMode} onValueChange={(v: "per_person" | "per_service") => setPriceMode(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per_person">za osobu</SelectItem>
+                  <SelectItem value="per_service">za službu</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {price && quantity && (
+          {costCurrency !== "CZK" && costPrice && service?.cost_price != null && (
+            <p className="text-xs text-muted-foreground">
+              ≈ {formatPriceCurrency(service.cost_price)} (přepočteno do Kč)
+            </p>
+          )}
+
+          {price && (
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm font-medium">
-                Celková cena: {formatPriceCurrency(parseFloat(price) * parseInt(quantity))}
+                Celková cena: {formatPriceCurrency(
+                  parseFloat(price) * (priceMode === "per_person" 
+                    ? parseInt(personCount || "1") 
+                    : parseInt(quantity || "1"))
+                )}
               </p>
             </div>
           )}

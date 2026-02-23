@@ -346,7 +346,7 @@ const DealDetail = () => {
   const [syncingContract, setSyncingContract] = useState(false);
   
   // Service form state
-  const [serviceForm, setServiceForm] = useState({
+   const [serviceForm, setServiceForm] = useState({
     id: "",
     service_type: "hotel" as DealService["service_type"],
     service_name: "",
@@ -362,6 +362,8 @@ const DealDetail = () => {
     person_count: "1",
     person_count_unit: "",
     quantity: "1",
+    price_mode: "per_person" as "per_person" | "per_service",
+    price_manually_set: false,
   });
   
   // Flight segments state (separate from form to avoid serialization issues)
@@ -1138,7 +1140,7 @@ const DealDetail = () => {
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
+            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any)
           .eq("id", serviceForm.id);
 
@@ -1163,7 +1165,7 @@ const DealDetail = () => {
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit } as any,
+            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any]);
 
         if (error) throw error;
@@ -1453,6 +1455,8 @@ const DealDetail = () => {
     person_count: (deal?.deal_travelers?.length || 1).toString(),
     person_count_unit: "",
     quantity: "1",
+    price_mode: "per_person" as "per_person" | "per_service",
+    price_manually_set: false,
     ...overrides,
   });
 
@@ -1473,6 +1477,8 @@ const DealDetail = () => {
       person_count: "1",
       person_count_unit: "",
       quantity: "1",
+      price_mode: "per_person",
+      price_manually_set: false,
     });
     resetFlightForm();
     setOriginalFlightDetails(null);
@@ -1564,6 +1570,8 @@ const DealDetail = () => {
       person_count: service.person_count?.toString() || "1",
       person_count_unit: (service.details as any)?.person_count_unit?.toString() || "",
       quantity: (service.quantity || 1).toString(),
+      price_mode: (service.details as any)?.price_mode || "per_person",
+      price_manually_set: true, // Existing service - don't auto-calculate
     });
     setServiceDialogOpen(true);
   };
@@ -2685,99 +2693,124 @@ const DealDetail = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Datum</Label>
-                      <DateRangePicker
-                        dateFrom={serviceForm.start_date}
-                        dateTo={serviceForm.end_date}
-                        onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
-                        onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
-                      />
-                    </div>
-
-                    <div className="flex gap-4">
-                      <div className="w-20">
+                    {/* Row 1: Date | Persons | Quantity */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-2">
+                        <Label>Datum</Label>
+                        <DateRangePicker
+                          dateFrom={serviceForm.start_date}
+                          dateTo={serviceForm.end_date}
+                          onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
+                          onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
+                        />
+                      </div>
+                      <div className="w-16">
                         <Label>Osoby</Label>
                         <Input
                           id="deal-service-persons"
-                          type="number"
-                          min="1"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={serviceForm.person_count}
                           onChange={(e) => {
-                            const val = e.target.value;
+                            const val = e.target.value.replace(/\D/g, '') || '';
                             setServiceForm(prev => ({ ...prev, person_count: val, quantity: val }));
                           }}
                           placeholder="1"
                           className="text-center"
                         />
                       </div>
-                      <div className="w-20">
+                      <div className="w-16">
                         <Label>Počet</Label>
                         <Input
-                          type="number"
-                          min="1"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={serviceForm.quantity}
-                          onChange={(e) => setServiceForm({ ...serviceForm, quantity: e.target.value })}
+                          onChange={(e) => setServiceForm(prev => ({ ...prev, quantity: e.target.value.replace(/\D/g, '') || '' }))}
                           placeholder="1"
                           className="text-center"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Prodejní cena</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            value={serviceForm.price}
-                            onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
-                            placeholder="0"
-                            className="flex-1"
-                          />
-                          <CurrencySelect
-                            value={serviceForm.price_currency}
-                            onChange={(value) => setServiceForm({ ...serviceForm, price_currency: value })}
-                            className="w-24"
-                          />
-                        </div>
-                      </div>
-                      <div>
+                    {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
                         <Label>Nákupní cena</Label>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <Input
                             type="number"
                             value={serviceForm.cost_price_original || serviceForm.cost_price}
-                            onChange={(e) => setServiceForm({ 
-                              ...serviceForm, 
-                              cost_price_original: e.target.value,
-                              cost_price: serviceForm.cost_currency === "CZK" ? e.target.value : ""
-                            })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const updates: any = {
+                                cost_price_original: val,
+                                cost_price: serviceForm.cost_currency === "CZK" ? val : "",
+                              };
+                              // Auto-margin 15%
+                              if (val && !serviceForm.price_manually_set) {
+                                updates.price = Math.round(parseFloat(val) * 1.15).toString();
+                              }
+                              setServiceForm(prev => ({ ...prev, ...updates }));
+                            }}
                             placeholder="0"
                             className="flex-1"
                           />
                           <CurrencySelect
                             value={serviceForm.cost_currency}
-                            onChange={(value) => setServiceForm({ 
-                              ...serviceForm, 
+                            onChange={(value) => setServiceForm(prev => ({ 
+                              ...prev, 
                               cost_currency: value,
-                              cost_price: value === "CZK" ? serviceForm.cost_price_original : ""
-                            })}
+                              cost_price: value === "CZK" ? prev.cost_price_original : ""
+                            }))}
                             className="w-24"
                           />
                         </div>
-                        {serviceForm.cost_currency !== "CZK" && serviceForm.cost_price && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ≈ {formatPriceCurrency(parseFloat(serviceForm.cost_price))} (přepočteno do Kč)
-                          </p>
-                        )}
+                      </div>
+                      <div className="flex-1">
+                        <Label>Prodejní cena</Label>
+                        <div className="flex gap-1">
+                          <Input
+                            type="number"
+                            value={serviceForm.price}
+                            onChange={(e) => setServiceForm(prev => ({ ...prev, price: e.target.value, price_manually_set: true }))}
+                            placeholder="0"
+                            className="flex-1"
+                          />
+                          <CurrencySelect
+                            value={serviceForm.price_currency}
+                            onChange={(value) => setServiceForm(prev => ({ ...prev, price_currency: value }))}
+                            className="w-24"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-32">
+                        <Label>Režim</Label>
+                        <Select value={serviceForm.price_mode} onValueChange={(v: "per_person" | "per_service") => setServiceForm(prev => ({ ...prev, price_mode: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="per_person">za osobu</SelectItem>
+                            <SelectItem value="per_service">za službu</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
-                    {serviceForm.price && serviceForm.quantity && (
+                    {serviceForm.cost_currency !== "CZK" && serviceForm.cost_price && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ {formatPriceCurrency(parseFloat(serviceForm.cost_price))} (přepočteno do Kč)
+                      </p>
+                    )}
+
+                    {serviceForm.price && (
                       <div className="bg-muted p-3 rounded-md">
                         <p className="text-sm font-medium">
-                          Celková cena: {formatPriceCurrency(parseFloat(serviceForm.price) * parseInt(serviceForm.quantity || "1"))}
+                          Celková cena: {formatPriceCurrency(
+                            parseFloat(serviceForm.price) * (serviceForm.price_mode === "per_person" 
+                              ? parseInt(serviceForm.person_count || "1") 
+                              : parseInt(serviceForm.quantity || "1"))
+                          )}
                         </p>
                       </div>
                     )}
