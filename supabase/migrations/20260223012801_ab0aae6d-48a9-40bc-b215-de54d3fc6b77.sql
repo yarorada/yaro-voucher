@@ -1,0 +1,1 @@
+ALTER TABLE public.hotel_templates ADD COLUMN golf_courses_data jsonb DEFAULT NULL;

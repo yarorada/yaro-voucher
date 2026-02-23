@@ -13,6 +13,15 @@ interface Highlight {
   text: string;
 }
 
+interface GolfCourseData {
+  name: string;
+  par: number | null;
+  length: string | null;
+  architect: string | null;
+  is_hotel_course: boolean;
+  distance_km: number | null;
+}
+
 interface HotelDetail {
   id: string;
   name: string;
@@ -22,6 +31,7 @@ interface HotelDetail {
   nights: string | null;
   green_fees: string | null;
   golf_courses: string | null;
+  golf_courses_data: GolfCourseData[] | null;
   price_label: string | null;
   benefits: any;
   room_types: any;
@@ -226,7 +236,7 @@ export default function PublicHotelDetail() {
               ⛳ Green fees: {hotel.green_fees}
             </span>
           )}
-          {hotel.golf_courses && (
+          {hotel.golf_courses && !hotel.golf_courses_data?.length && (
             <span className="bg-white border border-slate-200 text-slate-600 text-sm px-4 py-2 rounded-full shadow-sm">
               🏌️ {hotel.golf_courses}
             </span>
@@ -248,7 +258,37 @@ export default function PublicHotelDetail() {
           </div>
         )}
 
-        {/* Highlights - Why choose this hotel */}
+        {/* Golf courses */}
+        {hotel.golf_courses_data && hotel.golf_courses_data.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">⛳ Golfová hřiště</h2>
+            <div className="space-y-3">
+              {hotel.golf_courses_data.map((gc, i) => (
+                <div key={i} className="border-l-2 border-emerald-400 pl-4 py-1">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="font-medium text-slate-700">{gc.name}</p>
+                    {!gc.is_hotel_course && gc.distance_km != null && (
+                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                        📍 {gc.distance_km} km
+                      </span>
+                    )}
+                    {gc.is_hotel_course && (
+                      <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                        Vlastní hřiště
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3 mt-1 text-sm text-slate-500">
+                    {gc.par != null && <span>PAR {gc.par}</span>}
+                    {gc.length && <span>{gc.length}</span>}
+                    {gc.architect && <span>Architekt: {gc.architect}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {hotel.highlights && hotel.highlights.length > 0 && (
           <div className="space-y-8">
             <div className="text-center space-y-2">

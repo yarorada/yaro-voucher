@@ -33,7 +33,14 @@ Deno.serve(async (req) => {
 2. The country name in Czech (e.g. "Turecko", "Egypt", "Portugalsko", "Španělsko")
 3. The ISO 3166-1 alpha-3 country code (e.g. "TUR", "EGY", "PRT", "ESP")
 4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
-5. Golf courses associated with or near the hotel. If the hotel/resort has its own golf course(s), list them. If not, suggest the 3 nearest golf courses with approximate driving distance in minutes (e.g. "Royal Golf Marrakech (15 min)", "Amelkis Golf Club (20 min)"). Separate multiple courses with comma.
+5. Golf courses associated with or near the hotel as structured data. For each course provide:
+   - "name": course name
+   - "par": par value (number, e.g. 72). If unknown, use null.
+   - "length": course length as string (e.g. "6321 m" or "7100 yds"). If unknown, use null.
+   - "architect": course architect/designer name. If unknown, use null.
+   - "is_hotel_course": boolean, true if the course belongs to the hotel/resort
+   - "distance_km": distance from hotel in km (number, e.g. 5). Only for nearby courses (is_hotel_course=false). Use null for hotel's own courses.
+   If the hotel has its own courses, list all of them. If not, suggest the 3 nearest golf courses.
 6. Exactly 6 compelling reasons (highlights) why a golf traveler should choose this hotel. Each highlight has:
    - "icon": one of these icon names: MapPin, Target, Star, UtensilsCrossed, Users, Calendar, Waves, Sun, Mountain, Trophy, Heart, Gem, Shield, Compass, Palmtree, Building
    - "title": short catchy title in Czech (max 4 words)
@@ -79,7 +86,23 @@ Use the tool to return your answer.`,
                   },
                   golf_courses: {
                     type: "string",
-                    description: "Comma-separated golf courses. Own courses listed by name, nearby courses with driving time in parentheses",
+                    description: "Comma-separated golf course names for backward compatibility",
+                  },
+                  golf_courses_data: {
+                    type: "array",
+                    description: "Structured golf course data",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string", description: "Course name" },
+                        par: { type: ["number", "null"], description: "Par value, e.g. 72" },
+                        length: { type: ["string", "null"], description: "Course length, e.g. '6321 m'" },
+                        architect: { type: ["string", "null"], description: "Course architect/designer" },
+                        is_hotel_course: { type: "boolean", description: "True if course belongs to hotel" },
+                        distance_km: { type: ["number", "null"], description: "Distance from hotel in km (only for nearby courses)" },
+                      },
+                      required: ["name", "is_hotel_course"],
+                    },
                   },
                   highlights: {
                     type: "array",
@@ -104,7 +127,7 @@ Use the tool to return your answer.`,
                     },
                   },
                 },
-                required: ["destination", "country", "iso_code", "confidence", "subtitle", "golf_courses", "highlights"],
+                required: ["destination", "country", "iso_code", "confidence", "subtitle", "golf_courses", "golf_courses_data", "highlights"],
                 additionalProperties: false,
               },
             },
