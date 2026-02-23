@@ -364,13 +364,13 @@ export default function Hotels() {
 
       {/* Edit dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Upravit hotel</DialogTitle>
             <DialogDescription>Upravte údaje hotelu, fotky a popis</DialogDescription>
           </DialogHeader>
           {editHotel && (
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto flex-1 pr-1">
               {/* Basic info - Name & Slug */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -594,12 +594,13 @@ export default function Hotels() {
                 />
               </div>
 
-              {/* Save button */}
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "Ukládám..." : "Uložit údaje"}
-                </Button>
-              </div>
+            </div>
+          )}
+          {editHotel && (
+            <div className="flex justify-end border-t pt-4 shrink-0">
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? "Ukládám..." : "Uložit údaje"}
+              </Button>
             </div>
           )}
         </DialogContent>
