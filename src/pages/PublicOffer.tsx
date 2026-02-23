@@ -349,7 +349,13 @@ export default function PublicOffer() {
     }
   };
 
-  const handleSubmitResponse = () => submitResponse();
+  const handleSubmitResponse = () => {
+    // When there's exactly 1 variant, auto-pass its ID so it gets selected
+    if (variants.length === 1) {
+      return submitResponse(variants[0].variant_name, variants[0].id);
+    }
+    return submitResponse();
+  };
 
   if (loading) {
     return (
