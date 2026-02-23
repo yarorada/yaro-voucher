@@ -328,7 +328,7 @@ export default function PublicOffer() {
             'Content-Type': 'application/json',
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ token, comment: currentComment, variant_name: variantName || undefined }),
+          body: JSON.stringify({ token, comment: currentComment, variant_name: variantName || undefined, variant_id: variantId || undefined }),
         }
       );
       if (res.ok) {
