@@ -108,21 +108,16 @@ export default function Accounting() {
           }
 
           const payments = paymentsMap.get(c.id) || [];
-          const depositPayments = payments.filter((p) => p.payment_type === "deposit");
-          const finalPayments = payments.filter((p) => p.payment_type !== "deposit");
-
-          const sellDeposit = depositPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
-          const sellFinal = finalPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
 
           const prof = profitMap.get(deal?.id);
           const totalCosts = Number(prof?.total_costs || 0);
-          const totalRevenue = Number(prof?.revenue || c.total_price || 0);
+          const totalRevenue = Number(prof?.revenue || deal?.total_price || c.total_price || 0);
 
-          // Proportional cost split
-          const totalSell = sellDeposit + sellFinal;
-          const depositRatio = totalSell > 0 ? sellDeposit / totalSell : 1;
-          const buyDeposit = Math.round(totalCosts * depositRatio);
-          const buyFinal = totalCosts - buyDeposit;
+          // Sell = deal's total selling price, Buy = deal's total costs
+          const sellDeposit = totalRevenue;
+          const buyDeposit = totalCosts;
+          const sellFinal = totalRevenue;
+          const buyFinal = totalCosts;
 
           const profitDeposit = sellDeposit - buyDeposit;
           const profitFinal = sellFinal - buyFinal;
