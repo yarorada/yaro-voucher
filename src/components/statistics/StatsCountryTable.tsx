@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { getCountryFlag } from "@/lib/countryData";
 import type { StatsData } from "@/pages/Statistics";
 
 interface StatsCountryTableProps {
@@ -86,7 +87,10 @@ export const StatsCountryTable = ({ data }: StatsCountryTableProps) => {
           <TableBody>
             {tableData.map((row) => (
               <TableRow key={row.name}>
-                <TableCell className="font-medium">{row.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="mr-1.5">{getCountryFlag(row.name)}</span>
+                  {row.name}
+                </TableCell>
                 <TableCell className="text-right">{row.dealCount}</TableCell>
                 <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(row.profit)}</TableCell>

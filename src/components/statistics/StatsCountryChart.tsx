@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { getCountryFlag } from "@/lib/countryData";
 import type { StatsData } from "@/pages/Statistics";
 
 interface StatsCountryChartProps {
@@ -115,11 +116,14 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
-              label={({ name, percent, x, y }) => (
-                <text x={x} y={y} fill="hsl(var(--foreground))" fontSize={12} textAnchor="middle" dominantBaseline="central">
-                  {`${name} (${(percent * 100).toFixed(0)}%)`}
-                </text>
-              )}
+              label={({ name, percent, x, y }) => {
+                const flag = getCountryFlag(name);
+                return (
+                  <text x={x} y={y} fill="hsl(var(--foreground))" fontSize={12} textAnchor="middle" dominantBaseline="central">
+                    {`${flag} ${name} (${(percent * 100).toFixed(0)}%)`}
+                  </text>
+                );
+              }}
               labelLine={false}
             >
               {chartData.map((item, index) => (
