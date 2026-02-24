@@ -42,7 +42,7 @@ interface VariantServiceDialogProps {
   onClose: (success?: boolean) => void;
   variantStartDate?: string | null;
   variantEndDate?: string | null;
-  preselectedServiceType?: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
+  preselectedServiceType?: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "meal" | "other";
   preselectedServiceName?: string;
   defaultTravelerCount?: number;
 }
@@ -61,7 +61,7 @@ export const VariantServiceDialog = ({
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [convertingCurrency, setConvertingCurrency] = useState(false);
-  const [serviceType, setServiceType] = useState<"flight" | "hotel" | "golf" | "transfer" | "insurance" | "other">("hotel");
+  const [serviceType, setServiceType] = useState<"flight" | "hotel" | "golf" | "transfer" | "insurance" | "meal" | "other">("hotel");
   const [serviceName, setServiceName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -408,6 +408,7 @@ export const VariantServiceDialog = ({
                 <SelectItem value="golf">Green Fee</SelectItem>
                 <SelectItem value="transfer">Doprava</SelectItem>
                 <SelectItem value="insurance">Pojištění</SelectItem>
+                <SelectItem value="meal">Strava</SelectItem>
                 <SelectItem value="other">Ostatní</SelectItem>
               </SelectContent>
             </Select>

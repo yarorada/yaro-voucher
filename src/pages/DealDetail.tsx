@@ -121,7 +121,7 @@ interface FlightDetails {
 
 interface DealService {
   id: string;
-  service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
+  service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "meal" | "other";
   service_name: string;
   description: string | null;
   start_date: string | null;
@@ -1667,6 +1667,7 @@ const DealDetail = () => {
       case "golf": return "Green Fee";
       case "transfer": return "Doprava";
       case "insurance": return "Pojištění";
+      case "meal": return "Strava";
       case "other": return "Ostatní";
     }
   };
@@ -2613,18 +2614,19 @@ const DealDetail = () => {
                       <Label>Typ služby *</Label>
                       <Select
                         value={
-                          serviceForm.service_type === 'other' 
-                            ? (serviceForm.service_name === 'Rent-a-car' ? 'preset-rentacar' 
-                              : serviceForm.service_name === 'Strava' ? 'preset-strava'
-                              : serviceForm.service_name === 'Asistence' ? 'preset-asistence'
-                              : 'other')
-                            : serviceForm.service_type
+                          serviceForm.service_type === 'meal' 
+                            ? 'preset-strava'
+                            : serviceForm.service_type === 'other' 
+                              ? (serviceForm.service_name === 'Rent-a-car' ? 'preset-rentacar' 
+                                : serviceForm.service_name === 'Asistence' ? 'preset-asistence'
+                                : 'other')
+                              : serviceForm.service_type
                         }
                         onValueChange={(value: string) => {
                           if (value === 'preset-rentacar') {
                             setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Rent-a-car' });
                           } else if (value === 'preset-strava') {
-                            setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Strava' });
+                            setServiceForm({ ...serviceForm, service_type: 'meal', service_name: 'Strava' });
                           } else if (value === 'preset-asistence') {
                             setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Asistence' });
                           } else {

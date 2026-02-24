@@ -77,7 +77,7 @@ interface FlightDetails {
 
 interface VariantService {
   id: string;
-  service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "other";
+  service_type: "flight" | "hotel" | "golf" | "transfer" | "insurance" | "meal" | "other";
   service_name: string;
   description: string | null;
   start_date: string | null;
@@ -561,6 +561,7 @@ export const VariantDetailDialog = ({
       case "golf": return "Green Fee";
       case "transfer": return "Doprava";
       case "insurance": return "Pojištění";
+      case "meal": return "Strava";
       case "other": return "Ostatní";
     }
   };
