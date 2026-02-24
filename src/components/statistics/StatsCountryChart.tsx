@@ -8,14 +8,14 @@ interface StatsCountryChartProps {
 }
 
 const COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-  "hsl(210, 40%, 60%)",
-  "hsl(180, 40%, 50%)",
-  "hsl(150, 40%, 50%)",
+  "hsl(220, 70%, 55%)",
+  "hsl(350, 65%, 55%)",
+  "hsl(45, 80%, 50%)",
+  "hsl(160, 60%, 45%)",
+  "hsl(280, 60%, 55%)",
+  "hsl(25, 75%, 55%)",
+  "hsl(190, 65%, 50%)",
+  "hsl(330, 55%, 60%)",
 ];
 
 const formatCurrency = (value: number) => {
