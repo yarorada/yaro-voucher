@@ -1656,6 +1656,7 @@ const DealDetail = () => {
       case "golf": return <Navigation className="h-4 w-4" />;
       case "transfer": return <Car className="h-4 w-4" />;
       case "insurance": return <Shield className="h-4 w-4" />;
+      case "meal": return <Utensils className="h-4 w-4" />;
       case "other": return <FileText className="h-4 w-4" />;
     }
   };
@@ -2531,7 +2532,7 @@ const DealDetail = () => {
                     Rent-a-car
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    setServiceForm(createServiceFormData("other", "Strava"));
+                    setServiceForm(createServiceFormData("meal", "Strava"));
                     setServiceDialogOpen(true);
                   }}>
                     <Utensils className="h-4 w-4 mr-2" />
@@ -2614,19 +2615,17 @@ const DealDetail = () => {
                       <Label>Typ služby *</Label>
                       <Select
                         value={
-                          serviceForm.service_type === 'meal' 
-                            ? 'preset-strava'
-                            : serviceForm.service_type === 'other' 
-                              ? (serviceForm.service_name === 'Rent-a-car' ? 'preset-rentacar' 
-                                : serviceForm.service_name === 'Asistence' ? 'preset-asistence'
-                                : 'other')
-                              : serviceForm.service_type
+                          serviceForm.service_type === 'other' 
+                            ? (serviceForm.service_name === 'Rent-a-car' ? 'preset-rentacar' 
+                              : serviceForm.service_name === 'Asistence' ? 'preset-asistence'
+                              : 'other')
+                            : serviceForm.service_type
                         }
                         onValueChange={(value: string) => {
                           if (value === 'preset-rentacar') {
                             setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Rent-a-car' });
-                          } else if (value === 'preset-strava') {
-                            setServiceForm({ ...serviceForm, service_type: 'meal', service_name: 'Strava' });
+                          } else if (value === 'meal') {
+                            setServiceForm({ ...serviceForm, service_type: 'meal', service_name: serviceForm.service_name || 'Strava' });
                           } else if (value === 'preset-asistence') {
                             setServiceForm({ ...serviceForm, service_type: 'other', service_name: 'Asistence' });
                           } else {
@@ -2653,7 +2652,7 @@ const DealDetail = () => {
                           <SelectItem value="preset-rentacar">
                             <span className="flex items-center gap-2"><Car className="h-4 w-4" /> Rent-a-car</span>
                           </SelectItem>
-                          <SelectItem value="preset-strava">
+                          <SelectItem value="meal">
                             <span className="flex items-center gap-2"><Utensils className="h-4 w-4" /> Strava</span>
                           </SelectItem>
                           <SelectItem value="preset-asistence">
