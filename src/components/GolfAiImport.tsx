@@ -104,7 +104,7 @@ export const GolfAiImport = ({ onImport }: GolfAiImportProps) => {
             </Button>
             <Button type="button" size="sm" onClick={handleConfirm}>
               <Check className="h-3 w-3 mr-1" />
-              Potvrdit a vytvořit služby
+              Potvrdit a přidat tee times
             </Button>
           </div>
         </div>
