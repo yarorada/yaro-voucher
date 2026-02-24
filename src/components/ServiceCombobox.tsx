@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Pencil, Loader2, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -227,7 +227,7 @@ export function ServiceCombobox({ value, onChange, onSelect, serviceType }: Serv
   };
 
   const filteredServices = services.filter((service) => {
-    const matchesSearch = service.name.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesSearch = removeDiacritics(service.name.toLowerCase()).includes(removeDiacritics(searchValue.toLowerCase()));
     const matchesType = !serviceType || service.service_type === serviceType;
     return matchesSearch && matchesType;
   });

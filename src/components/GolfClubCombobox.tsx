@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Pencil } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -138,11 +138,11 @@ export function GolfClubCombobox({ value, onChange, onSelect }: GolfClubCombobox
   };
 
   const filteredClubs = clubs.filter((club) =>
-    club.name.toLowerCase().includes(value.toLowerCase())
+    removeDiacritics(club.name.toLowerCase()).includes(removeDiacritics(value.toLowerCase()))
   );
 
   const showCreateOption = value.trim() !== "" && 
-    !clubs.some(club => club.name.toLowerCase() === value.toLowerCase());
+    !clubs.some(club => removeDiacritics(club.name.toLowerCase()) === removeDiacritics(value.toLowerCase()));
 
   return (
     <>

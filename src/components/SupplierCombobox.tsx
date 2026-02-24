@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -117,7 +117,7 @@ export function SupplierCombobox({ value, onChange, onSelect }: SupplierCombobox
   const selectedSupplier = suppliers.find((supplier) => supplier.id === value);
   
   const hasNoMatch = searchValue && !suppliers.some(s => 
-    s.name.toLowerCase().includes(searchValue.toLowerCase())
+    removeDiacritics(s.name.toLowerCase()).includes(removeDiacritics(searchValue.toLowerCase()))
   );
 
   return (
@@ -154,7 +154,7 @@ export function SupplierCombobox({ value, onChange, onSelect }: SupplierCombobox
               <CommandGroup>
                 {suppliers
                   .filter(supplier => 
-                    supplier.name.toLowerCase().includes(searchValue.toLowerCase())
+                    removeDiacritics(supplier.name.toLowerCase()).includes(removeDiacritics(searchValue.toLowerCase()))
                   )
                   .map((supplier) => (
                     <CommandItem

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Pencil, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -183,11 +183,11 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
   };
 
   const filteredHotels = hotels.filter((hotel) =>
-    hotel.name.toLowerCase().includes(searchValue.toLowerCase())
+    removeDiacritics(hotel.name.toLowerCase()).includes(removeDiacritics(searchValue.toLowerCase()))
   );
 
   const showCreateOption = searchValue.trim() &&
-    !hotels.some(h => h.name.toLowerCase() === searchValue.toLowerCase());
+    !hotels.some(h => removeDiacritics(h.name.toLowerCase()) === removeDiacritics(searchValue.toLowerCase()));
 
   return (
     <>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Edit, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
@@ -169,8 +170,8 @@ const Suppliers = () => {
 
   const filteredSuppliers = suppliers.filter((s) => {
     if (!searchText.trim()) return true;
-    const q = searchText.toLowerCase();
-    return s.name.toLowerCase().includes(q) || (s.contact_person || "").toLowerCase().includes(q) || (s.email || "").toLowerCase().includes(q);
+    const q = removeDiacritics(searchText.toLowerCase());
+    return removeDiacritics(s.name.toLowerCase()).includes(q) || removeDiacritics((s.contact_person || "").toLowerCase()).includes(q) || removeDiacritics((s.email || "").toLowerCase()).includes(q);
   });
 
   usePageToolbar(

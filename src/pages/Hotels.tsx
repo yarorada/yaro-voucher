@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -268,7 +269,7 @@ export default function Hotels() {
   };
 
   const filtered = hotels.filter((h) =>
-    h.name.toLowerCase().includes(search.toLowerCase())
+    removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()))
   );
 
   const imageCount = (h: HotelTemplate) => {
