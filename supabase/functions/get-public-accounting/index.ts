@@ -14,6 +14,15 @@ const EU_COUNTRIES = [
 
 const CANARY_EXCEPTIONS = ["Gran Canaria", "Tenerife", "Lanzarote", "Fuerteventura"];
 
+function isInPreviousMonth(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+  return d >= prev && d <= prevEnd;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -128,6 +137,14 @@ Deno.serve(async (req) => {
         const vatFinal = Math.round(profitFinal * vatRate);
         const vatDiff = vatFinal - vatDeposit;
 
+        const firstPaidAt = (paymentsMap.get(c.id) || [])
+          .filter((p: any) => p.paid && p.paid_at)
+          .map((p: any) => p.paid_at!)
+          .sort()[0] || null;
+
+        const highlightRed = isInPreviousMonth(endDate);
+        const highlightBlue = isInPreviousMonth(firstPaidAt);
+
         return {
           contractNumber: c.contract_number,
           clientName: client ? `${client.first_name} ${client.last_name}` : "",
@@ -138,6 +155,7 @@ Deno.serve(async (req) => {
           sellDeposit, buyDeposit, profitDeposit,
           sellFinal, buyFinal, profitFinal,
           vatDeposit, vatFinal, vatDiff,
+          highlightRed, highlightBlue,
         };
       })
       .filter(Boolean);
