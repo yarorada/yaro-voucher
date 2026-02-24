@@ -185,6 +185,7 @@ const serviceLabels: Record<string, string> = {
   golf: "Golf",
   transfer: "Transfer",
   insurance: "Pojištění",
+  meal: "Strava",
   other: "Ostatní",
 };
 
