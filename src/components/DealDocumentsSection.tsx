@@ -31,6 +31,16 @@ interface DealDocument {
   uploaded_at: string;
 }
 
+interface OcrResult {
+  first_name?: string;
+  last_name?: string;
+  passport_number?: string;
+  passport_expiry?: string;
+  id_card_number?: string;
+  id_card_expiry?: string;
+  date_of_birth?: string;
+}
+
 interface DealVoucher {
   id: string;
   voucher_code: string;
@@ -58,12 +68,14 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFileType, setPreviewFileType] = useState<string | null>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingVoucherId, setSendingVoucherId] = useState<string | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [ccSuppliers, setCcSuppliers] = useState(true);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
@@ -89,8 +101,121 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     fetchDocuments();
   }, [fetchDocuments]);
 
+  const runOcrOnImage = async (file: File) => {
+    try {
+      setOcrProcessing(true);
+      toast.info("Zpracovávám dokument pomocí OCR...");
+
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      // Try passport first, then ID card
+      for (const docType of ["passport", "id_card"] as const) {
+        const { data, error } = await supabase.functions.invoke("ocr-document", {
+          body: { imageBase64: base64, documentType: docType },
+        });
+
+        if (error) {
+          console.error("OCR error:", error);
+          continue;
+        }
+
+        const extracted: OcrResult = data?.data;
+        if (!extracted) continue;
+
+        // Check if we got meaningful data
+        const hasPassport = !!extracted.passport_number;
+        const hasIdCard = !!extracted.id_card_number;
+        const hasName = !!extracted.first_name || !!extracted.last_name;
+
+        if (!hasPassport && !hasIdCard && !hasName) continue;
+
+        // Find matching traveler by name or update lead traveler
+        const { data: travelers } = await supabase
+          .from("deal_travelers")
+          .select("client_id, is_lead_traveler, clients:client_id(id, first_name, last_name)")
+          .eq("deal_id", dealId);
+
+        if (!travelers || travelers.length === 0) break;
+
+        // Try to match by name, fall back to lead traveler
+        let targetClientId: string | null = null;
+        if (extracted.first_name && extracted.last_name) {
+          const match = travelers.find((t: any) => {
+            const c = t.clients;
+            return c?.first_name?.toLowerCase() === extracted.first_name?.toLowerCase() &&
+                   c?.last_name?.toLowerCase() === extracted.last_name?.toLowerCase();
+          });
+          if (match) targetClientId = match.client_id;
+        }
+        if (!targetClientId) {
+          const lead = travelers.find((t: any) => t.is_lead_traveler);
+          targetClientId = lead?.client_id || travelers[0]?.client_id;
+        }
+
+        if (!targetClientId) break;
+
+        // Parse date helper
+        const parseDate = (dateStr: string): string | null => {
+          if (!dateStr) return null;
+          const parts = dateStr.split(".");
+          if (parts.length !== 3) return null;
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]);
+          let year = parseInt(parts[2]);
+          if (year < 100) year += 2000;
+          return new Date(Date.UTC(year, month - 1, day)).toISOString().split("T")[0];
+        };
+
+        const updateData: any = {};
+        if (extracted.passport_number) updateData.passport_number = extracted.passport_number;
+        if (extracted.passport_expiry) {
+          const d = parseDate(extracted.passport_expiry);
+          if (d) updateData.passport_expiry = d;
+        }
+        if (extracted.id_card_number) updateData.id_card_number = extracted.id_card_number;
+        if (extracted.id_card_expiry) {
+          const d = parseDate(extracted.id_card_expiry);
+          if (d) updateData.id_card_expiry = d;
+        }
+        if (extracted.date_of_birth) {
+          const d = parseDate(extracted.date_of_birth);
+          if (d) updateData.date_of_birth = d;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          const { error: updateError } = await supabase
+            .from("clients")
+            .update(updateData as any)
+            .eq("id", targetClientId);
+
+          if (!updateError) {
+            const name = extracted.first_name && extracted.last_name
+              ? `${extracted.first_name} ${extracted.last_name}`
+              : "klienta";
+            toast.success(`OCR: Data z dokladu uložena pro ${name}`);
+          } else {
+            console.error("Client update error:", updateError);
+            toast.error("Nepodařilo se uložit data z OCR");
+          }
+        }
+        break; // Found valid data, stop trying
+      }
+    } catch (err) {
+      console.error("OCR processing error:", err);
+      toast.error("OCR zpracování selhalo");
+    } finally {
+      setOcrProcessing(false);
+    }
+  };
+
   const handleFiles = async (files: File[]) => {
     setUploading(true);
+    
+    const uploadedImageFiles: File[] = [];
     
     for (const file of files) {
       if (file.size > 20 * 1024 * 1024) {
@@ -111,6 +236,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
               });
             }
           } catch { /* use original */ }
+          uploadedImageFiles.push(fileToUpload);
         }
 
         const ext = file.name.split(".").pop();
@@ -130,7 +256,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           deal_id: dealId,
           file_name: file.name,
           file_url: urlData.publicUrl,
-          file_type: file.type,
+          file_type: fileToUpload.type || file.type,
         } as any);
 
         toast.success(`${file.name} nahráno`);
@@ -142,6 +268,11 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
     setUploading(false);
     fetchDocuments();
+
+    // Run OCR on uploaded images (after upload completes)
+    for (const imgFile of uploadedImageFiles) {
+      await runOcrOnImage(imgFile);
+    }
   };
 
   const handleDelete = async (doc: DealDocument) => {
@@ -166,8 +297,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     handleFiles(Array.from(e.dataTransfer.files));
   };
 
-  const isImage = (url: string) => /\.(jpg|jpeg|png|webp|gif)/i.test(url);
-  const isPdf = (url: string) => /\.pdf/i.test(url);
+  const isImage = (urlOrType: string) => /\.(jpg|jpeg|png|webp|gif)/i.test(urlOrType) || /^image\//i.test(urlOrType);
+  const isPdf = (urlOrType: string) => /\.pdf/i.test(urlOrType) || urlOrType === "application/pdf";
 
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -211,7 +342,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   };
 
   const handlePreview = async (doc: DealDocument) => {
-    setPreviewUrl(doc.file_url); // keep for type detection
+    setPreviewUrl(doc.file_url);
+    setPreviewFileType(doc.file_type);
     setPreviewLoading(true);
     setPreviewBlobUrl(null);
     try {
@@ -535,13 +667,15 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
             isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
           )}
         >
-          {uploading ? (
+          {uploading || ocrProcessing ? (
             <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
           ) : (
             <Upload className={cn("h-8 w-8 mx-auto mb-2", isDragging ? "text-primary" : "text-muted-foreground")} />
           )}
-          <p className="text-sm font-medium">{uploading ? "Nahrávám..." : "Přetáhněte soubory sem nebo klikněte"}</p>
-          <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF, WEBP (max 20MB)</p>
+          <p className="text-sm font-medium">
+            {uploading ? "Nahrávám..." : ocrProcessing ? "Zpracovávám OCR..." : "Přetáhněte soubory sem nebo klikněte"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF, WEBP (max 20MB) · Obrázky dokladů budou automaticky zpracovány OCR</p>
         </div>
 
         <Input
@@ -663,7 +797,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
-                  ) : isPdf(previewUrl) ? (
+                  ) : isPdf(previewUrl) || (previewFileType && isPdf(previewFileType)) ? (
                     previewBlobUrl ? (
                       <iframe
                         src={previewBlobUrl}
@@ -683,7 +817,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                         </Button>
                       </div>
                     )
-                  ) : isImage(previewUrl) ? (
+                  ) : isImage(previewUrl) || (previewFileType && isImage(previewFileType)) ? (
                     previewBlobUrl ? (
                       <img
                         src={previewBlobUrl}
