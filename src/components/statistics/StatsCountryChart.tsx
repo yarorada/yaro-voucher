@@ -79,9 +79,12 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
-              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              label={({ name, percent, x, y }) => (
+                <text x={x} y={y} fill="hsl(var(--foreground))" fontSize={12} textAnchor="middle" dominantBaseline="central">
+                  {`${name} (${(percent * 100).toFixed(0)}%)`}
+                </text>
+              )}
               labelLine={false}
-              style={{ fontSize: 12, fill: "hsl(var(--foreground))" }}
             >
               {chartData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
