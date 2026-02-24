@@ -1,78 +1,30 @@
 
-# Změna layoutu dialogů služeb - nový řádkový rozvrh s auto-marží a režimem ceny
 
-## Popis změny
-
-Sjednocení layoutu v obou dialozích služeb (VariantServiceDialog + DealDetail) s novým uspořádáním polí:
-
-**Řádek 1:** Datum (od-do) | Osoby | Počet
-
-**Řádek 2:** Nákupní cena | Měna nákupu | Prodejní cena (auto 15% marže) | Měna prodeje | Drop-menu "za osobu / za službu"
-
-**Souhrnný box:** Výsledná cena = prodejní cena * (osoby nebo počet dle zvoleného režimu)
+# Migrace synchronizace smluv: Airtable -> Google Sheets
 
 ## Co se změní
 
-### 1. Nový layout - Řádek s datem, osobami a počtem
-- DateRangePicker, pole Osoby a pole Počet budou na jednom řádku vedle sebe
-- DateRangePicker zabere většinu šířky, Osoby a Počet zůstanou kompaktní (w-16)
+Stávající edge funkce `sync-contract-airtable` bude přepsána tak, aby místo Airtable API posílala data na Google Apps Script webhook, který je zapíše do Google Sheets.
 
-### 2. Nový layout - Řádek s cenami a režimem
-- Na jednom řádku: Nákupní cena + Měna | Prodejní cena + Měna | Select "za osobu / za službu"
-- 5 polí v jednom řádku pomocí flexbox s vhodnou šířkou
+## Kroky
 
-### 3. Auto-marže 15%
-- Při zadání nákupní ceny se automaticky předvyplní prodejní cena = nákupní cena * 1.15 (zaokrouhleno na celé číslo)
-- Pouze pokud prodejní cena ještě nebyla ručně zadána (prázdné pole)
-- Uživatel může prodejní cenu kdykoliv přepsat
+1. **Uložení webhook URL jako secret**
+   - Název: `GOOGLE_SHEETS_WEBHOOK_URL`
+   - Hodnota: `https://script.google.com/macros/s/AKfycbxZ4xgmA4f_a0M0jgy1xT0kJJ5-InfuM9EWZid5TL0Cib4iXIcJOSPu_bTG8Vq4CINctA/exec`
 
-### 4. Nové pole "Režim ceny" (za osobu / za službu)
-- Select/dropdown s volbami: "za osobu" a "za službu"
-- Výchozí hodnota: "za osobu"
-- Souhrnný box "Celková cena" bude násobit:
-  - "za osobu": prodejní cena * počet osob
-  - "za službu": prodejní cena * počet (quantity)
-- Hodnota se uloží do pole `details.price_mode` v databázi
+2. **Přepis edge funkce `sync-contract-airtable`**
+   - Odstranění veškeré Airtable logiky (vyhledávání existujícího záznamu, PATCH/POST)
+   - Nahrazení jediným POST requestem na Google Sheets webhook
+   - Data zůstávají stejná: Číslo smlouvy, Klient, Email klienta, Destinace, Datum odjezdu, Datum návratu, Prodejní cena, Měna, Nákupní cena, Marže, Odesláno dne
+   - Upsert logiku (vložení vs. aktualizace) řeší Apps Script na straně Google Sheets
+
+3. **Volání funkce zůstává beze změny**
+   - Všechna místa, kde se volá `supabase.functions.invoke("sync-contract-airtable", ...)`, fungují dál bez úprav
 
 ## Technické detaily
 
-### Soubory k úpravě
+- Edge funkce načte `GOOGLE_SHEETS_WEBHOOK_URL` z env proměnných
+- Pošle JSON payload přes POST na webhook
+- Google Apps Script přijme data, najde řádek podle "Číslo smlouvy" a aktualizuje ho, nebo přidá nový
+- Airtable secrets (`AIRTABLE_API_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_ID`) zůstanou v projektu, ale funkce je přestane používat
 
-1. **src/components/VariantServiceDialog.tsx** (řádky 609-706)
-   - Přesunout DateRangePicker, Osoby, Počet na jeden řádek
-   - Přesunout Nákupní cena + Prodejní cena na jeden řádek, přidat select režimu
-   - Přidat state `priceMode` ("per_person" | "per_service")
-   - Přidat logiku auto-marže 15% při změně nákupní ceny
-   - Upravit výpočet celkové ceny dle zvoleného režimu
-   - Uložit `price_mode` do `details`
-
-2. **src/pages/DealDetail.tsx** (řádky 2688-2783)
-   - Stejné změny layoutu jako v VariantServiceDialog
-   - Přidat `price_mode` do `serviceForm` state
-   - Přidat auto-marži a režim ceny
-
-### Nový layout (schéma)
-
-```text
-+----------------------------------+--------+--------+
-| Datum (od - do)                  | Osoby  | Počet  |
-+----------------------------------+--------+--------+
-
-+----------+------+----------+------+---------------+
-| Nákupní  | Měna | Prodejní | Měna | za osobu  v   |
-| cena     |      | cena     |      |               |
-+----------+------+----------+------+---------------+
-
-+---------------------------------------------------+
-| Celková cena: XX XXX Kč                           |
-+---------------------------------------------------+
-```
-
-### Logika auto-marže
-- Při změně nákupní ceny (onChange): pokud prodejní cena je prázdná NEBO nebyla ručně upravena, nastavit `price = Math.round(costPrice * 1.15)`
-- Přidá se flag `priceManuallySet` pro sledování, zda uživatel ručně přepsal prodejní cenu
-- Při editaci existující služby se auto-marže neaplikuje (cena je už nastavená)
-
-### Logika celkové ceny
-- `price_mode === "per_person"`: celková cena = price * person_count
-- `price_mode === "per_service"`: celková cena = price * quantity
