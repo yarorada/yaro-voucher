@@ -7,16 +7,52 @@ interface StatsCountryChartProps {
   data: StatsData[];
 }
 
-const COLORS = [
-  "hsl(220, 70%, 55%)",
-  "hsl(350, 65%, 55%)",
-  "hsl(45, 80%, 50%)",
-  "hsl(160, 60%, 45%)",
-  "hsl(280, 60%, 55%)",
-  "hsl(25, 75%, 55%)",
-  "hsl(190, 65%, 50%)",
-  "hsl(330, 55%, 60%)",
+// Country → national-ish color mapping
+const COUNTRY_COLORS: Record<string, string> = {
+  "Španělsko": "hsl(0, 75%, 45%)",        // red
+  "Portugalsko": "hsl(145, 60%, 35%)",     // green
+  "Turecko": "hsl(0, 70%, 50%)",           // red
+  "Řecko": "hsl(210, 70%, 50%)",           // blue
+  "Itálie": "hsl(140, 55%, 40%)",          // green
+  "Francie": "hsl(225, 65%, 50%)",         // blue
+  "Chorvatsko": "hsl(0, 60%, 50%)",        // red-checkered
+  "Německo": "hsl(45, 90%, 50%)",          // gold
+  "Rakousko": "hsl(0, 65%, 50%)",          // red
+  "Česko": "hsl(210, 60%, 45%)",           // blue
+  "Slovensko": "hsl(220, 55%, 50%)",       // blue
+  "Maďarsko": "hsl(140, 50%, 38%)",        // green
+  "Polsko": "hsl(0, 60%, 55%)",            // red
+  "Spojené království": "hsl(225, 55%, 45%)", // navy
+  "Irsko": "hsl(145, 65%, 38%)",           // green
+  "Bulharsko": "hsl(140, 50%, 42%)",       // green
+  "Egypt": "hsl(45, 85%, 48%)",            // gold
+  "Maroko": "hsl(0, 70%, 42%)",            // red
+  "Tunisko": "hsl(0, 65%, 48%)",           // red
+  "Spojené arabské emiráty": "hsl(140, 55%, 35%)", // green
+  "Thajsko": "hsl(225, 60%, 45%)",         // blue
+  "Mexiko": "hsl(145, 55%, 35%)",          // green
+  "Dominikánská republika": "hsl(220, 60%, 45%)", // blue
+  "Kypr": "hsl(30, 70%, 50%)",             // orange/copper
+  "Malta": "hsl(0, 60%, 50%)",             // red
+  "Černá Hora": "hsl(45, 80%, 48%)",       // gold
+  "Kanárské ostrovy": "hsl(45, 85%, 50%)", // yellow
+  "Neuvedeno": "hsl(0, 0%, 55%)",          // gray
+};
+
+const FALLBACK_COLORS = [
+  "hsl(280, 55%, 55%)",   // purple
+  "hsl(25, 75%, 55%)",    // orange
+  "hsl(190, 60%, 45%)",   // teal
+  "hsl(330, 55%, 55%)",   // pink
+  "hsl(60, 65%, 45%)",    // olive
+  "hsl(200, 50%, 55%)",   // steel blue
+  "hsl(15, 70%, 50%)",    // rust
+  "hsl(260, 45%, 55%)",   // lavender
 ];
+
+const getCountryColor = (name: string, index: number) => {
+  return COUNTRY_COLORS[name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+};
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("cs-CZ", {
@@ -86,8 +122,8 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
               )}
               labelLine={false}
             >
-              {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              {chartData.map((item, index) => (
+                <Cell key={`cell-${index}`} fill={getCountryColor(item.name, index)} />
               ))}
             </Pie>
             <Tooltip 
