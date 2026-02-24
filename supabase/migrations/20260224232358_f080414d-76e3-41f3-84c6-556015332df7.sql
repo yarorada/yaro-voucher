@@ -1,0 +1,1 @@
+INSERT INTO countries (name, iso_code, currency) VALUES ('Severní Kypr', 'NCY', 'TRY') ON CONFLICT DO NOTHING;

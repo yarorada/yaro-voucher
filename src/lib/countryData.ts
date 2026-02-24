@@ -17,7 +17,7 @@ const ISO3_TO_ISO2: Record<string, string> = {
   CHE:"CH",SYR:"SY",TWN:"TW",TJK:"TJ",TZA:"TZ",THA:"TH",TGO:"TG",TTO:"TT",TUN:"TN",TUR:"TR",
   TKM:"TM",UGA:"UG",UKR:"UA",ARE:"AE",GBR:"GB",USA:"US",URY:"UY",UZB:"UZ",VEN:"VE",VNM:"VN",
   YEM:"YE",ZMB:"ZM",ZWE:"ZW",CIV:"CI",COK:"CK",ATG:"AG",XKX:"XK",
-  SCO:"GB-SCT",ENG:"GB-ENG",WAL:"GB-WLS",
+  SCO:"GB-SCT",ENG:"GB-ENG",WAL:"GB-WLS",NCY:"NC-CY",
 };
 
 // Unicode subdivision flags for UK nations
@@ -25,6 +25,7 @@ const SUBDIVISION_FLAGS: Record<string, string> = {
   "GB-SCT": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}", // 🏴󠁧󠁢󠁳󠁣󠁴󠁿
   "GB-ENG": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}", // 🏴󠁧󠁢󠁥󠁮󠁧󠁿
   "GB-WLS": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}", // 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+  "NC-CY": "\u{1F1F9}\u{1F1F7}", // Northern Cyprus uses Turkish flag 🇹🇷
 };
 
 /**
@@ -215,6 +216,7 @@ export const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
   "wales": { iso: "WAL", currency: "GBP" },
   "spojené království": { iso: "GBR", currency: "GBP" },
   "velká británie": { iso: "GBR", currency: "GBP" },
+  "severní kypr": { iso: "NCY", currency: "TRY" },
 };
 
 export const lookupCountryData = (name: string) => {
