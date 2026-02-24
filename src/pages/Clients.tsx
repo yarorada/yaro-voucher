@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
+import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -433,8 +433,13 @@ const Clients = () => {
           placeholder="Hledat..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          className="pl-8 h-8 text-xs"
+          className="pl-8 pr-7 h-8 text-xs"
         />
+        {searchText && (
+          <button onClick={() => setSearchText("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <DuplicateClientChecker onComplete={fetchClients} />
       <Button 

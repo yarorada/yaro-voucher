@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye } from "lucide-react";
+import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye, X } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -335,8 +335,13 @@ const VouchersList = () => {
           placeholder="Hledat..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 h-8 text-xs"
+          className="pl-8 pr-7 h-8 text-xs"
         />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " gap-1"}>
         <Plus className="h-3.5 w-3.5" />
