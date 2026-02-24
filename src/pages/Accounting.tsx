@@ -8,8 +8,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Pencil, Check, X } from "lucide-react";
+import { Download, Pencil, Check, X, Share2, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const EU_COUNTRIES = [
   "Belgie", "Bulharsko", "Česko", "Dánsko", "Estonsko", "Finsko", "Francie",
@@ -206,6 +207,48 @@ export default function Accounting() {
     setEditValue("");
   };
 
+  // Share link management
+  const { data: existingShares = [] } = useQuery({
+    queryKey: ["accounting-shares"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("accounting_shares")
+        .select("*")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const createShareMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from("accounting_shares")
+        .insert({ year, month } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      const url = `${window.location.origin}/accounting/share/${data.share_token}`;
+      navigator.clipboard.writeText(url);
+      toast.success("Odkaz vytvořen a zkopírován");
+      queryClient.invalidateQueries({ queryKey: ["accounting-shares"] });
+    },
+    onError: () => toast.error("Chyba při vytváření odkazu"),
+  });
+
+  const deleteShareMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("accounting_shares").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting-shares"] });
+      toast.success("Odkaz smazán");
+    },
+  });
+
   const years = useMemo(() => {
     const y = [];
     for (let i = currentYear; i >= 2024; i--) y.push(String(i));
@@ -274,6 +317,54 @@ export default function Accounting() {
             <Button variant="outline" size="sm" onClick={exportCsv}>
               <Download className="h-4 w-4 mr-1" /> Export CSV
             </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Share2 className="h-4 w-4 mr-1" /> Sdílet
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Sdílet účetnictví</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Vytvořte veřejný odkaz pro účetního. Odkaz zobrazí data pro vybraný rok a měsíc (read-only).
+                  </p>
+                  <Button onClick={() => createShareMutation.mutate()} disabled={createShareMutation.isPending}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Vytvořit odkaz pro {year} / {month === "all" ? "všechny měsíce" : months.find(m => m.value === month)?.label}
+                  </Button>
+                  {existingShares.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Existující odkazy:</p>
+                      {existingShares.map((s: any) => (
+                        <div key={s.id} className="flex items-center gap-2 text-sm bg-muted p-2 rounded">
+                          <span className="flex-1 truncate">
+                            {s.year} / {s.month === "all" ? "vše" : MONTHS_MAP[s.month] || s.month}
+                          </span>
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/accounting/share/${s.share_token}`);
+                              toast.success("Zkopírováno");
+                            }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                            onClick={() => deleteShareMutation.mutate(s.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

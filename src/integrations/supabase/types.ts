@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_shares: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          month: string | null
+          share_token: string
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          month?: string | null
+          share_token?: string
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          month?: string | null
+          share_token?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
       airline_templates: {
         Row: {
           code: string
