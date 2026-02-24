@@ -215,7 +215,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const handleFiles = async (files: File[]) => {
     setUploading(true);
     
-    const uploadedImageFiles: File[] = [];
+    const ocrCandidateFiles: File[] = [];
     
     for (const file of files) {
       if (file.size > 20 * 1024 * 1024) {
@@ -225,6 +225,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
       try {
         let fileToUpload = file;
+        const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
         if (isImageFile(file)) {
           try {
@@ -236,7 +237,9 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
               });
             }
           } catch { /* use original */ }
-          uploadedImageFiles.push(fileToUpload);
+          ocrCandidateFiles.push(fileToUpload);
+        } else if (isPdfFile) {
+          ocrCandidateFiles.push(file);
         }
 
         const ext = file.name.split(".").pop();
@@ -270,8 +273,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     fetchDocuments();
 
     // Run OCR on uploaded images (after upload completes)
-    for (const imgFile of uploadedImageFiles) {
-      await runOcrOnImage(imgFile);
+    for (const ocrFile of ocrCandidateFiles) {
+      await runOcrOnImage(ocrFile);
     }
   };
 
