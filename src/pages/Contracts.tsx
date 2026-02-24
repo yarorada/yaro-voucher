@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -197,17 +198,17 @@ const Contracts = () => {
     }
 
     // Search
-    const searchLower = searchQuery.toLowerCase();
+    const searchLower = removeDiacritics(searchQuery.toLowerCase());
     if (!searchLower) return true;
     const client = contract.client as any;
     const clientName = client
-      ? `${client.first_name || ""} ${client.last_name || ""}`.toLowerCase()
+      ? removeDiacritics(`${client.first_name || ""} ${client.last_name || ""}`.toLowerCase())
       : "";
     return (
-      contract.contract_number.toLowerCase().includes(searchLower) ||
+      removeDiacritics(contract.contract_number.toLowerCase()).includes(searchLower) ||
       clientName.includes(searchLower) ||
-      (contract.deal?.deal_number || "").toLowerCase().includes(searchLower) ||
-      (contract.deal?.destination?.name || "").toLowerCase().includes(searchLower)
+      removeDiacritics((contract.deal?.deal_number || "").toLowerCase()).includes(searchLower) ||
+      removeDiacritics((contract.deal?.destination?.name || "").toLowerCase()).includes(searchLower)
     );
   });
 

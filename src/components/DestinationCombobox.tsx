@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -62,16 +62,16 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
     }
   };
 
-  const q = search.trim().toLowerCase();
+  const q = removeDiacritics(search.trim().toLowerCase());
 
   // Filter existing destinations
   const filteredDestinations = useMemo(() => {
     if (q.length < 1) return destinations;
     return destinations.filter(
       (d) =>
-        d.name.toLowerCase().includes(q) ||
-        d.countries?.name.toLowerCase().includes(q) ||
-        d.countries?.iso_code.toLowerCase().includes(q)
+        removeDiacritics(d.name.toLowerCase()).includes(q) ||
+        removeDiacritics(d.countries?.name.toLowerCase() || "").includes(q) ||
+        removeDiacritics(d.countries?.iso_code.toLowerCase() || "").includes(q)
     );
   }, [destinations, q]);
 
@@ -79,7 +79,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
   const destinationSuggestions = useMemo(() => {
     if (q.length < 3) return [];
     // Don't suggest if there's an exact existing destination match
-    const hasExact = destinations.some((d) => d.name.toLowerCase() === q);
+    const hasExact = destinations.some((d) => removeDiacritics(d.name.toLowerCase()) === q);
     if (hasExact) return [];
     return searchDestinations(search, 8);
   }, [search, q, destinations]);
@@ -88,7 +88,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
   const countrySuggestions = useMemo(() => {
     if (q.length < 3) return [];
     if (destinationSuggestions.length > 0) return []; // prefer destination suggestions
-    const hasExact = destinations.some((d) => d.name.toLowerCase() === q);
+    const hasExact = destinations.some((d) => removeDiacritics(d.name.toLowerCase()) === q);
     if (hasExact) return [];
     return searchCountries(search, 8);
   }, [search, q, destinations, destinationSuggestions]);

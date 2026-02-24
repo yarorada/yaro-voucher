@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
 import { format } from "date-fns";
-import { formatDateDisplay } from "@/lib/utils";
+import { formatDateDisplay, removeDiacritics } from "@/lib/utils";
 import { cs } from "date-fns/locale";
 import { formatPriceCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -151,14 +151,14 @@ const Deals = () => {
 
     // Filter by search query
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const query = removeDiacritics(searchQuery.toLowerCase());
       filtered = filtered.filter(
         (deal) =>
-          deal.deal_number.toLowerCase().includes(query) ||
-          deal.destinations?.name.toLowerCase().includes(query) ||
+          removeDiacritics(deal.deal_number.toLowerCase()).includes(query) ||
+          removeDiacritics(deal.destinations?.name?.toLowerCase() || "").includes(query) ||
           deal.deal_travelers.some((dt: any) =>
-            dt.clients && `${dt.clients.first_name} ${dt.clients.last_name}`
-              .toLowerCase()
+            dt.clients && removeDiacritics(`${dt.clients.first_name} ${dt.clients.last_name}`
+              .toLowerCase())
               .includes(query)
           )
       );
