@@ -47,21 +47,19 @@ const LayoutHeader = () => {
   return (
     <header className="border-b bg-background print:hidden">
       <div className="px-4 py-3">
-        <div className="container max-w-6xl mx-auto">
-          <div className="flex flex-wrap items-center gap-2 justify-between">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
-                <Menu className="h-5 w-5" />
-              </SidebarTrigger>
-              <Breadcrumbs />
-              <NotificationBell />
-            </div>
-            {toolbarContent && (
-              <div className="flex flex-wrap items-center gap-2">
-                {toolbarContent}
-              </div>
-            )}
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-2 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
+              <Menu className="h-5 w-5" />
+            </SidebarTrigger>
+            <Breadcrumbs />
+            <NotificationBell />
           </div>
+          {toolbarContent && (
+            <div className="flex flex-wrap items-center gap-2">
+              {toolbarContent}
+            </div>
+          )}
         </div>
       </div>
     </header>
