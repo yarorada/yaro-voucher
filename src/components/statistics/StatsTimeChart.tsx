@@ -106,8 +106,8 @@ export const StatsTimeChart = ({ data, periodType }: StatsTimeChartProps) => {
               labelStyle={{ color: "hsl(var(--card-foreground))" }}
             />
             <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
-            <Bar dataKey="Obrat" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Zisk" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Obrat" fill="hsl(220, 70%, 55%)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Zisk" fill="hsl(150, 60%, 45%)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
