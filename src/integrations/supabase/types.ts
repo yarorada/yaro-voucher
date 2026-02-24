@@ -1428,6 +1428,7 @@ export type Database = {
       }
       travel_contracts: {
         Row: {
+          accounting_buy_final_override: number | null
           agency_address: string | null
           agency_bank_account: string | null
           agency_contact: string | null
@@ -1456,6 +1457,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accounting_buy_final_override?: number | null
           agency_address?: string | null
           agency_bank_account?: string | null
           agency_contact?: string | null
@@ -1484,6 +1486,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          accounting_buy_final_override?: number | null
           agency_address?: string | null
           agency_bank_account?: string | null
           agency_contact?: string | null

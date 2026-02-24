@@ -1,0 +1,1 @@
+ALTER TABLE public.travel_contracts ADD COLUMN accounting_buy_final_override numeric DEFAULT NULL;
