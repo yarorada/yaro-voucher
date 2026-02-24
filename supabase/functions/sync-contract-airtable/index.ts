@@ -3,13 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const formatDateIso = (dateString: string | null) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD for Airtable
+  return date.toISOString().split("T")[0];
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -66,94 +66,56 @@ const handler = async (req: Request): Promise<Response> => {
       0
     );
     const margin = salesPrice - costPrice;
+    const sentDate = formatDateIso(contract.sent_at);
 
-    // Airtable API
-    const airtableToken = Deno.env.get("AIRTABLE_API_TOKEN");
-    const airtableBaseId = Deno.env.get("AIRTABLE_BASE_ID");
-    const airtableTableId = Deno.env.get("AIRTABLE_TABLE_ID");
-
-    if (!airtableToken || !airtableBaseId || !airtableTableId) {
-      console.error("Missing Airtable configuration");
-      return new Response(JSON.stringify({ error: "Missing Airtable configuration" }), {
+    // Google Sheets webhook
+    const webhookUrl = Deno.env.get("GOOGLE_SHEETS_WEBHOOK_URL");
+    if (!webhookUrl) {
+      console.error("Missing GOOGLE_SHEETS_WEBHOOK_URL");
+      return new Response(JSON.stringify({ error: "Missing Google Sheets webhook configuration" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const airtableUrl = `https://api.airtable.com/v0/${airtableBaseId}/${airtableTableId}`;
-
-    // Check if contract already exists in Airtable (by contract number)
-    const searchUrl = `${airtableUrl}?filterByFormula={Číslo smlouvy}="${contract.contract_number}"`;
-    const searchResponse = await fetch(searchUrl, {
-      headers: {
-        Authorization: `Bearer ${airtableToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    const searchData = await searchResponse.json();
-    const existingRecord = searchData.records?.[0];
-
-    const fields: Record<string, any> = {
+    const payload: Record<string, any> = {
       "Číslo smlouvy": contract.contract_number,
       "Klient": clientName,
       "Email klienta": contract.client?.email || "",
       "Destinace": destination,
+      "Datum odjezdu": startDate,
+      "Datum návratu": endDate,
       "Prodejní cena": salesPrice,
       "Měna": currency,
       "Nákupní cena": costPrice,
       "Marže": margin,
-      
+      "Odesláno dne": sentDate,
     };
 
-    // Only include date fields if they have actual values (Airtable rejects empty strings for date fields)
-    if (startDate) fields["Datum odjezdu"] = startDate;
-    if (endDate) fields["Datum návratu"] = endDate;
-    const sentDate = formatDateIso(contract.sent_at);
-    if (sentDate) fields["Odesláno dne"] = sentDate;
+    const webhookResponse = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-    let airtableResponse: Response;
-
-    if (existingRecord) {
-      // Update existing record
-      airtableResponse = await fetch(`${airtableUrl}/${existingRecord.id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${airtableToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fields }),
-      });
-    } else {
-      // Create new record
-      airtableResponse = await fetch(airtableUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${airtableToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fields }),
-      });
-    }
-
-    if (!airtableResponse.ok) {
-      const errorBody = await airtableResponse.text();
-      console.error("Airtable API error:", errorBody);
-      return new Response(JSON.stringify({ error: "Airtable sync failed", details: errorBody }), {
+    if (!webhookResponse.ok) {
+      const errorBody = await webhookResponse.text();
+      console.error("Google Sheets webhook error:", errorBody);
+      return new Response(JSON.stringify({ error: "Google Sheets sync failed", details: errorBody }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const result = await airtableResponse.json();
-    console.log("Airtable sync successful:", result.id);
+    const result = await webhookResponse.text();
+    console.log("Google Sheets sync successful:", result);
 
-    return new Response(JSON.stringify({ success: true, recordId: result.id }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error syncing to Airtable:", error);
+    console.error("Error syncing to Google Sheets:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
