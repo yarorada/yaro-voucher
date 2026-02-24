@@ -117,9 +117,24 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
   };
 
   const handleSelectVariant = async (variantId: string) => {
-    if (!confirm("Opravdu chcete vybrat tuto variantu jako finální?")) return;
-
+    // Check for missing suppliers before confirming
     try {
+      const { data: variantServices } = await supabase
+        .from("deal_variant_services")
+        .select("service_name, supplier_id")
+        .eq("variant_id", variantId);
+
+      const missingSupplier = variantServices?.filter(s => !s.supplier_id) || [];
+      
+      if (missingSupplier.length > 0) {
+        const serviceNames = missingSupplier.map(s => s.service_name).join(", ");
+        if (!confirm(
+          `Upozornění: U následujících služeb není zadán dodavatel:\n\n${serviceNames}\n\nChcete přesto pokračovat s výběrem varianty?`
+        )) return;
+      } else {
+        if (!confirm("Opravdu chcete vybrat tuto variantu jako finální?")) return;
+      }
+
       const { error } = await supabase.rpc("select_deal_variant", {
         p_variant_id: variantId,
       });
