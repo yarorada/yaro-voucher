@@ -252,9 +252,9 @@ export default function Accounting() {
                   <TableHead className="whitespace-nowrap">Do</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Prodej zál.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Nákup zál.</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Zisk zál.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Prodej vyúčt.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Nákup vyúčt.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Zisk zál.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Zisk vyúčt.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">DPH zál.</TableHead>
                   <TableHead className="whitespace-nowrap text-right">DPH vyúčt.</TableHead>
@@ -288,9 +288,9 @@ export default function Accounting() {
                       <TableCell className="whitespace-nowrap">{formatDateShort(r.to)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyDeposit)}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyFinal)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatFinal)}</TableCell>
