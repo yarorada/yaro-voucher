@@ -115,7 +115,16 @@ export default function PublicAccounting() {
                 ) : (
                   <>
                     {rows.map((r: any, i: number) => (
-                      <TableRow key={i}>
+                      <TableRow
+                        key={i}
+                        className={
+                          r.highlightRed
+                            ? "bg-red-50 dark:bg-red-950/30"
+                            : r.highlightBlue
+                            ? "bg-blue-50 dark:bg-blue-950/30"
+                            : ""
+                        }
+                      >
                         <TableCell className="whitespace-nowrap font-medium">{r.contractNumber}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.clientName}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.country}</TableCell>
