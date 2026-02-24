@@ -313,7 +313,7 @@ const SignContract = () => {
         {/* Travelers */}
         {travelers.length > 0 && (
           <Card className="p-5 space-y-3">
-            <h2 className="font-semibold text-lg">Cestující</h2>
+            <h2 className="font-semibold text-lg">Cestující ({travelers.length})</h2>
             <div className="space-y-1 text-sm">
               {travelers.map((t: any, i: number) => (
                 <p key={i}>
