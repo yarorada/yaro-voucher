@@ -159,6 +159,11 @@ export const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
   "cookovy ostrovy": { iso: "COK", currency: "NZD" },
   "dominika": { iso: "DMA", currency: "XCD" },
   "antigua a barbuda": { iso: "ATG", currency: "XCD" },
+  "skotsko": { iso: "SCO", currency: "GBP" },
+  "anglie": { iso: "ENG", currency: "GBP" },
+  "wales": { iso: "WAL", currency: "GBP" },
+  "spojené království": { iso: "GBR", currency: "GBP" },
+  "velká británie": { iso: "GBR", currency: "GBP" },
 };
 
 export const lookupCountryData = (name: string) => {
@@ -281,6 +286,18 @@ export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
   // Golf destinations
   "vilamoura golf": "portugalsko", "belek golf": "turecko",
   "costa del sol golf": "španělsko", "algarve golf": "portugalsko",
+  // Skotsko
+  "st andrews": "skotsko", "edinburgh": "skotsko", "glasgow": "skotsko",
+  "aberdeen": "skotsko", "inverness": "skotsko", "highlands": "skotsko",
+  "carnoustie": "skotsko", "turnberry": "skotsko", "gleneagles": "skotsko",
+  "royal troon": "skotsko", "muirfield": "skotsko", "kingsbarns": "skotsko",
+  // Anglie
+  "londýn": "anglie", "manchester": "anglie", "liverpool": "anglie",
+  "birmingham": "anglie", "bath": "anglie", "oxford": "anglie",
+  "the belfry": "anglie", "wentworth": "anglie", "sunningdale": "anglie",
+  // Wales
+  "cardiff": "wales", "swansea": "wales", "celtic manor": "wales",
+  "royal porthcawl": "wales",
 };
 
 /**
