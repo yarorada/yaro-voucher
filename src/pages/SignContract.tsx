@@ -263,26 +263,51 @@ const SignContract = () => {
         {/* Contract summary */}
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold text-lg">Přehled smlouvy</h2>
-          <div className="grid sm:grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Klient:</span>{" "}
-              <span className="font-medium">{contract.client?.first_name} {contract.client?.last_name}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Destinace:</span>{" "}
-              <span className="font-medium">
-                {deal?.destination?.name}{deal?.destination?.country?.name ? `, ${deal.destination.country.name}` : ""}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Termín:</span>{" "}
-              <span className="font-medium">{formatDate(deal?.start_date)} – {formatDate(deal?.end_date)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Celková cena:</span>{" "}
-              <span className="font-bold">{formatPrice(contract.total_price, contract.currency)}</span>
-            </div>
-          </div>
+          {(() => {
+            const hotelService = services.find((s: any) => s.service_type === "hotel");
+            const boardType = hotelService?.details?.board_type;
+            const boardLabels: Record<string, string> = {
+              "breakfast": "Snídaně",
+              "half_board": "Polopenze",
+              "full_board": "Plná penze",
+              "all_inclusive": "All Inclusive",
+              "room_only": "Bez stravy",
+            };
+            return (
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Klient:</span>{" "}
+                  <span className="font-medium">{contract.client?.first_name} {contract.client?.last_name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Destinace:</span>{" "}
+                  <span className="font-medium">
+                    {deal?.destination?.name}{deal?.destination?.country?.name ? `, ${deal.destination.country.name}` : ""}
+                  </span>
+                </div>
+                {hotelService && (
+                  <div>
+                    <span className="text-muted-foreground">Hotel:</span>{" "}
+                    <span className="font-medium">{hotelService.service_name}</span>
+                  </div>
+                )}
+                {boardType && (
+                  <div>
+                    <span className="text-muted-foreground">Stravování:</span>{" "}
+                    <span className="font-medium">{boardLabels[boardType] || boardType}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground">Termín:</span>{" "}
+                  <span className="font-medium">{formatDate(deal?.start_date)} – {formatDate(deal?.end_date)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Celková cena:</span>{" "}
+                  <span className="font-bold">{formatPrice(contract.total_price, contract.currency)}</span>
+                </div>
+              </div>
+            );
+          })()}
         </Card>
 
         {/* Travelers */}
@@ -305,16 +330,30 @@ const SignContract = () => {
           <Card className="p-5 space-y-3">
             <h2 className="font-semibold text-lg">Služby</h2>
             <div className="space-y-2 text-sm">
-              {services.map((s: any, i: number) => (
-                <div key={i} className="flex justify-between items-start py-1 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">{s.service_name}</p>
-                    {s.description && <p className="text-muted-foreground text-xs">{s.description}</p>}
-                    {s.start_date && <p className="text-muted-foreground text-xs">{formatDate(s.start_date)}{s.end_date ? ` – ${formatDate(s.end_date)}` : ""}</p>}
+              {services.map((s: any, i: number) => {
+                const priceMode = s.details?.price_mode || "per_service";
+                const multiplier = priceMode === "per_person" ? (s.person_count || 1) : (s.quantity || 1);
+                const total = (s.price || 0) * multiplier;
+                return (
+                  <div key={i} className="flex justify-between items-start py-1 border-b last:border-0">
+                    <div>
+                      <p className="font-medium">{s.service_name}</p>
+                      {s.description && <p className="text-muted-foreground text-xs">{s.description}</p>}
+                      {s.start_date && <p className="text-muted-foreground text-xs">{formatDate(s.start_date)}{s.end_date ? ` – ${formatDate(s.end_date)}` : ""}</p>}
+                    </div>
+                    {s.price ? (
+                      <div className="text-right whitespace-nowrap">
+                        <span className="font-medium">{formatPrice(total)}</span>
+                        {multiplier > 1 && (
+                          <p className="text-muted-foreground text-xs">
+                            {formatPrice(s.price)} × {multiplier} {priceMode === "per_person" ? "os." : "ks"}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
-                  {s.price && <span className="font-medium whitespace-nowrap">{formatPrice(s.price)}</span>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         )}
