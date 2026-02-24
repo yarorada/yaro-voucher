@@ -2374,7 +2374,7 @@ const DealDetail = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Cestující</CardTitle>
+                  <CardTitle>Cestující ({deal.deal_travelers?.length || 0})</CardTitle>
                   <CardDescription>Správa cestujících v obchodním případu</CardDescription>
                 </div>
                 <div className="flex gap-2">
