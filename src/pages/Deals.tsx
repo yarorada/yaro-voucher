@@ -51,6 +51,7 @@ interface Deal {
   discount_note: string | null;
   adjustment_note: string | null;
   notes: string | null;
+  tee_times: any | null;
   destinations: { name: string; countries: { iso_code: string } | null } | null;
   deal_travelers: { is_lead_traveler: boolean; clients: { first_name: string; last_name: string } | null }[];
   deal_services: { service_type: string; service_name: string }[];
@@ -115,6 +116,7 @@ const Deals = () => {
           discount_note,
           adjustment_note,
           notes,
+          tee_times,
           created_at,
           updated_at,
           destinations:destination_id (name, countries:country_id(iso_code)),
@@ -281,6 +283,7 @@ const Deals = () => {
           adjustment_amount: dealToDuplicate.adjustment_amount,
           discount_note: dealToDuplicate.discount_note,
           adjustment_note: dealToDuplicate.adjustment_note,
+          tee_times: dealToDuplicate.tee_times,
         })
         .select()
         .single();
