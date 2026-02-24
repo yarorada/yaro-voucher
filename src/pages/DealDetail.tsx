@@ -50,6 +50,7 @@ import { DealTeeTimesEditor } from "@/components/DealTeeTimesEditor";
 import { ShareOfferButton } from "@/components/ShareOfferButton";
 import { CreateVouchersFromDeal } from "@/components/CreateVouchersFromDeal";
 import { DealDocumentsSection } from "@/components/DealDocumentsSection";
+import { DealSupplierInvoices } from "@/components/DealSupplierInvoices";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -2998,6 +2999,9 @@ const DealDetail = () => {
           autoSendDocuments={(deal as any).auto_send_documents}
           documentsAutoSentAt={(deal as any).documents_auto_sent_at}
         />
+
+        {/* Doklady dodavatelům */}
+        <DealSupplierInvoices dealId={deal.id} />
         </div>
       </div>
 
