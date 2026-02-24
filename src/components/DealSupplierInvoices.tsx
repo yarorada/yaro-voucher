@@ -172,8 +172,9 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       const fileUrl = urlData.publicUrl;
       setUploadProgress(60);
 
-      // Run OCR for images
-      if (fileToUpload.type.startsWith("image/")) {
+      // Run OCR for images and PDFs
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (fileToUpload.type.startsWith("image/") || isPdf) {
         setOcrProcessing(true);
         setUploadProgress(70);
 
