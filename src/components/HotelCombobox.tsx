@@ -309,33 +309,22 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
         </PopoverContent>
       </Popover>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Přidat hotel</DialogTitle>
-            <DialogDescription>Uložte hotel do databáze pro budoucí použití</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="hotel-name">Název hotelu *</Label>
-              <Input
-                id="hotel-name"
-                value={newHotelName}
-                onChange={(e) => setNewHotelName(e.target.value)}
-                placeholder="např. Marriott Resort & Spa"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setCreateDialogOpen(false); setNewHotelName(""); }}>
-                Zrušit
-              </Button>
-              <Button onClick={handleCreateHotel} disabled={loading}>
-                {loading ? "Ukládám..." : "Uložit"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Požadovaný hotel nelze nalézt</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hotel „{newHotelName}" není v databázi. Opravdu ho chcete vytvořit?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setCreateDialogOpen(false); setNewHotelName(""); }}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCreateHotel} disabled={loading}>
+              {loading ? "Ukládám..." : "Vytvořit hotel"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={editDialogOpen} onOpenChange={(v) => { setEditDialogOpen(v); if (!v) setAutoScrapeOnOpen(false); }}>
         <DialogContent>
