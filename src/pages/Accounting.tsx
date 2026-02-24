@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import {
@@ -7,7 +7,9 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Download, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 
 const EU_COUNTRIES = [
   "Belgie", "Bulharsko", "Česko", "Dánsko", "Estonsko", "Finsko", "Francie",
@@ -39,15 +41,18 @@ export default function Accounting() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState("all");
+  const [editingRow, setEditingRow] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["accounting", year, month],
     queryFn: async () => {
-      // Fetch contracts with related data
       const { data: contracts, error } = await supabase
         .from("travel_contracts")
         .select(`
           id, contract_number, status, total_price, sent_at, signed_at,
+          accounting_buy_final_override,
           client:clients!travel_contracts_client_id_fkey(first_name, last_name),
           deal:deals!travel_contracts_deal_id_fkey(
             id, start_date, end_date, total_price,
@@ -62,14 +67,12 @@ export default function Accounting() {
       if (error) throw error;
       if (!contracts) return [];
 
-      // Fetch all contract payments
       const contractIds = contracts.map((c) => c.id);
       const { data: allPayments } = await supabase
         .from("contract_payments")
         .select("contract_id, payment_type, amount, paid, paid_at")
         .in("contract_id", contractIds);
 
-      // Fetch deal costs from deal_profitability view
       const dealIds = contracts
         .map((c) => (c.deal as any)?.id)
         .filter(Boolean);
@@ -98,7 +101,6 @@ export default function Accounting() {
           const startDate = deal?.start_date || null;
           const endDate = deal?.end_date || null;
 
-          // Filter by year/month based on start_date
           if (startDate) {
             const sd = new Date(startDate);
             if (String(sd.getFullYear()) !== year) return null;
@@ -108,21 +110,21 @@ export default function Accounting() {
           }
 
           const payments = paymentsMap.get(c.id) || [];
-
           const prof = profitMap.get(deal?.id);
           const totalCosts = Number(prof?.total_costs || 0);
           const totalRevenue = Number(prof?.revenue || deal?.total_price || c.total_price || 0);
 
-          // Sell = deal's total selling price, Buy = deal's total costs
           const sellDeposit = totalRevenue;
           const buyDeposit = totalCosts;
           const sellFinal = totalRevenue;
-          const buyFinal = totalCosts;
+          // Use override if set, otherwise use calculated costs
+          const buyFinalOverride = (c as any).accounting_buy_final_override;
+          const buyFinal = buyFinalOverride != null ? Number(buyFinalOverride) : totalCosts;
+          const hasOverride = buyFinalOverride != null;
 
           const profitDeposit = sellDeposit - buyDeposit;
           const profitFinal = sellFinal - buyFinal;
 
-          // EU VAT
           const isEU = EU_COUNTRIES.includes(countryName);
           const isCanary = CANARY_EXCEPTIONS.some((ex) =>
             destName.toLowerCase().includes(ex.toLowerCase())
@@ -133,7 +135,6 @@ export default function Accounting() {
           const vatFinal = Math.round(profitFinal * vatRate);
           const vatDiff = vatFinal - vatDeposit;
 
-          // Row highlighting
           const firstPaidAt = payments
             .filter((p) => p.paid && p.paid_at)
             .map((p) => p.paid_at!)
@@ -143,6 +144,7 @@ export default function Accounting() {
           const highlightBlue = isInPreviousMonth(firstPaidAt);
 
           return {
+            contractId: c.id,
             contractNumber: c.contract_number,
             clientName: client ? `${client.first_name} ${client.last_name}` : "",
             country: countryName,
@@ -153,6 +155,7 @@ export default function Accounting() {
             buyDeposit,
             sellFinal,
             buyFinal,
+            hasOverride,
             profitDeposit,
             profitFinal,
             vatDeposit,
@@ -165,6 +168,43 @@ export default function Accounting() {
         .filter(Boolean);
     },
   });
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ contractId, value }: { contractId: string; value: number | null }) => {
+      const { error } = await supabase
+        .from("travel_contracts")
+        .update({ accounting_buy_final_override: value } as any)
+        .eq("id", contractId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+      toast.success("Nákup vyúčt. uložen");
+    },
+    onError: () => {
+      toast.error("Chyba při ukládání");
+    },
+  });
+
+  const handleEditStart = (contractId: string, currentValue: number) => {
+    setEditingRow(contractId);
+    setEditValue(String(Math.round(currentValue)));
+  };
+
+  const handleEditSave = (contractId: string) => {
+    const num = editValue.trim() === "" ? null : Number(editValue.replace(/\s/g, ""));
+    if (num !== null && isNaN(num)) {
+      toast.error("Neplatná hodnota");
+      return;
+    }
+    saveMutation.mutate({ contractId, value: num });
+    setEditingRow(null);
+  };
+
+  const handleEditCancel = () => {
+    setEditingRow(null);
+    setEditValue("");
+  };
 
   const years = useMemo(() => {
     const y = [];
@@ -185,8 +225,8 @@ export default function Accounting() {
   const exportCsv = () => {
     const headers = [
       "Smlouva", "Klient", "Země", "Destinace", "Od", "Do",
-      "Prodej záloha", "Nákup záloha", "Prodej vyúčtování", "Nákup vyúčtování",
-      "Zisk záloha", "Zisk vyúčtování",
+      "Prodej záloha", "Nákup záloha", "Zisk záloha",
+      "Prodej vyúčtování", "Nákup vyúčtování", "Zisk vyúčtování",
       "DPH záloha EU", "DPH vyúčtování EU", "Rozdíl proti odvodu",
     ];
     const csvRows = [headers.join(";")];
@@ -194,8 +234,8 @@ export default function Accounting() {
       csvRows.push([
         r.contractNumber, r.clientName, r.country, r.destination,
         formatDateShort(r.from), formatDateShort(r.to),
-        r.sellDeposit, r.buyDeposit, r.sellFinal, r.buyFinal,
-        r.profitDeposit, r.profitFinal,
+        r.sellDeposit, r.buyDeposit, r.profitDeposit,
+        r.sellFinal, r.buyFinal, r.profitFinal,
         r.vatDeposit, r.vatFinal, r.vatDiff,
       ].join(";"));
     });
@@ -290,7 +330,38 @@ export default function Accounting() {
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellFinal)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyFinal)}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap p-0">
+                        {editingRow === r.contractId ? (
+                          <div className="flex items-center gap-1 px-2">
+                            <Input
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="h-7 w-24 text-right text-sm"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleEditSave(r.contractId);
+                                if (e.key === "Escape") handleEditCancel();
+                              }}
+                            />
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditSave(r.contractId)}>
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleEditCancel}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div
+                            className="flex items-center justify-end gap-1 px-4 py-2 cursor-pointer group hover:bg-muted/50 rounded"
+                            onClick={() => handleEditStart(r.contractId, r.buyFinal)}
+                          >
+                            <span className={r.hasOverride ? "text-primary font-semibold" : ""}>
+                              {formatNum(r.buyFinal)}
+                            </span>
+                            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatDeposit)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatFinal)}</TableCell>
