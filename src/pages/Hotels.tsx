@@ -37,6 +37,7 @@ import {
   Image as ImageIcon,
   Sparkles,
   Loader2,
+  X,
 } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
@@ -292,8 +293,13 @@ export default function Hotels() {
             placeholder="Hledat hotel..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-8"
           />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {loading ? (
