@@ -84,26 +84,28 @@ export const StatsTimeChart = ({ data, periodType }: StatsTimeChartProps) => {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="name" 
-              tick={{ fontSize: 12 }} 
-              className="text-muted-foreground"
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} 
+              stroke="hsl(var(--border))"
             />
             <YAxis 
               tickFormatter={formatCurrency} 
-              tick={{ fontSize: 12 }}
-              className="text-muted-foreground"
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+              stroke="hsl(var(--border))"
             />
             <Tooltip 
               formatter={(value: number) => new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", maximumFractionDigits: 0 }).format(value)}
               contentStyle={{ 
                 backgroundColor: "hsl(var(--card))", 
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)"
+                borderRadius: "var(--radius)",
+                color: "hsl(var(--card-foreground))"
               }}
+              labelStyle={{ color: "hsl(var(--card-foreground))" }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
             <Bar dataKey="Obrat" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Zisk" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
           </BarChart>

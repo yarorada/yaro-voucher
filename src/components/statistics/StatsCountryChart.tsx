@@ -81,6 +81,7 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
               dataKey="value"
               label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
               labelLine={false}
+              style={{ fontSize: 12, fill: "hsl(var(--foreground))" }}
             >
               {chartData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -91,8 +92,10 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
               contentStyle={{ 
                 backgroundColor: "hsl(var(--card))", 
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)"
+                borderRadius: "var(--radius)",
+                color: "hsl(var(--card-foreground))"
               }}
+              itemStyle={{ color: "hsl(var(--card-foreground))" }}
             />
           </PieChart>
         </ResponsiveContainer>
