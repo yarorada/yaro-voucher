@@ -53,3 +53,6 @@ verify_jwt = true
 
 [functions.submit-offer-response]
 verify_jwt = false
+
+[functions.ocr-supplier-invoice]
+verify_jwt = true

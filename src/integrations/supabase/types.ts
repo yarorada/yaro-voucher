@@ -538,6 +538,69 @@ export type Database = {
           },
         ]
       }
+      deal_supplier_invoices: {
+        Row: {
+          created_at: string
+          currency: string | null
+          deal_id: string
+          file_name: string
+          file_url: string
+          id: string
+          is_paid: boolean
+          issue_date: string | null
+          paid_at: string | null
+          payment_method: string | null
+          supplier_name: string | null
+          total_amount: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          deal_id: string
+          file_name: string
+          file_url: string
+          id?: string
+          is_paid?: boolean
+          issue_date?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          deal_id?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          is_paid?: boolean
+          issue_date?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_supplier_invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "deal_supplier_invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_travelers: {
         Row: {
           client_id: string
