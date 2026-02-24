@@ -62,6 +62,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -339,6 +349,8 @@ const DealDetail = () => {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [newTravelerId, setNewTravelerId] = useState("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [hotelConfirmOpen, setHotelConfirmOpen] = useState(false);
+  const [hotelConfirmResolver, setHotelConfirmResolver] = useState<{ resolve: (v: boolean) => void } | null>(null);
   const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
   const [duplicating, setDuplicating] = useState(false);
 
@@ -1180,67 +1192,68 @@ const DealDetail = () => {
           .maybeSingle();
 
         if (!existingHotel) {
-          const slug = finalServiceName.trim().toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          // Ask for confirmation before creating
+          const confirmed = await new Promise<boolean>((resolve) => {
+            setHotelConfirmResolver({ resolve });
+            setHotelConfirmOpen(true);
+          });
 
-          const { data: newHotel, error: hotelErr } = await supabase
-            .from("hotel_templates")
-            .insert({ name: finalServiceName.trim(), slug })
-            .select("id")
-            .single();
+          if (confirmed) {
+            const slug = finalServiceName.trim().toLowerCase()
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+              .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-          if (!hotelErr && newHotel) {
-            toast({ title: "Hotel vytvořen", description: `Šablona "${finalServiceName}" byla vytvořena v databázi hotelů` });
+            const { data: newHotel, error: hotelErr } = await supabase
+              .from("hotel_templates")
+              .insert({ name: finalServiceName.trim(), slug })
+              .select("id")
+              .single();
 
-            // Trigger AI enrichment in the background (don't await)
-            (async () => {
-              try {
-                const { data: aiData, error: aiErr } = await supabase.functions.invoke("suggest-hotel-destination", {
-                  body: { hotelName: finalServiceName },
-                });
-                if (aiErr || aiData?.error) {
-                  console.error("AI enrichment error:", aiErr || aiData?.error);
-                  return;
-                }
+            if (!hotelErr && newHotel) {
+              toast({ title: "Hotel vytvořen", description: `Šablona "${finalServiceName}" byla vytvořena v databázi hotelů` });
 
-                const updatePayload: Record<string, any> = {};
-
-                // Subtitle
-                if (aiData.subtitle) updatePayload.subtitle = aiData.subtitle;
-
-                // Golf courses
-                if (aiData.golf_courses) updatePayload.golf_courses = aiData.golf_courses;
-                if (aiData.golf_courses_data?.length > 0) updatePayload.golf_courses_data = aiData.golf_courses_data;
-
-                // Highlights
-                if (aiData.highlights?.length > 0) updatePayload.highlights = aiData.highlights;
-
-                // Destination matching
-                if (aiData.destination) {
-                  const { data: destinations } = await supabase
-                    .from("destinations")
-                    .select("id, name")
-                    .ilike("name", aiData.destination);
-                  const match = destinations?.find(
-                    (d: any) => d.name.toLowerCase() === aiData.destination.toLowerCase()
-                  );
-                  if (match) {
-                    updatePayload.destination_id = match.id;
+              // Trigger AI enrichment in the background (don't await)
+              (async () => {
+                try {
+                  const { data: aiData, error: aiErr } = await supabase.functions.invoke("suggest-hotel-destination", {
+                    body: { hotelName: finalServiceName },
+                  });
+                  if (aiErr || aiData?.error) {
+                    console.error("AI enrichment error:", aiErr || aiData?.error);
+                    return;
                   }
-                }
 
-                if (Object.keys(updatePayload).length > 0) {
-                  await supabase
-                    .from("hotel_templates")
-                    .update(updatePayload)
-                    .eq("id", newHotel.id);
-                  console.log("Hotel template enriched with AI data:", Object.keys(updatePayload));
+                  const updatePayload: Record<string, any> = {};
+                  if (aiData.subtitle) updatePayload.subtitle = aiData.subtitle;
+                  if (aiData.golf_courses) updatePayload.golf_courses = aiData.golf_courses;
+                  if (aiData.golf_courses_data?.length > 0) updatePayload.golf_courses_data = aiData.golf_courses_data;
+                  if (aiData.highlights?.length > 0) updatePayload.highlights = aiData.highlights;
+
+                  if (aiData.destination) {
+                    const { data: destinations } = await supabase
+                      .from("destinations")
+                      .select("id, name")
+                      .ilike("name", aiData.destination);
+                    const match = destinations?.find(
+                      (d: any) => d.name.toLowerCase() === aiData.destination.toLowerCase()
+                    );
+                    if (match) {
+                      updatePayload.destination_id = match.id;
+                    }
+                  }
+
+                  if (Object.keys(updatePayload).length > 0) {
+                    await supabase
+                      .from("hotel_templates")
+                      .update(updatePayload)
+                      .eq("id", newHotel.id);
+                    console.log("Hotel template enriched with AI data:", Object.keys(updatePayload));
+                  }
+                } catch (e) {
+                  console.error("Background hotel enrichment failed:", e);
                 }
-              } catch (e) {
-                console.error("Background hotel enrichment failed:", e);
-              }
-            })();
+              })();
+            }
           }
         }
       }
@@ -3050,6 +3063,35 @@ const DealDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={hotelConfirmOpen} onOpenChange={(open) => {
+        if (!open && hotelConfirmResolver) {
+          hotelConfirmResolver.resolve(false);
+          setHotelConfirmResolver(null);
+        }
+        setHotelConfirmOpen(open);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Požadovaný hotel nelze nalézt</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hotel „{serviceForm.service_name}" není v databázi. Opravdu ho chcete vytvořit?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              hotelConfirmResolver?.resolve(false);
+              setHotelConfirmResolver(null);
+              setHotelConfirmOpen(false);
+            }}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              hotelConfirmResolver?.resolve(true);
+              setHotelConfirmResolver(null);
+              setHotelConfirmOpen(false);
+            }}>Vytvořit hotel</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
