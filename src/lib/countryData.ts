@@ -1,4 +1,51 @@
-// Country name → { iso3, currency } lookup (shared across components)
+// Country name → { iso3, iso2, currency } lookup (shared across components)
+// ISO2 codes for flag emoji rendering
+const ISO3_TO_ISO2: Record<string, string> = {
+  AFG:"AF",ALB:"AL",DZA:"DZ",AND:"AD",AGO:"AO",ARG:"AR",ARM:"AM",AUS:"AU",AUT:"AT",AZE:"AZ",
+  BHS:"BS",BHR:"BH",BGD:"BD",BRB:"BB",BLR:"BY",BEL:"BE",BLZ:"BZ",BOL:"BO",BIH:"BA",BWA:"BW",
+  BRA:"BR",BRN:"BN",BGR:"BG",BFA:"BF",BDI:"BI",KHM:"KH",CMR:"CM",CAN:"CA",CPV:"CV",CAF:"CF",
+  TCD:"TD",CHL:"CL",CHN:"CN",COL:"CO",CRI:"CR",HRV:"HR",CUB:"CU",CYP:"CY",CZE:"CZ",DNK:"DK",
+  DMA:"DM",DOM:"DO",ECU:"EC",EGY:"EG",SLV:"SV",ERI:"ER",EST:"EE",ETH:"ET",FJI:"FJ",FIN:"FI",
+  FRA:"FR",GMB:"GM",GEO:"GE",DEU:"DE",GHA:"GH",GRC:"GR",GTM:"GT",HND:"HN",HUN:"HU",ISL:"IS",
+  IND:"IN",IDN:"ID",IRN:"IR",IRQ:"IQ",IRL:"IE",ISR:"IL",ITA:"IT",JAM:"JM",JPN:"JP",JOR:"JO",
+  KAZ:"KZ",KEN:"KE",KOR:"KR",KWT:"KW",KGZ:"KG",LAO:"LA",LVA:"LV",LBN:"LB",LBY:"LY",LIE:"LI",
+  LTU:"LT",LUX:"LU",MKD:"MK",MDG:"MG",MYS:"MY",MDV:"MV",MLT:"MT",MAR:"MA",MUS:"MU",MRT:"MR",
+  MEX:"MX",MDA:"MD",MCO:"MC",MNG:"MN",MNE:"ME",MOZ:"MZ",MMR:"MM",NAM:"NA",NPL:"NP",NLD:"NL",
+  NZL:"NZ",NIC:"NI",NGA:"NG",NOR:"NO",OMN:"OM",PAK:"PK",PAN:"PA",PRY:"PY",PER:"PE",PHL:"PH",
+  POL:"PL",PRT:"PT",PRI:"PR",QAT:"QA",ROU:"RO",RUS:"RU",SAU:"SA",SEN:"SN",SRB:"RS",SYC:"SC",
+  SGP:"SG",SVK:"SK",SVN:"SI",ZAF:"ZA",ESP:"ES",LKA:"LK",SDN:"SD",SUR:"SR",SWZ:"SZ",SWE:"SE",
+  CHE:"CH",SYR:"SY",TWN:"TW",TJK:"TJ",TZA:"TZ",THA:"TH",TGO:"TG",TTO:"TT",TUN:"TN",TUR:"TR",
+  TKM:"TM",UGA:"UG",UKR:"UA",ARE:"AE",GBR:"GB",USA:"US",URY:"UY",UZB:"UZ",VEN:"VE",VNM:"VN",
+  YEM:"YE",ZMB:"ZM",ZWE:"ZW",CIV:"CI",COK:"CK",ATG:"AG",XKX:"XK",
+  SCO:"GB-SCT",ENG:"GB-ENG",WAL:"GB-WLS",
+};
+
+/**
+ * Convert ISO2 country code to flag emoji using regional indicator symbols.
+ */
+const iso2ToFlag = (iso2: string): string => {
+  // Only standard 2-letter codes can be converted to emoji flags
+  if (iso2.length !== 2) return "";
+  const codePoints = iso2.toUpperCase().split("").map(c => 0x1F1E6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...codePoints);
+};
+
+/**
+ * Get flag emoji for a country name (Czech).
+ * Returns emoji string or empty string if not found.
+ */
+export const getCountryFlag = (countryName: string): string => {
+  const data = lookupCountryData(countryName);
+  if (!data) return "";
+  const iso2 = ISO3_TO_ISO2[data.iso];
+  if (!iso2) return "";
+  // For sub-nations like Scotland, use the parent country flag (GB)
+  if (iso2.length > 2) {
+    return iso2ToFlag(iso2.substring(0, 2));
+  }
+  return iso2ToFlag(iso2);
+};
+
 export const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
   "afghánistán": { iso: "AFG", currency: "AFN" },
   "albánie": { iso: "ALB", currency: "ALL" },
