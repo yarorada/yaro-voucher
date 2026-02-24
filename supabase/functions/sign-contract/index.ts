@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
         deal:deals(
           start_date, end_date, name,
           destination:destinations(name, country:countries(name)),
-          services:deal_services(service_type, service_name, start_date, end_date, person_count, price, description, quantity),
+          services:deal_services(service_type, service_name, start_date, end_date, person_count, price, description, quantity, details),
           travelers:deal_travelers(client:clients(first_name, last_name, date_of_birth, passport_number, title))
         ),
         payments:contract_payments(payment_type, amount, due_date, paid)
