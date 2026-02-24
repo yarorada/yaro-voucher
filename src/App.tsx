@@ -32,6 +32,7 @@ import Hotels from "./pages/Hotels";
 import PublicOffer from "./pages/PublicOffer";
 import PublicHotels from "./pages/PublicHotels";
 import PublicHotelDetail from "./pages/PublicHotelDetail";
+import PublicAccounting from "./pages/PublicAccounting";
 import SignContract from "./pages/SignContract";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -286,6 +287,7 @@ const App = () => (
           <Route path="/offer/:token" element={<PublicOffer />} />
           <Route path="/hotely" element={<PublicHotels />} />
           <Route path="/hotely/:slug" element={<PublicHotelDetail />} />
+          <Route path="/accounting/share/:token" element={<PublicAccounting />} />
           <Route path="/sign-contract" element={<SignContract />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
