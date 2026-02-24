@@ -69,14 +69,18 @@ const handler = async (req: Request): Promise<Response> => {
     const sentDate = formatDateIso(contract.sent_at);
 
     // Google Sheets webhook
-    const webhookUrl = Deno.env.get("GOOGLE_SHEETS_WEBHOOK_URL");
-    if (!webhookUrl) {
+    const webhookUrlRaw = Deno.env.get("GOOGLE_SHEETS_WEBHOOK_URL");
+    if (!webhookUrlRaw) {
       console.error("Missing GOOGLE_SHEETS_WEBHOOK_URL");
       return new Response(JSON.stringify({ error: "Missing Google Sheets webhook configuration" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Support both full URL and just the script ID
+    const webhookUrl = webhookUrlRaw.startsWith("http")
+      ? webhookUrlRaw
+      : `https://script.google.com/macros/s/${webhookUrlRaw}/exec`;
 
     const payload: Record<string, any> = {
       "Číslo smlouvy": contract.contract_number,
