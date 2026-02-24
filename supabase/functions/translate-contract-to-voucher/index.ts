@@ -107,18 +107,27 @@ Deno.serve(async (req) => {
 
     // 3. Translate services using Lovable AI
     // Map services to the voucher format with translation needed for name
-    const servicesForTranslation = servicesToTranslate.map((s: any) => ({
-      czech_name: s.service_name,
-      pax: String(s.person_count || 1),
-      qty: "1",
-      dateFrom: s.start_date || '',
-      dateTo: s.end_date || s.start_date || '',
-    }));
+    const servicesForTranslation = servicesToTranslate.map((s: any) => {
+      // For hotel services, format as "Accommodation in [room type] in [hotel]"
+      let serviceName = s.service_name;
+      if (s.service_type === 'hotel' && s.description) {
+        serviceName = `Accommodation in ${s.description} in ${s.service_name}`;
+      }
+      return {
+        czech_name: serviceName,
+        pax: String(s.person_count || 1),
+        qty: "1",
+        dateFrom: s.start_date || '',
+        dateTo: s.end_date || s.start_date || '',
+        is_hotel: s.service_type === 'hotel',
+      };
+    });
 
     const translationPrompt = `Translate the following travel service names from Czech to English. 
 Return ONLY a valid JSON array with the services, no additional text or formatting.
 Each service should have: name (translated to English), pax, qty, dateFrom, dateTo.
 If the czech_name is already in English, keep it unchanged.
+If is_hotel is true, keep the czech_name exactly as-is without any translation.
 Keep pax, qty, dateFrom, dateTo values exactly as provided.
 
 Services:
