@@ -20,11 +20,17 @@ const ISO3_TO_ISO2: Record<string, string> = {
   SCO:"GB-SCT",ENG:"GB-ENG",WAL:"GB-WLS",
 };
 
+// Unicode subdivision flags for UK nations
+const SUBDIVISION_FLAGS: Record<string, string> = {
+  "GB-SCT": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}", // 🏴󠁧󠁢󠁳󠁣󠁴󠁿
+  "GB-ENG": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}", // 🏴󠁧󠁢󠁥󠁮󠁧󠁿
+  "GB-WLS": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}", // 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+};
+
 /**
  * Convert ISO2 country code to flag emoji using regional indicator symbols.
  */
 const iso2ToFlag = (iso2: string): string => {
-  // Only standard 2-letter codes can be converted to emoji flags
   if (iso2.length !== 2) return "";
   const codePoints = iso2.toUpperCase().split("").map(c => 0x1F1E6 + c.charCodeAt(0) - 65);
   return String.fromCodePoint(...codePoints);
@@ -32,17 +38,15 @@ const iso2ToFlag = (iso2: string): string => {
 
 /**
  * Get flag emoji for a country name (Czech).
- * Returns emoji string or empty string if not found.
  */
 export const getCountryFlag = (countryName: string): string => {
   const data = lookupCountryData(countryName);
   if (!data) return "";
   const iso2 = ISO3_TO_ISO2[data.iso];
   if (!iso2) return "";
-  // For sub-nations like Scotland, use the parent country flag (GB)
-  if (iso2.length > 2) {
-    return iso2ToFlag(iso2.substring(0, 2));
-  }
+  // Check for subdivision flags (Scotland, England, Wales)
+  if (SUBDIVISION_FLAGS[iso2]) return SUBDIVISION_FLAGS[iso2];
+  if (iso2.length !== 2) return "";
   return iso2ToFlag(iso2);
 };
 
