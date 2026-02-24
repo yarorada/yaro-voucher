@@ -1,54 +1,75 @@
+# Účetní přehled - Rozklad kalkulace zájezdů
 
-# Evidence dokladů k zaplacení dodavatelům
+## Co se vytvoří
 
-## Popis
-Do detailu obchodního případu bude přidána nová sekce "Doklady dodavatelům", kde uživatel nahraje faktury/doklady od dodavatelů. Systém pomocí OCR automaticky extrahuje klíčové údaje (částka, dodavatel, datum vystavení), zobrazí je k potvrzení, a po schválení uloží. U každého dokladu bude možnost evidovat zaplacení, datum a formu platby (Moneta/Amnis). Doklady půjde zpětně stáhnout.
+Nová stránka "Účetnictví" dostupná z postranního menu, která zobrazí tabulku ve formátu shodném s přiloženým screenshotem z Apple Numbers. Tabulka slouží ke sdílení s účetním a obsahuje rozklad smluv na zálohy a vyúčtování s automatickým výpočtem DPH.
+
+## Sloupce tabulky
+
+
+| Sloupec                 | Zdroj dat                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Smlouva**             | `contract_number` z `travel_contracts`                                                             |
+| **Klient**              | `first_name + last_name` z `clients`                                                               |
+| **Země**                | `countries.name` přes `destinations`                                                               |
+| **Destinace**           | `destinations.name`                                                                                |
+| **Od**                  | `deals.start_date` (DD.MM.YY)                                                                      |
+| **Do**                  | `deals.end_date` (DD.MM.YY)                                                                        |
+| **Prodej záloha**       | Prodejní cena v Dealu v době odeslání smlouvy                                                      |
+| **Nákup záloha**        | Nákupní cena v Dealu ve chvíli odeslání smlouvy                                                    |
+| **Prodej vyúčtování**   | Prodejní cena v Dealu v době potvrzení smlouvy                                                     |
+| **Nákup vyúčtování**    | Nákupní cena v Dealu v době potvrzení smlouvy                                                      |
+| **Provize prodej**      | Toto pole můžeš smazat                                                                             |
+| **Zisk záloha**         | Prodej záloha - Nákup záloha                                                                       |
+| **Zisk vyúčtování**     | Prodej vyúčtování - Nákup vyúčtování                                                               |
+| **DPH záloha EU**       | 21 % ze zisku zálohy, pokud země patří do EU (viz seznam) a destinace není na Kanárských ostrovech |
+| **DPH vyúčtování EU**   | 21 % ze zisku vyúčtování za stejných podmínek                                                      |
+| **Rozdíl proti odvodu** | DPH vyúčtování - DPH záloha (korekce)                                                              |
+| **Poznámka**            | Volné textové pole                                                                                 |
+
+
+## Logika zobrazení řádků
+
+- **Řádek zálohy**: Zobrazí se ve chvíli, kdy smlouva existuje (status != cancelled) a má platbu typu `deposit`
+- **Řádek vyúčtování**: Zobrazí se, až existuje platba typu `final` a je zaplacená, nebo podle skutečně přijatých plateb
+
+V praxi bude každá smlouva jeden řádek se všemi sloupci (záloha + vyúčtování vedle sebe), jak je vidět na screenshotu.
+
+## DPH pravidla
+
+- **21 % ze zisku** pokud je země destinace v seznamu EU zemí
+- **Výjimka 0 %**: destinace Gran Canaria, Tenerife, Lanzarote, Fuerteventura (Kanárské ostrovy - přestože Španělsko je v EU)
+- **Non-EU země**: DPH = 0
+
+## Barevné zvýraznění řádků
+
+- **Cervena**: Smlouvy, kde konec zájezdu (`deals.end_date`) proběhl v **minulém kalendářním měsíci** (vzhledem k aktuálnímu datu)
+- **Modra**: Smlouvy, kde **první platba** (`contract_payments` s nejstarším `paid_at`) proběhla v **minulém kalendářním měsíci**
+
+## Filtry v horní liště
+
+- Filtr podle roku (ze `start_date`)
+- Filtr podle měsíce
+- Tlačítko "Export CSV" pro stažení tabulky
 
 ## Technické kroky
 
-### 1. Databázová tabulka `deal_supplier_invoices`
-Nová tabulka pro evidenci dokladů:
-- `id` (uuid, PK)
-- `deal_id` (uuid, FK na deals)
-- `file_url` (text) - odkaz na soubor ve storage
-- `file_name` (text) - původní název souboru
-- `supplier_name` (text) - název dodavatele (z OCR)
-- `total_amount` (numeric) - celková částka (z OCR)
-- `issue_date` (date) - datum vystavení (z OCR)
-- `is_paid` (boolean, default false) - zaplaceno
-- `paid_at` (date, nullable) - datum zaplacení
-- `payment_method` (text, nullable) - forma: 'moneta' nebo 'amnis'
-- `user_id` (uuid, default auth.uid())
-- `created_at` (timestamptz)
+### 1. Nová stránka `src/pages/Accounting.tsx`
 
-RLS: Authenticated users mají plný přístup (podle vzoru ostatních deal tabulek).
+- Načtení dat: `travel_contracts` JOIN `deals`, `destinations`, `countries`, `clients`, `contract_payments`, `deal_services` (pro nákupní ceny)
+- Výpočet nákupní ceny z `deal_profitability` view (total_costs)
+- Proporcionální rozdělení nákupní ceny mezi zálohu a vyúčtování podle poměru plateb
+- Seznam EU zemí a Kanárských výjimek jako konstanta
+- Tabulka s horizontálním scrollem pro všechny sloupce
 
-### 2. Storage bucket `supplier-invoices`
-Nový veřejný bucket pro nahrávání dokladů.
+### 2. Registrace v routeru (`App.tsx`)
 
-### 3. Edge funkce `ocr-supplier-invoice`
-Nová edge funkce využívající Lovable AI (gemini-2.5-flash) k extrakci:
-- `supplier_name` - název dodavatele
-- `total_amount` - celková částka k úhradě
-- `issue_date` - datum vystavení (DD.MM.YYYY)
+- Nová route `/accounting`
 
-Formát volání bude shodný s existující `ocr-document` funkcí.
+### 3. Přidání do navigace (`AppSidebar.tsx`)
 
-### 4. Nová komponenta `DealSupplierInvoices`
-Samostatná React komponenta umístěná v detailu dealu (pod sekci DealDocumentsSection):
-- **Nahrávání**: Drag & drop nebo kliknutí, podpora JPG/PNG/PDF
-- **OCR zpracování**: Po nahrání se zavolá edge funkce a zobrazí se dialog s extrahovanými daty k potvrzení/editaci
-- **Potvrzení**: Uživatel zkontroluje/upraví údaje a potvrdí uložení
-- **Seznam dokladů**: Tabulka s názvem dodavatele, částkou, datem, stavem zaplacení
-- **Zaplacení**: Checkbox "Zaplaceno", výběr formy (Moneta/Amnis), datum zaplacení
-- **Stažení**: Tlačítko pro stažení souboru přes Blob URL (kompatibilní s preview prostředím)
+- Nová položka "Účetnictví" s ikonou `Calculator`
 
-### 5. Integrace do DealDetail.tsx
-Přidání komponenty `<DealSupplierInvoices dealId={deal.id} />` pod existující sekci cestovních dokumentů.
+### 4. Export CSV
 
-## Uživatelský flow
-1. Uživatel nahraje sken/foto faktury
-2. Systém zpracuje OCR a zobrazí dialog: dodavatel, částka, datum
-3. Uživatel zkontroluje, případně opraví, a potvrdí
-4. Doklad se uloží do evidence s možností označit jako zaplacený
-5. Kdykoli lze doklad stáhnout zpět do počítače
+- Stejný princip jako na stránce Smlouvy: UTF-8 BOM, středníkový oddělovač, české formátování
