@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -30,11 +29,6 @@ export default function PublicAccounting() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-accounting", token],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("get-public-accounting", {
-        body: null,
-        headers: {},
-      });
-      // Use query params approach
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const resp = await fetch(
         `https://${projectId}.supabase.co/functions/v1/get-public-accounting?token=${token}`,
