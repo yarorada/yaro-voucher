@@ -110,21 +110,27 @@ const Statistics = () => {
 
       if (profitError) throw profitError;
 
-      // Fetch flight services for exclude-flights toggle
+      // Fetch flight services for exclude-flights toggle (include currency fields for conversion)
       const { data: flightData, error: flightError } = await supabase
         .from("deal_services")
-        .select("deal_id, price, cost_price, quantity, person_count, details")
+        .select("deal_id, price, cost_price, cost_price_original, price_currency, quantity, person_count, details")
         .eq("service_type", "flight");
 
       if (flightError) throw flightError;
 
-      // Aggregate flight costs per deal (respecting price_mode)
+      // Aggregate flight costs per deal (respecting price_mode and currency conversion)
       const flightMap = new Map<string, { revenue: number; cost: number }>();
       (flightData || []).forEach((f: any) => {
         const priceMode = f.details?.price_mode || "per_service";
         const multiplier = priceMode === "per_person" ? (f.person_count || 1) : (f.quantity || 1);
         const existing = flightMap.get(f.deal_id) || { revenue: 0, cost: 0 };
-        existing.revenue += (f.price || 0) * multiplier;
+        // Convert flight revenue to CZK if in foreign currency
+        let priceInCzk = f.price || 0;
+        if (f.price_currency && f.price_currency !== "CZK" && f.cost_price_original > 0 && f.cost_price > 0) {
+          const rate = f.cost_price / f.cost_price_original;
+          priceInCzk = (f.price || 0) * rate;
+        }
+        existing.revenue += priceInCzk * multiplier;
         existing.cost += (f.cost_price || 0) * multiplier;
         flightMap.set(f.deal_id, existing);
       });
