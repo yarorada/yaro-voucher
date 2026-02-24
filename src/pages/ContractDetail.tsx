@@ -5,7 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Send, FileSignature, Pencil, Loader2, Copy, ExternalLink, CheckCircle2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, Send, FileSignature, Pencil, Loader2, Copy, ExternalLink, CheckCircle2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
@@ -120,15 +126,46 @@ const ContractDetail = () => {
       .join(' ');
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-      draft: { variant: "secondary", label: "Koncept" },
-      sent: { variant: "default", label: "Odesláno" },
-      signed: { variant: "outline", label: "Podepsáno" },
-      cancelled: { variant: "destructive", label: "Zrušeno" },
-    };
-    const config = variants[status] || variants.draft;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const statusOptions: { value: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }[] = [
+    { value: "draft", variant: "secondary", label: "Koncept" },
+    { value: "sent", variant: "default", label: "Odesláno" },
+    { value: "signed", variant: "outline", label: "Podepsáno" },
+    { value: "cancelled", variant: "destructive", label: "Zrušeno" },
+  ];
+
+  const getStatusBadge = (status: string, interactive = false) => {
+    const config = statusOptions.find((s) => s.value === status) || statusOptions[0];
+    const badge = <Badge variant={config.variant} className={interactive ? "cursor-pointer" : ""}>{config.label}{interactive && <ChevronDown className="h-3 w-3 ml-1" />}</Badge>;
+    if (!interactive) return badge;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>{badge}</DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {statusOptions.map((opt) => (
+            <DropdownMenuItem
+              key={opt.value}
+              onClick={() => handleStatusChange(opt.value)}
+              className={opt.value === status ? "font-bold" : ""}
+            >
+              <Badge variant={opt.variant} className="mr-2">{opt.label}</Badge>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    const { error } = await supabase
+      .from("travel_contracts")
+      .update({ status: newStatus } as any)
+      .eq("id", id);
+    if (error) {
+      toast.error("Nepodařilo se změnit status");
+    } else {
+      toast.success(`Status změněn na "${statusOptions.find(s => s.value === newStatus)?.label}"`);
+      refetch();
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -266,7 +303,7 @@ const ContractDetail = () => {
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
             <h1 className="text-2xl md:text-4xl font-bold text-foreground">{contract.contract_number}</h1>
-            {getStatusBadge(contract.status)}
+            {getStatusBadge(contract.status, true)}
           </div>
           <p className="text-muted-foreground">
             Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
@@ -286,7 +323,7 @@ const ContractDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
-                {getStatusBadge(contract.status)}
+                {getStatusBadge(contract.status, true)}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Termín zájezdu</p>
