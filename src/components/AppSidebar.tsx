@@ -12,6 +12,7 @@ import {
   Menu,
   Mail,
   Hotel,
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const menuItems = [
   { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
   { title: "Hotely", url: "/hotels", icon: Hotel },
   { title: "Destinace", url: "/destinations", icon: MapPin },
+  { title: "Účetnictví", url: "/accounting", icon: Calculator },
   { title: "E-maily", url: "/email-templates", icon: Mail },
 ];
 
