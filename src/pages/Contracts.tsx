@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, FileText, Search, Trash2, Filter, Download } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Search, Trash2, Filter, Download, ArrowUpDown } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -53,6 +53,7 @@ const Contracts = () => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("number_desc");
   const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>(defaultDateRangeFilter);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<{ id: string; number: string } | null>(null);
@@ -210,6 +211,25 @@ const Contracts = () => {
       removeDiacritics((contract.deal?.deal_number || "").toLowerCase()).includes(searchLower) ||
       removeDiacritics((contract.deal?.destination?.name || "").toLowerCase()).includes(searchLower)
     );
+  })?.sort((a, b) => {
+    switch (sortBy) {
+      case "number_asc":
+        return a.contract_number.localeCompare(b.contract_number, "cs", { numeric: true });
+      case "number_desc":
+        return b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
+      case "departure_asc": {
+        const da = (a.deal as any)?.start_date || "";
+        const db = (b.deal as any)?.start_date || "";
+        return da.localeCompare(db) || b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
+      }
+      case "departure_desc": {
+        const da = (a.deal as any)?.start_date || "";
+        const db = (b.deal as any)?.start_date || "";
+        return db.localeCompare(da) || b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
+      }
+      default:
+        return 0;
+    }
   });
 
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
@@ -239,6 +259,18 @@ const Contracts = () => {
         </SelectContent>
       </Select>
       <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+      <Select value={sortBy} onValueChange={setSortBy}>
+        <SelectTrigger className="w-[160px] h-8 text-xs">
+          <ArrowUpDown className="h-3 w-3 mr-1 text-muted-foreground" />
+          <SelectValue placeholder="Řazení" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="number_desc">Číslo ↓</SelectItem>
+          <SelectItem value="number_asc">Číslo ↑</SelectItem>
+          <SelectItem value="departure_desc">Odjezd ↓</SelectItem>
+          <SelectItem value="departure_asc">Odjezd ↑</SelectItem>
+        </SelectContent>
+      </Select>
       <Button onClick={handleExportCSV} className={toolbarButtonClass + " gap-1"}>
         <Download className="h-3.5 w-3.5" />
         Export CSV
