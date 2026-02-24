@@ -1,30 +1,54 @@
 
+# Evidence dokladů k zaplacení dodavatelům
 
-# Migrace synchronizace smluv: Airtable -> Google Sheets
+## Popis
+Do detailu obchodního případu bude přidána nová sekce "Doklady dodavatelům", kde uživatel nahraje faktury/doklady od dodavatelů. Systém pomocí OCR automaticky extrahuje klíčové údaje (částka, dodavatel, datum vystavení), zobrazí je k potvrzení, a po schválení uloží. U každého dokladu bude možnost evidovat zaplacení, datum a formu platby (Moneta/Amnis). Doklady půjde zpětně stáhnout.
 
-## Co se změní
+## Technické kroky
 
-Stávající edge funkce `sync-contract-airtable` bude přepsána tak, aby místo Airtable API posílala data na Google Apps Script webhook, který je zapíše do Google Sheets.
+### 1. Databázová tabulka `deal_supplier_invoices`
+Nová tabulka pro evidenci dokladů:
+- `id` (uuid, PK)
+- `deal_id` (uuid, FK na deals)
+- `file_url` (text) - odkaz na soubor ve storage
+- `file_name` (text) - původní název souboru
+- `supplier_name` (text) - název dodavatele (z OCR)
+- `total_amount` (numeric) - celková částka (z OCR)
+- `issue_date` (date) - datum vystavení (z OCR)
+- `is_paid` (boolean, default false) - zaplaceno
+- `paid_at` (date, nullable) - datum zaplacení
+- `payment_method` (text, nullable) - forma: 'moneta' nebo 'amnis'
+- `user_id` (uuid, default auth.uid())
+- `created_at` (timestamptz)
 
-## Kroky
+RLS: Authenticated users mají plný přístup (podle vzoru ostatních deal tabulek).
 
-1. **Uložení webhook URL jako secret**
-   - Název: `GOOGLE_SHEETS_WEBHOOK_URL`
-   - Hodnota: `https://script.google.com/macros/s/AKfycbxZ4xgmA4f_a0M0jgy1xT0kJJ5-InfuM9EWZid5TL0Cib4iXIcJOSPu_bTG8Vq4CINctA/exec`
+### 2. Storage bucket `supplier-invoices`
+Nový veřejný bucket pro nahrávání dokladů.
 
-2. **Přepis edge funkce `sync-contract-airtable`**
-   - Odstranění veškeré Airtable logiky (vyhledávání existujícího záznamu, PATCH/POST)
-   - Nahrazení jediným POST requestem na Google Sheets webhook
-   - Data zůstávají stejná: Číslo smlouvy, Klient, Email klienta, Destinace, Datum odjezdu, Datum návratu, Prodejní cena, Měna, Nákupní cena, Marže, Odesláno dne
-   - Upsert logiku (vložení vs. aktualizace) řeší Apps Script na straně Google Sheets
+### 3. Edge funkce `ocr-supplier-invoice`
+Nová edge funkce využívající Lovable AI (gemini-2.5-flash) k extrakci:
+- `supplier_name` - název dodavatele
+- `total_amount` - celková částka k úhradě
+- `issue_date` - datum vystavení (DD.MM.YYYY)
 
-3. **Volání funkce zůstává beze změny**
-   - Všechna místa, kde se volá `supabase.functions.invoke("sync-contract-airtable", ...)`, fungují dál bez úprav
+Formát volání bude shodný s existující `ocr-document` funkcí.
 
-## Technické detaily
+### 4. Nová komponenta `DealSupplierInvoices`
+Samostatná React komponenta umístěná v detailu dealu (pod sekci DealDocumentsSection):
+- **Nahrávání**: Drag & drop nebo kliknutí, podpora JPG/PNG/PDF
+- **OCR zpracování**: Po nahrání se zavolá edge funkce a zobrazí se dialog s extrahovanými daty k potvrzení/editaci
+- **Potvrzení**: Uživatel zkontroluje/upraví údaje a potvrdí uložení
+- **Seznam dokladů**: Tabulka s názvem dodavatele, částkou, datem, stavem zaplacení
+- **Zaplacení**: Checkbox "Zaplaceno", výběr formy (Moneta/Amnis), datum zaplacení
+- **Stažení**: Tlačítko pro stažení souboru přes Blob URL (kompatibilní s preview prostředím)
 
-- Edge funkce načte `GOOGLE_SHEETS_WEBHOOK_URL` z env proměnných
-- Pošle JSON payload přes POST na webhook
-- Google Apps Script přijme data, najde řádek podle "Číslo smlouvy" a aktualizuje ho, nebo přidá nový
-- Airtable secrets (`AIRTABLE_API_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_ID`) zůstanou v projektu, ale funkce je přestane používat
+### 5. Integrace do DealDetail.tsx
+Přidání komponenty `<DealSupplierInvoices dealId={deal.id} />` pod existující sekci cestovních dokumentů.
 
+## Uživatelský flow
+1. Uživatel nahraje sken/foto faktury
+2. Systém zpracuje OCR a zobrazí dialog: dodavatel, částka, datum
+3. Uživatel zkontroluje, případně opraví, a potvrdí
+4. Doklad se uloží do evidence s možností označit jako zaplacený
+5. Kdykoli lze doklad stáhnout zpět do počítače
