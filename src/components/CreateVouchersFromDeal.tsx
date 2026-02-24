@@ -112,27 +112,38 @@ export function CreateVouchersFromDeal({
       for (const group of nonYaroGroups) {
         try {
           // Prepare services for translation
-          const servicesForTranslation = group.services.map(s => ({
-            czech_name: s.service_name,
-            pax: String(s.person_count || 1),
-            qty: "1",
-            dateFrom: s.start_date || "",
-            dateTo: s.end_date || s.start_date || "",
-          }));
+          const servicesForTranslation = group.services.map(s => {
+            // For hotel services, format as "Accommodation in [room type] in [hotel]"
+            let serviceName = s.service_name;
+            if (s.service_type === 'hotel' && s.description) {
+              serviceName = `Accommodation in ${s.description} in ${s.service_name}`;
+            }
+            return {
+              czech_name: serviceName,
+              pax: String(s.person_count || 1),
+              qty: "1",
+              dateFrom: s.start_date || "",
+              dateTo: s.end_date || s.start_date || "",
+              is_hotel: s.service_type === 'hotel',
+            };
+          });
 
           // Translate each service name
           const translatedServices = [];
           for (const s of servicesForTranslation) {
             let translatedName = s.czech_name;
-            try {
-              const { data: trData, error: trError } = await supabase.functions.invoke(
-                "translate-service-name",
-                { body: { czechName: s.czech_name } }
-              );
-              if (!trError && trData?.englishName) {
-                translatedName = trData.englishName;
-              }
-            } catch { /* use original */ }
+            // Skip translation for hotel services – name is already in English
+            if (!s.is_hotel) {
+              try {
+                const { data: trData, error: trError } = await supabase.functions.invoke(
+                  "translate-service-name",
+                  { body: { czechName: s.czech_name } }
+                );
+                if (!trError && trData?.englishName) {
+                  translatedName = trData.englishName;
+                }
+              } catch { /* use original */ }
+            }
             
             translatedServices.push({
               name: translatedName,
