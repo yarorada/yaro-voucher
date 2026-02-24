@@ -280,7 +280,7 @@ const Contracts = () => {
         Nová smlouva
       </Button>
     </>,
-    [searchQuery, statusFilter, dateFilter]
+    [searchQuery, statusFilter, dateFilter, sortBy]
   );
 
   return (
