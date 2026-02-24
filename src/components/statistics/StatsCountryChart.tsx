@@ -106,25 +106,31 @@ export const StatsCountryChart = ({ data }: StatsCountryChartProps) => {
         <CardTitle className="text-base">Rozložení podle zemí</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={340}>
           <PieChart>
             <Pie
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={50}
+              outerRadius={85}
               paddingAngle={2}
               dataKey="value"
-              label={({ name, percent, x, y }) => {
+              label={({ name, percent, x, y, cx: pieCx, cy: pieCy, midAngle, outerRadius: oR }) => {
                 const flag = getCountryFlag(name);
+                const RADIAN = Math.PI / 180;
+                const sin = Math.sin(-RADIAN * midAngle);
+                const cos = Math.cos(-RADIAN * midAngle);
+                const ex = pieCx + (oR + 24) * cos;
+                const ey = pieCy + (oR + 24) * sin;
+                const textAnchor = cos >= 0 ? "start" : "end";
                 return (
-                  <text x={x} y={y} fill="hsl(var(--foreground))" fontSize={12} textAnchor="middle" dominantBaseline="central">
-                    {`${flag} ${name} (${(percent * 100).toFixed(0)}%)`}
+                  <text x={ex} y={ey} fill="hsl(var(--foreground))" fontSize={11} textAnchor={textAnchor} dominantBaseline="central">
+                    {`${flag} ${name} ${(percent * 100).toFixed(0)}%`}
                   </text>
                 );
               }}
-              labelLine={false}
+              labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 0.5 }}
             >
               {chartData.map((item, index) => (
                 <Cell key={`cell-${index}`} fill={getCountryColor(item.name, index)} />
