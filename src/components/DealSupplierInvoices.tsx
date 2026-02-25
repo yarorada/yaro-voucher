@@ -110,10 +110,14 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     const parts = fileUrl.split("/supplier-invoices/");
     if (parts.length < 2) return null;
     const path = decodeURIComponent(parts[1]);
+
+    // Try SDK download first
     try {
       const { data, error } = await supabase.storage.from("supplier-invoices").download(path);
       if (!error && data) return data;
     } catch (e) { console.warn("SDK download failed:", e); }
+
+    // Try signed URL
     try {
       const { data: signedData, error: signedError } = await supabase.storage
         .from("supplier-invoices").createSignedUrl(path, 300);
@@ -122,10 +126,28 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         if (res.ok) return await res.blob();
       }
     } catch (e) { console.warn("Signed URL failed:", e); }
+
+    // Try direct fetch
     try {
       const res = await fetch(fileUrl);
       if (res.ok) return await res.blob();
     } catch (e) { console.warn("Direct fetch failed:", e); }
+
+    // Fallback: proxy through edge function (bypasses Comet blocking)
+    try {
+      const { data, error } = await supabase.functions.invoke("proxy-file", {
+        body: { bucket: "supplier-invoices", path },
+      });
+      if (!error && data?.base64) {
+        const binaryStr = atob(data.base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        return new Blob([bytes], { type: data.contentType || "application/octet-stream" });
+      }
+    } catch (e) { console.warn("Proxy fallback failed:", e); }
+
     return null;
   };
 
