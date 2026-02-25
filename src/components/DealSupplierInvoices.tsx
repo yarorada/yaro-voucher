@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateInput } from "@/components/ui/date-input";
-import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt } from "lucide-react";
+import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -447,14 +447,20 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                     )}
                   </TableCell>
                   <TableCell>
-                    {inv.is_paid && inv.paid_at && (
-                      <span className="text-xs">
-                        {(() => { const p = inv.paid_at.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; })()}
-                      </span>
+                    {inv.is_paid && (
+                      <Input
+                        type="date"
+                        value={inv.paid_at || ""}
+                        onChange={(e) => handleUpdatePayment(inv.id, "paid_at", e.target.value || null)}
+                        className="h-7 w-32 text-xs"
+                      />
                     )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(inv.file_url, "_blank")} title="Náhled">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(inv)} title="Stáhnout">
                         <Download className="h-3.5 w-3.5" />
                       </Button>
