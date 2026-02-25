@@ -393,18 +393,25 @@ const VouchersList = () => {
                 const destination = (voucher as any).deals?.destinations?.name;
                 const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || "";
                 
-                // Check if voucher is expired
-                const isExpired = voucher.expiration_date 
-                  ? new Date(voucher.expiration_date) < new Date() 
-                  : false;
-
-                // Get earliest service start_date
+                // Get earliest service start_date and latest service end_date
                 const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
                 const firstServiceDate = servicesArr
                   .map((s: any) => s.dateFrom || s.start_date)
                   .filter(Boolean)
                   .sort()
                   [0] || null;
+
+                const lastServiceDate = servicesArr
+                  .map((s: any) => s.dateTo || s.end_date || s.dateFrom || s.start_date)
+                  .filter(Boolean)
+                  .sort()
+                  .slice(-1)[0] || null;
+
+                // Check if voucher is expired: either expiration_date passed, or last service date is in the past
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isExpired = (voucher.expiration_date && new Date(voucher.expiration_date) < today)
+                  || (lastServiceDate && new Date(lastServiceDate) < today);
 
                 return (
                   <Card 
