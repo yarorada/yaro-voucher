@@ -619,7 +619,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
 
         {/* Hotel description from website */}
         {isValidDescription(hotelImgData?.description ?? null) && (
-          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0 [&_strong]:after:content-[':'] [&_b]:after:content-[':']" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
 
         {/* Golf courses table */}
@@ -746,7 +746,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
       <div className="p-5 space-y-4">
         {/* Hotel description */}
         {hotelService && isValidDescription(hotelImgData?.description ?? null) && (
-          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
+          <div className="text-sm text-slate-500 leading-relaxed prose prose-sm prose-slate max-w-none [&>p]:mb-4 [&>p:last-child]:mb-0 [&_strong]:after:content-[':'] [&_b]:after:content-[':']" dangerouslySetInnerHTML={{ __html: hotelImgData!.description! }} />
         )}
         {/* Golf courses table */}
         {hotelImgData?.golf_courses_data && (
