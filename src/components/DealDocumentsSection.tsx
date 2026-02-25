@@ -568,6 +568,19 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
   };
 
+  const handleDeleteVoucher = async (voucher: DealVoucher) => {
+    if (!confirm(`Opravdu chcete smazat voucher ${voucher.voucher_code}? Tato akce je nevratná.`)) return;
+    try {
+      await supabase.from("voucher_travelers").delete().eq("voucher_id", voucher.id);
+      const { error } = await supabase.from("vouchers").delete().eq("id", voucher.id);
+      if (error) throw error;
+      toast.success(`Voucher ${voucher.voucher_code} smazán`);
+      fetchDocuments();
+    } catch {
+      toast.error("Nepodařilo se smazat voucher");
+    }
+  };
+
   const handleSendVoucher = async (voucher: DealVoucher) => {
     setSendingVoucherId(voucher.id);
     try {
@@ -739,6 +752,15 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     title="Otevřít voucher"
                   >
                     <ExternalLink className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteVoucher(v)}
+                    title="Smazat voucher"
+                  >
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
