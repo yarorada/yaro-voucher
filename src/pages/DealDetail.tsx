@@ -2809,7 +2809,7 @@ const DealDetail = () => {
                           value={serviceForm.person_count}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '') || '';
-                            setServiceForm(prev => ({ ...prev, person_count: val, quantity: val }));
+                            setServiceForm(prev => ({ ...prev, person_count: val }));
                           }}
                           placeholder="1"
                           className="text-center"
