@@ -27,7 +27,7 @@ import { formatPrice, parseDateSafe } from "@/lib/utils";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
 
-const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+const CIRCLED_NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 const ContractDetail = () => {
   const { id } = useParams();

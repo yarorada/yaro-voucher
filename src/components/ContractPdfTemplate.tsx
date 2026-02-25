@@ -6,7 +6,7 @@ import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } fr
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import radekPodpis from "@/assets/radek-podpis.png";
 
-const CIRCLED_NUMBERS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+const CIRCLED_NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 interface ParsedFlightLeg {
   date?: string;
