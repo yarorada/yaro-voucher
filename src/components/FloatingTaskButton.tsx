@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus } from "lucide-react";
+import { Plus, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -46,6 +47,7 @@ export const FloatingTaskButton = () => {
   // Deal fields
   const [dealName, setDealName] = useState("");
   const [dealLeadTravelerId, setDealLeadTravelerId] = useState("");
+  const [dealLeadMissingEmail, setDealLeadMissingEmail] = useState(false);
   const [dealStatus, setDealStatus] = useState<string>("inquiry");
   const [dealLoading, setDealLoading] = useState(false);
   const { toast } = useToast();
@@ -246,7 +248,20 @@ export const FloatingTaskButton = () => {
             />
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Hlavní cestující *</label>
-              <ClientCombobox value={dealLeadTravelerId} onChange={setDealLeadTravelerId} />
+              <ClientCombobox value={dealLeadTravelerId} onChange={async (id) => {
+                setDealLeadTravelerId(id);
+                if (!id) { setDealLeadMissingEmail(false); return; }
+                const { data } = await supabase.from("clients").select("email").eq("id", id).single();
+                setDealLeadMissingEmail(!data?.email);
+              }} />
+              {dealLeadMissingEmail && (
+                <Alert variant="destructive" className="mt-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Klient nemá zadaný e-mail. Doplňte ho v kartě klienta.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Status</label>

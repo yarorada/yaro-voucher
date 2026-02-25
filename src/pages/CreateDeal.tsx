@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save } from "lucide-react";
+import { Save, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { ClientCombobox } from "@/components/ClientCombobox";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { formatDateForDB } from "@/lib/utils";
 import { useUnsavedChangesWarning } from "@/hooks/useAutoSaveOnLeave";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -30,6 +31,21 @@ const CreateDeal = () => {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"inquiry" | "quote" | "confirmed" | "completed" | "cancelled">("inquiry");
   const [leadTravelerId, setLeadTravelerId] = useState("");
+  const [leadTravelerMissingEmail, setLeadTravelerMissingEmail] = useState(false);
+
+  const handleLeadTravelerChange = async (clientId: string) => {
+    setLeadTravelerId(clientId);
+    if (!clientId) {
+      setLeadTravelerMissingEmail(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("clients")
+      .select("email")
+      .eq("id", clientId)
+      .single();
+    setLeadTravelerMissingEmail(!data?.email);
+  };
 
   const hasUnsavedChanges = useCallback(() => {
     return !!(dealName || startDate || endDate || notes || leadTravelerId);
@@ -136,8 +152,16 @@ const CreateDeal = () => {
                 <Label htmlFor="lead_traveler">Hlavní cestující *</Label>
                 <ClientCombobox
                   value={leadTravelerId}
-                  onChange={(value) => setLeadTravelerId(value)}
+                  onChange={handleLeadTravelerChange}
                 />
+                {leadTravelerMissingEmail && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Vybraný klient nemá zadaný e-mail. <a href={`/clients`} target="_blank" rel="noopener noreferrer" className="underline font-medium">Doplňte e-mail v kartě klienta</a>, jinak nebude možné zasílat dokumenty.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               <div className="space-y-2">
