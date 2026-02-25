@@ -6,7 +6,7 @@ import { generatePaymentQrDataUrl, bankAccountToIban, extractVariableSymbol } fr
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import radekPodpis from "@/assets/radek-podpis.png";
 
-const CIRCLED_NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+
 
 interface ParsedFlightLeg {
   date?: string;
@@ -29,19 +29,12 @@ interface PaymentRecord {
   notes: string | null;
 }
 
-interface ServiceAssignment {
-  service_type: string;
-  service_name: string;
-  client_id: string;
-}
-
 interface ContractPdfTemplateProps {
   contract: any;
-  serviceAssignments?: ServiceAssignment[];
 }
 
 export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplateProps>(
-  ({ contract, serviceAssignments = [] }, ref) => {
+  ({ contract }, ref) => {
     const deal = contract.deal;
     const services = deal?.services || [];
     const currency = deal?.currency || (contract as any).currency || "CZK";
@@ -58,29 +51,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
       });
     }, [deal?.travelers, contract.client_id]);
 
-    // Map client_id → circled number
-    const travelerNumberMap = useMemo(() => {
-      const map: Record<string, string> = {};
-      sortedTravelers.forEach((t: any, idx: number) => {
-        if (t.client?.id) {
-          map[t.client.id] = String(idx + 1);
-        }
-      });
-      return map;
-    }, [sortedTravelers]);
-
-    // Get circled numbers for a service
-    const getServiceTravelerNumbers = (serviceType: string, serviceName: string) => {
-      const assigned = serviceAssignments.filter(
-        (a) => a.service_type === serviceType && a.service_name === serviceName
-      );
-      if (assigned.length === 0) return null;
-      if (assigned.length === sortedTravelers.length) return null;
-      return assigned
-        .map((a) => travelerNumberMap[a.client_id])
-        .filter(Boolean)
-        .join(' ');
-    };
 
     const payments: PaymentRecord[] = (contract.payments || [])
       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
@@ -343,16 +313,14 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   <th style={thStyle}>Služba</th>
                   <th style={{ ...thStyle, width: '15%' }}>Termín</th>
                   <th style={{ ...thStyle, width: '8%', textAlign: 'center' }}>Osoby</th>
-                  <th style={{ ...thStyle, width: '10%', textAlign: 'center' }}>Cestující</th>
+                  
                   <th style={{ ...thStyle, width: '14%', textAlign: 'right' }}>Cena</th>
                 </tr>
               </thead>
               <tbody>
                 {services
                   .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
-                  .map((service: any) => {
-                    const travelerNums = getServiceTravelerNumbers(service.service_type, service.service_name);
-                    return (
+                  .map((service: any) => (
                       <tr key={service.id}>
                         <td style={tdStyle}>
                           {service.service_name}
@@ -363,15 +331,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
-                        <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', color: '#0066cc' }}>
-                          {travelerNums || <span style={{ fontSize: '7px', color: '#888' }}>vš.</span>}
-                        </td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1), true, currency)}</td>
                       </tr>
-                    );
-                  })}
+                    ))}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={4} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
+                  <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
                   <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price, true, currency)}</td>
                 </tr>
               </tbody>
