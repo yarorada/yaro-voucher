@@ -475,16 +475,16 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
           )}
           {(dealInfo?.start_date || dealInfo?.end_date) && (
             <p style={{ fontSize: "12px", marginBottom: "16px", color: "#555" }}>
-              <strong>Termín:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
+              <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
             </p>
           )}
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
             <thead>
               <tr style={{ background: "#f0f0f0" }}>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Pokoj</th>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Typ</th>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Cestující</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Room</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Type</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Guests</th>
               </tr>
             </thead>
             <tbody>
@@ -503,7 +503,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
           </table>
 
           <p style={{ fontSize: "10px", color: "#999", marginTop: "20px" }}>
-            Vygenerováno: {new Date().toLocaleDateString("cs-CZ")}
+            Generated: {new Date().toLocaleDateString("en-GB")}
           </p>
         </div>
       </div>
