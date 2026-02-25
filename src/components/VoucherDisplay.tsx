@@ -1071,24 +1071,26 @@ export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>
         </div>
 
         {/* Flight Details Section */}
-        {flights && flights.length > 0 && <div className="section-spacing">
-            <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
-              Flight Details
-            </h2>
-            <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
-              <ul className="space-y-0.5 print:space-y-0">
-                {flights.map((flight: any, index: number) => {
-              // Support both old format (fromIata/toIata/airlineCode/airlineName)
-              // and new format (from/to/airline) from CreateVouchersFromDeal
-              const fromIata = flight.fromIata || flight.from || '';
-              const toIata = flight.toIata || flight.to || '';
-              const airlineCode = flight.airlineCode || '';
-              const airlineName = flight.airlineName || flight.airline || '';
-              const flightNum = flight.flightNumber || '';
-              const fromCity = flight.fromCity || getCityName(fromIata);
-              const toCity = flight.toCity || getCityName(toIata);
-              const showSeparator = flight.isVariant && index > 0 && !(flights as any[])[index - 1].isVariant;
-              return <li key={index}>
+        {(() => {
+          const flightsArr: any[] = Array.isArray(flights) ? flights : (flights ? [flights] : []);
+          if (flightsArr.length === 0) return null;
+          return (
+            <div className="section-spacing">
+              <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
+                Flight Details
+              </h2>
+              <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
+                <ul className="space-y-0.5 print:space-y-0">
+                  {flightsArr.map((flight: any, index: number) => {
+                    const fromIata = flight.fromIata || flight.from || '';
+                    const toIata = flight.toIata || flight.to || '';
+                    const airlineCode = flight.airlineCode || '';
+                    const airlineName = flight.airlineName || flight.airline || '';
+                    const flightNum = flight.flightNumber || '';
+                    const fromCity = flight.fromCity || getCityName(fromIata);
+                    const toCity = flight.toCity || getCityName(toIata);
+                    const showSeparator = flight.isVariant && index > 0 && !(flightsArr)[index - 1].isVariant;
+                    return <li key={index}>
                       {showSeparator && <div className="border-t-2 border-primary my-3 print:my-2" />}
                       <div className="text-muted-foreground">
                         <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> · 
@@ -1099,24 +1101,35 @@ export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>
                         PAX: <span className="font-semibold text-foreground">{flight.pax}</span>
                       </div>
                     </li>;
-            })}
-              </ul>
+                  })}
+                </ul>
+              </div>
             </div>
-          </div>}
+          );
+        })()}
 
         {/* Tee Time Section */}
-        {teeTimes && teeTimes.length > 0 && <div className="section-spacing">
-            <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
-              Confirmed Tee Times
-            </h2>
-            <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
-              <ul className="space-y-0.5 print:space-y-0">
-                {teeTimes.map((teeTime, index) => <li key={index} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span> {teeTime.club}{teeTime.time ? <> at <span className="font-semibold text-foreground">{teeTime.time}</span></> : ''}{teeTime.golfers ? ` (${teeTime.golfers} golfers)` : ''}
-                  </li>)}
-              </ul>
+        {(() => {
+          const teeTimesArr: TeeTime[] = Array.isArray(teeTimes) ? teeTimes : (teeTimes ? [teeTimes as any] : []);
+          if (teeTimesArr.length === 0) return null;
+          return (
+            <div className="section-spacing">
+              <h2 className="section-heading text-lg font-bold text-foreground mb-1.5 print:text-[13px] print:mb-0.5">
+                Confirmed Tee Times
+              </h2>
+              <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
+                <ul className="space-y-0.5 print:space-y-0">
+                  {teeTimesArr.map((teeTime, index) => (
+                    <li key={index} className="text-muted-foreground">
+                      <span className="font-semibold text-foreground">{formatDate(teeTime.date)}</span>{' '}
+                      {teeTime.club}{teeTime.time ? <> at <span className="font-semibold text-foreground">{teeTime.time}</span></> : ''}{teeTime.golfers ? ` (${teeTime.golfers} golfers)` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>}
+          );
+        })()}
 
         {/* Voucher Details */}
         <div className="section-spacing grid grid-cols-2 gap-3 print:gap-1.5">
