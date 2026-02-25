@@ -277,10 +277,8 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     setScheduleItems(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
   };
 
-  const depositsSum = payments
-    .filter((p) => p.payment_type === "deposit" || p.payment_type === "installment")
-    .reduce((sum, p) => sum + p.amount, 0);
-  const remainingPayment = Math.max(0, totalPrice - depositsSum);
+  const allPaymentsSum = payments.reduce((sum, p) => sum + p.amount, 0);
+  const remainingPayment = Math.max(0, totalPrice - allPaymentsSum);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
 
   const scheduleDepositsTotal = scheduleItems
