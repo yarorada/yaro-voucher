@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateInput } from "@/components/ui/date-input";
-import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye } from "lucide-react";
+import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -71,6 +71,13 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Preview state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewFileName, setPreviewFileName] = useState("");
+  const [previewIsImage, setPreviewIsImage] = useState(false);
+
   // OCR confirmation dialog
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingFileUrl, setPendingFileUrl] = useState("");
@@ -98,6 +105,55 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  const downloadFileAsBlob = async (fileUrl: string): Promise<Blob | null> => {
+    const parts = fileUrl.split("/supplier-invoices/");
+    if (parts.length < 2) return null;
+    const path = decodeURIComponent(parts[1]);
+    try {
+      const { data, error } = await supabase.storage.from("supplier-invoices").download(path);
+      if (!error && data) return data;
+    } catch (e) { console.warn("SDK download failed:", e); }
+    try {
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("supplier-invoices").createSignedUrl(path, 300);
+      if (!signedError && signedData?.signedUrl) {
+        const res = await fetch(signedData.signedUrl);
+        if (res.ok) return await res.blob();
+      }
+    } catch (e) { console.warn("Signed URL failed:", e); }
+    try {
+      const res = await fetch(fileUrl);
+      if (res.ok) return await res.blob();
+    } catch (e) { console.warn("Direct fetch failed:", e); }
+    return null;
+  };
+
+  const handlePreview = async (inv: SupplierInvoice) => {
+    setPreviewFileName(inv.file_name);
+    setPreviewIsImage(/\.(jpe?g|png|webp|gif)$/i.test(inv.file_name));
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewBlobUrl(null);
+    try {
+      const blob = await downloadFileAsBlob(inv.file_url);
+      if (blob) setPreviewBlobUrl(URL.createObjectURL(blob));
+    } catch (e) {
+      console.error("Preview download failed:", e);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+    setPreviewOpen(false);
+    setPreviewBlobUrl(null);
+  };
+
+  const openPreviewInNewWindow = () => {
+    if (previewBlobUrl) window.open(previewBlobUrl, "_blank");
+  };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -458,7 +514,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(inv.file_url, "_blank")} title="Náhled">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePreview(inv)} title="Náhled">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(inv)} title="Stáhnout">
@@ -546,6 +602,46 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                 Potvrdit a uložit
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview dialog */}
+        <Dialog open={previewOpen} onOpenChange={closePreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] bg-background">
+            <DialogHeader>
+              <DialogTitle>Náhled dokladu</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[70vh]">
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-sm truncate max-w-[300px]">{previewFileName}</span>
+                  </div>
+                  {previewBlobUrl && (
+                    <Button variant="outline" size="sm" className="gap-2" onClick={openPreviewInNewWindow}>
+                      <ExternalLink className="h-4 w-4" />
+                      Nové okno
+                    </Button>
+                  )}
+                </div>
+                {previewLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : previewIsImage ? (
+                  previewBlobUrl ? (
+                    <img src={previewBlobUrl} alt="Doklad" className="max-w-full max-h-[400px] object-contain mx-auto rounded border" />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">Náhled nelze zobrazit</p>
+                  )
+                ) : previewBlobUrl ? (
+                  <iframe src={previewBlobUrl} className="w-full h-[60vh] rounded border" title="PDF náhled" />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">Náhled nelze zobrazit</p>
+                )}
+              </Card>
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>
