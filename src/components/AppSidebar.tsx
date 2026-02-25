@@ -92,17 +92,17 @@ export function AppSidebar() {
                       isActive={active}
                       tooltip={item.title}
                       className={`
-                        group relative transition-all duration-200
+                        group relative transition-colors duration-150
                         ${active 
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm' 
-                          : 'hover:bg-accent/50 hover:text-accent-foreground'
+                          ? 'bg-primary/10 text-primary font-medium' 
+                          : 'hover:bg-muted text-foreground/70 hover:text-foreground'
                         }
                       `}
                     >
-                      <item.icon className={`h-4 w-4 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-                      <span className="font-medium">{item.title}</span>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
                       {active && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -124,9 +124,9 @@ export function AppSidebar() {
             <SidebarMenuButton 
               onClick={signOut} 
               tooltip="Odhlásit"
-              className="group hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+              className="group hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
-              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+              <LogOut className="h-4 w-4" />
               <span className="font-medium">Odhlásit</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
