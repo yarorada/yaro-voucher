@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,8 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
 import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
-import { ContractServiceAssignment } from "@/components/ContractServiceAssignment";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
 import { SendContractEmail } from "@/components/SendContractEmail";
 import { EditContractDialog } from "@/components/EditContractDialog";
@@ -32,6 +33,7 @@ const CIRCLED_NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 const ContractDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
@@ -125,6 +127,97 @@ const ContractDetail = () => {
       .filter(Boolean)
       .join(' ');
   };
+
+  // Check if a traveler is assigned to a service
+  const isTravelerAssigned = (serviceType: string, serviceName: string, clientId: string) => {
+    // If no assignments exist for this service, all are assigned by default
+    const serviceAssigns = serviceAssignments.filter(
+      (a: any) => a.service_type === serviceType && a.service_name === serviceName
+    );
+    if (serviceAssigns.length === 0) return true;
+    return serviceAssigns.some((a: any) => a.client_id === clientId);
+  };
+
+  // Toggle traveler assignment for a service
+  const toggleTravelerAssignment = useCallback(async (serviceType: string, serviceName: string, clientId: string) => {
+    const serviceAssigns = serviceAssignments.filter(
+      (a: any) => a.service_type === serviceType && a.service_name === serviceName
+    );
+    
+    if (serviceAssigns.length === 0) {
+      // No assignments yet = all assigned. User is unchecking one, so insert all EXCEPT this one
+      const allExcept = sortedTravelers
+        .filter((t: any) => t.client?.id && t.client.id !== clientId)
+        .map((t: any) => ({
+          contract_id: id,
+          service_type: serviceType,
+          service_name: serviceName,
+          client_id: t.client.id,
+        }));
+      if (allExcept.length > 0) {
+        // @ts-ignore
+        await (supabase as any).from("contract_service_travelers").insert(allExcept);
+      }
+    } else {
+      const isCurrentlyAssigned = serviceAssigns.some((a: any) => a.client_id === clientId);
+      if (isCurrentlyAssigned) {
+        // Remove this assignment
+        // @ts-ignore
+        await (supabase as any)
+          .from("contract_service_travelers")
+          .delete()
+          .eq("contract_id", id)
+          .eq("service_type", serviceType)
+          .eq("service_name", serviceName)
+          .eq("client_id", clientId);
+        
+        // If only 0 remain after delete, remove all (means "all assigned" default)
+        const remaining = serviceAssigns.filter((a: any) => a.client_id !== clientId);
+        if (remaining.length === 0) {
+          // Already deleted the last one, nothing to do
+        }
+      } else {
+        // Add this assignment
+        // @ts-ignore
+        await (supabase as any).from("contract_service_travelers").insert({
+          contract_id: id,
+          service_type: serviceType,
+          service_name: serviceName,
+          client_id: clientId,
+        });
+      }
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ["contract_service_assignments", id] });
+  }, [serviceAssignments, sortedTravelers, id, queryClient]);
+
+  // Select/deselect all travelers for a service
+  const toggleAllTravelers = useCallback(async (serviceType: string, serviceName: string) => {
+    const serviceAssigns = serviceAssignments.filter(
+      (a: any) => a.service_type === serviceType && a.service_name === serviceName
+    );
+    const allAssigned = serviceAssigns.length === 0 || serviceAssigns.length === sortedTravelers.length;
+    
+    // Delete all existing assignments for this service
+    // @ts-ignore
+    await (supabase as any)
+      .from("contract_service_travelers")
+      .delete()
+      .eq("contract_id", id)
+      .eq("service_type", serviceType)
+      .eq("service_name", serviceName);
+    
+    if (!allAssigned) {
+      // Was partial → now select all (= no records = default all)
+      // Already deleted, done
+    } else {
+      // Was all → now deselect all (insert empty? No, just leave empty which means all)
+      // Actually: "toggle all" when all are selected should deselect all → but that doesn't make sense.
+      // Let's just always reset to "all assigned" (= delete all records)
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ["contract_service_assignments", id] });
+  }, [serviceAssignments, sortedTravelers, id, queryClient]);
 
   const statusOptions: { value: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }[] = [
     { value: "draft", variant: "secondary", label: "Koncept" },
@@ -501,8 +594,38 @@ const ContractDetail = () => {
                               {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                             </td>
                             <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
-                            <td className="py-2 text-center text-foreground text-base">
-                              {travelerNums || <span className="text-xs text-muted-foreground">všichni</span>}
+                            <td className="py-2 text-center text-foreground">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-muted/50 transition-colors cursor-pointer text-sm">
+                                    {travelerNums || <span className="text-xs text-muted-foreground">všichni</span>}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-2" align="center">
+                                  <div className="space-y-1">
+                                    {sortedTravelers.map((t: any, tIdx: number) => (
+                                      <label
+                                        key={t.client?.id}
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                                      >
+                                        <Checkbox
+                                          checked={isTravelerAssigned(service.service_type, service.service_name, t.client?.id)}
+                                          onCheckedChange={() => toggleTravelerAssignment(service.service_type, service.service_name, t.client?.id)}
+                                        />
+                                        <span>{tIdx + 1}. {t.client?.first_name} {t.client?.last_name}</span>
+                                      </label>
+                                    ))}
+                                    <div className="border-t pt-1 mt-1">
+                                      <button
+                                        className="w-full text-xs text-muted-foreground hover:text-foreground py-1 text-center"
+                                        onClick={() => toggleAllTravelers(service.service_type, service.service_name)}
+                                      >
+                                        Vybrat všechny
+                                      </button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             </td>
                             <td className="py-2 text-right font-medium text-foreground">
                               {formatPrice((service.price || 0) * (service.person_count || 1), true, contract.deal?.currency || (contract as any).currency || "CZK")}
