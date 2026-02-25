@@ -144,8 +144,8 @@ export default function EmailTemplates() {
     <div className="container max-w-6xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">E-mailové šablony</h1>
-          <p className="text-muted-foreground text-sm mt-1">Správa textů odesílaných e-mailů pro vouchery, smlouvy a dokumenty.</p>
+          <h1 className="text-heading-1">E-mailové šablony</h1>
+          <p className="text-body text-muted-foreground mt-1">Správa textů odesílaných e-mailů pro vouchery, smlouvy a dokumenty.</p>
         </div>
       </div>
 

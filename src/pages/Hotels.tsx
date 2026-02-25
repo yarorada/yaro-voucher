@@ -283,8 +283,8 @@ export default function Hotels() {
     <div className="p-4 md:p-6">
       <div className="container max-w-6xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Hotely</h1>
-          <p className="text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
+          <h1 className="text-heading-1">Hotely</h1>
+          <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
         </div>
 
         <div className="relative max-w-md">

@@ -991,7 +991,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-6 shadow-[var(--shadow-medium)]">
-        <h2 className="text-2xl font-bold mb-4 text-foreground">Informace o klientovi</h2>
+        <h2 className="text-heading-2 text-foreground mb-4">Informace o klientovi</h2>
         
         <div className="space-y-4">
           <div>
@@ -1212,7 +1212,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Služby</h2>
+          <h2 className="text-heading-2 text-foreground">Služby</h2>
           <Button type="button" onClick={addService} size="sm" variant="outline">
             <Plus className="h-4 w-4 mr-1" />
             Přidat službu
@@ -1251,7 +1251,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       {/* Flight Details Section */}
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Detaily letů</h2>
+          <h2 className="text-heading-2 text-foreground">Detaily letů</h2>
           <div className="flex gap-2">
             <Button type="button" onClick={() => addFlight(false)} size="sm" variant="outline">
               <Plus className="h-4 w-4 mr-1" />
@@ -1401,7 +1401,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       {/* Tee Time Section */}
       <Card className="p-6 shadow-[var(--shadow-medium)]">
         <div className="mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Tee Time</h2>
+          <h2 className="text-heading-2 text-foreground">Tee Time</h2>
         </div>
 
         {teeTimes.length === 0 ? (

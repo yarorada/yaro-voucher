@@ -64,7 +64,7 @@ export const StatsSummaryCards = ({ stats }: StatsSummaryCardsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+          <div className="text-heading-2">{formatCurrency(stats.totalRevenue)}</div>
           <ChangeIndicator value={stats.revenueChange} />
         </CardContent>
       </Card>
@@ -76,7 +76,7 @@ export const StatsSummaryCards = ({ stats }: StatsSummaryCardsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.totalCosts)}</div>
+          <div className="text-heading-2">{formatCurrency(stats.totalCosts)}</div>
           <ChangeIndicator value={stats.costsChange} inverted />
         </CardContent>
       </Card>
@@ -88,7 +88,7 @@ export const StatsSummaryCards = ({ stats }: StatsSummaryCardsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.totalProfit)}</div>
+          <div className="text-heading-2">{formatCurrency(stats.totalProfit)}</div>
           <ChangeIndicator value={stats.profitChange} />
         </CardContent>
       </Card>
@@ -100,8 +100,8 @@ export const StatsSummaryCards = ({ stats }: StatsSummaryCardsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{margin}%</div>
-          <span className="text-xs text-muted-foreground">
+          <div className="text-heading-2">{margin}%</div>
+          <span className="text-body text-muted-foreground">
             {stats.dealCount} obchodních případů
           </span>
         </CardContent>
