@@ -199,13 +199,13 @@ const SortableServiceRow = ({
         <div className="flex items-center gap-2">
           <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
           <div className="min-w-0">
-            <p className="font-medium text-sm break-words">
-              {service.service_name}
+            <p className="font-medium text-sm break-words">{service.service_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {getServiceTypeLabel(service.service_type)}
               {service.service_type === 'hotel' && service.description && (
-                <span className="font-normal text-muted-foreground"> ({service.description})</span>
+                <span> · {service.description}</span>
               )}
             </p>
-            <p className="text-xs text-muted-foreground">{getServiceTypeLabel(service.service_type)}</p>
           </div>
         </div>
       </TableCell>
