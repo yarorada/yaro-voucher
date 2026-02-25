@@ -106,7 +106,7 @@ const ContractDetail = () => {
     const map: Record<string, string> = {};
     sortedTravelers.forEach((t: any, idx: number) => {
       if (t.client?.id) {
-        map[t.client.id] = CIRCLED_NUMBERS[idx] || `(${idx + 1})`;
+        map[t.client.id] = String(idx + 1);
       }
     });
     return map;
@@ -449,8 +449,8 @@ const ContractDetail = () => {
                   <tbody>
                     {sortedTravelers.map((t: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0">
-                        <td className="py-2 text-center text-lg font-semibold text-primary">
-                          {CIRCLED_NUMBERS[idx] || `(${idx + 1})`}
+                        <td className="py-2 text-center font-medium text-foreground">
+                          {idx + 1}
                         </td>
                         <td className="py-2 font-medium text-foreground">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
