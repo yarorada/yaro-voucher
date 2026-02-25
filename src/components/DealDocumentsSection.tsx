@@ -310,8 +310,24 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     const parts = fileUrl.split(`/${bucket}/`);
     if (parts.length < 2) return null;
     const storagePath = decodeURIComponent(parts[1]);
-    
-    // Try SDK download first
+
+    // 1. Try proxy-file edge function first (bypasses Comet domain blocking)
+    try {
+      const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-file", {
+        body: { bucket, path: storagePath },
+      });
+      if (!proxyError && proxyData?.base64) {
+        const byteChars = atob(proxyData.base64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        return new Blob([byteArr], { type: proxyData.contentType || "application/octet-stream" });
+      }
+      console.warn("Proxy-file failed:", proxyError);
+    } catch (e) {
+      console.warn("Proxy-file exception:", e);
+    }
+
+    // 2. Fallback: SDK download
     try {
       const { data, error } = await supabase.storage.from(bucket).download(storagePath);
       if (!error && data) return data;
@@ -319,8 +335,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     } catch (e) {
       console.warn("SDK download exception:", e);
     }
-    
-    // Fallback: fetch via createSignedUrl (uses REST API differently)
+
+    // 3. Fallback: signed URL
     try {
       const { data: signedData, error: signedError } = await supabase.storage
         .from(bucket)
@@ -331,30 +347,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       }
     } catch (e) {
       console.warn("Signed URL fallback failed:", e);
-    }
-
-    // Last fallback: direct fetch
-    try {
-      const res = await fetch(fileUrl);
-      if (res.ok) return await res.blob();
-    } catch (e) {
-      console.warn("Direct fetch fallback failed:", e);
-    }
-
-    // Final fallback: proxy-file edge function (bypasses Comet blocking)
-    try {
-      const storagePath = decodeURIComponent(fileUrl.split(`/${bucket}/`)[1]);
-      const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-file", {
-        body: { bucket, path: storagePath },
-      });
-      if (!proxyError && proxyData?.base64) {
-        const byteChars = atob(proxyData.base64);
-        const byteArr = new Uint8Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
-        return new Blob([byteArr], { type: proxyData.contentType || "application/octet-stream" });
-      }
-    } catch (e) {
-      console.warn("Proxy-file fallback failed:", e);
     }
 
     return null;
