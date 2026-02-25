@@ -35,10 +35,12 @@ interface DealService {
   end_date: string | null;
   price: number | null;
   person_count: number | null;
+  quantity: number | null;
   supplier_id: string | null;
   details?: {
     outbound_segments?: FlightSegment[];
     return_segments?: FlightSegment[];
+    price_mode?: string;
   } | null;
   suppliers?: { name: string } | null;
 }
@@ -180,8 +182,8 @@ export function CreateVouchersFromDeal({
             }
             return {
               czech_name: serviceName,
-              pax: String(s.person_count || 1),
-              qty: "1",
+              pax: (s.details?.price_mode === "per_person") ? String(s.person_count || 1) : "1",
+              qty: (s.details?.price_mode !== "per_person") ? String(s.quantity || 1) : "1",
               dateFrom: s.start_date || "",
               dateTo: s.end_date || s.start_date || "",
               is_hotel: s.service_type === 'hotel',
