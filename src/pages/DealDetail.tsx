@@ -51,6 +51,7 @@ import { ShareOfferButton } from "@/components/ShareOfferButton";
 import { CreateVouchersFromDeal } from "@/components/CreateVouchersFromDeal";
 import { DealDocumentsSection } from "@/components/DealDocumentsSection";
 import { DealSupplierInvoices } from "@/components/DealSupplierInvoices";
+import { DealRoomingList } from "@/components/DealRoomingList";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
@@ -2484,6 +2485,8 @@ const DealDetail = () => {
             currency={deal.currency || "CZK"}
           />
         </div>
+
+        <DealRoomingList dealId={deal.id} travelers={deal.deal_travelers} />
 
         <Card>
           <CardContent className="pt-6">
