@@ -155,14 +155,15 @@ const handler = async (req: Request): Promise<Response> => {
     // Build client email text
     const signLinkText = signLink ? `\n\n📝 Smlouvu můžete podepsat online zde:\n${signLink}` : "";
     const signature = `\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
+    const attachmentNote = pdfAttachment.length > 0 ? `\n\nV příloze naleznete smlouvu ve formátu PDF.` : "";
 
     let clientEmailText: string;
     if (customEmailText) {
-      clientEmailText = customEmailText + signLinkText + signature;
+      clientEmailText = customEmailText + signLinkText + signature + attachmentNote;
     } else if (clientTemplate) {
-      clientEmailText = replacePlaceholders(clientTemplate.body, placeholderVars) + signLinkText;
+      clientEmailText = replacePlaceholders(clientTemplate.body, placeholderVars) + signLinkText + attachmentNote;
     } else {
-      clientEmailText = buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, destination) + signLinkText;
+      clientEmailText = buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
     }
 
     const clientEmailPayload: any = {

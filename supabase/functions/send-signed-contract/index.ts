@@ -62,13 +62,13 @@ Deno.serve(async (req) => {
 
 děkujeme za podpis cestovní smlouvy na váš zájezd od ${dateFrom} do ${dateTo} do destinace ${destination}.
 
-V příloze naleznete podepsanou smlouvu ve formátu PDF.
-
 S pozdravem,
 YARO Travel - Váš specialista na dovolenou
 Tel.: +420 602 102 108
 www.yarotravel.cz
-zajezdy@yarotravel.cz`;
+zajezdy@yarotravel.cz
+
+V příloze naleznete podepsanou smlouvu ve formátu PDF.`;
 
     const subject = `Podepsaná smlouva ${contract.contract_number} - YARO Travel`;
 
