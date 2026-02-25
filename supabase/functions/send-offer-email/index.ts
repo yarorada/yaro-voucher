@@ -290,6 +290,9 @@ Deno.serve(async (req) => {
       if (s.service_type === 'hotel' && (s.quantity || 1) > 1) {
         extra += `<span style="color:#94a3b8; margin-left:4px;">· ${s.quantity}× pokoj</span>`;
       }
+      if (s.service_type === 'golf' && (s.quantity || 1) > 1) {
+        extra += `<span style="color:#94a3b8; margin-left:4px;">· ${s.quantity}× hra</span>`;
+      }
       if (s.description) {
         extra += `<span style="color:#94a3b8; margin-left:4px;">· ${escapeHtml(s.description)}</span>`;
       }
