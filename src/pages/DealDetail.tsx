@@ -2217,7 +2217,7 @@ const DealDetail = () => {
                     value={dealName}
                     onChange={(e) => setDealName(e.target.value)}
                     placeholder="Název obchodního případu..."
-                    className="text-xl md:text-2xl font-bold h-auto py-1 px-2 max-w-md flex-1"
+                    className="text-heading-1 h-auto py-1 px-2 max-w-md flex-1"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -2241,7 +2241,7 @@ const DealDetail = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-xl md:text-2xl font-bold text-foreground">
+                  <h1 className="text-heading-1 text-foreground">
                     {dealName || deal.destination?.name || deal.deal_number}
                   </h1>
                   <Button
@@ -2363,7 +2363,7 @@ const DealDetail = () => {
               <div className="md:w-48 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
-                  <div className="text-lg font-bold text-primary">
+                  <div className="text-title font-bold text-primary">
                     {formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}
                   </div>
                 </div>
@@ -2377,7 +2377,7 @@ const DealDetail = () => {
 
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Zisk</Label>
-                  <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className={`text-title font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatPriceCurrency(profit, "CZK")}
                   </div>
                 </div>

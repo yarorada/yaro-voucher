@@ -233,7 +233,7 @@ const ContractDetail = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Chyba při načítání smlouvy</h2>
+          <h2 className="text-heading-2 text-foreground mb-2">Chyba při načítání smlouvy</h2>
           <p className="text-muted-foreground mb-4">{(queryError as Error).message}</p>
           <Button onClick={() => navigate("/contracts")} className="mt-4">
             Zpět na seznam
@@ -248,7 +248,7 @@ const ContractDetail = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Smlouva nenalezena</h2>
+          <h2 className="text-heading-2 text-foreground mb-2">Smlouva nenalezena</h2>
           <p className="text-muted-foreground mb-2">ID: {id}</p>
           <Button onClick={() => navigate("/contracts")} className="mt-4">
             Zpět na seznam
@@ -263,7 +263,7 @@ const ContractDetail = () => {
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground">{contract.contract_number}</h1>
+            <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
             {getStatusBadge(contract.status, true)}
           </div>
           <p className="text-muted-foreground">
@@ -276,7 +276,7 @@ const ContractDetail = () => {
         <div className="grid gap-6">
           {/* Základní informace */}
           <Card className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Základní informace</h2>
+            <h2 className="text-heading-2 text-foreground mb-4">Základní informace</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Číslo smlouvy</p>
@@ -361,7 +361,7 @@ const ContractDetail = () => {
 
             {/* Zákazník */}
             <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Zákazník</h2>
+              <h2 className="text-heading-2 text-foreground mb-4">Zákazník</h2>
               <div className="space-y-3">
                 <div>
                   <p className="font-semibold text-foreground">
@@ -395,7 +395,7 @@ const ContractDetail = () => {
           {/* Cestující */}
           {sortedTravelers.length > 0 && (
             <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Cestující</h2>
+              <h2 className="text-heading-2 text-foreground mb-4">Cestující</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -432,7 +432,7 @@ const ContractDetail = () => {
           {/* Služby */}
           {contract.deal?.services?.length > 0 && (
             <Card className="p-4 md:p-6">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Služby</h2>
+              <h2 className="text-heading-2 text-foreground mb-4">Služby</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -489,7 +489,7 @@ const ContractDetail = () => {
           {/* Ostatní informace a požadavky - tee times */}
           <Card className="p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground">Ostatní informace a požadavky</h2>
+              <h2 className="text-heading-2 text-foreground">Ostatní informace a požadavky</h2>
               <ContractTeeTimesEditor
                 contractId={contract.id}
                 teeTimes={(contract as any).tee_times || []}
@@ -498,7 +498,7 @@ const ContractDetail = () => {
             </div>
             {(contract as any).tee_times?.length > 0 ? (
               <>
-                <h3 className="text-base font-semibold text-foreground mb-2">Startovací časy (Tee Times)</h3>
+                <h3 className="text-title text-foreground mb-2">Startovací časy (Tee Times)</h3>
                 <div className="space-y-1">
                   {(contract as any).tee_times.map((tt: any, idx: number) => {
                     const dateStr = tt.date ? (() => { const d = parseDateSafe(tt.date); return d ? format(d, "dd.MM.yy") : tt.date; })() : '-';
@@ -517,23 +517,23 @@ const ContractDetail = () => {
 
           {/* Právní podmínky */}
           <Card className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Právní podmínky</h2>
+            <h2 className="text-heading-2 text-foreground mb-4">Právní podmínky</h2>
             <div className="prose prose-sm max-w-none">
               <p className="text-muted-foreground">
                 Tato smlouva je uzavřena podle §2521 a násl. zákona č. 89/2012 Sb., občanský zákoník, v účinném znění.
               </p>
-              <h3 className="text-lg font-semibold text-foreground mt-4 mb-2">Storno podmínky (§2531-2533 OZ)</h3>
+              <h3 className="text-title text-foreground mt-4 mb-2">Storno podmínky (§2531-2533 OZ)</h3>
               <p className="text-muted-foreground mb-2">Zákazník může od smlouvy odstoupit:</p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-1">
                 <li>Kdykoliv před zahájením zájezdu za storno poplatek dle sazebníku</li>
                 <li>Bez storno poplatku při podstatné změně podmínek zájezdu</li>
                 <li>Bez storno poplatku při zrušení zájezdu cestovní kanceláří</li>
               </ul>
-              <h3 className="text-lg font-semibold text-foreground mt-4 mb-2">Pojištění (§2534 OZ)</h3>
+              <h3 className="text-title text-foreground mt-4 mb-2">Pojištění (§2534 OZ)</h3>
               <p className="text-muted-foreground">
                 Cestovní kancelář je pojištěna pro případ úpadku v souladu se zákonem.
               </p>
-              <h3 className="text-lg font-semibold text-foreground mt-4 mb-2">Reklamace (§2536 OZ)</h3>
+              <h3 className="text-title text-foreground mt-4 mb-2">Reklamace (§2536 OZ)</h3>
               <p className="text-muted-foreground">
                 Zákazník má právo reklamovat vady plnění. Reklamaci je nutné uplatnit bez zbytečného odkladu.
               </p>

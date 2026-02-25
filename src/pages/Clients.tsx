@@ -896,7 +896,7 @@ const Clients = () => {
         ) : clients.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-heading-2 text-foreground mb-2">
               Zatím žádní klienti
             </h2>
             <p className="text-muted-foreground mb-6">Přidejte prvního klienta</p>
@@ -904,7 +904,7 @@ const Clients = () => {
         ) : filteredClients.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-heading-2 text-foreground mb-2">
               Žádné výsledky
             </h2>
             <p className="text-muted-foreground mb-6">
@@ -922,7 +922,7 @@ const Clients = () => {
                 className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-title text-foreground">
                     {client.first_name} {client.last_name}
                   </h3>
                   <div className="flex gap-2">

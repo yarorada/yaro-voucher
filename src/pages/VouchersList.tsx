@@ -361,8 +361,8 @@ const VouchersList = () => {
         ) : vouchers.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Zatím žádné vouchery</h2>
-            <p className="text-muted-foreground mb-6">Vytvořte svůj první cestovní voucher</p>
+            <h2 className="text-heading-2 text-foreground mb-2">Zatím žádné vouchery</h2>
+            <p className="text-body text-muted-foreground mb-6">Vytvořte svůj první cestovní voucher</p>
             <Button onClick={() => navigate("/create")} variant="premium">
               <Plus className="h-4 w-4 mr-2" />
               Vytvořit první voucher

@@ -302,7 +302,7 @@ export default function Accounting() {
     <div className="p-4 md:p-6">
       <div className="container max-w-[1600px] mx-auto space-y-4">
         <div className="flex flex-wrap items-center gap-3 justify-between">
-          <h1 className="text-2xl font-bold">Účetnictví</h1>
+          <h1 className="text-heading-1">Účetnictví</h1>
           <div className="flex flex-wrap items-center gap-2">
             <Select value={year} onValueChange={setYear}>
               <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>

@@ -306,10 +306,10 @@ const Suppliers = () => {
           </div>
         ) : filteredSuppliers.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-heading-2 text-foreground mb-2">
               {searchText ? "Žádní dodavatelé nenalezeni" : "Zatím žádní dodavatelé"}
             </h2>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-body text-muted-foreground mb-6">
               {searchText ? "Zkuste změnit hledání" : "Přidejte prvního dodavatele"}
             </p>
           </Card>
@@ -321,7 +321,7 @@ const Suppliers = () => {
                 className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg md:text-xl font-bold text-foreground break-words">
+                  <h3 className="text-title text-foreground break-words">
                     {supplier.name}
                   </h3>
                   <div className="flex gap-2">
@@ -341,7 +341,7 @@ const Suppliers = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="space-y-2 text-body text-muted-foreground">
                   {supplier.contact_person && (
                     <p>
                       <span className="font-semibold text-foreground">

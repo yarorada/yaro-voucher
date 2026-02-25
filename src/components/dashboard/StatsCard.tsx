@@ -110,22 +110,22 @@ export const StatsCard = () => {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Obrat</p>
-              <p className="text-xl font-bold">{formatPriceCurrency(stats?.revenue || 0)}</p>
+              <p className="text-body text-muted-foreground">Obrat</p>
+              <p className="text-heading-2">{formatPriceCurrency(stats?.revenue || 0)}</p>
               <ChangeIndicator value={stats?.revenueChange || null} />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Zisk</p>
-              <p className="text-xl font-bold">{formatPriceCurrency(stats?.profit || 0)}</p>
+              <p className="text-body text-muted-foreground">Zisk</p>
+              <p className="text-heading-2">{formatPriceCurrency(stats?.profit || 0)}</p>
               <ChangeIndicator value={stats?.profitChange || null} />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Marže</p>
-              <p className="text-xl font-bold">{margin}%</p>
+              <p className="text-body text-muted-foreground">Marže</p>
+              <p className="text-heading-2">{margin}%</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Případy</p>
-              <p className="text-xl font-bold">{stats?.dealCount || 0}</p>
+              <p className="text-body text-muted-foreground">Případy</p>
+              <p className="text-heading-2">{stats?.dealCount || 0}</p>
               <ChangeIndicator value={stats?.dealCountChange || null} />
             </div>
           </div>
