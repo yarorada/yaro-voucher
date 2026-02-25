@@ -1,0 +1,1 @@
+ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS rooming_list jsonb DEFAULT '[]'::jsonb;

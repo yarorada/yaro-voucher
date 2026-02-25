@@ -840,6 +840,7 @@ export type Database = {
           id: string
           name: string | null
           notes: string | null
+          rooming_list: Json | null
           share_token: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["deal_status"]
@@ -865,6 +866,7 @@ export type Database = {
           id?: string
           name?: string | null
           notes?: string | null
+          rooming_list?: Json | null
           share_token?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
@@ -890,6 +892,7 @@ export type Database = {
           id?: string
           name?: string | null
           notes?: string | null
+          rooming_list?: Json | null
           share_token?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["deal_status"]
