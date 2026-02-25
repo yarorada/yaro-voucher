@@ -938,25 +938,11 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                   ) : (previewFileType && isPdf(previewFileType)) || isPdf(previewUrl) ? (
-                    previewBlobUrl ? (
-                      <iframe
-                        src={previewBlobUrl}
-                        className="w-full h-[60vh] rounded border"
-                        title="PDF náhled"
-                      />
-                    ) : (
-                      <div className="bg-muted/50 rounded-lg p-8 text-center">
-                        <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground mb-3">PDF dokument</p>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={openInNewWindow}
-                        >
-                          Otevřít PDF
-                        </Button>
-                      </div>
-                    )
+                    <iframe
+                      src={previewBlobUrl || previewUrl || undefined}
+                      className="w-full h-[60vh] rounded border"
+                      title="PDF náhled"
+                    />
                   ) : (previewFileType && isImage(previewFileType)) || isImage(previewUrl) ? (
                     previewBlobUrl ? (
                       <img
@@ -965,22 +951,16 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                         className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
                       />
                     ) : (
-                      <div className="bg-muted/50 rounded-lg p-8 text-center">
-                        <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground mb-3">Náhled nelze zobrazit</p>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={openInNewWindow}
-                        >
-                          Otevřít dokument
-                        </Button>
-                      </div>
+                      <img
+                        src={previewUrl || undefined}
+                        alt="Dokument"
+                        className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
+                      />
                     )
                   ) : (
                     <div className="bg-muted/50 rounded-lg p-8 text-center">
                       <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-3">Náhled není dostupný</p>
+                      <p className="text-sm text-muted-foreground mb-3">Náhled nelze zobrazit</p>
                       <Button
                         variant="default"
                         size="sm"
