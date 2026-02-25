@@ -1077,24 +1077,26 @@ export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>
             </h2>
             <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
               <ul className="space-y-0.5 print:space-y-0">
-                {flights.map((flight, index) => {
-              const fromCity = flight.fromCity || getCityName(flight.fromIata);
-              const toCity = flight.toCity || getCityName(flight.toIata);
-              const mainFlights = flights.filter(f => !f.isVariant);
-              const flightNumber = flight.isVariant ? mainFlights.length + 1 : mainFlights.filter((f, i) => i < flights.indexOf(flight)).length + 1;
-              const flightLabel = flightNumber === 1 ? "Outbound Flight" : flightNumber === 2 ? "Return Flight" : `Flight ${flightNumber}`;
-              const showSeparator = flight.isVariant && index > 0 && !flights[index - 1].isVariant;
+                {flights.map((flight: any, index: number) => {
+              // Support both old format (fromIata/toIata/airlineCode/airlineName)
+              // and new format (from/to/airline) from CreateVouchersFromDeal
+              const fromIata = flight.fromIata || flight.from || '';
+              const toIata = flight.toIata || flight.to || '';
+              const airlineCode = flight.airlineCode || '';
+              const airlineName = flight.airlineName || flight.airline || '';
+              const flightNum = flight.flightNumber || '';
+              const fromCity = flight.fromCity || getCityName(fromIata);
+              const toCity = flight.toCity || getCityName(toIata);
+              const showSeparator = flight.isVariant && index > 0 && !(flights as any[])[index - 1].isVariant;
               return <li key={index}>
                       {showSeparator && <div className="border-t-2 border-primary my-3 print:my-2" />}
-                      <div>
-                        <div className="text-muted-foreground">
-                          <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> • 
-                          <span className="font-semibold text-foreground">{flight.airlineCode}{flight.flightNumber}</span> {flight.airlineName} • 
-                          {fromCity} → {toCity} • 
-                          Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> • 
-                          Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span> • 
-                          PAX: <span className="font-semibold text-foreground">{flight.pax}</span>
-                        </div>
+                      <div className="text-muted-foreground">
+                        <span className="font-semibold text-foreground">{formatDate(flight.date)}</span> · 
+                        <span className="font-semibold text-foreground">{airlineCode}{flightNum ? ` ${flightNum}` : ''}</span>{airlineName ? ` ${airlineName}` : ''} ·{' '}
+                        <span className="font-semibold text-foreground">{fromCity}</span> → <span className="font-semibold text-foreground">{toCity}</span> · 
+                        Departure: <span className="font-semibold text-foreground">{flight.departureTime}</span> · 
+                        Arrival: <span className="font-semibold text-foreground">{flight.arrivalTime}</span> · 
+                        PAX: <span className="font-semibold text-foreground">{flight.pax}</span>
                       </div>
                     </li>;
             })}
