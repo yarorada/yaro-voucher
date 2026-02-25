@@ -236,7 +236,12 @@ export function CreateVouchersFromDeal({
               expiration_date: latestEndDate,
               other_travelers: otherTravelerNames.length > 0 ? otherTravelerNames : null,
               voucher_number: Math.floor(Math.random() * 10000),
-              tee_times: teeTimes && teeTimes.length > 0 ? teeTimes : null,
+              tee_times: teeTimes && teeTimes.length > 0
+                ? teeTimes.map((tt: any) => ({
+                    ...tt,
+                    golfers: tt.golfers || tt.players || String(sortedTravelers.length || 1),
+                  }))
+                : null,
               flights: voucherFlights,
             } as any)
             .select()
