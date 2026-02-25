@@ -133,10 +133,9 @@ export function CreateVouchersFromDeal({
           if (!details) continue;
           const outSegs = details.outbound_segments || [];
           const retSegs = details.return_segments || [];
-          const allSegs = [...outSegs, ...retSegs];
-          for (const seg of allSegs) {
+          for (const seg of outSegs) {
             if (!seg.departure && !seg.arrival) continue;
-          flights.push({
+            flights.push({
               fromIata: seg.departure || '',
               toIata: seg.arrival || '',
               airlineCode: seg.airline || '',
@@ -145,6 +144,20 @@ export function CreateVouchersFromDeal({
               departureTime: seg.departure_time || '',
               arrivalTime: seg.arrival_time || '',
               date: seg.departure_date || s.start_date || '',
+              pax: `${s.person_count || 1} ADT`,
+            });
+          }
+          for (const seg of retSegs) {
+            if (!seg.departure && !seg.arrival) continue;
+            flights.push({
+              fromIata: seg.departure || '',
+              toIata: seg.arrival || '',
+              airlineCode: seg.airline || '',
+              airlineName: seg.airline_name || '',
+              flightNumber: seg.flight_number || '',
+              departureTime: seg.departure_time || '',
+              arrivalTime: seg.arrival_time || '',
+              date: seg.departure_date || s.end_date || s.start_date || '',
               pax: `${s.person_count || 1} ADT`,
             });
           }
