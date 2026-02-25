@@ -15,6 +15,17 @@ import { Badge } from "@/components/ui/badge";
 
 const YARO_SUPPLIER_NAME = "YARO s.r.o.";
 
+interface FlightSegment {
+  departure: string;
+  arrival: string;
+  airline?: string;
+  airline_name?: string;
+  flight_number?: string;
+  departure_time?: string;
+  arrival_time?: string;
+  departure_date?: string;
+}
+
 interface DealService {
   id: string;
   service_type: string;
@@ -25,6 +36,10 @@ interface DealService {
   price: number | null;
   person_count: number | null;
   supplier_id: string | null;
+  details?: {
+    outbound_segments?: FlightSegment[];
+    return_segments?: FlightSegment[];
+  } | null;
   suppliers?: { name: string } | null;
 }
 
@@ -109,10 +124,41 @@ export function CreateVouchersFromDeal({
         .filter((t: any) => !t.is_lead_traveler && t.clients)
         .map((t: any) => `${t.clients.first_name} ${t.clients.last_name}`);
 
+      // Build flights array from all flight services across all groups
+      const buildFlightsFromServices = (svcList: DealService[]) => {
+        const flights: any[] = [];
+        for (const s of svcList) {
+          if (s.service_type !== 'flight') continue;
+          const details = s.details;
+          if (!details) continue;
+          const outSegs = details.outbound_segments || [];
+          const retSegs = details.return_segments || [];
+          const allSegs = [...outSegs, ...retSegs];
+          for (const seg of allSegs) {
+            if (!seg.departure && !seg.arrival) continue;
+            flights.push({
+              from: seg.departure || '',
+              to: seg.arrival || '',
+              airline: seg.airline_name || seg.airline || '',
+              flightNumber: seg.flight_number || '',
+              departureTime: seg.departure_time || '',
+              arrivalTime: seg.arrival_time || '',
+              date: seg.departure_date || s.start_date || '',
+              pax: `${s.person_count || 1} ADT`,
+            });
+          }
+        }
+        return flights.length > 0 ? flights : null;
+      };
+
+      // All flight services (regardless of supplier grouping – flights go into every voucher)
+      const allFlightServices = services.filter(s => s.service_type === 'flight');
+      const voucherFlights = buildFlightsFromServices(allFlightServices);
+
       for (const group of nonYaroGroups) {
         try {
-          // Prepare services for translation
-          const servicesForTranslation = group.services.map(s => {
+          // Prepare services for translation (exclude flight services – they go into flights field)
+          const servicesForTranslation = group.services.filter(s => s.service_type !== 'flight').map(s => {
             // For hotel services, format as "Accommodation in [room type] in [hotel]"
             let serviceName = s.service_name;
             if (s.service_type === 'hotel' && s.description) {
@@ -177,6 +223,7 @@ export function CreateVouchersFromDeal({
               other_travelers: otherTravelerNames.length > 0 ? otherTravelerNames : null,
               voucher_number: Math.floor(Math.random() * 10000),
               tee_times: teeTimes && teeTimes.length > 0 ? teeTimes : null,
+              flights: voucherFlights,
             } as any)
             .select()
             .single();
