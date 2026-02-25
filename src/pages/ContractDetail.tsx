@@ -530,13 +530,6 @@ const ContractDetail = () => {
             currency={contract.deal?.currency || (contract as any).currency || "CZK"}
           />
 
-          {/* Přiřazení cestujících ke službám */}
-          {contract.deal?.id && (
-            <ContractServiceAssignment
-              contractId={contract.id}
-              dealId={contract.deal.id}
-            />
-          )}
 
           {/* Ostatní informace a požadavky - tee times */}
           <Card className="p-4 md:p-6">
