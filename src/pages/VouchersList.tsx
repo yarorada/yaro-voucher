@@ -476,15 +476,13 @@ const VouchersList = () => {
                             <Copy className="h-4 w-4 mr-2" />
                             Duplikovat
                           </DropdownMenuItem>
-                          {!isExpired && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={(e) => { e.stopPropagation(); handleDeleteClick(voucher.id); }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Smazat
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(voucher.id); }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Smazat
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
