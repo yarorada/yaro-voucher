@@ -929,7 +929,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
-                  ) : isPdf(previewUrl) || (previewFileType && isPdf(previewFileType)) ? (
+                  ) : (previewFileType && isPdf(previewFileType)) || isPdf(previewUrl) ? (
                     previewBlobUrl ? (
                       <iframe
                         src={previewBlobUrl}
@@ -949,7 +949,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                         </Button>
                       </div>
                     )
-                  ) : isImage(previewUrl) || (previewFileType && isImage(previewFileType)) ? (
+                  ) : (previewFileType && isImage(previewFileType)) || isImage(previewUrl) ? (
                     previewBlobUrl ? (
                       <img
                         src={previewBlobUrl}
