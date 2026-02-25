@@ -584,13 +584,95 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const handleSendVoucher = async (voucher: DealVoucher) => {
     setSendingVoucherId(voucher.id);
     try {
-      // Generate PDF for the voucher first
-      await generateVoucherPdf(voucher);
+      // Fetch full voucher data to generate PDF
+      const { data: fullVoucher } = await supabase
+        .from("vouchers")
+        .select("*")
+        .eq("id", voucher.id)
+        .single();
+
+      let pdfPath: string | null = null;
+
+      if (fullVoucher) {
+        try {
+          // Generate PDF using html2pdf and upload to voucher-pdfs bucket
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Build simple HTML for PDF
+            const formatDate = (d: string) => {
+              if (!d) return "";
+              const dt = new Date(d);
+              return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
+            };
+            const services = (fullVoucher.services as any[]) || [];
+            const flights = (fullVoucher.flights as any[]) || [];
+            const teeTimes = (fullVoucher.tee_times as any[]) || [];
+
+            const allEndDates = services.map(s => s.dateTo || s.end_date).filter(Boolean).map(d => new Date(d).getTime());
+            const lastServiceDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates)) : null;
+            const expirationStr = lastServiceDate ? formatDate(lastServiceDate.toISOString()) : "";
+
+            const servicesHtml = services.map(s =>
+              `<tr><td style="padding:4px 8px;border:1px solid #ddd">${s.name || s.service || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.dateFrom ? formatDate(s.dateFrom) : ""} - ${s.dateTo ? formatDate(s.dateTo) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">pax:${s.pax || "1"} qty:${s.qty || "1"}</td></tr>`
+            ).join("");
+
+            const flightsHtml = flights.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Flights</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Route</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Flight</th></tr>${flights.map(f => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${f.fromIata || ""} → ${f.toIata || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.date ? formatDate(f.date) : ""} ${f.departureTime || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.flightNumber || ""}</td></tr>`).join("")}</table>` : "";
+
+            const teeTimesHtml = teeTimes.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Confirmed Tee Times</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Time</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Course</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Players</th></tr>${teeTimes.map(t => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${t.date ? formatDate(t.date) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.club || t.course || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.golfers || t.players || ""}</td></tr>`).join("")}</table>` : "";
+
+            const html = `<div style="font-family:Arial,sans-serif;padding:20px;max-width:700px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div style="font-size:20px;font-weight:bold;color:#2563eb">YARO Travel</div>
+                <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p>${expirationStr ? `<p style="margin:2px 0;font-size:11px;color:#666">Valid until: ${expirationStr}</p>` : ""}</div>
+              </div>
+              <hr style="border:none;border-top:2px solid #2563eb;margin:8px 0 12px"/>
+              <p style="font-size:12px;margin:4px 0"><strong>Client:</strong> ${fullVoucher.client_name}</p>
+              ${fullVoucher.hotel_name ? `<p style="font-size:12px;margin:4px 0"><strong>Hotel:</strong> ${fullVoucher.hotel_name}</p>` : ""}
+              ${voucher.suppliers?.name ? `<p style="font-size:12px;margin:4px 0"><strong>Supplier:</strong> ${voucher.suppliers.name}</p>` : ""}
+              ${services.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Services</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Service</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Dates</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Details</th></tr>${servicesHtml}</table>` : ""}
+              ${flightsHtml}
+              ${teeTimesHtml}
+              <div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#666">
+                <p>YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz</p>
+              </div>
+            </div>`;
+
+            const container = document.createElement("div");
+            container.style.position = "fixed";
+            container.style.left = "-9999px";
+            container.innerHTML = html;
+            document.body.appendChild(container);
+
+            const pdfBlob: Blob = await html2pdf().set({
+              margin: [8, 8, 8, 8],
+              image: { type: "jpeg", quality: 0.95 },
+              html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            }).from(container).outputPdf("blob");
+
+            document.body.removeChild(container);
+
+            // Upload to voucher-pdfs bucket (where send-voucher-email expects it)
+            const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
+            const { error: uploadErr } = await supabase.storage
+              .from("voucher-pdfs")
+              .upload(voucherPdfPath, pdfBlob, { contentType: "application/pdf", upsert: true });
+
+            if (!uploadErr) {
+              pdfPath = voucherPdfPath;
+            }
+          }
+        } catch (pdfErr) {
+          console.error("PDF generation error:", pdfErr);
+          // Continue without PDF
+        }
+      }
 
       // Use the send-voucher-email edge function
       const { data, error } = await supabase.functions.invoke("send-voucher-email", {
         body: {
           voucherId: voucher.id,
+          pdfPath,
           emailCcSupplier: !!voucher.suppliers?.email,
         },
       });
