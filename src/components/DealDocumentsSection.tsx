@@ -584,6 +584,31 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const handleSendVoucher = async (voucher: DealVoucher) => {
     setSendingVoucherId(voucher.id);
     try {
+      // Check client email first
+      const { data: travelerData } = await supabase
+        .from("voucher_travelers")
+        .select("is_main_client, clients:client_id(email, first_name, last_name)")
+        .eq("voucher_id", voucher.id)
+        .eq("is_main_client", true)
+        .limit(1)
+        .single();
+
+      const clientEmail = (travelerData?.clients as any)?.email;
+      if (!clientEmail) {
+        // Try fallback via voucher.client_id
+        const { data: voucherRow } = await supabase
+          .from("vouchers")
+          .select("client_id, clients:client_id(email, first_name, last_name)")
+          .eq("id", voucher.id)
+          .single();
+        const fallbackEmail = (voucherRow?.clients as any)?.email;
+        if (!fallbackEmail) {
+          toast.error(`Klient ${voucher.client_name} nemá vyplněný e-mail. Doplňte e-mail v kartě klienta.`);
+          setSendingVoucherId(null);
+          return;
+        }
+      }
+
       // Fetch full voucher data to generate PDF
       const { data: fullVoucher } = await supabase
         .from("vouchers")
