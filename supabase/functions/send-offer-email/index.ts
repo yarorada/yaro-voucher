@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { dealId, allVariants } = await req.json();
+    const { dealId, allVariants, variantIds, customMessage } = await req.json();
     if (!dealId) {
       return new Response(JSON.stringify({ error: 'dealId is required' }), {
         status: 400,
@@ -483,7 +483,7 @@ Deno.serve(async (req) => {
         Vážený ${salutation} ${escapeHtml(declinedName)},
       </p>
       <p style="font-size:15px; color:#334155; line-height:1.6; margin:0;">
-        zasíláme Vám nabídku podle Vašich požadavků.
+        ${escapeHtml(customMessage || 'zasíláme Vám nabídku podle Vašich požadavků.')}
       </p>
     </div>
 

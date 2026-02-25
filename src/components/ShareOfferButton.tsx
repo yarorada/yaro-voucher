@@ -8,9 +8,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface VariantInfo {
   id: string;
@@ -35,12 +43,18 @@ function generateToken(length = 12): string {
   return result;
 }
 
+const DEFAULT_MESSAGE = "zasíláme Vám nabídku podle Vašich požadavků.";
+
 export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
+
+  // Email compose dialog
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState(DEFAULT_MESSAGE);
 
   const hasMultipleVariants = variants.length > 1;
 
@@ -62,7 +76,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     setSelectedVariantIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
-        if (next.size > 1) next.delete(id); // keep at least 1
+        if (next.size > 1) next.delete(id);
       } else {
         next.add(id);
       }
@@ -79,7 +93,6 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     if (!hasMultipleVariants) {
       return base;
     }
-    // Always use explicit variant IDs to ensure correct filtering
     return `${base}?variants=${Array.from(selectedVariantIds).join(",")}`;
   };
 
@@ -114,10 +127,16 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     }
   };
 
-  const handleSendEmail = async () => {
+  const handleOpenEmailDialog = async () => {
+    // Ensure token exists first
     const token = await ensureShareToken();
     if (!token) return;
+    setCustomMessage(DEFAULT_MESSAGE);
+    setOpen(false);
+    setEmailDialogOpen(true);
+  };
 
+  const handleSendEmail = async () => {
     setSendingEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-offer-email', {
@@ -125,6 +144,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
           dealId,
           allVariants: false,
           variantIds: hasMultipleVariants ? Array.from(selectedVariantIds) : undefined,
+          customMessage: customMessage.trim() || undefined,
         },
       });
 
@@ -132,6 +152,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
 
       if (data?.success) {
         toast.success(`Nabídka odeslána na ${data.recipient}`);
+        setEmailDialogOpen(false);
       } else {
         throw new Error(data?.error || 'Nepodařilo se odeslat');
       }
@@ -166,105 +187,150 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     .map(v => v.variant_name);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 md:size-default"
-          onClick={(e) => {
-            if (!shareToken) {
-              e.preventDefault();
-              handleShare();
-            }
-          }}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : copied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Share2 className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">
-            {loading ? "Generuji..." : copied ? "Zkopírováno" : "Sdílet nabídku"}
-          </span>
-        </Button>
-      </PopoverTrigger>
-      {publicUrl && (
-        <PopoverContent className="w-80" align="end">
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Veřejný odkaz na nabídku</p>
-
-            {hasMultipleVariants && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Varianty k odeslání:</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto px-1 py-0 text-xs"
-                    onClick={allSelected ? () => {
-                      const sel = variants.find(v => v.is_selected);
-                      setSelectedVariantIds(new Set([sel?.id || variants[0].id]));
-                    } : selectAll}
-                  >
-                    {allSelected ? "Jen vybraná" : "Vybrat vše"}
-                  </Button>
-                </div>
-                {variants.map(v => (
-                  <div key={v.id} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`variant-${v.id}`}
-                      checked={selectedVariantIds.has(v.id)}
-                      onCheckedChange={() => toggleVariant(v.id)}
-                    />
-                    <Label htmlFor={`variant-${v.id}`} className="text-sm cursor-pointer flex-1">
-                      {v.variant_name}
-                      {v.is_selected && (
-                        <span className="ml-1 text-xs text-muted-foreground">(vybraná)</span>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 md:size-default"
+            onClick={(e) => {
+              if (!shareToken) {
+                e.preventDefault();
+                handleShare();
+              }
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : copied ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Share2 className="h-4 w-4" />
             )}
+            <span className="hidden sm:inline">
+              {loading ? "Generuji..." : copied ? "Zkopírováno" : "Sdílet nabídku"}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        {publicUrl && (
+          <PopoverContent className="w-80" align="end">
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Veřejný odkaz na nabídku</p>
 
-            <div className="flex gap-2">
-              <Input
-                value={publicUrl}
-                readOnly
-                className="text-xs"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <Button size="sm" variant="outline" onClick={() => copyToClipboard(publicUrl)}>
-                {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+              {hasMultipleVariants && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Varianty k odeslání:</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto px-1 py-0 text-xs"
+                      onClick={allSelected ? () => {
+                        const sel = variants.find(v => v.is_selected);
+                        setSelectedVariantIds(new Set([sel?.id || variants[0].id]));
+                      } : selectAll}
+                    >
+                      {allSelected ? "Jen vybraná" : "Vybrat vše"}
+                    </Button>
+                  </div>
+                  {variants.map(v => (
+                    <div key={v.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`variant-${v.id}`}
+                        checked={selectedVariantIds.has(v.id)}
+                        onCheckedChange={() => toggleVariant(v.id)}
+                      />
+                      <Label htmlFor={`variant-${v.id}`} className="text-sm cursor-pointer flex-1">
+                        {v.variant_name}
+                        {v.is_selected && (
+                          <span className="ml-1 text-xs text-muted-foreground">(vybraná)</span>
+                        )}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  value={publicUrl}
+                  readOnly
+                  className="text-xs"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <Button size="sm" variant="outline" onClick={() => copyToClipboard(publicUrl)}>
+                  {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                className="w-full gap-2"
+                onClick={handleOpenEmailDialog}
+                disabled={sendingEmail}
+              >
+                <Mail className="h-4 w-4" />
+                Odeslat mailem
               </Button>
+              <p className="text-xs text-muted-foreground">
+                {allSelected && hasMultipleVariants
+                  ? "Klient uvidí všechny varianty nabídky"
+                  : hasMultipleVariants
+                    ? `Klient uvidí: ${selectedNames.join(", ")}`
+                    : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
+              </p>
             </div>
-            <Button
-              size="sm"
-              className="w-full gap-2"
-              onClick={handleSendEmail}
-              disabled={sendingEmail}
-            >
+          </PopoverContent>
+        )}
+      </Popover>
+
+      {/* Email compose dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Odeslat nabídku e-mailem
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Text zprávy</Label>
+              <p className="text-xs text-muted-foreground">
+                Text se vloží do těla e-mailu za pozdrav klientovi.
+              </p>
+              <Textarea
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                rows={4}
+                className="resize-none"
+                placeholder="zasíláme Vám nabídku podle Vašich požadavků."
+              />
+            </div>
+            <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+              <p>📧 E-mail bude obsahovat:</p>
+              <p className="pl-3">· Oslovení klienta (automaticky skloňováno)</p>
+              <p className="pl-3">· Váš text zprávy</p>
+              <p className="pl-3">· Přehled nabídky s hotely a cenami</p>
+              <p className="pl-3">· Odkaz na online nabídku</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail} className="gap-2">
               {sendingEmail ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Mail className="h-4 w-4" />
               )}
-              {sendingEmail ? "Odesílám..." : "Odeslat mailem"}
+              {sendingEmail ? "Odesílám..." : "Odeslat"}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              {allSelected && hasMultipleVariants
-                ? "Klient uvidí všechny varianty nabídky"
-                : hasMultipleVariants
-                  ? `Klient uvidí: ${selectedNames.join(", ")}`
-                  : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
-            </p>
-          </div>
-        </PopoverContent>
-      )}
-    </Popover>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
