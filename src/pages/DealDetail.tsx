@@ -1902,8 +1902,8 @@ const DealDetail = () => {
             amount: dp.amount,
             due_date: dp.due_date,
             notes: dp.notes,
-            paid: dp.paid,
-            paid_at: dp.paid_at,
+            paid: dp.paid === true,
+            paid_at: dp.paid === true ? (dp.paid_at || new Date().toISOString()) : null,
           }));
           
           await supabase
