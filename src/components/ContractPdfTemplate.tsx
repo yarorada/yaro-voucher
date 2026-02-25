@@ -63,7 +63,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
       const map: Record<string, string> = {};
       sortedTravelers.forEach((t: any, idx: number) => {
         if (t.client?.id) {
-          map[t.client.id] = CIRCLED_NUMBERS[idx] || `(${idx + 1})`;
+          map[t.client.id] = String(idx + 1);
         }
       });
       return map;
@@ -320,8 +320,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               <tbody>
                 {sortedTravelers.map((t: any, idx: number) => (
                   <tr key={idx}>
-                    <td style={{ ...tdStyle, textAlign: 'center', fontSize: '10px', fontWeight: 'bold', color: '#0066cc' }}>
-                      {CIRCLED_NUMBERS[idx] || `(${idx + 1})`}
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      {idx + 1}
                     </td>
                     <td style={tdStyle}>{t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}</td>
                     <td style={tdStyle}>{t.client?.date_of_birth ? (() => { const d = parseDateSafe(t.client.date_of_birth); return d ? format(d, "d. M. yyyy") : '-'; })() : '-'}</td>
