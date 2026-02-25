@@ -182,8 +182,8 @@ export function CreateVouchersFromDeal({
             }
             return {
               czech_name: serviceName,
-              pax: String(s.person_count || 1),
-              qty: String(s.quantity || 1),
+              pax: String(s.person_count ?? s.quantity ?? 1),
+              qty: String(s.quantity ?? s.person_count ?? 1),
               dateFrom: s.start_date || "",
               dateTo: s.end_date || s.start_date || "",
               is_hotel: s.service_type === 'hotel',
