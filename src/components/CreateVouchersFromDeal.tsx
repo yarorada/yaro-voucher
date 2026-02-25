@@ -136,10 +136,11 @@ export function CreateVouchersFromDeal({
           const allSegs = [...outSegs, ...retSegs];
           for (const seg of allSegs) {
             if (!seg.departure && !seg.arrival) continue;
-            flights.push({
-              from: seg.departure || '',
-              to: seg.arrival || '',
-              airline: seg.airline_name || seg.airline || '',
+          flights.push({
+              fromIata: seg.departure || '',
+              toIata: seg.arrival || '',
+              airlineCode: seg.airline || '',
+              airlineName: seg.airline_name || '',
               flightNumber: seg.flight_number || '',
               departureTime: seg.departure_time || '',
               arrivalTime: seg.arrival_time || '',
