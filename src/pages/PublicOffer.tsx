@@ -642,6 +642,9 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
                   {service.service_type === "hotel" && (service.quantity || 1) > 1 && (
                     <span className="text-slate-400 ml-1">· {service.quantity}× pokoj</span>
                   )}
+                  {service.service_type === "golf" && (service.quantity || 1) > 1 && (
+                    <span className="text-slate-400 ml-1">· {service.quantity}× hra</span>
+                  )}
                   {service.description && (
                     <span className="text-slate-400 ml-1">· {service.description}</span>
                   )}
@@ -760,6 +763,9 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
                   <span className="font-medium text-slate-700">{service.service_name}</span>
                   {service.service_type === "hotel" && (service.quantity || 1) > 1 && (
                     <span className="text-slate-400 ml-1">· {service.quantity}× pokoj</span>
+                  )}
+                  {service.service_type === "golf" && (service.quantity || 1) > 1 && (
+                    <span className="text-slate-400 ml-1">· {service.quantity}× hra</span>
                   )}
                   {service.description && (
                     <span className="text-slate-400 ml-1">· {service.description}</span>
