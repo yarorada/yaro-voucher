@@ -1,4 +1,5 @@
 import { forwardRef, useState, useEffect, useMemo } from "react";
+import { getServiceTotal } from "@/lib/servicePrice";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { formatPrice, parseDateSafe } from "@/lib/utils";
@@ -331,7 +332,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
-                        <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice((service.price || 0) * (service.person_count || 1), true, currency)}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice(getServiceTotal(service), true, currency)}</td>
                       </tr>
                     ))}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
