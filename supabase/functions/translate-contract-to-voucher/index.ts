@@ -36,17 +36,19 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     })
 
-    // Verify the user's authentication
-    const { data: { user }, error: userError } = await supabaseWithAuth.auth.getUser()
+    // Verify the user's authentication using getClaims
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claimsData, error: claimsError } = await supabaseWithAuth.auth.getClaims(token)
     
-    if (userError || !user) {
+    if (claimsError || !claimsData?.claims) {
+      console.error('Claims verification error:', claimsError)
       return new Response(
         JSON.stringify({ error: 'Invalid authentication token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const userId = user.id
+    const userId = claimsData.claims.sub as string
 
     // 1. Fetch contract data with ownership verification via RLS
     // Using the authenticated client ensures only the owner can access their contract
