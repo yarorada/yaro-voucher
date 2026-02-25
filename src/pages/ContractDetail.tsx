@@ -23,6 +23,7 @@ import { ContractPdfTemplate } from "@/components/ContractPdfTemplate";
 import { ContractTeeTimesEditor } from "@/components/ContractTeeTimesEditor";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { formatPrice, parseDateSafe } from "@/lib/utils";
+import { getServiceTotal } from "@/lib/servicePrice";
 import html2pdf from "html2pdf.js";
 import { toast } from "sonner";
 
@@ -461,7 +462,7 @@ const ContractDetail = () => {
                             </td>
                             <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
                             <td className="py-2 text-right font-medium text-foreground">
-                              {formatPrice((service.price || 0) * (service.person_count || 1), true, contract.deal?.currency || (contract as any).currency || "CZK")}
+                              {formatPrice(getServiceTotal(service), true, contract.deal?.currency || (contract as any).currency || "CZK")}
                             </td>
                           </tr>
                         ))}
