@@ -341,6 +341,22 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       console.warn("Direct fetch fallback failed:", e);
     }
 
+    // Final fallback: proxy-file edge function (bypasses Comet blocking)
+    try {
+      const storagePath = decodeURIComponent(fileUrl.split(`/${bucket}/`)[1]);
+      const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-file", {
+        body: { bucket, path: storagePath },
+      });
+      if (!proxyError && proxyData?.base64) {
+        const byteChars = atob(proxyData.base64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        return new Blob([byteArr], { type: proxyData.contentType || "application/octet-stream" });
+      }
+    } catch (e) {
+      console.warn("Proxy-file fallback failed:", e);
+    }
+
     return null;
   };
 
