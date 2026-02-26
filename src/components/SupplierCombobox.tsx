@@ -140,14 +140,14 @@ export function SupplierCombobox({ value, onChange, onSelect }: SupplierCombobox
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0 bg-background z-50" align="start">
-          <Command className="bg-background" shouldFilter={false}>
+        <PopoverContent className="w-[300px] p-0 bg-popover z-[9999]" align="start" style={{ pointerEvents: 'auto' }}>
+          <Command className="bg-popover" shouldFilter={false}>
             <CommandInput 
-              placeholder="Hledar dodavatele..." 
+              placeholder="Hledat dodavatele..." 
               value={searchValue}
               onValueChange={setSearchValue}
             />
-            <CommandList className="max-h-[250px] overflow-y-auto">
+            <CommandList className="max-h-[250px] overflow-y-auto bg-popover">
               <CommandEmpty>
                 {loading ? "Načítám..." : "Žádný dodavatel nenalezen."}
               </CommandEmpty>
