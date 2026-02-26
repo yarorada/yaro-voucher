@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
-import { Plane, Plus, Trash2, Briefcase, Luggage, Package } from "lucide-react";
+import { Plane, Plus, Trash2, Briefcase, Luggage, BaggageClaim } from "lucide-react";
 import golfBagIcon from "@/assets/golf-bag.png";
 
 export interface FlightSegment {
@@ -339,7 +339,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
             const included = item?.included ?? false;
             return (
               <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
-                <Package className={`h-6 w-6 ${included ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                <BaggageClaim className={`h-6 w-6 ${included ? 'text-blue-500' : 'text-muted-foreground'}`} />
                 <span className="text-xs text-center leading-tight font-medium">Odbavené zavazadlo</span>
                 <label className="flex items-center gap-1 cursor-pointer mt-0.5">
                   <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("checked_luggage", !!c)} />
