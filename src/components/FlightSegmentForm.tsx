@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
-import { Plane, Plus, Trash2, Briefcase, Luggage, Package, Flag } from "lucide-react";
+import { Plane, Plus, Trash2, Briefcase, Luggage, Package, Backpack } from "lucide-react";
 
 export interface FlightSegment {
   departure: string;
@@ -329,7 +329,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
           </div>
           {/* Golfový bag */}
           <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
-            <Flag className="h-6 w-6 text-muted-foreground" />
+            <Backpack className="h-6 w-6 text-muted-foreground" />
             <span className="text-xs text-center leading-tight">Golfový bag</span>
             <div className="flex items-center gap-1">
               <Input
