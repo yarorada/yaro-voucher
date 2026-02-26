@@ -245,19 +245,26 @@ function computePerPersonPrices(services: Array<{
 
   if (hotels.length === 0) return [];
 
-  // Sum of shared services cost per person: each shared service total / its person_count
+  // Sum of shared services cost per person
   let sharedPerPerson = 0;
   shared.forEach(s => {
-    const total = getServiceTotal(s);
+    const priceMode = s.details?.price_mode || "per_service";
+    const price = s.price || 0;
     const persons = s.person_count || 1;
-    sharedPerPerson += total / persons;
+    const qty = s.quantity || 1;
+    // per_person: price is already per person
+    // per_service: total = price * qty, divide by persons to get per-person share
+    const perPerson = priceMode === "per_person" ? price : (price * qty) / persons;
+    sharedPerPerson += perPerson;
   });
   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
   return hotels.map(h => {
+    const priceMode = h.details?.price_mode || "per_service";
+    const price = h.price || 0;
     const persons = h.person_count || 1;
-    const hotelTotal = getServiceTotal(h);
-    const hotelPerPerson = hotelTotal / persons;
+    const qty = h.quantity || 1;
+    const hotelPerPerson = priceMode === "per_person" ? price : (price * qty) / persons;
     return {
       label: h.description || h.service_name,
       personCount: persons,
