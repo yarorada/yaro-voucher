@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, DragEvent } from "react";
-import html2pdf from "html2pdf.js";
+import { jsPDF } from "jspdf";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -446,10 +446,162 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     setSendDialogOpen(true);
   };
 
-  // Generate a simple voucher PDF and upload to deal-documents
+  // Build voucher PDF using jsPDF directly (no html2canvas, works in all environments)
+  const buildVoucherPdfBlob = (fullVoucher: any, supplierName?: string): Blob => {
+    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const W = 210;
+    const margin = 15;
+    let y = margin;
+
+    const fmtDate = (d: string) => {
+      if (!d) return "";
+      const dt = new Date(d);
+      return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
+    };
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(37, 99, 235);
+    doc.text("YARO Travel", margin, y);
+
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`VOUCHER ${fullVoucher.voucher_code}`, W - margin, y, { align: "right" });
+    y += 6;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Issued: ${fmtDate(fullVoucher.issue_date)}`, W - margin, y, { align: "right" });
+    y += 6;
+
+    // Blue line
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, W - margin, y);
+    y += 6;
+
+    // Client info
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Client: ${fullVoucher.client_name || ""}`, margin, y); y += 5;
+    if (fullVoucher.hotel_name) { doc.text(`Hotel: ${fullVoucher.hotel_name}`, margin, y); y += 5; }
+    if (supplierName) { doc.text(`Supplier: ${supplierName}`, margin, y); y += 5; }
+    y += 3;
+
+    // Services
+    const services = (fullVoucher.services as any[]) || [];
+    if (services.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Services", margin, y); y += 4;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      // Table header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y, W - margin * 2, 6, "F");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Service", margin + 2, y + 4);
+      doc.text("From", margin + 80, y + 4);
+      doc.text("To", margin + 110, y + 4);
+      doc.text("Pax", margin + 140, y + 4);
+      y += 6;
+
+      for (const s of services) {
+        if (y > 270) { doc.addPage(); y = margin; }
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(margin, y, W - margin * 2, 6);
+        doc.text((s.name || s.service || "").substring(0, 45), margin + 2, y + 4);
+        doc.text(s.dateFrom ? fmtDate(s.dateFrom) : "", margin + 80, y + 4);
+        doc.text(s.dateTo ? fmtDate(s.dateTo) : "", margin + 110, y + 4);
+        doc.text(String(s.pax || s.person_count || 1), margin + 140, y + 4);
+        y += 6;
+      }
+      y += 4;
+    }
+
+    // Flights
+    const flights = (fullVoucher.flights as any[]) || [];
+    if (flights.length > 0) {
+      if (y > 260) { doc.addPage(); y = margin; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Flights", margin, y); y += 4;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y, W - margin * 2, 6, "F");
+      doc.text("Route", margin + 2, y + 4);
+      doc.text("Date", margin + 70, y + 4);
+      doc.text("Flight", margin + 120, y + 4);
+      y += 6;
+
+      for (const f of flights) {
+        if (y > 270) { doc.addPage(); y = margin; }
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(margin, y, W - margin * 2, 6);
+        doc.text(`${f.fromIata || f.departure || ""} → ${f.toIata || f.arrival || ""}`, margin + 2, y + 4);
+        doc.text(`${f.date ? fmtDate(f.date) : ""} ${f.departureTime || f.time || ""}`, margin + 70, y + 4);
+        doc.text(f.flightNumber || "", margin + 120, y + 4);
+        y += 6;
+      }
+      y += 4;
+    }
+
+    // Tee Times
+    const teeTimes = (fullVoucher.tee_times as any[]) || [];
+    if (teeTimes.length > 0) {
+      if (y > 260) { doc.addPage(); y = margin; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Confirmed Tee Times", margin, y); y += 4;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y, W - margin * 2, 6, "F");
+      doc.text("Date", margin + 2, y + 4);
+      doc.text("Time", margin + 40, y + 4);
+      doc.text("Course", margin + 70, y + 4);
+      doc.text("Players", margin + 140, y + 4);
+      y += 6;
+
+      for (const t of teeTimes) {
+        if (y > 270) { doc.addPage(); y = margin; }
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(margin, y, W - margin * 2, 6);
+        doc.text(t.date ? fmtDate(t.date) : "", margin + 2, y + 4);
+        doc.text(t.time || "", margin + 40, y + 4);
+        doc.text((t.club || t.course || "").substring(0, 40), margin + 70, y + 4);
+        doc.text(String(t.golfers || t.players || ""), margin + 140, y + 4);
+        y += 6;
+      }
+      y += 4;
+    }
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(margin, 285, W - margin, 285);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(130, 130, 130);
+      doc.text("YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz", margin, 290);
+    }
+
+    return doc.output("blob");
+  };
+
+   // Generate a simple voucher PDF and upload to deal-documents
   const generateVoucherPdf = async (voucher: DealVoucher): Promise<boolean> => {
     try {
-      // Fetch full voucher data
       const { data: fullVoucher, error } = await supabase
         .from("vouchers")
         .select("*")
@@ -457,72 +609,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         .single();
       if (error || !fullVoucher) return false;
 
-      const formatDate = (d: string) => {
-        if (!d) return "";
-        const dt = new Date(d);
-        return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
-      };
-
-      const services = (fullVoucher.services as any[]) || [];
-      const flights = (fullVoucher.flights as any[]) || [];
-      const teeTimes = (fullVoucher.tee_times as any[]) || [];
-
-      // Compute expiration date = last service end date
-      const allEndDates = services
-        .map(s => s.dateTo || s.end_date)
-        .filter(Boolean)
-        .map(d => new Date(d).getTime());
-      const lastServiceDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates)) : null;
-      const expirationStr = lastServiceDate ? formatDate(lastServiceDate.toISOString()) : "";
-
-      // Build HTML
-      const servicesHtml = services.map(s => 
-        `<tr><td style="padding:4px 8px;border:1px solid #ddd">${s.name || s.service || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.dateFrom ? formatDate(s.dateFrom) : ""} - ${s.dateTo ? formatDate(s.dateTo) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.description || ""}</td></tr>`
-      ).join("");
-
-      const flightsHtml = flights.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Flights</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Route</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Flight</th></tr>${flights.map(f => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${f.departure || ""} → ${f.arrival || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.date ? formatDate(f.date) : ""} ${f.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.flightNumber || ""}</td></tr>`).join("")}</table>` : "";
-
-      const teeTimesHtml = teeTimes.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Tee Times</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Time</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Course</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Players</th></tr>${teeTimes.map(t => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${t.date ? formatDate(t.date) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.course || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.players || ""}</td></tr>`).join("")}</table>` : "";
-
-      const html = `<div style="font-family:Arial,sans-serif;padding:20px;max-width:700px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <img src="${yaroLogo}" style="height:40px" />
-          <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p>${expirationStr ? `<p style="margin:2px 0;font-size:11px;color:#666">Valid until: ${expirationStr}</p>` : ""}</div>
-        </div>
-        <hr style="border:none;border-top:2px solid #2563eb;margin:8px 0 12px"/>
-        <p style="font-size:12px;margin:4px 0"><strong>Client:</strong> ${fullVoucher.client_name}</p>
-        ${fullVoucher.hotel_name ? `<p style="font-size:12px;margin:4px 0"><strong>Hotel:</strong> ${fullVoucher.hotel_name}</p>` : ""}
-        ${voucher.suppliers?.name ? `<p style="font-size:12px;margin:4px 0"><strong>Supplier:</strong> ${voucher.suppliers.name}</p>` : ""}
-        ${services.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Services</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Service</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Dates</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Description</th></tr>${servicesHtml}</table>` : ""}
-        ${flightsHtml}
-        ${teeTimesHtml}
-        <div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#666">
-          <p>YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz</p>
-        </div>
-      </div>`;
-
-      // Create temp element and generate PDF
-      const container = document.createElement("div");
-      container.style.position = "absolute";
-      container.style.top = "0";
-      container.style.left = "-9999px";
-      container.style.width = "700px";
-      container.style.background = "#ffffff";
-      container.innerHTML = html;
-      document.body.appendChild(container);
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const pdfBlob: Blob = await new Promise((resolve, reject) => {
-        html2pdf().set({
-          margin: [8, 8, 8, 8],
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        }).from(container).outputPdf("blob").then(resolve).catch(reject);
-      });
-
-      document.body.removeChild(container);
+      const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name);
 
       // Upload to deal-documents storage
       const path = `${dealId}/voucher-${fullVoucher.voucher_code}-${Date.now()}.pdf`;
@@ -660,70 +747,9 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
       if (fullVoucher) {
         try {
-          // Generate PDF using html2pdf and upload to voucher-pdfs bucket
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            // Build simple HTML for PDF
-            const formatDate = (d: string) => {
-              if (!d) return "";
-              const dt = new Date(d);
-              return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
-            };
-            const services = (fullVoucher.services as any[]) || [];
-            const flights = (fullVoucher.flights as any[]) || [];
-            const teeTimes = (fullVoucher.tee_times as any[]) || [];
-
-            const allEndDates = services.map(s => s.dateTo || s.end_date).filter(Boolean).map(d => new Date(d).getTime());
-            const lastServiceDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates)) : null;
-            const expirationStr = lastServiceDate ? formatDate(lastServiceDate.toISOString()) : "";
-
-            const servicesHtml = services.map(s =>
-              `<tr><td style="padding:4px 8px;border:1px solid #ddd">${s.name || s.service || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.dateFrom ? formatDate(s.dateFrom) : ""} - ${s.dateTo ? formatDate(s.dateTo) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">pax:${s.pax || "1"} qty:${s.qty || "1"}</td></tr>`
-            ).join("");
-
-            const flightsHtml = flights.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Flights</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Route</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Flight</th></tr>${flights.map(f => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${f.fromIata || ""} → ${f.toIata || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.date ? formatDate(f.date) : ""} ${f.departureTime || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${f.flightNumber || ""}</td></tr>`).join("")}</table>` : "";
-
-            const teeTimesHtml = teeTimes.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Confirmed Tee Times</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Date</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Time</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Course</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Players</th></tr>${teeTimes.map(t => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${t.date ? formatDate(t.date) : ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.time || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.club || t.course || ""}</td><td style="padding:4px 8px;border:1px solid #ddd">${t.golfers || t.players || ""}</td></tr>`).join("")}</table>` : "";
-
-            const html = `<div style="font-family:Arial,sans-serif;padding:20px;max-width:700px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <div style="font-size:20px;font-weight:bold;color:#2563eb">YARO Travel</div>
-                <div style="text-align:right"><h2 style="margin:0;font-size:16px">VOUCHER ${fullVoucher.voucher_code}</h2><p style="margin:2px 0;font-size:11px;color:#666">Issued: ${formatDate(fullVoucher.issue_date)}</p>${expirationStr ? `<p style="margin:2px 0;font-size:11px;color:#666">Valid until: ${expirationStr}</p>` : ""}</div>
-              </div>
-              <hr style="border:none;border-top:2px solid #2563eb;margin:8px 0 12px"/>
-              <p style="font-size:12px;margin:4px 0"><strong>Client:</strong> ${fullVoucher.client_name}</p>
-              ${fullVoucher.hotel_name ? `<p style="font-size:12px;margin:4px 0"><strong>Hotel:</strong> ${fullVoucher.hotel_name}</p>` : ""}
-              ${voucher.suppliers?.name ? `<p style="font-size:12px;margin:4px 0"><strong>Supplier:</strong> ${voucher.suppliers.name}</p>` : ""}
-              ${services.length > 0 ? `<h3 style="margin:12px 0 6px;font-size:13px">Services</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#f0f0f0"><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Service</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Dates</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Details</th></tr>${servicesHtml}</table>` : ""}
-              ${flightsHtml}
-              ${teeTimesHtml}
-              <div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#666">
-                <p>YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz</p>
-              </div>
-            </div>`;
-
-            const container = document.createElement("div");
-            container.style.position = "absolute";
-            container.style.top = "0";
-            container.style.left = "-9999px";
-            container.style.width = "700px";
-            container.style.background = "#ffffff";
-            container.innerHTML = html;
-            document.body.appendChild(container);
-
-            // Wait for images/fonts to be ready
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            const pdfBlob: Blob = await new Promise((resolve, reject) => {
-              html2pdf().set({
-                margin: [8, 8, 8, 8],
-                image: { type: "jpeg", quality: 0.95 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
-                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-              }).from(container).outputPdf("blob").then(resolve).catch(reject);
-            });
-
-            document.body.removeChild(container);
+            const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name);
 
             // Upload to voucher-pdfs bucket (where send-voucher-email expects it)
             const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
