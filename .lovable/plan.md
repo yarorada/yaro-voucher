@@ -1,55 +1,87 @@
 
+## Přidání sekce zavazadel do dialogu letu
 
-# Prostorově úsporné přiřazení cestujících ke službám
+### Co se změní
 
-## Aktuální stav
-
-V tabulce služeb na detailu smlouvy je sloupec **Cestující**, kde se zobrazují čísla přiřazených cestujících (nebo "všichni"). Samostatná sekce s maticí checkboxů (`ContractServiceAssignment`) byla odstraněna, protože zabírala příliš mnoho místa.
-
-## Navrhované řešení: Inline editace přímo ve sloupci "Cestující"
-
-Sloupec **Cestující** v tabulce služeb bude klikatelný. Po kliknutí se zobrazí malý **Popover** s checkboxy pro jednotlivé cestující. Uživatel zaškrtne/odškrtne a přiřazení se uloží.
-
-```text
-+------------------------------------------+--------+----------+-----------+
-| Služba                                   | Termín | Osoby    | Cestující |
-+------------------------------------------+--------+----------+-----------+
-| Hotel Dona Filipa                        | 5.3.   |    4     | [1,2,3,4] | <-- klik otevře popover
-| Green fee - San Lorenzo                  | 6.3.   |    2     |   [1,3]   |
-+------------------------------------------+--------+----------+-----------+
-
-         Popover po kliknutí:
-        +-------------------------+
-        | [x] 1. Jan Novák        |
-        | [x] 2. Marie Nováková   |
-        | [ ] 3. Petr Svoboda     |
-        | [ ] 4. Eva Svobodová    |
-        |   [Vybrat všechny]      |
-        +-------------------------+
+**1. `FlightFormData` interface (`src/components/FlightSegmentForm.tsx`)**
+Přidám nové pole `baggage` do interface `FlightFormData`:
+```typescript
+baggage?: {
+  cabin_bag_kg?: number;       // taška na palubu (notebook bag)
+  hand_luggage_kg?: number;    // palubní zavazadlo (kabinový kufr na kolečkách)
+  checked_luggage_kg?: number; // odbavené zavazadlo (kufr)
+}
 ```
 
-## Klicove vlastnosti
+**2. Grafická sekce zavazadel ve `FlightSegmentForm` (`src/components/FlightSegmentForm.tsx`)**
+Pod segmenty letů přidám vizuálně zvýrazněnou sekci "Zavazadla" se třemi kartičkami, každá s ikonou a vstupem na kilogramy:
 
-- Zadne dalsi misto na obrazovce -- editace probiha primo v existujici tabulce sluzeb
-- Popover se zavre kliknutim mimo nej
-- Automaticke ukladani pri zmene (bez tlacitka "Ulozit")
-- Pokud jsou prirazeni vsichni cestujici, zobrazi se "vsichni" (sedy text)
-- Pokud je prirazen podmnozina, zobrazi se jejich cisla (napr. "1, 3")
+- **Taška na palubu** – ikona `Briefcase` (taška na notebook) – pole pro kg
+- **Palubní zavazadlo** – ikona `Luggage` (kufr na kolečkách) – pole pro kg
+- **Odbavené zavazadlo** – ikona kufru (`Package` nebo podobná) – pole pro kg
 
-## Technicke detaily
+Kartičky budou graficky zvýrazněné (border + barevný bg), s ikonou, názvem a vstupním polem pro kilogramy. Pole bude nepovinné – nevyplněné = neomezeno/nezahrnuto.
 
-### Zmeny v souborech
+**3. Propagace dat přes dialogy**
 
-1. **`src/pages/ContractDetail.tsx`**
-   - Sloupec "Cestujici" v tabulce sluzeb: nahradit staticky text klikatelnym Popover komponentem
-   - Popover zobrazi seznam cestujicich s checkboxy
-   - Pri zmene checkboxu se okamzite aktualizuje tabulka `contract_service_travelers` (delete + insert)
-   - Invalidace react-query po ulozeni
+- **`VariantServiceDialog.tsx`** – přidám state `baggage` a propaguji do `FlightSegmentForm` a do `flightDetails` při ukládání.
+- **`DealDetail.tsx`** – stejně přidám `baggage` do `flightFormData` a ukládání.
 
-2. **Zadne nove komponenty** -- logika bude primo v ContractDetail.tsx jako inline Popover
+**4. Zobrazení v PDF smlouvě (`src/components/ContractPdfTemplate.tsx`)**
+Pod sekci "Itinerář cesty – letecká přeprava" přidám řádek se zavazadly z `flight.details.baggage`. Formát:
+```
+Zavazadla: Taška na palubu: 8 kg · Palubní zavazadlo: 10 kg · Odbavené zavazadlo: 23 kg
+```
+Zobrazí se pouze pokud je alespoň jedna hodnota vyplněna.
 
-### Datovy tok
+---
 
-- Cteni: existujici query `contract_service_assignments` (jiz implementovano)
-- Zapis: toggle checkbox -> delete stary zaznam nebo insert novy do `contract_service_travelers`
-- Defaultni stav: pokud pro sluzbu neexistuji zadne zaznamy, povazuji se vsichni cestujici za prirazene (stavajici logika)
+### Technické detaily
+
+#### `FlightSegmentForm.tsx` – nová sekce zavazadel
+```tsx
+{/* Zavazadla */}
+<div className="p-4 border rounded-lg bg-blue-50/30 dark:bg-blue-950/20 space-y-2">
+  <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+    <Luggage className="h-4 w-4" /> Zavazadla
+  </div>
+  <div className="grid grid-cols-3 gap-3">
+    {/* Taška na palubu */}
+    <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
+      <Briefcase className="h-6 w-6 text-slate-500" />
+      <span className="text-xs text-center">Taška na palubu</span>
+      <div className="flex items-center gap-1">
+        <Input type="number" value={...} className="w-16 h-7 text-center text-xs" />
+        <span className="text-xs">kg</span>
+      </div>
+    </div>
+    {/* Palubní zavazadlo */}
+    ...
+    {/* Odbavené zavazadlo */}
+    ...
+  </div>
+</div>
+```
+
+#### Ukládání do DB
+Data se ukládají jako součást `details` JSONB pole – `details.baggage` – žádná změna DB schématu není potřeba.
+
+#### PDF smlouva
+```tsx
+{/* Pod itinerářem letů */}
+{(() => {
+  const b = flight.details?.baggage;
+  if (!b || (!b.cabin_bag_kg && !b.hand_luggage_kg && !b.checked_luggage_kg)) return null;
+  const parts = [];
+  if (b.cabin_bag_kg) parts.push(`Taška na palubu: ${b.cabin_bag_kg} kg`);
+  if (b.hand_luggage_kg) parts.push(`Palubní zavazadlo: ${b.hand_luggage_kg} kg`);
+  if (b.checked_luggage_kg) parts.push(`Odbavené zavazadlo: ${b.checked_luggage_kg} kg`);
+  return <p style={{fontSize: '9px', margin: '2px 0', color: '#555'}}>Zavazadla: {parts.join(' · ')}</p>;
+})()}
+```
+
+### Soubory ke změně
+1. `src/components/FlightSegmentForm.tsx` – přidat `baggage` do interface a grafickou UI sekci
+2. `src/components/VariantServiceDialog.tsx` – přidat baggage state a propagaci
+3. `src/pages/DealDetail.tsx` – přidat baggage do flightFormData a ukládání
+4. `src/components/ContractPdfTemplate.tsx` – zobrazit zavazadla pod itinerářem
