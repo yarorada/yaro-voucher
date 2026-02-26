@@ -724,6 +724,7 @@ const DealDetail = () => {
             id,
             client_id,
             is_lead_traveler,
+            order_index,
             clients(id, first_name, last_name, email, date_of_birth)
           )
         `)
@@ -731,6 +732,9 @@ const DealDetail = () => {
         .single();
 
       if (error) throw error;
+
+      // Sort travelers by order_index
+      data.deal_travelers.sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
       setDeal(data);
       setStatus(data.status);
@@ -1036,7 +1040,7 @@ const DealDetail = () => {
     }
   };
 
-  const handleTravelerDragEnd = (event: DragEndEvent) => {
+  const handleTravelerDragEnd = async (event: DragEndEvent) => {
     if (!deal) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -1045,6 +1049,12 @@ const DealDetail = () => {
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(deal.deal_travelers, oldIndex, newIndex);
     setDeal({ ...deal, deal_travelers: reordered });
+    // Save order to DB
+    await Promise.all(
+      reordered.map((t, idx) =>
+        supabase.from("deal_travelers").update({ order_index: idx }).eq("id", t.id)
+      )
+    );
   };
 
   const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
