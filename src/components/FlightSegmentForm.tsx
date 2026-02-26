@@ -110,15 +110,20 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onBatchUpdate, 
   </div>
 );
 
+export interface BaggageItem {
+  included: boolean;
+  kg?: number;
+}
+
 export interface FlightFormData {
   outbound_segments: FlightSegment[];
   return_segments: FlightSegment[];
   is_one_way: boolean;
   baggage?: {
-    cabin_bag_kg?: number;
-    hand_luggage_kg?: number;
-    checked_luggage_kg?: number;
-    golf_bag_kg?: number;
+    cabin_bag?: BaggageItem;
+    hand_luggage?: BaggageItem;
+    checked_luggage?: BaggageItem;
+    golf_bag?: BaggageItem;
   };
 }
 
@@ -132,9 +137,15 @@ interface FlightSegmentFormProps {
 export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: FlightSegmentFormProps) => {
   const { outbound_segments, return_segments, is_one_way, baggage } = data;
 
-  const updateBaggage = (field: keyof NonNullable<FlightFormData['baggage']>, value: string) => {
+  const updateBaggageIncluded = (field: keyof NonNullable<FlightFormData['baggage']>, included: boolean) => {
+    const existing = baggage?.[field] || {};
+    onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, included } } });
+  };
+
+  const updateBaggageKg = (field: keyof NonNullable<FlightFormData['baggage']>, value: string) => {
     const num = value === "" ? undefined : Number(value);
-    onChange({ ...data, baggage: { ...(baggage || {}), [field]: num } });
+    const existing = baggage?.[field] || { included: true };
+    onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, kg: num } } });
   };
 
   const applyAutoFill = (newData: FlightFormData, index: number, fields: Partial<FlightSegment>) => {
@@ -281,69 +292,89 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
         </div>
         <div className="grid grid-cols-4 gap-3">
           {/* Taška na palubu */}
-          <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
-            <Briefcase className="h-6 w-6 text-muted-foreground" />
-            <span className="text-xs text-center leading-tight">Taška na palubu</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={baggage?.cabin_bag_kg ?? ""}
-                onChange={(e) => updateBaggage("cabin_bag_kg", e.target.value)}
-                placeholder="–"
-                className="w-14 h-7 text-center text-xs p-1"
-              />
-              <span className="text-xs text-muted-foreground">kg</span>
-            </div>
-          </div>
+          {(() => {
+            const item = baggage?.cabin_bag;
+            const included = item?.included ?? false;
+            return (
+              <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
+                <Briefcase className={`h-6 w-6 ${included ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                <span className="text-xs text-center leading-tight font-medium">Taška na palubu</span>
+                <label className="flex items-center gap-1 cursor-pointer mt-0.5">
+                  <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("cabin_bag", !!c)} />
+                  <span className="text-xs">V ceně</span>
+                </label>
+                {included && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("cabin_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                    <span className="text-xs text-muted-foreground">kg</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {/* Palubní zavazadlo */}
-          <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
-            <Luggage className="h-6 w-6 text-muted-foreground" />
-            <span className="text-xs text-center leading-tight">Palubní zavazadlo</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={baggage?.hand_luggage_kg ?? ""}
-                onChange={(e) => updateBaggage("hand_luggage_kg", e.target.value)}
-                placeholder="–"
-                className="w-14 h-7 text-center text-xs p-1"
-              />
-              <span className="text-xs text-muted-foreground">kg</span>
-            </div>
-          </div>
+          {(() => {
+            const item = baggage?.hand_luggage;
+            const included = item?.included ?? false;
+            return (
+              <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
+                <Luggage className={`h-6 w-6 ${included ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                <span className="text-xs text-center leading-tight font-medium">Palubní zavazadlo</span>
+                <label className="flex items-center gap-1 cursor-pointer mt-0.5">
+                  <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("hand_luggage", !!c)} />
+                  <span className="text-xs">V ceně</span>
+                </label>
+                {included && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("hand_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                    <span className="text-xs text-muted-foreground">kg</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {/* Odbavené zavazadlo */}
-          <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
-            <Package className="h-6 w-6 text-muted-foreground" />
-            <span className="text-xs text-center leading-tight">Odbavené zavazadlo</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={baggage?.checked_luggage_kg ?? ""}
-                onChange={(e) => updateBaggage("checked_luggage_kg", e.target.value)}
-                placeholder="–"
-                className="w-14 h-7 text-center text-xs p-1"
-              />
-              <span className="text-xs text-muted-foreground">kg</span>
-            </div>
-          </div>
+          {(() => {
+            const item = baggage?.checked_luggage;
+            const included = item?.included ?? false;
+            return (
+              <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
+                <Package className={`h-6 w-6 ${included ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                <span className="text-xs text-center leading-tight font-medium">Odbavené zavazadlo</span>
+                <label className="flex items-center gap-1 cursor-pointer mt-0.5">
+                  <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("checked_luggage", !!c)} />
+                  <span className="text-xs">V ceně</span>
+                </label>
+                {included && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("checked_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                    <span className="text-xs text-muted-foreground">kg</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {/* Golfový bag */}
-          <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
-            <img src={golfBagIcon} alt="Golf bag" className="h-6 w-6 opacity-60" />
-            <span className="text-xs text-center leading-tight">Golfový bag</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={baggage?.golf_bag_kg ?? ""}
-                onChange={(e) => updateBaggage("golf_bag_kg", e.target.value)}
-                placeholder="–"
-                className="w-14 h-7 text-center text-xs p-1"
-              />
-              <span className="text-xs text-muted-foreground">kg</span>
-            </div>
-          </div>
+          {(() => {
+            const item = baggage?.golf_bag;
+            const included = item?.included ?? false;
+            return (
+              <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
+                <img src={golfBagIcon} alt="Golf bag" className={`h-6 w-6 ${included ? 'opacity-100' : 'opacity-40'}`} />
+                <span className="text-xs text-center leading-tight font-medium">Golfový bag</span>
+                <label className="flex items-center gap-1 cursor-pointer mt-0.5">
+                  <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("golf_bag", !!c)} />
+                  <span className="text-xs">V ceně</span>
+                </label>
+                {included && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("golf_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                    <span className="text-xs text-muted-foreground">kg</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </>

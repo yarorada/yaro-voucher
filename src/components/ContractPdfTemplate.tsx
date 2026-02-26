@@ -278,29 +278,20 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {(() => {
                         const details = typeof flight.details === "string" ? JSON.parse(flight.details) : flight.details;
                         const b = details?.baggage;
-                        if (!b || (!b.cabin_bag_kg && !b.hand_luggage_kg && !b.checked_luggage_kg && !b.golf_bag_kg)) return null;
+                        const baggageItems = [
+                          { key: 'cabin_bag', icon: '💼', label: 'Taška na palubu' },
+                          { key: 'hand_luggage', icon: '🧳', label: 'Palubní zavazadlo' },
+                          { key: 'checked_luggage', icon: '📦', label: 'Odbavené zavazadlo' },
+                          { key: 'golf_bag', icon: '⛳', label: 'Golfový bag' },
+                        ].filter(({ key }) => b?.[key]?.included);
+                        if (!b || baggageItems.length === 0) return null;
                         return (
-                          <div style={{ display: 'flex', gap: '8px', margin: '3px 0', flexWrap: 'wrap' }}>
-                            {b.cabin_bag_kg && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
-                                💼 <span>{b.cabin_bag_kg} kg</span>
+                          <div style={{ display: 'flex', gap: '6px', margin: '3px 0', flexWrap: 'wrap' }}>
+                            {baggageItems.map(({ key, icon, label }) => (
+                              <span key={key} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
+                                {icon} <span>{b[key].kg ? `${label} ${b[key].kg} kg` : `${label} (v ceně)`}</span>
                               </span>
-                            )}
-                            {b.hand_luggage_kg && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
-                                🧳 <span>{b.hand_luggage_kg} kg</span>
-                              </span>
-                            )}
-                            {b.checked_luggage_kg && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
-                                📦 <span>{b.checked_luggage_kg} kg</span>
-                              </span>
-                            )}
-                            {b.golf_bag_kg && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
-                                ⛳ <span>{b.golf_bag_kg} kg</span>
-                              </span>
-                            )}
+                            ))}
                           </div>
                         );
                       })()}
