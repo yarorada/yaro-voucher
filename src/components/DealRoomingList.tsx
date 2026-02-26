@@ -121,7 +121,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       {
         id: crypto.randomUUID(),
         room_type: hotelRoomTypes[0] || "DBL",
-        room_label: `Pokoj ${prev.length + 1}`,
+        room_label: `Room ${prev.length + 1}`,
         traveler_ids: [],
       },
     ]);
@@ -368,7 +368,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                             updateRoom(room.id, { room_label: e.target.value })
                           }
                           className="h-8 text-sm"
-                          placeholder={`Pokoj ${index + 1}`}
+                          placeholder={`Room ${index + 1}`}
                         />
                       </div>
                       <div>
