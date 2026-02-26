@@ -275,26 +275,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {legs.map((leg, idx) => (
                         <p key={idx} style={{ margin: '2px 0', lineHeight: 1.2 }}>{formatFlightLeg(leg)}</p>
                       ))}
-                      {(() => {
-                        const details = typeof flight.details === "string" ? JSON.parse(flight.details) : flight.details;
-                        const b = details?.baggage;
-                        const baggageItems = [
-                          { key: 'cabin_bag', icon: '💼', label: 'Taška na palubu' },
-                          { key: 'hand_luggage', icon: '🧳', label: 'Palubní zavazadlo' },
-                          { key: 'checked_luggage', icon: '📦', label: 'Odbavené zavazadlo' },
-                          { key: 'golf_bag', icon: '⛳', label: 'Golfový bag' },
-                        ].filter(({ key }) => b?.[key]?.included);
-                        if (!b || baggageItems.length === 0) return null;
-                        return (
-                          <div style={{ display: 'flex', gap: '6px', margin: '3px 0', flexWrap: 'wrap' }}>
-                            {baggageItems.map(({ key, icon, label }) => (
-                              <span key={key} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8px', color: '#444', border: '1px solid #ddd', borderRadius: '4px', padding: '1px 5px', backgroundColor: '#f8f8f8' }}>
-                                {icon} <span>{b[key].kg ? `${label} ${b[key].kg} kg` : `${label} (v ceně)`}</span>
-                              </span>
-                            ))}
-                          </div>
-                        );
-                      })()}
                     </div>
                   ) : (
                     <p style={{ fontSize: '9px', margin: '2px 0' }}>
@@ -355,11 +335,27 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               <tbody>
                 {services
                   .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
-                  .map((service: any) => (
+                  .map((service: any) => {
+                    // Build baggage line for flight services
+                    let baggageLine: string | null = null;
+                    if (service.service_type === 'flight' && service.details) {
+                      const details = typeof service.details === "string" ? JSON.parse(service.details) : service.details;
+                      const b = details?.baggage;
+                      if (b) {
+                        const parts: string[] = [];
+                        if (b.cabin_bag?.included) parts.push('Taška');
+                        if (b.hand_luggage?.included) parts.push(b.hand_luggage.kg ? `Palubní ${b.hand_luggage.kg} kg` : 'Palubní');
+                        if (b.checked_luggage?.included) parts.push(b.checked_luggage.kg ? `Odbavené ${b.checked_luggage.kg} kg` : 'Odbavené');
+                        if (b.golf_bag?.included) parts.push(b.golf_bag.kg ? `Golfbag ${b.golf_bag.kg} kg` : 'Golfbag');
+                        if (parts.length > 0) baggageLine = parts.join(', ');
+                      }
+                    }
+                    return (
                       <tr key={service.id}>
                         <td style={tdStyle}>
                           {service.service_name}
                           {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
+                          {baggageLine && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{baggageLine}</span>}
                         </td>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
                           {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
@@ -368,7 +364,8 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice(getServiceTotal(service), true, currency)}</td>
                       </tr>
-                    ))}
+                    );
+                  })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
                   <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price, true, currency)}</td>
