@@ -184,6 +184,19 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     return found ? found.label : value;
   };
 
+  const getRoomTypeLabelEn = (value: string) => {
+    const EN_ROOM_TYPES: Record<string, string> = {
+      DBL: "DBL – Double (double bed)",
+      TWN: "TWN – Twin (two single beds)",
+      SGL: "SGL – Single",
+      TRPL: "TRPL – Triple",
+      SUITE: "Suite",
+      FAM: "FAM – Family",
+      OTHER: "Other",
+    };
+    return EN_ROOM_TYPES[value] || value;
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -491,7 +504,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
               {rooms.map((room) => (
                 <tr key={room.id}>
                   <td style={{ border: "1px solid #ccc", padding: "8px", fontWeight: "bold" }}>{room.room_label}</td>
-                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabel(room.room_type)}</td>
+                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
                   <td style={{ border: "1px solid #ccc", padding: "8px" }}>
                     {room.traveler_ids.length > 0
                       ? room.traveler_ids.map((id) => getTravelerName(id)).join(", ")
