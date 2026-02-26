@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
         )
       `)
       .neq('status', 'cancelled')
-      .order('contract_number', { ascending: true });
+      .order('contract_number', { ascending: false });
 
     if (error) throw error;
     if (!contracts) {
