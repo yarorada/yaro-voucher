@@ -1365,6 +1365,9 @@ const DealDetail = () => {
         
         // Sync to selected variant
         await syncServicesToSelectedVariant();
+        
+        // Check for linked contracts and offer sync
+        await checkAndOfferContractSync();
       }
     } catch (error) {
       console.error("Error saving service:", error);
@@ -1496,6 +1499,9 @@ const DealDetail = () => {
         
         // Sync to selected variant
         await syncServicesToSelectedVariant();
+        
+        // Check for linked contracts and offer sync
+        await checkAndOfferContractSync();
       }
     } catch (error) {
       console.error("Error deleting service:", error);
