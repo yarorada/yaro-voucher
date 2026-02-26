@@ -364,9 +364,9 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {service.service_name}
                           {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
                           {baggageItems && (
-                            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px', alignItems: 'center' }}>
+                            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px', alignItems: 'flex-end' }}>
                               {baggageItems.map((item, i) => (
-                                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '7px', color: '#555' }}>
+                                <span key={i} style={{ display: 'inline-flex', alignItems: 'flex-end', gap: '2px', fontSize: '7px', color: '#555' }}>
                                   <span dangerouslySetInnerHTML={{ __html: item.svg }} />
                                   {item.label}
                                 </span>
