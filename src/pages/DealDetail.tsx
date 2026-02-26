@@ -372,6 +372,11 @@ const DealDetail = () => {
   const [contractSyncDialogOpen, setContractSyncDialogOpen] = useState(false);
   const [linkedContracts, setLinkedContracts] = useState<Array<{ id: string; contract_number: string; status: string }>>([]);
   const [syncingContract, setSyncingContract] = useState(false);
+
+  // Voucher sync dialog state
+  const [voucherSyncDialogOpen, setVoucherSyncDialogOpen] = useState(false);
+  const [linkedVouchers, setLinkedVouchers] = useState<Array<{ id: string; voucher_code: string; client_name: string }>>([]);
+  const [syncingVoucher, setSyncingVoucher] = useState(false);
   
   // Service form state
    const [serviceForm, setServiceForm] = useState({
@@ -1368,6 +1373,8 @@ const DealDetail = () => {
         
         // Check for linked contracts and offer sync
         await checkAndOfferContractSync();
+        // Check for linked vouchers and offer sync
+        await checkAndOfferVoucherSync();
       }
     } catch (error) {
       console.error("Error saving service:", error);
@@ -1502,6 +1509,8 @@ const DealDetail = () => {
         
         // Check for linked contracts and offer sync
         await checkAndOfferContractSync();
+        // Check for linked vouchers and offer sync
+        await checkAndOfferVoucherSync();
       }
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -1875,6 +1884,51 @@ const DealDetail = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const checkAndOfferVoucherSync = async () => {
+    if (!deal) return;
+    try {
+      const { data: vouchers, error } = await supabase
+        .from("vouchers")
+        .select("id, voucher_code, client_name")
+        .eq("deal_id", deal.id);
+      if (error || !vouchers || vouchers.length === 0) return;
+      setLinkedVouchers(vouchers);
+      setVoucherSyncDialogOpen(true);
+    } catch (e) {
+      console.error("Error checking linked vouchers:", e);
+    }
+  };
+
+  const handleSyncToVouchers = async () => {
+    if (!deal || linkedVouchers.length === 0) return;
+    setSyncingVoucher(true);
+    try {
+      // Build translated services list for vouchers - reuse existing voucher services structure
+      // We'll just update tee_times and notify; full service re-translation is complex
+      // For now: update tee_times on all linked vouchers
+      for (const voucher of linkedVouchers) {
+        await supabase
+          .from("vouchers")
+          .update({ tee_times: deal.tee_times || [] } as any)
+          .eq("id", voucher.id);
+      }
+      toast({
+        title: "Synchronizováno",
+        description: `Tee times byly aktualizovány v ${linkedVouchers.length} voucherech`,
+      });
+    } catch (error) {
+      console.error("Error syncing to vouchers:", error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se synchronizovat vouchery",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingVoucher(false);
+      setVoucherSyncDialogOpen(false);
     }
   };
 
@@ -3140,6 +3194,49 @@ const DealDetail = () => {
                 <>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Akceptovat změny
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voucher Sync Confirmation Dialog */}
+      <Dialog open={voucherSyncDialogOpen} onOpenChange={setVoucherSyncDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Propagovat změny do voucherů?
+            </DialogTitle>
+            <DialogDescription>
+              Tento obchodní případ má {linkedVouchers.length === 1 ? 'vytvořen voucher' : `${linkedVouchers.length} vytvořené vouchery`}.
+              Chcete propagovat aktuální tee times do {linkedVouchers.length === 1 ? 'voucheru' : 'voucherů'}?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {linkedVouchers.map(v => (
+              <div key={v.id} className="flex items-center gap-2 p-2 rounded bg-muted text-sm">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{v.voucher_code}</span>
+                <span className="text-muted-foreground">{v.client_name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setVoucherSyncDialogOpen(false)} disabled={syncingVoucher}>
+              Přeskočit
+            </Button>
+            <Button onClick={handleSyncToVouchers} disabled={syncingVoucher}>
+              {syncingVoucher ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Synchronizuji...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Aktualizovat vouchery
                 </>
               )}
             </Button>
