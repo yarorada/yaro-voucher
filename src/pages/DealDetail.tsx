@@ -100,11 +100,13 @@ interface DealTraveler {
   id: string;
   client_id: string;
   is_lead_traveler: boolean;
+  sort_order?: number;
   clients: {
     id: string;
     first_name: string;
     last_name: string;
     email: string | null;
+    date_of_birth: string | null;
   };
 }
 
@@ -299,7 +301,51 @@ interface Deal {
   deal_travelers: DealTraveler[];
 }
 
-// Client Offer Response Card
+// Sortable traveler row component
+const SortableTravelerRow = ({
+  traveler,
+  onRemove,
+}: {
+  traveler: DealTraveler;
+  onRemove: (id: string, isLead: boolean) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: traveler.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  const dob = traveler.clients.date_of_birth
+    ? (() => { try { return format(new Date(traveler.clients.date_of_birth!), "dd.MM.yyyy"); } catch { return ""; } })()
+    : null;
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className="hover:bg-muted/50">
+      <TableCell className="w-6 pr-0">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell className="font-medium text-sm">
+        {traveler.clients.first_name} {traveler.clients.last_name}
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">
+        {dob || <span className="text-muted-foreground/40">—</span>}
+      </TableCell>
+      <TableCell className="text-sm">
+        {traveler.is_lead_traveler && (
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Hlavní cestující</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        {!traveler.is_lead_traveler && (
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onRemove(traveler.id, traveler.is_lead_traveler)}>
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+};
+
+
 const ClientOfferResponseCard = ({ dealId }: { dealId: string }) => {
   const [response, setResponse] = useState<{
     client_name: string | null;
@@ -678,7 +724,7 @@ const DealDetail = () => {
             id,
             client_id,
             is_lead_traveler,
-            clients(id, first_name, last_name, email)
+            clients(id, first_name, last_name, email, date_of_birth)
           )
         `)
         .eq("id", id)
@@ -988,6 +1034,17 @@ const DealDetail = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleTravelerDragEnd = (event: DragEndEvent) => {
+    if (!deal) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = deal.deal_travelers.findIndex(t => t.id === active.id);
+    const newIndex = deal.deal_travelers.findIndex(t => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(deal.deal_travelers, oldIndex, newIndex);
+    setDeal({ ...deal, deal_travelers: reordered });
   };
 
   const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
@@ -2576,43 +2633,30 @@ const DealDetail = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50%]">Jméno</TableHead>
-                    <TableHead className="w-[35%]">Role</TableHead>
-                    <TableHead className="w-[15%] text-right">Akce</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {deal.deal_travelers.map((traveler) => (
-                    <TableRow key={traveler.id}>
-                      <TableCell className="font-medium text-sm">
-                        {traveler.clients.first_name} {traveler.clients.last_name}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {traveler.is_lead_traveler && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                            Hlavní cestující
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {!traveler.is_lead_traveler && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            onClick={() => handleRemoveTraveler(traveler.id, traveler.is_lead_traveler)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTravelerDragEnd}>
+                <SortableContext items={deal.deal_travelers.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-6"></TableHead>
+                        <TableHead>Jméno</TableHead>
+                        <TableHead>Datum narození</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="text-right">Akce</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {deal.deal_travelers.map((traveler) => (
+                        <SortableTravelerRow
+                          key={traveler.id}
+                          traveler={traveler}
+                          onRemove={handleRemoveTraveler}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </SortableContext>
+              </DndContext>
             </CardContent>
           </Card>
 
