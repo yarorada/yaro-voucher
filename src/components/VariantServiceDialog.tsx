@@ -35,9 +35,10 @@ interface FlightDetails {
   outbound_segments?: FlightSegment[];
   return_segments?: FlightSegment[];
   baggage?: {
-    cabin_bag_kg?: number;
-    hand_luggage_kg?: number;
-    checked_luggage_kg?: number;
+    cabin_bag?: { included: boolean; kg?: number };
+    hand_luggage?: { included: boolean; kg?: number };
+    checked_luggage?: { included: boolean; kg?: number };
+    golf_bag?: { included: boolean; kg?: number };
   };
 }
 interface VariantServiceDialogProps {
