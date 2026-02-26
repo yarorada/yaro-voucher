@@ -377,6 +377,7 @@ const DealDetail = () => {
   const [voucherSyncDialogOpen, setVoucherSyncDialogOpen] = useState(false);
   const [linkedVouchers, setLinkedVouchers] = useState<Array<{ id: string; voucher_code: string; client_name: string }>>([]);
   const [syncingVoucher, setSyncingVoucher] = useState(false);
+  const [pendingVoucherSync, setPendingVoucherSync] = useState<Array<{ id: string; voucher_code: string; client_name: string }> | null>(null);
   
   // Service form state
    const [serviceForm, setServiceForm] = useState({
@@ -645,6 +646,15 @@ const DealDetail = () => {
     window.addEventListener("deal-updated", handler);
     return () => window.removeEventListener("deal-updated", handler);
   }, []);
+
+  // When contract sync dialog closes, open pending voucher sync dialog
+  useEffect(() => {
+    if (!contractSyncDialogOpen && pendingVoucherSync) {
+      setLinkedVouchers(pendingVoucherSync);
+      setVoucherSyncDialogOpen(true);
+      setPendingVoucherSync(null);
+    }
+  }, [contractSyncDialogOpen, pendingVoucherSync]);
 
   // Recalculate total price when services or adjustments change
   useEffect(() => {
@@ -1896,7 +1906,12 @@ const DealDetail = () => {
         .eq("deal_id", deal.id);
       if (error || !vouchers || vouchers.length === 0) return;
       setLinkedVouchers(vouchers);
-      setVoucherSyncDialogOpen(true);
+      // If contract sync dialog is open, queue voucher sync for after it closes
+      setPendingVoucherSync(vouchers);
+      if (!contractSyncDialogOpen) {
+        setVoucherSyncDialogOpen(true);
+        setPendingVoucherSync(null);
+      }
     } catch (e) {
       console.error("Error checking linked vouchers:", e);
     }
