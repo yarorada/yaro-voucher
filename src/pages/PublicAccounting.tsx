@@ -40,7 +40,9 @@ export default function PublicAccounting() {
     enabled: !!token,
   });
 
-  const rows = data?.rows || [];
+  const rows = (data?.rows || []).slice().sort((a: any, b: any) =>
+    (a.contractNumber || "").localeCompare(b.contractNumber || "", "cs", { numeric: true })
+  );
   const year = data?.year || "";
   const month = data?.month || "all";
 
