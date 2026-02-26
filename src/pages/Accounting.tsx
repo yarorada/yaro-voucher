@@ -93,6 +93,7 @@ export default function Accounting() {
       });
 
       return contracts
+        .sort((a, b) => (a.contract_number || "").localeCompare(b.contract_number || "", "cs", { numeric: true }))
         .map((c) => {
           const deal = c.deal as any;
           const client = c.client as any;
