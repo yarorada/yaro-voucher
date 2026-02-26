@@ -147,7 +147,7 @@ export function SupplierCombobox({ value, onChange, onSelect }: SupplierCombobox
               value={searchValue}
               onValueChange={setSearchValue}
             />
-            <CommandList className="max-h-[250px] overflow-y-auto bg-popover">
+            <CommandList className="max-h-[250px] overflow-y-auto bg-popover" onWheel={e => e.stopPropagation()}>
               <CommandEmpty>
                 {loading ? "Načítám..." : "Žádný dodavatel nenalezen."}
               </CommandEmpty>
