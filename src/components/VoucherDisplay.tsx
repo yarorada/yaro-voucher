@@ -16,7 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
-  "PRG": "Praha",
+  "PRG": "Prague",
   "BRQ": "Brno",
   "OSR": "Ostrava",
   "PED": "Pardubice",
