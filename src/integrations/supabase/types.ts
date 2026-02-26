@@ -635,6 +635,7 @@ export type Database = {
           deal_id: string
           id: string
           is_lead_traveler: boolean
+          order_index: number
         }
         Insert: {
           client_id: string
@@ -642,6 +643,7 @@ export type Database = {
           deal_id: string
           id?: string
           is_lead_traveler?: boolean
+          order_index?: number
         }
         Update: {
           client_id?: string
@@ -649,6 +651,7 @@ export type Database = {
           deal_id?: string
           id?: string
           is_lead_traveler?: boolean
+          order_index?: number
         }
         Relationships: [
           {
