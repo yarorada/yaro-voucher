@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AirportCombobox } from "./AirportCombobox";
 import { AirlineCombobox } from "./AirlineCombobox";
-import { Plane, Plus, Trash2, Briefcase, Luggage, Package } from "lucide-react";
+import { Plane, Plus, Trash2, Briefcase, Luggage, Package, Flag } from "lucide-react";
 
 export interface FlightSegment {
   departure: string;
@@ -117,6 +117,7 @@ export interface FlightFormData {
     cabin_bag_kg?: number;
     hand_luggage_kg?: number;
     checked_luggage_kg?: number;
+    golf_bag_kg?: number;
   };
 }
 
@@ -277,7 +278,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
         <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
           <Luggage className="h-4 w-4" /> Zavazadla
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {/* Taška na palubu */}
           <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
             <Briefcase className="h-6 w-6 text-muted-foreground" />
@@ -320,6 +321,22 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
                 min={0}
                 value={baggage?.checked_luggage_kg ?? ""}
                 onChange={(e) => updateBaggage("checked_luggage_kg", e.target.value)}
+                placeholder="–"
+                className="w-14 h-7 text-center text-xs p-1"
+              />
+              <span className="text-xs text-muted-foreground">kg</span>
+            </div>
+          </div>
+          {/* Golfový bag */}
+          <div className="flex flex-col items-center gap-1 p-2 border rounded bg-background">
+            <Flag className="h-6 w-6 text-muted-foreground" />
+            <span className="text-xs text-center leading-tight">Golfový bag</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                value={baggage?.golf_bag_kg ?? ""}
+                onChange={(e) => updateBaggage("golf_bag_kg", e.target.value)}
                 placeholder="–"
                 className="w-14 h-7 text-center text-xs p-1"
               />
