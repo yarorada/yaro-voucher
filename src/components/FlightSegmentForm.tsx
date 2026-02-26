@@ -360,7 +360,7 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
             const included = item?.included ?? false;
             return (
               <div className={`flex flex-col items-center gap-1 p-2 border rounded bg-background transition-colors ${included ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : 'border-border'}`}>
-                <img src={golfBagIcon} alt="Golf bag" className={`h-6 w-6 ${included ? 'opacity-100' : 'opacity-40'}`} />
+                <img src={golfBagIcon} alt="Golf bag" className={`h-6 w-6 dark:invert ${included ? 'opacity-100' : 'opacity-40'}`} />
                 <span className="text-xs text-center leading-tight font-medium">Golfový bag</span>
                 <label className="flex items-center gap-1 cursor-pointer mt-0.5">
                   <Checkbox checked={included} onCheckedChange={(c) => updateBaggageIncluded("golf_bag", !!c)} />
