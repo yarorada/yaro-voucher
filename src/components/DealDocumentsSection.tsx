@@ -352,12 +352,31 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     return null;
   };
 
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+
   const handlePreview = async (doc: DealDocument) => {
     setPreviewUrl(doc.file_url);
     setPreviewFileType(doc.file_type);
     setPreviewLoading(true);
     setPreviewBlobUrl(null);
+    setPreviewDataUrl(null);
     try {
+      // Try proxy-file first to get base64 — use data: URL to avoid any network blocking
+      const parts = doc.file_url.split(`/deal-documents/`);
+      if (parts.length >= 2) {
+        const storagePath = decodeURIComponent(parts[1]);
+        const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-file", {
+          body: { bucket: "deal-documents", path: storagePath },
+        });
+        if (!proxyError && proxyData?.base64) {
+          const contentType = proxyData.contentType || "application/octet-stream";
+          const dataUrl = `data:${contentType};base64,${proxyData.base64}`;
+          setPreviewDataUrl(dataUrl);
+          setPreviewLoading(false);
+          return;
+        }
+      }
+      // Fallback: blob URL
       const blob = await downloadFileAsBlob(doc.file_url, "deal-documents");
       if (blob) {
         setPreviewBlobUrl(URL.createObjectURL(blob));
@@ -373,6 +392,20 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
     setPreviewUrl(null);
     setPreviewBlobUrl(null);
+    setPreviewDataUrl(null);
+  };
+
+  const openInNewWindow = async () => {
+    if (previewDataUrl) {
+      const a = document.createElement("a");
+      a.href = previewDataUrl;
+      a.target = "_blank";
+      a.click();
+    } else if (previewBlobUrl) {
+      window.open(previewBlobUrl, "_blank");
+    } else if (previewUrl) {
+      window.open(previewUrl, "_blank");
+    }
   };
 
   const downloadViaBlob = async (doc: DealDocument) => {
@@ -389,14 +422,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch {
       toast.error("Nepodařilo se stáhnout soubor");
-    }
-  };
-
-  const openInNewWindow = async () => {
-    if (previewBlobUrl) {
-      window.open(previewBlobUrl, "_blank");
-    } else if (previewUrl) {
-      window.open(previewUrl, "_blank");
     }
   };
 
@@ -939,24 +964,16 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     </div>
                   ) : (previewFileType && isPdf(previewFileType)) || isPdf(previewUrl) ? (
                     <iframe
-                      src={previewBlobUrl || previewUrl || undefined}
+                      src={previewDataUrl || previewBlobUrl || previewUrl || undefined}
                       className="w-full h-[60vh] rounded border"
                       title="PDF náhled"
                     />
                   ) : (previewFileType && isImage(previewFileType)) || isImage(previewUrl) ? (
-                    previewBlobUrl ? (
-                      <img
-                        src={previewBlobUrl}
-                        alt="Dokument"
-                        className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
-                      />
-                    ) : (
-                      <img
-                        src={previewUrl || undefined}
-                        alt="Dokument"
-                        className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
-                      />
-                    )
+                    <img
+                      src={previewDataUrl || previewBlobUrl || previewUrl || undefined}
+                      alt="Dokument"
+                      className="max-w-full max-h-[400px] object-contain mx-auto rounded border"
+                    />
                   ) : (
                     <div className="bg-muted/50 rounded-lg p-8 text-center">
                       <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
