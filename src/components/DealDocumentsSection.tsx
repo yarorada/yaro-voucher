@@ -503,17 +503,24 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
       // Create temp element and generate PDF
       const container = document.createElement("div");
-      container.style.position = "fixed";
+      container.style.position = "absolute";
+      container.style.top = "0";
       container.style.left = "-9999px";
+      container.style.width = "700px";
+      container.style.background = "#ffffff";
       container.innerHTML = html;
       document.body.appendChild(container);
 
-      const pdfBlob: Blob = await html2pdf().set({
-        margin: [8, 8, 8, 8],
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      }).from(container).outputPdf("blob");
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const pdfBlob: Blob = await new Promise((resolve, reject) => {
+        html2pdf().set({
+          margin: [8, 8, 8, 8],
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        }).from(container).outputPdf("blob").then(resolve).catch(reject);
+      });
 
       document.body.removeChild(container);
 
@@ -696,17 +703,25 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
             </div>`;
 
             const container = document.createElement("div");
-            container.style.position = "fixed";
+            container.style.position = "absolute";
+            container.style.top = "0";
             container.style.left = "-9999px";
+            container.style.width = "700px";
+            container.style.background = "#ffffff";
             container.innerHTML = html;
             document.body.appendChild(container);
 
-            const pdfBlob: Blob = await html2pdf().set({
-              margin: [8, 8, 8, 8],
-              image: { type: "jpeg", quality: 0.95 },
-              html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            }).from(container).outputPdf("blob");
+            // Wait for images/fonts to be ready
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            const pdfBlob: Blob = await new Promise((resolve, reject) => {
+              html2pdf().set({
+                margin: [8, 8, 8, 8],
+                image: { type: "jpeg", quality: 0.95 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+              }).from(container).outputPdf("blob").then(resolve).catch(reject);
+            });
 
             document.body.removeChild(container);
 
