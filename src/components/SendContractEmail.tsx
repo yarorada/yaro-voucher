@@ -85,6 +85,20 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
       const element = pdfContentRef.current;
 
       if (element) {
+        // Wait for QR codes to be generated (up to 5 seconds)
+        await new Promise<void>((resolve) => {
+          const check = () => {
+            if (element.getAttribute('data-qr-ready') === 'true') {
+              resolve();
+            } else {
+              setTimeout(check, 200);
+            }
+          };
+          // Set a timeout fallback
+          setTimeout(resolve, 5000);
+          check();
+        });
+
         const opt = {
           margin: [10, 10, 10, 10] as [number, number, number, number],
           image: { type: 'jpeg' as const, quality: 0.98 },

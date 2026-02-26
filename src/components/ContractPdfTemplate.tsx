@@ -69,7 +69,12 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const isCzk = (currency || 'CZK').toUpperCase() === 'CZK';
 
     useEffect(() => {
-      if (!isCzk || unpaidPayments.length === 0 || !contractNumber) return;
+      if (!isCzk || unpaidPayments.length === 0 || !contractNumber) {
+        // Mark as ready even when no QR codes needed
+        const el = document.getElementById('contract-pdf-content');
+        if (el) el.setAttribute('data-qr-ready', 'true');
+        return;
+      }
       const generate = async () => {
         const urls: Record<string, string> = {};
         for (const p of unpaidPayments) {
@@ -86,6 +91,15 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
       };
       generate();
     }, [unpaidPayments.length, contractNumber, bankAccount]);
+
+    // Mark as ready after QR codes are generated
+    useEffect(() => {
+      if (!isCzk || unpaidPayments.length === 0) return;
+      if (Object.keys(paymentQrUrls).length >= unpaidPayments.length) {
+        const el = document.getElementById('contract-pdf-content');
+        if (el) el.setAttribute('data-qr-ready', 'true');
+      }
+    }, [paymentQrUrls, unpaidPayments.length, isCzk]);
 
     // Extract flight services and their segments
     const flightServices = services.filter((s: any) => s.service_type === "flight");
