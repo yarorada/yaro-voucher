@@ -336,18 +336,26 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 {services
                   .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
                   .map((service: any) => {
-                    // Build baggage line for flight services
-                    let baggageLine: string | null = null;
+                    // Build baggage items for flight services
+                    let baggageItems: { svg: string; label: string }[] | null = null;
                     if (service.service_type === 'flight' && service.details) {
                       const details = typeof service.details === "string" ? JSON.parse(service.details) : service.details;
                       const b = details?.baggage;
                       if (b) {
-                        const parts: string[] = [];
-                        if (b.cabin_bag?.included) parts.push('🎒 Taška');
-                        if (b.hand_luggage?.included) parts.push(b.hand_luggage.kg ? `💼 Palubní ${b.hand_luggage.kg} kg` : '💼 Palubní (v ceně)');
-                        if (b.checked_luggage?.included) parts.push(b.checked_luggage.kg ? `🧳 Odbavené ${b.checked_luggage.kg} kg` : '🧳 Odbavené (v ceně)');
-                        if (b.golf_bag?.included) parts.push(b.golf_bag.kg ? `🏌️ Golfbag ${b.golf_bag.kg} kg` : '🏌️ Golfbag (v ceně)');
-                        if (parts.length > 0) baggageLine = parts.join(', ');
+                        const items: { svg: string; label: string }[] = [];
+                        // Briefcase SVG (cabin bag)
+                        const briefcaseSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:1px"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`;
+                        // Luggage SVG (hand luggage)
+                        const luggageSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:1px"><path d="M6 20H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/><path d="M8 18V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14"/><rect width="8" height="6" x="8" y="18" rx="1"/></svg>`;
+                        // BaggageClaim SVG (checked luggage)
+                        const baggageClaimSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:1px"><path d="M22 18H6a2 2 0 0 1-2-2V7"/><path d="m2 2 20 20"/><rect width="9" height="12" x="11" y="2" rx="2"/><path d="M11 8H2v4a2 2 0 0 0 2 2h7"/><line x1="14" x2="14" y1="22" y2="18"/><line x1="18" x2="18" y1="22" y2="18"/></svg>`;
+                        // Golf bag SVG
+                        const golfSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:1px"><path d="M12 2a3 3 0 0 1 3 3v1H9V5a3 3 0 0 1 3-3z"/><path d="M9 6v12a3 3 0 0 0 6 0V6"/><path d="M6 10h12"/></svg>`;
+                        if (b.cabin_bag?.included) items.push({ svg: briefcaseSvg, label: 'Taška' });
+                        if (b.hand_luggage?.included) items.push({ svg: luggageSvg, label: b.hand_luggage.kg ? `Palubní ${b.hand_luggage.kg} kg` : 'Palubní (v ceně)' });
+                        if (b.checked_luggage?.included) items.push({ svg: baggageClaimSvg, label: b.checked_luggage.kg ? `Odbavené ${b.checked_luggage.kg} kg` : 'Odbavené (v ceně)' });
+                        if (b.golf_bag?.included) items.push({ svg: golfSvg, label: b.golf_bag.kg ? `Golfbag ${b.golf_bag.kg} kg` : 'Golfbag (v ceně)' });
+                        if (items.length > 0) baggageItems = items;
                       }
                     }
                     return (
@@ -355,7 +363,16 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         <td style={tdStyle}>
                           {service.service_name}
                           {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
-                          {baggageLine && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{baggageLine}</span>}
+                          {baggageItems && (
+                            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px', alignItems: 'center' }}>
+                              {baggageItems.map((item, i) => (
+                                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '7px', color: '#555' }}>
+                                  <span dangerouslySetInnerHTML={{ __html: item.svg }} />
+                                  {item.label}
+                                </span>
+                              ))}
+                            </span>
+                          )}
                         </td>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
                           {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
