@@ -397,8 +397,15 @@ const VouchersList = () => {
                 const hotelName = voucher.hotel_name ||
                   (() => {
                     const servs = Array.isArray(voucher.services) ? voucher.services : [];
-                    const hotelSvc = servs.find((s: any) => s.service_type === 'hotel' || (typeof s.name === 'string' && s.name.toLowerCase().startsWith('accommodation')));
-                    return hotelSvc?.service_name || hotelSvc?.name || null;
+                    const hotelSvc = servs.find((s: any) => 
+                      s.service_type === 'hotel' || 
+                      (typeof s.name === 'string' && s.name.toLowerCase().startsWith('accommodation'))
+                    );
+                    if (!hotelSvc) return null;
+                    const raw = hotelSvc.service_name || hotelSvc.name || '';
+                    // Extract "Hotel Name" from "Accommodation in Room Type in Hotel Name"
+                    const match = raw.match(/accommodation in .+ in (.+)/i);
+                    return match ? match[1].trim() : raw || null;
                   })();
 
                 // Get earliest service start_date and latest service end_date
