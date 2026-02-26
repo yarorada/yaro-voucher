@@ -34,6 +34,11 @@ import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 interface FlightDetails {
   outbound_segments?: FlightSegment[];
   return_segments?: FlightSegment[];
+  baggage?: {
+    cabin_bag_kg?: number;
+    hand_luggage_kg?: number;
+    checked_luggage_kg?: number;
+  };
 }
 interface VariantServiceDialogProps {
   variantId: string;
@@ -82,6 +87,7 @@ export const VariantServiceDialog = ({
   const [outboundSegments, setOutboundSegments] = useState<FlightSegment[]>([emptySegment()]);
   const [returnSegments, setReturnSegments] = useState<FlightSegment[]>([emptySegment()]);
   const [isOneWay, setIsOneWay] = useState(false);
+  const [baggage, setBaggage] = useState<FlightFormData['baggage']>(undefined);
 
   // AI import state
   const [showAiImport, setShowAiImport] = useState(false);
@@ -115,6 +121,12 @@ export const VariantServiceDialog = ({
 
       // Load flight details if exists
       const details = service.details as FlightDetails | null;
+      if ((details as any)?.baggage) {
+        setBaggage((details as any).baggage);
+      } else {
+        setBaggage(undefined);
+      }
+
       if (details?.outbound_segments && details.outbound_segments.length > 0) {
         setOutboundSegments(details.outbound_segments);
       } else if ((details as any)?.outbound) {
@@ -175,6 +187,7 @@ export const VariantServiceDialog = ({
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
     setIsOneWay(false);
+    setBaggage(undefined);
     setShowAiImport(false);
     setAiImportText("");
   };
@@ -329,6 +342,7 @@ export const VariantServiceDialog = ({
       flightDetails = {
         outbound_segments: outboundSegments.filter(s => s.departure && s.arrival),
         return_segments: !isOneWay ? returnSegments.filter(s => s.departure && s.arrival) : undefined,
+        baggage: baggage || undefined,
       };
     } else if (!serviceName.trim()) {
       toast({ title: "Chyba", description: "Vyplňte název služby", variant: "destructive" });
@@ -460,11 +474,13 @@ export const VariantServiceDialog = ({
                   outbound_segments: outboundSegments,
                   return_segments: returnSegments,
                   is_one_way: isOneWay,
+                  baggage: baggage,
                 }}
                 onChange={(data) => {
                   setOutboundSegments(data.outbound_segments);
                   setReturnSegments(data.return_segments);
                   setIsOneWay(data.is_one_way);
+                  setBaggage(data.baggage);
                 }}
               />
             </>

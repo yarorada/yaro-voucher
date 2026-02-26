@@ -111,6 +111,11 @@ interface DealTraveler {
 interface FlightDetails {
   outbound_segments?: import("@/components/FlightSegmentForm").FlightSegment[];
   return_segments?: import("@/components/FlightSegmentForm").FlightSegment[];
+  baggage?: {
+    cabin_bag_kg?: number;
+    hand_luggage_kg?: number;
+    checked_luggage_kg?: number;
+  };
   outbound?: {
     departure: string;
     arrival: string;
@@ -1132,6 +1137,7 @@ const DealDetail = () => {
       flightDetails = {
         outbound_segments: outSegs.filter(s => s.departure && s.arrival),
         return_segments: !flightFormData.is_one_way ? retSegs.filter(s => s.departure && s.arrival) : undefined,
+        baggage: flightFormData.baggage || undefined,
       };
     } else if (!serviceForm.service_name) {
       return;
@@ -1641,7 +1647,7 @@ const DealDetail = () => {
         isOneWay = false;
       }
 
-      setFlightFormData({ outbound_segments: outSegs, return_segments: retSegs, is_one_way: isOneWay });
+      setFlightFormData({ outbound_segments: outSegs, return_segments: retSegs, is_one_way: isOneWay, baggage: details.baggage || undefined });
     } else {
       resetFlightForm();
     }

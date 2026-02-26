@@ -275,6 +275,16 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {legs.map((leg, idx) => (
                         <p key={idx} style={{ margin: '2px 0', lineHeight: 1.2 }}>{formatFlightLeg(leg)}</p>
                       ))}
+                      {(() => {
+                        const details = typeof flight.details === "string" ? JSON.parse(flight.details) : flight.details;
+                        const b = details?.baggage;
+                        if (!b || (!b.cabin_bag_kg && !b.hand_luggage_kg && !b.checked_luggage_kg)) return null;
+                        const parts: string[] = [];
+                        if (b.cabin_bag_kg) parts.push(`Taška na palubu: ${b.cabin_bag_kg} kg`);
+                        if (b.hand_luggage_kg) parts.push(`Palubní zavazadlo: ${b.hand_luggage_kg} kg`);
+                        if (b.checked_luggage_kg) parts.push(`Odbavené zavazadlo: ${b.checked_luggage_kg} kg`);
+                        return <p style={{ fontSize: '9px', margin: '2px 0', color: '#555' }}>🧳 Zavazadla: {parts.join(' · ')}</p>;
+                      })()}
                     </div>
                   ) : (
                     <p style={{ fontSize: '9px', margin: '2px 0' }}>
