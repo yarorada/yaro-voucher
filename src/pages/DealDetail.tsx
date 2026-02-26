@@ -210,6 +210,9 @@ const SortableServiceRow = ({
               {service.service_type === 'hotel' && service.description && (
                 <span> · {service.description}</span>
               )}
+              {service.service_type === 'golf' && (service.details as any)?.tee_time && (
+                <span> · {(service.details as any).tee_time}</span>
+              )}
             </p>
           </div>
         </div>
@@ -376,6 +379,7 @@ const DealDetail = () => {
     service_type: "hotel" as DealService["service_type"],
     service_name: "",
     description: "",
+    tee_time: "",
     start_date: undefined as Date | undefined,
     end_date: undefined as Date | undefined,
     price: "",
@@ -1143,6 +1147,10 @@ const DealDetail = () => {
       return;
     }
 
+    const golfTeeTimeDetails = serviceForm.service_type === 'golf' && serviceForm.tee_time
+      ? { tee_time: serviceForm.tee_time }
+      : {};
+
     try {
       if (serviceForm.id) {
         // Update existing service
@@ -1163,7 +1171,7 @@ const DealDetail = () => {
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any)
           .eq("id", serviceForm.id);
 
@@ -1188,10 +1196,51 @@ const DealDetail = () => {
             person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any]);
 
         if (error) throw error;
+      }
+
+      // Auto-sync golf tee time to deal.tee_times
+      if (serviceForm.service_type === 'golf') {
+        const startDateStr = formatDateForDB(serviceForm.start_date);
+        const golfers = serviceForm.person_count ? parseInt(serviceForm.person_count) : 1;
+        
+        const newTeeTime = {
+          date: startDateStr,
+          club: finalServiceName,
+          time: serviceForm.tee_time || '',
+          golfers: golfers.toString(),
+        };
+
+        const existingTeeTimes: any[] = deal.tee_times || [];
+        
+        // If editing existing service, replace the matching tee time entry; otherwise add
+        let updatedTeeTimes: any[];
+        if (serviceForm.id) {
+          const existingService = services.find(s => s.id === serviceForm.id);
+          const existingDate = existingService?.start_date;
+          const existingClub = existingService?.service_name;
+          // Replace matching entry or append
+          const idx = existingTeeTimes.findIndex(t => t.club === existingClub && t.date === existingDate);
+          if (idx >= 0) {
+            updatedTeeTimes = [...existingTeeTimes];
+            updatedTeeTimes[idx] = newTeeTime;
+          } else {
+            updatedTeeTimes = [...existingTeeTimes, newTeeTime];
+          }
+        } else {
+          updatedTeeTimes = [...existingTeeTimes, newTeeTime];
+        }
+
+        // Sort by date
+        updatedTeeTimes.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+        await supabase
+          .from("deals")
+          .update({ tee_times: updatedTeeTimes } as any)
+          .eq("id", deal.id);
       }
 
       // Auto-create hotel template if adding a new hotel service
@@ -1365,13 +1414,14 @@ const DealDetail = () => {
       const { error } = await supabase.from("deal_services").insert(servicesToInsert);
       if (error) throw error;
 
-      // Save structured tee times to deal
+      // Save structured tee times to deal (with golfers count)
       const structuredTeeTimes = teeTimes
         .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
         .map(tt => ({
           date: tt.date || null,
           club: tt.club || '',
           time: tt.time || '',
+          golfers: (parseInt(tt.golfers) || deal.deal_travelers?.length || 1).toString(),
         }));
 
       // Merge with existing tee times on the deal
@@ -1543,6 +1593,7 @@ const DealDetail = () => {
     service_type: serviceType,
     service_name: serviceName,
     description: "",
+    tee_time: "",
     start_date: startDate,
     end_date: endDate,
     price: "",
@@ -1565,6 +1616,7 @@ const DealDetail = () => {
       service_type: "hotel",
       service_name: "",
       description: "",
+      tee_time: "",
       start_date: undefined,
       end_date: undefined,
       price: "",
@@ -1658,6 +1710,7 @@ const DealDetail = () => {
       service_type: service.service_type,
       service_name: service.service_name,
       description: service.description || "",
+      tee_time: (service.details as any)?.tee_time || "",
       start_date: service.start_date ? new Date(service.start_date) : undefined,
       end_date: service.end_date ? new Date(service.end_date) : undefined,
       price: service.price?.toString() || "",
@@ -2767,6 +2820,16 @@ const DealDetail = () => {
                               value={serviceForm.description}
                               onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
                               placeholder="např. Deluxe Double Room"
+                            />
+                          </div>
+                        ) : serviceForm.service_type === 'golf' ? (
+                          <div>
+                            <Label>Čas tee time</Label>
+                            <Input
+                              id="deal-service-description"
+                              value={serviceForm.tee_time}
+                              onChange={(e) => setServiceForm({ ...serviceForm, tee_time: e.target.value })}
+                              placeholder="09:30 - 14:00"
                             />
                           </div>
                         ) : (
