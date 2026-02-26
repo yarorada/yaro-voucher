@@ -393,6 +393,14 @@ const VouchersList = () => {
                 const destination = (voucher as any).deals?.destinations?.name;
                 const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || "";
                 
+                // Resolve hotel name: prefer explicit field, fallback to hotel service name
+                const hotelName = voucher.hotel_name ||
+                  (() => {
+                    const servs = Array.isArray(voucher.services) ? voucher.services : [];
+                    const hotelSvc = servs.find((s: any) => s.service_type === 'hotel' || (typeof s.name === 'string' && s.name.toLowerCase().startsWith('accommodation')));
+                    return hotelSvc?.service_name || hotelSvc?.name || null;
+                  })();
+
                 // Get earliest service start_date and latest service end_date
                 const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
                 const firstServiceDate = servicesArr
@@ -433,7 +441,7 @@ const VouchersList = () => {
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
                           <span className="text-foreground font-medium truncate">
-                            {[voucher.voucher_code, displayName, voucher.hotel_name, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" ")}
+                            {[voucher.voucher_code, displayName, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" ")}
                           </span>
                         </div>
                         {/* Line 2: Details */}
