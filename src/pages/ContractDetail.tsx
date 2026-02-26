@@ -136,6 +136,19 @@ const ContractDetail = () => {
 
     setIsGeneratingPdf(true);
     try {
+      // Wait for QR codes to be ready (up to 5 seconds)
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (element?.getAttribute('data-qr-ready') === 'true') {
+            resolve();
+          } else {
+            setTimeout(check, 200);
+          }
+        };
+        setTimeout(resolve, 5000);
+        check();
+      });
+
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: `Smlouva_${contract?.contract_number || 'export'}.pdf`,
