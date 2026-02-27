@@ -770,6 +770,9 @@ const DealDetail = () => {
       const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
       if (leadTraveler) {
         setLeadTravelerId(leadTraveler.client_id);
+        // Check if lead traveler is also in the travelers list (as a non-lead entry or as lead)
+        // Since lead traveler is always in the list when is_lead_traveler=true, we check if there's an entry
+        setLeadTravelerIsFirstPassenger(true);
       }
 
       // Fetch variant count
@@ -1935,13 +1938,13 @@ const DealDetail = () => {
 
       // Update lead traveler if changed
       if (leadTravelerId) {
-        // Remove old lead traveler status
+        // Remove old lead traveler status from ALL travelers
         await supabase
           .from("deal_travelers")
           .update({ is_lead_traveler: false })
           .eq("deal_id", deal.id);
 
-        // Set new lead traveler or create if doesn't exist
+        // Check if lead traveler already exists in travelers list
         const { data: existingTraveler } = await supabase
           .from("deal_travelers")
           .select()
@@ -1949,20 +1952,33 @@ const DealDetail = () => {
           .eq("client_id", leadTravelerId)
           .maybeSingle();
 
-        if (existingTraveler) {
-          await supabase
-            .from("deal_travelers")
-            .update({ is_lead_traveler: true })
-            .eq("deal_id", deal.id)
-            .eq("client_id", leadTravelerId);
+        if (leadTravelerIsFirstPassenger) {
+          // Add or update as lead traveler in the list
+          if (existingTraveler) {
+            await supabase
+              .from("deal_travelers")
+              .update({ is_lead_traveler: true })
+              .eq("deal_id", deal.id)
+              .eq("client_id", leadTravelerId);
+          } else {
+            await supabase
+              .from("deal_travelers")
+              .insert({
+                deal_id: deal.id,
+                client_id: leadTravelerId,
+                is_lead_traveler: true,
+                order_index: 0,
+              });
+          }
         } else {
-          await supabase
-            .from("deal_travelers")
-            .insert({
-              deal_id: deal.id,
-              client_id: leadTravelerId,
-              is_lead_traveler: true,
-            });
+          // Not a traveler – remove from list if present
+          if (existingTraveler) {
+            await supabase
+              .from("deal_travelers")
+              .delete()
+              .eq("deal_id", deal.id)
+              .eq("client_id", leadTravelerId);
+          }
         }
       }
 
