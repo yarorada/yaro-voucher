@@ -304,9 +304,11 @@ interface Deal {
 // Sortable traveler row component
 const SortableTravelerRow = ({
   traveler,
+  index,
   onRemove,
 }: {
   traveler: DealTraveler;
+  index: number;
   onRemove: (id: string, isLead: boolean) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: traveler.id });
@@ -323,16 +325,12 @@ const SortableTravelerRow = ({
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </button>
       </TableCell>
+      <TableCell className="text-xs text-muted-foreground w-6 text-center">{index + 1}.</TableCell>
       <TableCell className="font-medium text-sm">
         {traveler.clients.first_name} {traveler.clients.last_name}
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         {dob || <span className="text-muted-foreground/40">—</span>}
-      </TableCell>
-      <TableCell className="text-sm">
-        {traveler.is_lead_traveler && (
-          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Hlavní cestující</span>
-        )}
       </TableCell>
       <TableCell className="text-right">
         {!traveler.is_lead_traveler && (
@@ -603,6 +601,7 @@ const DealDetail = () => {
   const [depositPaid, setDepositPaid] = useState(false);
   const [notes, setNotes] = useState("");
   const [leadTravelerId, setLeadTravelerId] = useState("");
+  const [leadTravelerIsFirstPassenger, setLeadTravelerIsFirstPassenger] = useState(true);
   const [discountAmount, setDiscountAmount] = useState("");
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [dealName, setDealName] = useState("");
@@ -2520,11 +2519,21 @@ const DealDetail = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Hlavní cestující</Label>
+                  <Label className="text-xs text-muted-foreground">Objednatel</Label>
                   <ClientCombobox
                     value={leadTravelerId}
                     onChange={setLeadTravelerId}
                   />
+                  <div className="flex items-center gap-2 pt-1">
+                    <Checkbox
+                      id="lead-is-first"
+                      checked={leadTravelerIsFirstPassenger}
+                      onCheckedChange={(checked) => setLeadTravelerIsFirstPassenger(!!checked)}
+                    />
+                    <label htmlFor="lead-is-first" className="text-xs text-muted-foreground cursor-pointer select-none">
+                      Je zároveň prvním cestujícím
+                    </label>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -2673,16 +2682,17 @@ const DealDetail = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-6"></TableHead>
+                        <TableHead className="w-6">#</TableHead>
                         <TableHead>Jméno</TableHead>
                         <TableHead>Datum narození</TableHead>
-                        <TableHead>Role</TableHead>
                         <TableHead className="text-right">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {deal.deal_travelers.map((traveler) => (
+                      {deal.deal_travelers.map((traveler, idx) => (
                         <SortableTravelerRow
                           key={traveler.id}
+                          index={idx}
                           traveler={traveler}
                           onRemove={handleRemoveTraveler}
                         />
