@@ -802,6 +802,35 @@ const DealDetail = () => {
     return finalTotal;
   };
 
+  // Sync first/last service date and total price into deal basic info
+  const syncDealDatesFromServices = async (servicesList: DealService[], newTotal: number) => {
+    if (!deal?.id) return;
+    
+    const datesWithValues = servicesList
+      .map(s => s.start_date)
+      .filter((d): d is string => !!d)
+      .sort();
+    const endDatesWithValues = servicesList
+      .map(s => s.end_date || s.start_date)
+      .filter((d): d is string => !!d)
+      .sort();
+
+    const firstDate = datesWithValues[0] || null;
+    const lastDate = endDatesWithValues[endDatesWithValues.length - 1] || null;
+
+    if (firstDate) setStartDate(new Date(firstDate));
+    if (lastDate) setEndDate(new Date(lastDate));
+
+    await supabase
+      .from("deals")
+      .update({
+        start_date: firstDate,
+        end_date: lastDate,
+        total_price: newTotal,
+      })
+      .eq("id", deal.id);
+  };
+
   // Calculate total cost price from services (already in CZK)
   const totalCostPrice = services.reduce((sum, service) => {
     return sum + getServiceCostTotal(service);
@@ -1429,12 +1458,10 @@ const DealDetail = () => {
       const newTotal = servicesTotal - discount + adjustment;
       setTotalPrice(newTotal.toString());
       
-      // Update in database
+      // Update in database (including syncing dates from services)
       if (deal?.id) {
-        await supabase
-          .from("deals")
-          .update({ total_price: newTotal })
-          .eq("id", deal.id);
+        const freshServicesList = (freshServices || services).map(s => ({ ...s, details: s.details as FlightDetails | null }));
+        await syncDealDatesFromServices(freshServicesList, newTotal);
         
         // Auto-generate payment schedule and refresh
         if (newTotal > 0) {
@@ -1568,12 +1595,9 @@ const DealDetail = () => {
       const remainingServices = services.filter(s => s.id !== serviceId);
       const newTotal = calculateTotalPrice(remainingServices, discount, adjustment);
       
-      // Update in database
+      // Update in database (including syncing dates from remaining services)
       if (deal?.id) {
-        await supabase
-          .from("deals")
-          .update({ total_price: newTotal })
-          .eq("id", deal.id);
+        await syncDealDatesFromServices(remainingServices, newTotal);
         
         if (newTotal > 0) {
           await autoGeneratePayments(deal.id, newTotal);
