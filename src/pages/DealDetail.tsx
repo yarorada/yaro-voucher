@@ -3199,7 +3199,11 @@ const DealDetail = () => {
           <DealTeeTimesEditor
             dealId={deal.id}
             teeTimes={deal.tee_times || []}
-            onUpdate={fetchDeal}
+            onUpdate={async () => {
+              await fetchDeal();
+              await checkAndOfferContractSync();
+              await checkAndOfferVoucherSync();
+            }}
           />
         )}
 
