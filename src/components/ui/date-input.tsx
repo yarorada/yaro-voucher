@@ -17,17 +17,40 @@ interface DateInputProps {
   placeholder?: string;
   className?: string;
   autoSetDate?: () => Date | undefined;
+  /** Called when user selects a date via calendar (not typing) */
+  onCalendarSelect?: (date: Date) => void;
+  /** If true, this popover is controlled externally */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
-  ({ value, onChange, placeholder = "DD.MM.RR", className, autoSetDate }, ref) => {
+  (
+    {
+      value,
+      onChange,
+      placeholder = "DD.MM.RRRR",
+      className,
+      autoSetDate,
+      onCalendarSelect,
+      open: controlledOpen,
+      onOpenChange: controlledOnOpenChange,
+    },
+    ref
+  ) => {
     const [inputValue, setInputValue] = React.useState("");
-    const [open, setOpen] = React.useState(false);
+    const [internalOpen, setInternalOpen] = React.useState(false);
+
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled
+      ? (v: boolean) => controlledOnOpenChange?.(v)
+      : setInternalOpen;
 
     // Update input value when date prop changes
     React.useEffect(() => {
       if (value) {
-        setInputValue(format(value, "dd.MM.yy"));
+        setInputValue(format(value, "dd.MM.yyyy"));
       } else {
         setInputValue("");
       }
@@ -53,36 +76,43 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
-      
-      // Allow direct typing - don't block any input
-      // Remove all non-digit and non-dot characters
-      const cleanValue = newValue.replace(/[^\d.]/g, '');
-      
-      // Extract only digits for auto-formatting logic
-      const digitsOnly = newValue.replace(/\D/g, '');
-      
-      // Auto-format with dots as user types
+      const digitsOnly = newValue.replace(/\D/g, "");
+
       if (digitsOnly.length > 0) {
         let formatted = digitsOnly;
-        
+
         // Add first dot after day (2 digits)
         if (digitsOnly.length >= 3) {
-          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2);
+          formatted = digitsOnly.slice(0, 2) + "." + digitsOnly.slice(2);
         }
-        
-        // Add second dot after month (2 digits)
+
+        // Add second dot after month (2 more digits)
         if (digitsOnly.length >= 5) {
-          formatted = digitsOnly.slice(0, 2) + '.' + digitsOnly.slice(2, 4) + '.' + digitsOnly.slice(4, 6);
+          formatted =
+            digitsOnly.slice(0, 2) +
+            "." +
+            digitsOnly.slice(2, 4) +
+            "." +
+            digitsOnly.slice(4, 8);
         }
-        
-        // Limit to 8 characters (DD.MM.RR)
-        if (formatted.length > 8) {
-          formatted = formatted.slice(0, 8);
+
+        // Limit to 10 characters (DD.MM.YYYY)
+        if (formatted.length > 10) {
+          formatted = formatted.slice(0, 10);
         }
-        
+
         setInputValue(formatted);
-        
-        // Try to parse the formatted input (only 2-digit year)
+
+        // Try to parse full DD.MM.YYYY (8 digits)
+        if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
+          const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
+          if (isValid(parsedDate)) {
+            onChange(parsedDate);
+            return;
+          }
+        }
+
+        // Also try 2-digit year DD.MM.YY (6 digits)
         if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted)) {
           const parsedDate = parse(formatted, "dd.MM.yy", new Date());
           if (isValid(parsedDate)) {
@@ -91,7 +121,6 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           }
         }
       } else {
-        // If input is empty, clear the date
         setInputValue("");
         onChange(undefined);
       }
@@ -100,6 +129,9 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     const handleCalendarSelect = (date: Date | undefined) => {
       onChange(date);
       setOpen(false);
+      if (date) {
+        onCalendarSelect?.(date);
+      }
     };
 
     return (
@@ -114,11 +146,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         />
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-            >
+            <Button variant="outline" size="icon" className="shrink-0">
               <CalendarIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
