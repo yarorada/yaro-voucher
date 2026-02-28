@@ -29,14 +29,12 @@ serve(async (req: Request) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -50,12 +48,10 @@ serve(async (req: Request) => {
       });
     }
 
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Download PDF
     let pdfAttachment: any[] = [];
-    const { data: pdfData, error: pdfError } = await supabase.storage.from("voucher-pdfs").download(pdfPath);
+    const { data: pdfData, error: pdfError } = await supabaseAdmin.storage.from("voucher-pdfs").download(pdfPath);
+
     if (!pdfError && pdfData) {
       const arrayBuffer = await pdfData.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
@@ -69,7 +65,7 @@ serve(async (req: Request) => {
     }
 
     // Cleanup uploaded PDF
-    await supabase.storage.from("voucher-pdfs").remove([pdfPath]);
+    await supabaseAdmin.storage.from("voucher-pdfs").remove([pdfPath]);
 
     const dateFromFormatted = dateFrom ? formatDate(dateFrom) : "";
     const dateToFormatted = dateTo ? formatDate(dateTo) : "";
@@ -110,7 +106,7 @@ zajezdy@yarotravel.cz`;
       const result = await response.json();
       // Log email
       try {
-        await supabase.from("email_log").insert({
+        await supabaseAdmin.from("email_log").insert({
           deal_id: dealId,
           recipient_email: supplierEmail,
           status: "sent",
