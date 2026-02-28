@@ -115,13 +115,14 @@ const buildVoucherPdfBlob = (
   // ── HEADER: white background, logo left (preserved aspect ratio), voucher code right ──
   y = margin;
 
-  // Logo on left — preserve aspect ratio, fit in max 55mm wide × 18mm tall
+  // Logo on left — max 40mm wide, preserve aspect ratio (1165×826 ≈ 1.41:1)
+  let headerLogoH = 0;
   if (logoBase64) {
     try {
-      // Natural size of yaro-logo-wide is approx 4:1 ratio
-      const logoW = 55;
-      const logoH = logoW / (1165 / 826); // correct aspect ratio ~1.41:1 → ~39mm
+      const logoW = 40;
+      const logoH = logoW / (1165 / 826); // ~28.4mm
       doc.addImage(logoBase64, "PNG", margin, y, logoW, logoH, undefined, "NONE");
+      headerLogoH = logoH;
     } catch { /* skip */ }
   }
 
@@ -135,7 +136,8 @@ const buildVoucherPdfBlob = (
   doc.setTextColor(100, 116, 139);
   doc.text("Travel Voucher", W - margin, y + 11, { align: "right" });
 
-  y += 20;
+  // Advance y past the logo (whichever is taller)
+  y += Math.max(headerLogoH, 14) + 4;
 
   // thin divider
   doc.setDrawColor(203, 213, 225);
@@ -199,23 +201,27 @@ const buildVoucherPdfBlob = (
   doc.setTextColor(71, 85, 105);
   doc.text("CLIENT INFORMATION", margin, y);
   y += 4;
+
+  // Fixed label column width so client names align
+  const labelColW = 26;
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
   doc.setFont("helvetica", "normal");
-  doc.text(`  1. ${removeDiacritics(voucher.client_name || "")}`, margin + 22, y);
+  doc.text(`1. ${removeDiacritics(voucher.client_name || "")}`, margin + labelColW, y);
   y += 5;
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
   if (others.length > 0) {
     doc.setFont("helvetica", "bold");
-    doc.text("Other Travelers:", margin, y);
+    doc.text("Others:", margin, y);
     doc.setFont("helvetica", "normal");
-    const otherText = others.map((n, i) => `${i + 2}. ${removeDiacritics(n)}`).join(", ");
-    const otherLines = doc.splitTextToSize(otherText, contentW - 32);
-    doc.text(otherLines, margin + 32, y);
-    y += otherLines.length * 4.5;
+    others.forEach((n, i) => {
+      doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin + labelColW, y);
+      y += 5;
+    });
+    y -= 5; // last line already advanced
   }
   y += 4;
   doc.setDrawColor(203, 213, 225);
@@ -277,7 +283,32 @@ const buildVoucherPdfBlob = (
   }
 
   // ── FLIGHT DETAILS ──
-  // Format: DD.MM.YY ·[bold] A3 865 · Prague → Athens · Departure: 11:25 · Arrival: 14:50 · PAX: 12 ADT
+  // Helper to resolve IATA code to city name
+  const iataToCity: Record<string, string> = {
+    PRG: "Prague", VIE: "Vienna", LHR: "London", CDG: "Paris", AMS: "Amsterdam",
+    FRA: "Frankfurt", MUC: "Munich", ZRH: "Zurich", BCN: "Barcelona", MAD: "Madrid",
+    FCO: "Rome", MXP: "Milan", ATH: "Athens", IST: "Istanbul", DXB: "Dubai",
+    AYT: "Antalya", DLM: "Dalaman", BJV: "Bodrum", ESB: "Ankara", SAW: "Istanbul",
+    ADB: "Izmir", TFS: "Tenerife", LPA: "Gran Canaria", PMI: "Mallorca",
+    HER: "Heraklion", RHO: "Rhodes", CFU: "Corfu", SKG: "Thessaloniki",
+    MLA: "Malta", OPO: "Porto", LIS: "Lisbon", FAO: "Faro",
+    BUD: "Budapest", WAW: "Warsaw", BRQ: "Brno", OSL: "Oslo",
+    CPH: "Copenhagen", ARN: "Stockholm", HEL: "Helsinki",
+    JFK: "New York", LAX: "Los Angeles", MIA: "Miami", ORD: "Chicago",
+    DEN: "Denver", SFO: "San Francisco", BOS: "Boston", SEA: "Seattle",
+    CUN: "Cancun", MCO: "Orlando", LAS: "Las Vegas",
+    NBO: "Nairobi", CMN: "Casablanca", JNB: "Johannesburg", CAI: "Cairo",
+    BKK: "Bangkok", SIN: "Singapore", HKG: "Hong Kong", NRT: "Tokyo",
+    ICN: "Seoul", PEK: "Beijing", PVG: "Shanghai", DEL: "Delhi",
+    BOM: "Mumbai", SYD: "Sydney", MEL: "Melbourne",
+  };
+
+  const resolveCity = (code: string) => {
+    if (!code) return "";
+    const upper = code.trim().toUpperCase();
+    return iataToCity[upper] || removeDiacritics(code);
+  };
+
   const flights = (voucher.flights as any[]) || [];
   if (flights.length > 0) {
     if (y > 245) { doc.addPage(); y = margin; }
@@ -292,36 +323,42 @@ const buildVoucherPdfBlob = (
 
     for (const f of flights) {
       if (y > 268) { doc.addPage(); y = margin; }
-      const from = removeDiacritics(f.fromCity || f.fromIata || f.departure || "");
-      const to = removeDiacritics(f.toCity || f.toIata || f.arrival || "");
+
+      // Resolve city names from IATA codes
+      const fromCity = resolveCity(f.fromCity || f.fromIata || f.departure || "");
+      const toCity = resolveCity(f.toCity || f.toIata || f.arrival || "");
       const flightCode = `${f.airlineCode || ""} ${f.flightNumber || ""}`.trim();
       const datePart = f.date ? fmtD(f.date) : "";
 
-      // Build a single line with mixed bold/normal segments
-      // We'll render it manually segment by segment on one line
+      // Two-line layout to prevent overlap
       doc.setFontSize(8.5);
-      let xCursor = margin;
 
-      const printBold = (text: string) => {
+      const printBoldAt = (text: string, xPos: number, yPos: number) => {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(15, 23, 42);
-        doc.text(text, xCursor, y);
-        xCursor += doc.getTextWidth(text);
+        doc.text(text, xPos, yPos);
+        return xPos + doc.getTextWidth(text);
       };
-      const printNormal = (text: string) => {
+      const printNormalAt = (text: string, xPos: number, yPos: number) => {
         doc.setFont("helvetica", "normal");
         doc.setTextColor(30, 41, 59);
-        doc.text(text, xCursor, y);
-        xCursor += doc.getTextWidth(text);
+        doc.text(text, xPos, yPos);
+        return xPos + doc.getTextWidth(text);
       };
 
-      if (datePart) { printBold(datePart); printNormal(" · "); }
-      if (flightCode) { printBold(flightCode); printNormal(" · "); }
-      if (from && to) { printBold(`${from} → ${to}`); }
-      if (f.departureTime) { printNormal(` · Departure: `); printBold(f.departureTime); }
-      if (f.arrivalTime) { printNormal(` · Arrival: `); printBold(f.arrivalTime); }
-      if (f.pax) { printNormal(` · PAX: `); printBold(`${f.pax} ADT`); }
-      y += 5;
+      // Line 1: Date · FlightCode · FromCity → ToCity
+      let x = margin;
+      if (datePart) { x = printBoldAt(datePart, x, y); x = printNormalAt(" · ", x, y); }
+      if (flightCode) { x = printBoldAt(flightCode, x, y); x = printNormalAt(" · ", x, y); }
+      if (fromCity && toCity) { printBoldAt(`${fromCity} → ${toCity}`, x, y); }
+      y += 4.5;
+
+      // Line 2: Departure: HH:MM · Arrival: HH:MM · PAX: N Adult
+      x = margin + 4; // slight indent
+      if (f.departureTime) { x = printNormalAt("Departure: ", x, y); x = printBoldAt(f.departureTime, x, y); }
+      if (f.arrivalTime) { x = printNormalAt("  ·  Arrival: ", x, y); x = printBoldAt(f.arrivalTime, x, y); }
+      if (f.pax) { x = printNormalAt("  ·  PAX: ", x, y); printBoldAt(`${f.pax} Adult`, x, y); }
+      y += 5.5;
     }
     y += 2;
   }
@@ -399,25 +436,6 @@ const buildVoucherPdfBlob = (
   doc.text(voucher.expiration_date ? fmtD(voucher.expiration_date) : "—", W / 2, y);
   y += 8;
 
-  // ── YARO TRAVEL INFO ──
-  doc.setDrawColor(203, 213, 225);
-  doc.line(margin, y, W - margin, y);
-  y += 5;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text("YARO Travel", margin, y);
-  y += 4;
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text("Address: Bratrancu Veverkovych 680", margin, y); y += 4;
-  doc.text("Contact: Tel.: +420 602 102 108", margin, y); y += 4;
-  doc.text("Website: www.yarotravel.cz", margin, y); y += 4;
-  doc.setFont("helvetica", "italic");
-  doc.text("Available 24/7 for your travel needs", margin, y);
-  y += 8;
-
   // ── TERMS ──
   doc.setDrawColor(203, 213, 225);
   doc.line(margin, y, W - margin, y);
@@ -431,6 +449,18 @@ const buildVoucherPdfBlob = (
   const terms = "This voucher is valid for the services listed above. Please present this voucher to service providers. Changes or cancellations must be made 48 hours in advance. For assistance, contact YARO Travel support.";
   const termsLines = doc.splitTextToSize(terms, contentW);
   doc.text(termsLines, margin, y);
+  y += termsLines.length * 4 + 5;
+
+  // ── YARO TRAVEL INFO (below Terms) ──
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("YARO Travel", W / 2, y, { align: "center" });
+  y += 4.5;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Tel.: +420 602 102 108  ·  www.yarotravel.cz  ·  zajezdy@yarotravel.cz", W / 2, y, { align: "center" });
 
   // ── FOOTER ──
   const pageCount = doc.getNumberOfPages();
