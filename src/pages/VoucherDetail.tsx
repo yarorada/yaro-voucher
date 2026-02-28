@@ -120,7 +120,7 @@ const buildVoucherPdfBlob = (
     try {
       // Natural size of yaro-logo-wide is approx 4:1 ratio
       const logoW = 55;
-      const logoH = logoW / 4; // ~13.75mm
+      const logoH = logoW / (1165 / 826); // correct aspect ratio ~1.41:1 → ~39mm
       doc.addImage(logoBase64, "PNG", margin, y, logoW, logoH, undefined, "NONE");
     } catch { /* skip */ }
   }
