@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, removeDiacritics } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -486,7 +486,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
-    doc.text(`Client: ${fullVoucher.client_name || ""}`, margin, y); y += 5;
+    doc.text(`Client: ${removeDiacritics(fullVoucher.client_name || "")}`, margin, y); y += 5;
     if (fullVoucher.hotel_name) { doc.text(`Hotel: ${fullVoucher.hotel_name}`, margin, y); y += 5; }
     if (supplierName) { doc.text(`Supplier: ${supplierName}`, margin, y); y += 5; }
     y += 3;
