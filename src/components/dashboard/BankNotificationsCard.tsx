@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BellRing, Check, X, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+
+const WEBHOOK_URL = "https://jwaskoeqryjdjrdwupoi.supabase.co/functions/v1/bank-webhook";
 
 interface BankNotification {
   id: string;
@@ -21,6 +24,14 @@ interface BankNotification {
 
 export const BankNotificationsCard = () => {
   const queryClient = useQueryClient();
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["bank-notifications-pending"],
@@ -42,7 +53,6 @@ export const BankNotificationsCard = () => {
         throw new Error("Žádná spárovaná platba");
       }
 
-      // Call confirm-payment-match to mark payment as paid + propagate to deal
       const { data, error } = await supabase.functions.invoke("confirm-payment-match", {
         body: {
           payment_id: notification.matched_payment_id,
@@ -56,7 +66,6 @@ export const BankNotificationsCard = () => {
       if (error) throw error;
       if (!data?.success) throw new Error("Potvrzení selhalo");
 
-      // Mark notification as confirmed
       const { error: updateErr } = await supabase
         .from("bank_notifications")
         .update({ status: "confirmed", confirmed_at: new Date().toISOString() } as any)
@@ -105,98 +114,170 @@ export const BankNotificationsCard = () => {
     return date.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
   };
 
-  if (notifications.length === 0 && !isLoading) return null;
-
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <BellRing className="h-5 w-5 text-amber-500" />
-          Příchozí platby
-          {notifications.length > 0 && (
-            <Badge variant="destructive" className="ml-auto">
-              {notifications.length}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="text-center text-muted-foreground py-4">Načítání...</div>
-        ) : (
-          <div className="space-y-3">
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                className="p-3 rounded-lg border space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">
-                    {formatAmount(n.parsed_amount)}
-                  </span>
-                  {n.parsed_date && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(n.parsed_date)}
-                    </span>
+    <>
+      <Card className="h-full">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BellRing className="h-5 w-5 text-amber-500" />
+            Příchozí platby
+            {notifications.length > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {notifications.length}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 ml-auto"
+              onClick={() => setSetupOpen(true)}
+              title="Nastavení webhooku"
+            >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center text-muted-foreground py-4">Načítání...</div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-6 space-y-2">
+              <p className="text-sm text-muted-foreground">Žádné čekající platby</p>
+              <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setSetupOpen(true)}>
+                <Settings className="h-3.5 w-3.5" />
+                Nastavit webhook
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((n) => (
+                <div key={n.id} className="p-3 rounded-lg border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm">{formatAmount(n.parsed_amount)}</span>
+                    {n.parsed_date && (
+                      <span className="text-xs text-muted-foreground">{formatDate(n.parsed_date)}</span>
+                    )}
+                  </div>
+                  {n.parsed_vs && (
+                    <p className="text-xs text-muted-foreground">VS: {n.parsed_vs}</p>
                   )}
-                </div>
-                {n.parsed_vs && (
-                  <p className="text-xs text-muted-foreground">VS: {n.parsed_vs}</p>
-                )}
-                {n.notes && (
-                  <p className="text-xs text-muted-foreground truncate">{n.notes}</p>
-                )}
-                {n.matched_payment_id ? (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                      Shoda nalezena
-                    </Badge>
-                    <div className="flex gap-1 ml-auto">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-7 text-xs gap-1"
-                        onClick={() => confirmMutation.mutate(n)}
-                        disabled={confirmMutation.isPending}
-                      >
-                        {confirmMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Check className="h-3 w-3" />
-                        )}
-                        Potvrdit
-                      </Button>
+                  {n.notes && (
+                    <p className="text-xs text-muted-foreground truncate">{n.notes}</p>
+                  )}
+                  {n.matched_payment_id ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs border-green-500/50 text-green-700 dark:text-green-400">
+                        Shoda nalezena
+                      </Badge>
+                      <div className="flex gap-1 ml-auto">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => confirmMutation.mutate(n)}
+                          disabled={confirmMutation.isPending}
+                        >
+                          {confirmMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Check className="h-3 w-3" />
+                          )}
+                          Potvrdit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => dismissMutation.mutate(n.id)}
+                          disabled={dismissMutation.isPending}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-700 dark:text-amber-400">
+                        Bez shody
+                      </Badge>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs ml-auto"
                         onClick={() => dismissMutation.mutate(n.id)}
-                        disabled={dismissMutation.isPending}
                       >
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
-                      Bez shody
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs ml-auto"
-                      onClick={() => dismissMutation.mutate(n.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Webhook setup dialog */}
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Nastavení bankovního webhooku
+            </DialogTitle>
+            <DialogDescription>
+              Nakonfigurujte váš bankovní systém tak, aby posílal notifikace o příchozích platbách na tuto URL.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <div>
+              <p className="font-semibold mb-1">Webhook URL:</p>
+              <div className="flex items-center gap-2 p-2 bg-muted rounded-md font-mono text-xs break-all">
+                <span className="flex-1">{WEBHOOK_URL}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => handleCopy(WEBHOOK_URL)}
+                >
+                  {copied ? <CheckCheck className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                </Button>
               </div>
-            ))}
+            </div>
+
+            <div>
+              <p className="font-semibold mb-1">Autentizace:</p>
+              <p className="text-muted-foreground">
+                Přidejte do URL parametr{" "}
+                <code className="bg-muted px-1 rounded">?token=VÁŠ_TOKEN</code>{" "}
+                nebo hlavičku <code className="bg-muted px-1 rounded">x-webhook-secret</code>.
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Hodnotu tokenu najdete v Cloud secrets pod klíčem{" "}
+                <code className="bg-muted px-1 rounded">BANK_WEBHOOK_SECRET</code>.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-semibold mb-1">Formát dat (JSON body):</p>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Strukturovaná data (Google Sheets / Fintable):</p>
+                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{`{\n  "amount": 29000,\n  "variable_symbol": "26001",\n  "date": "2026-02-28",\n  "sender_name": "Jan Novák"\n}`}</pre>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Raw text emailu z banky:</p>
+                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{`{\n  "emailText": "Připsána platba 29000 Kč VS 26001..."\n}`}</pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-300 text-xs">
+              <strong>Tip pro Google Sheets (Fintable):</strong> Přidejte automatizaci, která po každé nové platbě pošle POST request s částkou, VS a datem na tuto URL s tokenem v parametru.
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
