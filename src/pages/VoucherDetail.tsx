@@ -334,12 +334,12 @@ const buildVoucherPdfBlob = (
         doc.text(text, x, y); x += doc.getTextWidth(text);
       };
 
-      if (datePart) { pb(datePart); pn(" · "); }
-      if (flightCode) { pb(flightCode); pn(" · "); }
+      if (datePart) { pn(datePart); pn(" · "); }
+      if (flightCode) { pn(flightCode); pn(" · "); }
       if (fromCity && toCity) { pb(`${fromCity}→${toCity}`); }
-      if (f.departureTime) { pn(" · Departure "); pb(f.departureTime); }
-      if (f.arrivalTime) { pn(" · Arr "); pb(f.arrivalTime); }
-      if (f.pax) { pn(" · Pax: "); pb(`${f.pax} ADT`); }
+      if (f.departureTime) { pn(` · Departure ${f.departureTime}`); }
+      if (f.arrivalTime) { pn(` · Arr ${f.arrivalTime}`); }
+      if (f.pax) { pn(` · Pax: ${f.pax} ADT`); }
       y += 5;
     }
     // no extra blank line after last segment
@@ -377,13 +377,13 @@ const buildVoucherPdfBlob = (
         doc.text(text, xCursor, y); xCursor += doc.getTextWidth(text);
       };
 
-      if (datePart) { printBold(datePart); printNormal(" "); }
-      printNormal(clubPart + " at ");
+      if (datePart) { printNormal(datePart); printNormal(" · "); }
+      printBold(clubPart);
       if (timePart) {
-        printBold(timePart);
-        if (endTime) { printNormal(" - "); printBold(endTime); }
+        printNormal(" · "); printNormal(timePart);
+        if (endTime) { printNormal(` - ${endTime}`); }
       }
-      if (paxCount > 0) { printNormal(" ("); printBold(`${paxCount} golfers`); printNormal(")"); }
+      if (paxCount > 0) { printNormal(` · ${paxCount} golfers`); }
       y += 5;
     }
     // no extra blank line after last tee time
