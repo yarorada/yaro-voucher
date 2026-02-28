@@ -13,6 +13,8 @@ interface SendRequest {
   emailBody: string;
   emailSubject: string;
   ccEmails?: string[];
+  documentIds?: string[];
+  inlineAttachments?: { filename: string; base64: string }[];
 }
 
 function replacePlaceholders(text: string, vars: Record<string, string>): string {
@@ -71,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { dealId, clientEmail, clientName, emailBody, emailSubject, ccEmails }: SendRequest = await req.json();
+    const { dealId, clientEmail, clientName, emailBody, emailSubject, ccEmails, documentIds, inlineAttachments }: SendRequest = await req.json();
 
     if (!dealId || !clientEmail) {
       return new Response(JSON.stringify({ error: "Missing dealId or clientEmail" }), {
@@ -111,51 +113,50 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Fetch all deal documents
-    const { data: documents, error: docsError } = await supabase
-      .from("deal_documents").select("*").eq("deal_id", dealId)
-      .order("uploaded_at", { ascending: true });
+    // Prepare attachments
+    const attachments: { filename: string; content: string }[] = [];
 
-    if (docsError) throw new Error("Failed to fetch deal documents: " + docsError.message);
-
-    if (!documents || documents.length === 0) {
-      return new Response(JSON.stringify({ error: "No documents found for this deal" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Add inline attachments (e.g. voucher PDFs generated client-side)
+    for (const inline of (inlineAttachments || [])) {
+      attachments.push({ filename: inline.filename, content: inline.base64 });
     }
 
-    // Download each document and prepare attachments
-    const attachments: { filename: string; content: string }[] = [];
-    for (const doc of documents) {
-      try {
-        const parts = doc.file_url.split("/deal-documents/");
-        if (parts.length < 2) {
-          const response = await fetch(doc.file_url);
-          if (!response.ok) { console.error(`Failed to fetch ${doc.file_name}: ${response.status}`); continue; }
-          const arrayBuffer = await response.arrayBuffer();
-          attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
-          continue;
-        }
-        const storagePath = decodeURIComponent(parts[1]);
-        const { data: fileData, error: fileError } = await supabase.storage.from("deal-documents").download(storagePath);
-        if (fileError || !fileData) {
+    // Fetch only requested documents (if documentIds specified and non-empty)
+    if (documentIds && documentIds.length > 0) {
+      const { data: documents, error: docsError } = await supabase
+        .from("deal_documents").select("*")
+        .in("id", documentIds);
+
+      if (docsError) throw new Error("Failed to fetch deal documents: " + docsError.message);
+
+      // Download each document in parallel
+      await Promise.all((documents || []).map(async (doc) => {
+        try {
+          const parts = doc.file_url.split("/deal-documents/");
+          const storagePath = parts.length >= 2 ? decodeURIComponent(parts[1]) : null;
+          if (storagePath) {
+            const { data: fileData, error: fileError } = await supabase.storage.from("deal-documents").download(storagePath);
+            if (!fileError && fileData) {
+              const arrayBuffer = await fileData.arrayBuffer();
+              attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
+              return;
+            }
+          }
+          // Fallback: direct fetch
           const response = await fetch(doc.file_url);
           if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
             attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
           }
-          continue;
+        } catch (err) {
+          console.error(`Error processing ${doc.file_name}:`, err);
         }
-        const arrayBuffer = await fileData.arrayBuffer();
-        attachments.push({ filename: doc.file_name, content: arrayBufferToBase64(new Uint8Array(arrayBuffer)) });
-      } catch (err) {
-        console.error(`Error processing ${doc.file_name}:`, err);
-      }
+      }));
     }
 
     if (attachments.length === 0) {
-      return new Response(JSON.stringify({ error: "Could not prepare any attachments" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "No attachments could be prepared" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
