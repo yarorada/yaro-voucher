@@ -458,190 +458,137 @@ const Clients = () => {
                       Zadejte informace o klientovi
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Oslovení</Label>
-                      <Select
-                        value={formData.title}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, title: value })
-                        }
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Vyberte oslovení" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
-                          <SelectItem value="Pan">Pan</SelectItem>
-                          <SelectItem value="Paní">Paní</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="first_name">
-                          Jméno <span className="text-destructive">*</span>
-                        </Label>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    {/* Row 1: Titul + Jméno + Příjmení */}
+                    <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="title">Titul</Label>
+                        <Select
+                          value={formData.title}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, title: value })
+                          }
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="Pan">Pan</SelectItem>
+                            <SelectItem value="Paní">Paní</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="first_name">Jméno <span className="text-destructive">*</span></Label>
                         <Input
                           id="first_name"
                           value={formData.first_name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, first_name: e.target.value })
-                          }
+                          onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                           required
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="last_name">
-                          Příjmení <span className="text-destructive">*</span>
-                        </Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="last_name">Příjmení <span className="text-destructive">*</span></Label>
                         <Input
                           id="last_name"
                           value={formData.last_name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, last_name: e.target.value })
-                          }
+                          onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                           required
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                      />
+
+                    {/* Row 2: Email + Telefon + Datum narození */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="phone">Telefon</Label>
+                        <Input
+                          id="phone"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="date_of_birth">Datum narození {ocrFilledFields.has("date_of_birth") && <span className="text-green-600 text-xs ml-1">✓ OCR</span>}</Label>
+                        <DateInput
+                          value={formData.date_of_birth}
+                          onChange={(date) => setFormData({ ...formData, date_of_birth: date })}
+                          className={ocrFilledFields.has("date_of_birth") ? "border-green-500 bg-green-50" : ""}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefon</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
+
+                    {/* Row 3: Adresa */}
+                    <div className="space-y-1">
                       <Label htmlFor="address">Adresa</Label>
                       <Input
                         id="address"
                         value={formData.address}
-                        onChange={(e) =>
-                          setFormData({ ...formData, address: e.target.value })
-                        }
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-2">
+
+                    {/* Row 4: Poznámky */}
+                    <div className="space-y-1">
                       <Label htmlFor="notes">Poznámky</Label>
                       <Textarea
                         id="notes"
                         value={formData.notes}
-                        onChange={(e) =>
-                          setFormData({ ...formData, notes: e.target.value })
-                        }
-                        rows={3}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        rows={2}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="date_of_birth">Datum narození</Label>
-                      <DateInput
-                        value={formData.date_of_birth}
-                        onChange={(date) =>
-                          setFormData({ ...formData, date_of_birth: date })
-                        }
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="passport_number">Číslo cestovního pasu</Label>
-                          {ocrFilledFields.has("passport_number") && (
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Z OCR</span>
-                            </div>
-                          )}
+                    {/* Row 5: Doklady */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Cestovní pas {ocrFilledFields.has("passport_number") && <span className="text-green-600 text-xs ml-1">✓ OCR</span>}</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Číslo"
+                            value={formData.passport_number}
+                            onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
+                            className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
+                          />
+                          <DateInput
+                            value={formData.passport_expiry}
+                            onChange={(date) => setFormData({ ...formData, passport_expiry: date })}
+                            placeholder="Platnost"
+                            className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50 w-32" : "w-32"}
+                          />
                         </div>
-                        <Input
-                          id="passport_number"
-                          value={formData.passport_number}
-                          onChange={(e) =>
-                            setFormData({ ...formData, passport_number: e.target.value })
-                          }
-                          className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
-                        />
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="passport_expiry">Platnost cestovního pasu</Label>
-                          {ocrFilledFields.has("passport_expiry") && (
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Z OCR</span>
-                            </div>
-                          )}
+                      <div className="space-y-1">
+                        <Label>Občanský průkaz {ocrFilledFields.has("id_card_number") && <span className="text-green-600 text-xs ml-1">✓ OCR</span>}</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Číslo"
+                            value={formData.id_card_number}
+                            onChange={(e) => setFormData({ ...formData, id_card_number: e.target.value })}
+                            className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
+                          />
+                          <DateInput
+                            value={formData.id_card_expiry}
+                            onChange={(date) => setFormData({ ...formData, id_card_expiry: date })}
+                            placeholder="Platnost"
+                            className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50 w-32" : "w-32"}
+                          />
                         </div>
-                        <DateInput
-                          value={formData.passport_expiry}
-                          onChange={(date) =>
-                            setFormData({ ...formData, passport_expiry: date })
-                          }
-                          placeholder="DD.MM.RR"
-                          className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50" : ""}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="id_card_number">Číslo občanského průkazu</Label>
-                          {ocrFilledFields.has("id_card_number") && (
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Z OCR</span>
-                            </div>
-                          )}
-                        </div>
-                        <Input
-                          id="id_card_number"
-                          value={formData.id_card_number}
-                          onChange={(e) =>
-                            setFormData({ ...formData, id_card_number: e.target.value })
-                          }
-                          className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="id_card_expiry">Platnost občanského průkazu</Label>
-                          {ocrFilledFields.has("id_card_expiry") && (
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Z OCR</span>
-                            </div>
-                          )}
-                        </div>
-                        <DateInput
-                          value={formData.id_card_expiry}
-                          onChange={(date) =>
-                            setFormData({ ...formData, id_card_expiry: date })
-                          }
-                          placeholder="DD.MM.RR"
-                          className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50" : ""}
-                        />
                       </div>
                     </div>
 
                     {editingClient && (
-                      <div className="space-y-4 border-t pt-4">
-                        <h4 className="font-semibold">Dokumenty</h4>
+                      <div className="space-y-3 border-t pt-3">
+                        <h4 className="text-sm font-semibold">Dokumenty</h4>
                         
                         {editingClient.document_urls && editingClient.document_urls.length > 0 && (
                           <DocumentsList
@@ -651,11 +598,9 @@ const Clients = () => {
                           />
                         )}
 
-                        <div className="space-y-4">
-                          <h5 className="text-sm font-medium">Nahrát nové dokumenty</h5>
                         <DocumentUpload
                           clientId={editingClient.id}
-                          documentType="passport"
+                          documentType="other"
                           autoSaveToClient={true}
                           onDataExtracted={(data) => {
                             const newFilledFields = new Set(ocrFilledFields);
@@ -664,101 +609,43 @@ const Clients = () => {
                               setFormData(prev => ({ ...prev, passport_number: data.passport_number }));
                               newFilledFields.add("passport_number");
                             }
-                            if (data.passport_expiry || data.expiry_date) {
+                            if (data.passport_expiry || (data.expiry_date && data.passport_number)) {
                               const dateStr = data.passport_expiry || data.expiry_date;
-                              const parts = dateStr.split('.');
-                              if (parts.length === 3) {
-                                const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]);
-                                const year = 2000 + parseInt(parts[2]);
-                                setFormData(prev => ({ ...prev, passport_expiry: new Date(year, month - 1, day) }));
+                              const parts = dateStr?.split('.');
+                              if (parts?.length === 3) {
+                                setFormData(prev => ({ ...prev, passport_expiry: new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])) }));
                                 newFilledFields.add("passport_expiry");
                               }
                             }
-                            if (data.date_of_birth) {
-                              const parts = data.date_of_birth.split('.');
-                              if (parts.length === 3) {
-                                const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]);
-                                let year = parseInt(parts[2]);
-                                // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
-                                year += year < 30 ? 2000 : 1900;
-                                setFormData(prev => ({ ...prev, date_of_birth: new Date(year, month - 1, day) }));
-                                newFilledFields.add("date_of_birth");
-                              }
-                            }
-                            if (data.first_name && !formData.first_name) {
-                              setFormData(prev => ({ ...prev, first_name: data.first_name }));
-                            }
-                            if (data.last_name && !formData.last_name) {
-                              setFormData(prev => ({ ...prev, last_name: data.last_name }));
-                            }
-                            
-                            setOcrFilledFields(newFilledFields);
-                            
-                            // Auto-clear the highlight after 5 seconds
-                            setTimeout(() => {
-                              setOcrFilledFields(new Set());
-                            }, 5000);
-                          }}
-                          onUploadComplete={() => fetchClients()}
-                        />
-                        <DocumentUpload
-                          clientId={editingClient.id}
-                          documentType="id_card"
-                          autoSaveToClient={true}
-                          onDataExtracted={(data) => {
-                            const newFilledFields = new Set(ocrFilledFields);
-                            
                             if (data.id_card_number) {
                               setFormData(prev => ({ ...prev, id_card_number: data.id_card_number }));
                               newFilledFields.add("id_card_number");
                             }
-                            if (data.id_card_expiry || data.expiry_date) {
+                            if (data.id_card_expiry || (data.expiry_date && data.id_card_number)) {
                               const dateStr = data.id_card_expiry || data.expiry_date;
-                              const parts = dateStr.split('.');
-                              if (parts.length === 3) {
-                                const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]);
-                                const year = 2000 + parseInt(parts[2]);
-                                setFormData(prev => ({ ...prev, id_card_expiry: new Date(year, month - 1, day) }));
+                              const parts = dateStr?.split('.');
+                              if (parts?.length === 3) {
+                                setFormData(prev => ({ ...prev, id_card_expiry: new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])) }));
                                 newFilledFields.add("id_card_expiry");
                               }
                             }
                             if (data.date_of_birth) {
                               const parts = data.date_of_birth.split('.');
                               if (parts.length === 3) {
-                                const day = parseInt(parts[0]);
-                                const month = parseInt(parts[1]);
                                 let year = parseInt(parts[2]);
-                                // For birth dates: 00-29 = 2000-2029, 30-99 = 1930-1999
                                 year += year < 30 ? 2000 : 1900;
-                                setFormData(prev => ({ ...prev, date_of_birth: new Date(year, month - 1, day) }));
+                                setFormData(prev => ({ ...prev, date_of_birth: new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0])) }));
                                 newFilledFields.add("date_of_birth");
                               }
                             }
-                            if (data.first_name && !formData.first_name) {
-                              setFormData(prev => ({ ...prev, first_name: data.first_name }));
-                            }
-                            if (data.last_name && !formData.last_name) {
-                              setFormData(prev => ({ ...prev, last_name: data.last_name }));
-                            }
+                            if (data.first_name && !formData.first_name) setFormData(prev => ({ ...prev, first_name: data.first_name }));
+                            if (data.last_name && !formData.last_name) setFormData(prev => ({ ...prev, last_name: data.last_name }));
                             
                             setOcrFilledFields(newFilledFields);
-                            
-                            // Auto-clear the highlight after 5 seconds
-                            setTimeout(() => {
-                              setOcrFilledFields(new Set());
-                            }, 5000);
+                            setTimeout(() => setOcrFilledFields(new Set()), 5000);
                           }}
                           onUploadComplete={() => fetchClients()}
                         />
-                        <DocumentUpload
-                          clientId={editingClient.id}
-                          documentType="other"
-                          onUploadComplete={() => fetchClients()}
-                        />
-                        </div>
                       </div>
                     )}
 
