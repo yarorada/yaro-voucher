@@ -321,7 +321,7 @@ const buildVoucherPdfBlob = (
       const flightCode = `${f.airlineCode || ""} ${f.flightNumber || ""}`.trim();
       const datePart = f.date ? fmtD(f.date) : "";
 
-      // Single line: Date · FlightCode · FromCity → ToCity · Departure: HH:MM · Arrival: HH:MM · PAX: N Adult
+      // Single line: Date · FlightCode · FromCity→ToCity · Departure HH:MM · Arr HH:MM · Pax: N ADT
       doc.setFontSize(8.5);
       let x = margin;
 
@@ -336,13 +336,13 @@ const buildVoucherPdfBlob = (
 
       if (datePart) { pb(datePart); pn(" · "); }
       if (flightCode) { pb(flightCode); pn(" · "); }
-      if (fromCity && toCity) { pb(`${fromCity} → ${toCity}`); }
-      if (f.departureTime) { pn("  Dep: "); pb(f.departureTime); }
-      if (f.arrivalTime) { pn("  Arr: "); pb(f.arrivalTime); }
-      if (f.pax) { pn("  PAX: "); pb(`${f.pax} Adult`); }
+      if (fromCity && toCity) { pb(`${fromCity}→${toCity}`); }
+      if (f.departureTime) { pn(" · Departure "); pb(f.departureTime); }
+      if (f.arrivalTime) { pn(" · Arr "); pb(f.arrivalTime); }
+      if (f.pax) { pn(" · Pax: "); pb(`${f.pax} ADT`); }
       y += 5;
     }
-    y += 2;
+    // no extra blank line after last segment
   }
 
   // ── CONFIRMED TEE TIMES ──
@@ -386,7 +386,7 @@ const buildVoucherPdfBlob = (
       if (paxCount > 0) { printNormal(" ("); printBold(`${paxCount} golfers`); printNormal(")"); }
       y += 5;
     }
-    y += 2;
+    // no extra blank line after last tee time
   }
 
   // ── DATES ROW — no blank line after values ──
@@ -419,13 +419,7 @@ const buildVoucherPdfBlob = (
   const terms = "This voucher is valid for the services listed above. Please present this voucher to service providers. Changes or cancellations must be made 48 hours in advance. For assistance, contact YARO Travel support.";
   const termsLines = doc.splitTextToSize(terms, contentW);
   doc.text(termsLines, margin, y);
-  y += termsLines.length * 4 + 4;
-
-  // ── YARO TRAVEL INFO — single line ──
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text("YARO Travel  ·  +420 602 102 108  ·  www.yarotravel.cz  ·  zajezdy@yarotravel.cz", W / 2, y, { align: "center" });
+  y += termsLines.length * 4 + 2;
 
   // ── FOOTER ──
   const pageCount = doc.getNumberOfPages();
