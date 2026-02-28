@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import yaroLogoWide from "@/assets/yaro-logo-wide.png";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,12 +93,17 @@ const fmtDatePdf = (d: string) => {
   return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
 };
 
-const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddress?: string): Blob => {
+const buildVoucherPdfBlob = (
+  voucher: any,
+  supplierName?: string,
+  supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
+  logoBase64?: string
+): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
   const margin = 15;
   const contentW = W - margin * 2;
-  let y = margin;
+  let y = 0;
 
   const fmtD = (d: string) => {
     if (!d) return "";
@@ -106,36 +112,41 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
     return d;
   };
 
-  // ── TOP BAR: voucher code left, "# TRAVeL" right ──
-  doc.setFillColor(15, 23, 42); // dark navy
-  doc.rect(0, 0, W, 14, "F");
+  // ── TOP BAR with logo left, voucher code + "Travel Voucher" right ──
+  const headerH = 20;
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, W, headerH, "F");
+
+  // Logo on left
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, "PNG", margin, 3, 50, 14);
+    } catch {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text("YARO Travel", margin, 13);
+    }
+  }
+
+  // Voucher code top-right (bold, white)
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(voucher.voucher_code || "", margin, 9.5);
-  doc.setFontSize(9);
+  doc.text(voucher.voucher_code || "", W - margin, 10, { align: "right" });
+  // "Travel Voucher" subtitle under the code
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(180, 200, 255);
-  doc.text("# TRAVeL", W - margin, 9.5, { align: "right" });
-  y = 22;
+  doc.text("Travel Voucher", W - margin, 16, { align: "right" });
 
-  // ── TITLE BLOCK ──
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text("Travel Voucher", W / 2, y, { align: "center" });
-  y += 7;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Your Journey, Our Passion", W / 2, y, { align: "center" });
-  y += 8;
+  y = headerH + 8;
 
   // thin divider
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.3);
   doc.line(margin, y, W - margin, y);
-  y += 7;
+  y += 6;
 
   // ── SERVICE PROVIDER ──
   if (supplierName) {
@@ -144,15 +155,26 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
     doc.setTextColor(71, 85, 105);
     doc.text("SERVICE PROVIDER", margin, y);
     y += 4;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    // Provider name bold
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
-    const providerLines = doc.splitTextToSize(
-      [supplierName, supplierAddress].filter(Boolean).join(" · "),
-      contentW
-    );
-    doc.text(providerLines, margin, y);
-    y += providerLines.length * 4.5 + 5;
+    doc.text(removeDiacritics(supplierName), margin, y);
+    y += 5;
+    // Provider details
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 41, 59);
+    const details: string[] = [];
+    if (supplierData?.address) details.push(removeDiacritics(supplierData.address));
+    if (supplierData?.contact_person) details.push(`Contact: ${removeDiacritics(supplierData.contact_person)}`);
+    if (supplierData?.phone) details.push(`Tel: ${supplierData.phone}`);
+    if (supplierData?.email) details.push(`E-mail: ${supplierData.email}`);
+    for (const line of details) {
+      doc.text(line, margin, y);
+      y += 4.5;
+    }
+    y += 3;
     doc.setDrawColor(203, 213, 225);
     doc.line(margin, y, W - margin, y);
     y += 6;
@@ -165,7 +187,6 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
   doc.text("CLIENT INFORMATION", margin, y);
   y += 4;
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
@@ -197,7 +218,6 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
     doc.text("SERVICE OVERVIEW", margin, y);
     y += 4;
 
-    // Table header
     const colPax = margin;
     const colQty = margin + 13;
     const colService = margin + 24;
@@ -246,7 +266,7 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
   // ── FLIGHT DETAILS ──
   const flights = (voucher.flights as any[]) || [];
   if (flights.length > 0) {
-    if (y > 255) { doc.addPage(); y = margin; }
+    if (y > 245) { doc.addPage(); y = margin; }
     doc.setDrawColor(203, 213, 225);
     doc.line(margin, y, W - margin, y);
     y += 5;
@@ -255,25 +275,47 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
     doc.setTextColor(71, 85, 105);
     doc.text("FLIGHT DETAILS", margin, y);
     y += 5;
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(15, 23, 42);
+
     for (const f of flights) {
-      if (y > 272) { doc.addPage(); y = margin; }
-      const from = f.fromCity || f.fromIata || f.departure || "";
-      const to = f.toCity || f.toIata || f.arrival || "";
-      const paxStr = f.pax ? ` · PAX: ${f.pax} ADT` : "";
-      const line = `${f.date ? fmtD(f.date) : ""} · ${f.airlineCode || ""} ${f.flightNumber || ""} · ${removeDiacritics(from)} → ${removeDiacritics(to)} · Departure: ${f.departureTime || ""} · Arrival: ${f.arrivalTime || ""}${paxStr}`;
-      doc.text(line, margin, y);
-      y += 5;
+      if (y > 265) { doc.addPage(); y = margin; }
+      const from = removeDiacritics(f.fromCity || f.fromIata || f.departure || "");
+      const to = removeDiacritics(f.toCity || f.toIata || f.arrival || "");
+      const flightCode = `${f.airlineCode || ""} ${f.flightNumber || ""}`.trim();
+
+      // Date bold
+      if (f.date) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text(fmtD(f.date), margin, y);
+        // Flight code bold
+        doc.text(flightCode, margin + 20, y);
+        // Route bold
+        doc.text(`${from} → ${to}`, margin + 45, y);
+        y += 5;
+      }
+
+      // Times and PAX on second line
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 41, 59);
+      const timeParts: string[] = [];
+      if (f.departureTime) timeParts.push(`Dep: ${f.departureTime}`);
+      if (f.arrivalTime) timeParts.push(`Arr: ${f.arrivalTime}`);
+      if (f.pax) timeParts.push(`PAX: ${f.pax}`);
+      if (timeParts.length > 0) {
+        doc.text(timeParts.join("  ·  "), margin + 4, y);
+        y += 5;
+      }
+      y += 1;
     }
-    y += 3;
+    y += 2;
   }
 
   // ── CONFIRMED TEE TIMES ──
   const teeTimes = (voucher.tee_times as any[]) || [];
   if (teeTimes.length > 0) {
-    if (y > 255) { doc.addPage(); y = margin; }
+    if (y > 245) { doc.addPage(); y = margin; }
     doc.setDrawColor(203, 213, 225);
     doc.line(margin, y, W - margin, y);
     y += 5;
@@ -283,16 +325,25 @@ const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddres
     doc.text("CONFIRMED TEE TIMES", margin, y);
     y += 5;
     doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
     doc.setTextColor(15, 23, 42);
     for (const t of teeTimes) {
-      if (y > 272) { doc.addPage(); y = margin; }
-      const golfers = t.golfers || t.players || "";
-      const line = `${t.date ? fmtD(t.date) : ""} | ${removeDiacritics(t.club || t.course || "")} at ${t.time || ""}${golfers ? ` (${golfers} golfers)` : ""}`;
-      doc.text(line, margin, y);
+      if (y > 265) { doc.addPage(); y = margin; }
+      const golfers = t.golfers || t.players || t.pax || "";
+      const paxCount = Number(golfers) || 0;
+      // Date bold
+      doc.setFont("helvetica", "bold");
+      const datePart = t.date ? fmtD(t.date) : "";
+      const clubPart = removeDiacritics(t.club || t.course || "");
+      doc.text(`${datePart}  |  ${clubPart}`, margin, y);
+      y += 4.5;
+      // Time + persons
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 41, 59);
+      const teeDetail = `Time: ${t.time || "—"}${paxCount > 0 ? `  ·  ${paxCount} ${paxCount === 1 ? "player" : "players"}` : ""}`;
+      doc.text(teeDetail, margin + 4, y);
       y += 5;
     }
-    y += 3;
+    y += 2;
   }
 
   // ── DATES ROW ──
@@ -439,11 +490,23 @@ const VoucherDetail = () => {
     }
   };
 
+  const getLogoBase64 = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const res = await fetch(yaroLogoWide);
+      const ab = await res.arrayBuffer();
+      const bytes = new Uint8Array(ab);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    } catch { return undefined; }
+  }, []);
+
   const handleDownloadPdf = useCallback(async () => {
     if (!voucher) return;
     setIsDownloading(true);
     try {
-      const blob = buildVoucherPdfBlob(voucher, supplier?.name);
+      const logoBase64 = await getLogoBase64();
+      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -510,7 +573,8 @@ const VoucherDetail = () => {
     setSending(true);
     try {
       // Generate PDF
-      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name);
+      const logoBase64 = await getLogoBase64();
+      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
