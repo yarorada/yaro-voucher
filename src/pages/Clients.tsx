@@ -424,87 +424,18 @@ const Clients = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  usePageToolbar(<></>, []);
 
-  usePageToolbar(
-    <>
-      <div className="relative w-48 md:w-64">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          placeholder="Hledat..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          className="pl-8 pr-7 h-8 text-xs"
-        />
-        {searchText && (
-          <button onClick={() => setSearchText("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className={toolbarButtonClass + " gap-1"}>
-            <Users className="h-3.5 w-3.5" />
-            Hromadné úpravy
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-background p-1">
-          <DuplicateClientChecker onComplete={fetchClients} />
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-sm"
-            onClick={async () => {
-              if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
-              try {
-                const { data, error } = await supabase.functions.invoke('assign-client-titles');
-                if (error) throw error;
-                if (data?.success) {
-                  toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
-                  if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
-                  fetchClients();
-                } else {
-                  throw new Error(data?.error || 'Unknown error');
-                }
-              } catch (error: any) {
-                console.error('Error assigning titles:', error);
-                toast.error(`Chyba při přiřazování titulů: ${error.message}`);
-              }
-            }}
-          >
-            <User className="h-4 w-4 mr-2" />
-            Přiřadit tituly
-          </Button>
-          <DiacriticsChecker onComplete={fetchClients} />
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className={toolbarButtonClass + " gap-1"}>
-            <Plus className="h-3.5 w-3.5" />
-            Přidat
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-background">
-          <DropdownMenuItem onClick={() => setIsDialogOpen(true)} className="cursor-pointer">
-            <Plus className="h-4 w-4 mr-2" />
-            Přidat individuálně
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setBulkImportOpen(true)} className="cursor-pointer">
-            <Users className="h-4 w-4 mr-2" />
-            Hromadný textový import
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setBulkDocumentUploadOpen(true)} className="cursor-pointer">
-            <FileUp className="h-4 w-4 mr-2" />
-            Nahrát dokumenty
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>,
-    [searchText]
-  );
+  // Extract city from address
+  const extractCity = (address: string | null): string => {
+    if (!address) return "–";
+    // Try to get the last part (usually city) or return the whole address
+    const parts = address.split(",").map(p => p.trim());
+    return parts[parts.length - 1] || address;
+  };
+
+  // Check if client has passport
+  const hasPassport = (client: Client) => !!client.passport_number;
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
@@ -904,6 +835,85 @@ const Clients = () => {
                 </DialogContent>
               </Dialog>
 
+        {/* Top bar: search + buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Vyhledat zákazníka..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="pl-9 pr-8"
+            />
+            {searchText && (
+              <button onClick={() => setSearchText("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-1.5">
+                  <Users className="h-4 w-4" />
+                  Duplicity
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+                <DuplicateClientChecker onComplete={fetchClients} />
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-sm"
+                  onClick={async () => {
+                    if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+                    try {
+                      const { data, error } = await supabase.functions.invoke('assign-client-titles');
+                      if (error) throw error;
+                      if (data?.success) {
+                        toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+                        if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+                        fetchClients();
+                      } else {
+                        throw new Error(data?.error || 'Unknown error');
+                      }
+                    } catch (error: any) {
+                      toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+                    }
+                  }}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Přiřadit tituly
+                </Button>
+                <DiacriticsChecker onComplete={fetchClients} />
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setBulkDocumentUploadOpen(true)}
+            >
+              <FileUp className="h-4 w-4" />
+              Skenovat doklad
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setBulkImportOpen(true)}
+            >
+              <FileText className="h-4 w-4" />
+              Import z textu
+            </Button>
+            <Button
+              className="gap-1.5"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Nový zákazník
+            </Button>
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám klienty...</p>
@@ -911,91 +921,77 @@ const Clients = () => {
         ) : clients.length === 0 ? (
           <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
             <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-heading-2 text-foreground mb-2">
-              Zatím žádní klienti
-            </h2>
+            <h2 className="text-heading-2 text-foreground mb-2">Zatím žádní klienti</h2>
             <p className="text-muted-foreground mb-6">Přidejte prvního klienta</p>
           </Card>
         ) : filteredClients.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
-            <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-heading-2 text-foreground mb-2">
-              Žádné výsledky
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Pro hledaný výraz "{searchText}" nebyl nalezen žádný klient
-            </p>
-            <Button variant="outline" onClick={() => setSearchText("")}>
-              Zrušit filtr
-            </Button>
+          <Card className="p-8 text-center shadow-[var(--shadow-medium)]">
+            <p className="text-muted-foreground">Pro "{searchText}" nebyl nalezen žádný klient</p>
+            <Button variant="outline" className="mt-3" onClick={() => setSearchText("")}>Zrušit filtr</Button>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredClients.map((client) => (
-              <Card
-                key={client.id}
-                className="p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-title text-foreground">
-                    {client.first_name} {client.last_name}
-                  </h3>
-                  <div className="flex gap-2">
-                    {client.document_urls && client.document_urls.length > 0 && (
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => setDocumentPreviewClient(client)}
-                        title="Zobrazit dokumenty"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleEdit(client)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleDelete(client.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  {client.email && (
-                    <p>
-                      <span className="font-semibold text-foreground">Email:</span>{" "}
-                      {client.email}
-                    </p>
-                  )}
-                  {client.phone && (
-                    <p>
-                      <span className="font-semibold text-foreground">Telefon:</span>{" "}
-                      {client.phone}
-                    </p>
-                  )}
-                  {client.address && (
-                    <p>
-                      <span className="font-semibold text-foreground">Adresa:</span>{" "}
-                      {client.address}
-                    </p>
-                  )}
-                  {client.notes && (
-                    <p>
-                      <span className="font-semibold text-foreground">Poznámky:</span>{" "}
-                      {client.notes}
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left px-4 py-3 font-medium text-primary cursor-pointer select-none">Jméno ↑</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Město</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredClients.map((client) => (
+                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          {client.title ? `${client.title} ` : ""}
+                          {client.first_name} {client.last_name}
+                          {client.passport_number && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">PAS</span>
+                          )}
+                          {client.document_urls && client.document_urls.length > 0 && (
+                            <button
+                              onClick={() => setDocumentPreviewClient(client)}
+                              className="text-muted-foreground hover:text-foreground"
+                              title="Zobrazit dokumenty"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{client.email || ""}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{client.phone || ""}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {client.address ? extractCity(client.address) : "–"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(client)}
+                            className="text-primary hover:text-primary/70 transition-colors"
+                            title="Upravit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client.id)}
+                            className="text-destructive hover:text-destructive/70 transition-colors"
+                            title="Smazat"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
 
         {/* Document Preview Dialog */}
