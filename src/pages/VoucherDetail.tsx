@@ -92,132 +92,269 @@ const fmtDatePdf = (d: string) => {
   return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
 };
 
-const buildVoucherPdfBlob = (voucher: any, supplierName?: string): Blob => {
+const buildVoucherPdfBlob = (voucher: any, supplierName?: string, supplierAddress?: string): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
   const margin = 15;
+  const contentW = W - margin * 2;
   let y = margin;
 
-  // Header
-  doc.setFontSize(18);
+  const fmtD = (d: string) => {
+    if (!d) return "";
+    const parts = d.split("T")[0].split("-");
+    if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0].slice(2)}`;
+    return d;
+  };
+
+  // ── TOP BAR: voucher code left, "# TRAVeL" right ──
+  doc.setFillColor(15, 23, 42); // dark navy
+  doc.rect(0, 0, W, 14, "F");
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(37, 99, 235);
-  doc.text("YARO Travel", margin, y);
-  doc.setFontSize(14);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`VOUCHER ${voucher.voucher_code}`, W - margin, y, { align: "right" });
-  y += 6;
+  doc.setTextColor(255, 255, 255);
+  doc.text(voucher.voucher_code || "", margin, 9.5);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Issued: ${fmtDatePdf(voucher.issue_date)}`, W - margin, y, { align: "right" });
-  y += 6;
+  doc.setTextColor(180, 200, 255);
+  doc.text("# TRAVeL", W - margin, 9.5, { align: "right" });
+  y = 22;
 
-  doc.setDrawColor(37, 99, 235);
-  doc.setLineWidth(0.5);
+  // ── TITLE BLOCK ──
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("Travel Voucher", W / 2, y, { align: "center" });
+  y += 7;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text("Your Journey, Our Passion", W / 2, y, { align: "center" });
+  y += 8;
+
+  // thin divider
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, W - margin, y);
+  y += 7;
+
+  // ── SERVICE PROVIDER ──
+  if (supplierName) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105);
+    doc.text("SERVICE PROVIDER", margin, y);
+    y += 4;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(15, 23, 42);
+    const providerLines = doc.splitTextToSize(
+      [supplierName, supplierAddress].filter(Boolean).join(" · "),
+      contentW
+    );
+    doc.text(providerLines, margin, y);
+    y += providerLines.length * 4.5 + 5;
+    doc.setDrawColor(203, 213, 225);
+    doc.line(margin, y, W - margin, y);
+    y += 6;
+  }
+
+  // ── CLIENT INFORMATION ──
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(71, 85, 105);
+  doc.text("CLIENT INFORMATION", margin, y);
+  y += 4;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.text("Main Client:", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(`  1. ${removeDiacritics(voucher.client_name || "")}`, margin + 22, y);
+  y += 5;
+
+  const others: string[] = (voucher.other_travelers as string[]) || [];
+  if (others.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Other Travelers:", margin, y);
+    doc.setFont("helvetica", "normal");
+    const otherText = others.map((n, i) => `${i + 2}. ${removeDiacritics(n)}`).join(", ");
+    const otherLines = doc.splitTextToSize(otherText, contentW - 32);
+    doc.text(otherLines, margin + 32, y);
+    y += otherLines.length * 4.5;
+  }
+  y += 4;
+  doc.setDrawColor(203, 213, 225);
   doc.line(margin, y, W - margin, y);
   y += 6;
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Client: ${removeDiacritics(voucher.client_name || "")}`, margin, y); y += 5;
-  if (voucher.hotel_name) { doc.text(`Hotel: ${voucher.hotel_name}`, margin, y); y += 5; }
-  if (supplierName) { doc.text(`Supplier: ${supplierName}`, margin, y); y += 5; }
-  y += 3;
-
+  // ── SERVICE OVERVIEW ──
   const services = (voucher.services as any[]) || [];
   if (services.length > 0) {
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Services", margin, y); y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, W - margin * 2, 6, "F");
-    doc.setTextColor(0, 0, 0);
-    doc.text("Service", margin + 2, y + 4);
-    doc.text("From", margin + 80, y + 4);
-    doc.text("To", margin + 110, y + 4);
-    doc.text("Pax", margin + 140, y + 4);
-    y += 6;
-    for (const s of services) {
-      if (y > 270) { doc.addPage(); y = margin; }
-      doc.setDrawColor(220, 220, 220);
-      doc.rect(margin, y, W - margin * 2, 6);
-      doc.text((s.name || s.service || "").substring(0, 45), margin + 2, y + 4);
-      doc.text(s.dateFrom ? fmtDatePdf(s.dateFrom) : "", margin + 80, y + 4);
-      doc.text(s.dateTo ? fmtDatePdf(s.dateTo) : "", margin + 110, y + 4);
-      doc.text(String(s.pax || s.person_count || 1), margin + 140, y + 4);
-      y += 6;
-    }
+    doc.setTextColor(71, 85, 105);
+    doc.text("SERVICE OVERVIEW", margin, y);
     y += 4;
+
+    // Table header
+    const colPax = margin;
+    const colQty = margin + 13;
+    const colService = margin + 24;
+    const colFrom = margin + 128;
+    const colTo = margin + 153;
+    const rowH = 6;
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, contentW, rowH, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105);
+    doc.text("PAX", colPax + 2, y + 4);
+    doc.text("Qtd.", colQty + 1, y + 4);
+    doc.text("Service", colService + 2, y + 4);
+    doc.text("Date From", colFrom, y + 4);
+    doc.text("Date To", colTo + 2, y + 4);
+    y += rowH;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(15, 23, 42);
+    let rowAlt = false;
+    for (const s of services) {
+      const serviceName = s.name || s.service || "";
+      const nameLines = doc.splitTextToSize(removeDiacritics(serviceName), 100);
+      const cellH = Math.max(rowH, nameLines.length * 4.5);
+      if (y + cellH > 270) { doc.addPage(); y = margin; }
+      if (rowAlt) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y, contentW, cellH, "F");
+      }
+      doc.setFontSize(8.5);
+      doc.setDrawColor(226, 232, 240);
+      doc.rect(margin, y, contentW, cellH);
+      doc.text(String(s.pax || s.person_count || ""), colPax + 2, y + 4);
+      doc.text(String(s.qty || "1"), colQty + 1, y + 4);
+      doc.text(nameLines, colService + 2, y + 4);
+      doc.text(s.dateFrom ? fmtD(s.dateFrom) : "", colFrom, y + 4);
+      doc.text(s.dateTo ? fmtD(s.dateTo) : "", colTo + 2, y + 4);
+      y += cellH;
+      rowAlt = !rowAlt;
+    }
+    y += 6;
   }
 
+  // ── FLIGHT DETAILS ──
   const flights = (voucher.flights as any[]) || [];
   if (flights.length > 0) {
-    if (y > 260) { doc.addPage(); y = margin; }
+    if (y > 255) { doc.addPage(); y = margin; }
+    doc.setDrawColor(203, 213, 225);
+    doc.line(margin, y, W - margin, y);
+    y += 5;
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Flights", margin, y); y += 4;
+    doc.setTextColor(71, 85, 105);
+    doc.text("FLIGHT DETAILS", margin, y);
+    y += 5;
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, W - margin * 2, 6, "F");
-    doc.text("Route", margin + 2, y + 4);
-    doc.text("Date", margin + 70, y + 4);
-    doc.text("Flight", margin + 120, y + 4);
-    y += 6;
+    doc.setTextColor(15, 23, 42);
     for (const f of flights) {
-      if (y > 270) { doc.addPage(); y = margin; }
-      doc.setDrawColor(220, 220, 220);
-      doc.rect(margin, y, W - margin * 2, 6);
-      doc.text(`${f.fromIata || f.departure || ""} → ${f.toIata || f.arrival || ""}`, margin + 2, y + 4);
-      doc.text(`${f.date ? fmtDatePdf(f.date) : ""} ${f.departureTime || ""}`, margin + 70, y + 4);
-      doc.text(f.flightNumber || "", margin + 120, y + 4);
-      y += 6;
+      if (y > 272) { doc.addPage(); y = margin; }
+      const from = f.fromCity || f.fromIata || f.departure || "";
+      const to = f.toCity || f.toIata || f.arrival || "";
+      const paxStr = f.pax ? ` · PAX: ${f.pax} ADT` : "";
+      const line = `${f.date ? fmtD(f.date) : ""} · ${f.airlineCode || ""} ${f.flightNumber || ""} · ${removeDiacritics(from)} → ${removeDiacritics(to)} · Departure: ${f.departureTime || ""} · Arrival: ${f.arrivalTime || ""}${paxStr}`;
+      doc.text(line, margin, y);
+      y += 5;
     }
-    y += 4;
+    y += 3;
   }
 
+  // ── CONFIRMED TEE TIMES ──
   const teeTimes = (voucher.tee_times as any[]) || [];
   if (teeTimes.length > 0) {
-    if (y > 260) { doc.addPage(); y = margin; }
+    if (y > 255) { doc.addPage(); y = margin; }
+    doc.setDrawColor(203, 213, 225);
+    doc.line(margin, y, W - margin, y);
+    y += 5;
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Confirmed Tee Times", margin, y); y += 4;
+    doc.setTextColor(71, 85, 105);
+    doc.text("CONFIRMED TEE TIMES", margin, y);
+    y += 5;
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, W - margin * 2, 6, "F");
-    doc.text("Date", margin + 2, y + 4);
-    doc.text("Time", margin + 40, y + 4);
-    doc.text("Course", margin + 70, y + 4);
-    doc.text("Players", margin + 140, y + 4);
-    y += 6;
+    doc.setTextColor(15, 23, 42);
     for (const t of teeTimes) {
-      if (y > 270) { doc.addPage(); y = margin; }
-      doc.setDrawColor(220, 220, 220);
-      doc.rect(margin, y, W - margin * 2, 6);
-      doc.text(t.date ? fmtDatePdf(t.date) : "", margin + 2, y + 4);
-      doc.text(t.time || "", margin + 40, y + 4);
-      doc.text((t.club || t.course || "").substring(0, 40), margin + 70, y + 4);
-      doc.text(String(t.golfers || t.players || ""), margin + 140, y + 4);
-      y += 6;
+      if (y > 272) { doc.addPage(); y = margin; }
+      const golfers = t.golfers || t.players || "";
+      const line = `${t.date ? fmtD(t.date) : ""} | ${removeDiacritics(t.club || t.course || "")} at ${t.time || ""}${golfers ? ` (${golfers} golfers)` : ""}`;
+      doc.text(line, margin, y);
+      y += 5;
     }
-    y += 4;
+    y += 3;
   }
 
+  // ── DATES ROW ──
+  if (y > 255) { doc.addPage(); y = margin; }
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, y, W - margin, y);
+  y += 5;
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Issue Date", margin, y);
+  doc.text("Expiration Date", W / 2, y);
+  y += 4;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(15, 23, 42);
+  doc.text(voucher.issue_date ? fmtD(voucher.issue_date) : "", margin, y);
+  doc.text(voucher.expiration_date ? fmtD(voucher.expiration_date) : "—", W / 2, y);
+  y += 8;
+
+  // ── YARO TRAVEL INFO ──
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, y, W - margin, y);
+  y += 5;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("YARO Travel", margin, y);
+  y += 4;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Address: Bratrancu Veverkovych 680", margin, y); y += 4;
+  doc.text("Contact: Tel.: +420 602 102 108", margin, y); y += 4;
+  doc.text("Website: www.yarotravel.cz", margin, y); y += 4;
+  doc.setFont("helvetica", "italic");
+  doc.text("Available 24/7 for your travel needs", margin, y);
+  y += 8;
+
+  // ── TERMS ──
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, y, W - margin, y);
+  y += 5;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Terms & Conditions:", margin, y);
+  y += 4;
+  doc.setFont("helvetica", "normal");
+  const terms = "This voucher is valid for the services listed above. Please present this voucher to service providers. Changes or cancellations must be made 48 hours in advance. For assistance, contact YARO Travel support.";
+  const termsLines = doc.splitTextToSize(terms, contentW);
+  doc.text(termsLines, margin, y);
+
+  // ── FOOTER ──
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, 285, W - margin, 285);
-    doc.setFontSize(8);
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 287, W, 10, "F");
+    doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(130, 130, 130);
-    doc.text("YARO Travel · Tel.: +420 602 102 108 · www.yarotravel.cz · zajezdy@yarotravel.cz", margin, 290);
+    doc.setTextColor(180, 200, 255);
+    doc.text("YARO Travel  ·  Tel.: +420 602 102 108  ·  www.yarotravel.cz  ·  zajezdy@yarotravel.cz", W / 2, 293, { align: "center" });
   }
 
   return doc.output("blob");
