@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -210,10 +211,12 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     const { first_name, last_name, title, date_of_birth } = t.clients;
     const resolvedTitle = forPdf && title ? (TITLE_EN_MAP[title] ?? title) : title;
     const titleStr = resolvedTitle ? `${resolvedTitle} ` : "";
+    const displayFirst = forPdf ? removeDiacritics(first_name) : first_name;
+    const displayLast = forPdf ? removeDiacritics(last_name) : last_name;
     const dobStr = date_of_birth
       ? ` (${formatDate(date_of_birth)})`
       : "";
-    return `${titleStr}${first_name} ${last_name}${dobStr}`;
+    return `${titleStr}${displayFirst} ${displayLast}${dobStr}`;
   };
 
   const getTravelerName = (clientId: string) => {

@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { removeDiacritics } from "@/lib/utils";
 
 // Airport lookup data
 const airportCities: Record<string, string> = {
@@ -1010,11 +1011,11 @@ export const VoucherDisplay = forwardRef<VoucherDisplayRef, VoucherDisplayProps>
           <div className="bg-muted content-padding rounded-lg print:p-1 print:text-[11px]">
             <div className="mb-1 print:mb-0">
               <span className="font-semibold text-foreground">Main Client:</span>{" "}
-              <span className="text-muted-foreground">{clientName}</span>
+              <span className="text-muted-foreground">{removeDiacritics(clientName)}</span>
             </div>
             {otherTravelers && otherTravelers.length > 0 && <div className="mt-1 print:mt-0.5">
                 <span className="font-semibold text-foreground">Other Travelers:</span>{" "}
-                <span className="text-muted-foreground">{otherTravelers.join(", ")}</span>
+                <span className="text-muted-foreground">{otherTravelers.map(removeDiacritics).join(", ")}</span>
               </div>}
           </div>
         </div>
