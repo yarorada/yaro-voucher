@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail, ChevronDown, User, Users, Building2 } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail, ChevronDown, User, Users, Building2, Plus, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn, removeDiacritics } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,14 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const [emailBody, setEmailBody] = useState("");
   const [ccSuppliers, setCcSuppliers] = useState(true);
   const [ocrProcessing, setOcrProcessing] = useState(false);
+  // Selection state
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [selectedVoucherIds, setSelectedVoucherIds] = useState<Set<string>>(new Set());
+  // Send mode: "client" | "both" | "supplier"
+  const [sendMode, setSendMode] = useState<"client" | "both" | "supplier">("client");
+  // Extra recipients
+  const [extraEmails, setExtraEmails] = useState<string[]>([]);
+  const [newExtraEmail, setNewExtraEmail] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
@@ -442,13 +451,20 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     )
   );
 
-  const openSendDialog = () => {
+  const openSendDialog = (mode: "client" | "both" | "supplier" = "client") => {
     const name = clientName || "klient";
     setEmailSubject(`Cestovní dokumenty - YARO Travel`);
     setEmailBody(
       `Vážený ${name},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
     );
-    setCcSuppliers(supplierEmails.length > 0);
+    setSendMode(mode);
+    setExtraEmails([]);
+    setNewExtraEmail("");
+    // If nothing selected, select all
+    if (selectedDocIds.size === 0 && selectedVoucherIds.size === 0) {
+      setSelectedDocIds(new Set(documents.map((d) => d.id)));
+      setSelectedVoucherIds(new Set(vouchers.map((v) => v.id)));
+    }
     setSendDialogOpen(true);
   };
 
@@ -640,38 +656,62 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   };
 
   const handleSendAll = async () => {
-    if (!clientEmail) {
-      toast.error("Klient nemá zadaný e-mail");
+    // Determine recipient emails based on mode
+    const toEmails: string[] = [];
+    if (sendMode === "client" || sendMode === "both") {
+      if (!clientEmail) {
+        toast.error("Klient nemá zadaný e-mail");
+        return;
+      }
+      toEmails.push(clientEmail);
+    }
+    if (sendMode === "supplier" || sendMode === "both") {
+      toEmails.push(...supplierEmails);
+    }
+    // Always include extra emails
+    toEmails.push(...extraEmails.filter(Boolean));
+
+    if (toEmails.length === 0) {
+      toast.error("Zadejte alespoň jednoho příjemce");
       return;
     }
 
     setSending(true);
     try {
-      // Generate PDFs for vouchers that don't have a deal_document entry yet
-      if (vouchers.length > 0) {
+      // Determine which vouchers to send
+      const vouchersToSend = vouchers.filter(v => selectedVoucherIds.has(v.id));
+
+      // Generate PDFs for selected vouchers not yet in deal-documents
+      if (vouchersToSend.length > 0) {
         const existingNames = documents.map(d => d.file_name.toLowerCase());
-        const missingVouchers = vouchers.filter(v => 
+        const missingVouchers = vouchersToSend.filter(v =>
           !existingNames.some(n => n.includes(v.voucher_code.toLowerCase()))
         );
-
         if (missingVouchers.length > 0) {
           toast.info(`Generuji ${missingVouchers.length} PDF voucherů...`);
-          for (const v of missingVouchers) {
-            await generateVoucherPdf(v);
-          }
-          // Refresh documents list so the edge function picks them up
+          for (const v of missingVouchers) await generateVoucherPdf(v);
           await fetchDocuments();
         }
       }
 
-      // Re-check that there are documents to send
+      // Build list of document IDs to send
+      const docIdsToSend = Array.from(selectedDocIds);
+      // Add newly generated voucher docs
       const { data: freshDocs } = await supabase
         .from("deal_documents")
-        .select("id")
+        .select("id, file_name")
         .eq("deal_id", dealId);
 
-      if (!freshDocs || freshDocs.length === 0) {
-        toast.error("Nejsou žádné dokumenty k odeslání");
+      const allDocIds = [
+        ...docIdsToSend,
+        ...(freshDocs || [])
+          .filter(d => vouchersToSend.some(v => d.file_name.toLowerCase().includes(v.voucher_code.toLowerCase())))
+          .map(d => d.id)
+          .filter(id => !docIdsToSend.includes(id)),
+      ];
+
+      if (allDocIds.length === 0) {
+        toast.error("Vyberte alespoň jeden dokument k odeslání");
         setSending(false);
         return;
       }
@@ -679,20 +719,22 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       const { data, error } = await supabase.functions.invoke("send-deal-documents", {
         body: {
           dealId,
-          clientEmail,
+          clientEmail: toEmails[0],
           clientName: clientName || "",
           emailSubject,
           emailBody,
-          ccEmails: ccSuppliers ? supplierEmails : [],
+          ccEmails: toEmails.slice(1),
+          documentIds: allDocIds,
         },
       });
 
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
 
-      const ccInfo = ccSuppliers && supplierEmails.length > 0 ? ` + CC: ${supplierEmails.join(", ")}` : "";
-      toast.success(`E-mail odeslán na ${clientEmail}${ccInfo} (${data.attachmentCount} příloh)`);
+      toast.success(`E-mail odeslán na: ${toEmails.join(", ")} (${data.attachmentCount} příloh)`);
       setSendDialogOpen(false);
+      setSelectedDocIds(new Set());
+      setSelectedVoucherIds(new Set());
     } catch (err: any) {
       console.error("Send error:", err);
       toast.error(err.message || "Nepodařilo se odeslat dokumenty");
@@ -820,11 +862,38 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
             {totalItems > 0 && (
               <Badge variant="secondary">{totalItems} položek</Badge>
             )}
-            {(documents.length > 0 || vouchers.length > 0) && clientEmail && (
-              <Button size="sm" variant="default" onClick={openSendDialog}>
-                <Send className="h-4 w-4 mr-1" />
-                Odeslat klientovi{supplierEmails.length > 0 ? " a dodavateli" : ""}
-              </Button>
+            {(documents.length > 0 || vouchers.length > 0) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="default">
+                    <Send className="h-4 w-4 mr-1" />
+                    Odeslat
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => openSendDialog("client")}>
+                    <User className="h-4 w-4 mr-2" />
+                    Odeslat klientovi
+                  </DropdownMenuItem>
+                  {supplierEmails.length > 0 && (
+                    <DropdownMenuItem onClick={() => openSendDialog("both")}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Odeslat klientovi a dodavateli
+                    </DropdownMenuItem>
+                  )}
+                  {supplierEmails.length > 0 && (
+                    <DropdownMenuItem onClick={() => openSendDialog("supplier")}>
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Odeslat pouze dodavateli
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => openSendDialog("client")}>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Odeslat na jiný e-mail
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
@@ -906,8 +975,19 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           <div className="space-y-2">
             {/* Vouchers */}
             {vouchers.map((v) => (
-              <div key={`v-${v.id}`} className="flex items-center justify-between p-3 rounded-lg border bg-background">
+              <div key={`v-${v.id}`} className={`flex items-center justify-between p-3 rounded-lg border bg-background ${selectedVoucherIds.has(v.id) ? "border-primary/50 bg-primary/5" : ""}`}>
                 <div className="flex items-center gap-2 min-w-0">
+                  <Checkbox
+                    checked={selectedVoucherIds.has(v.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedVoucherIds(prev => {
+                        const next = new Set(prev);
+                        checked ? next.add(v.id) : next.delete(v.id);
+                        return next;
+                      });
+                    }}
+                    className="shrink-0"
+                  />
                   <FileText className="h-4 w-4 text-primary shrink-0" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -983,8 +1063,19 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
             {/* Uploaded documents */}
             {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border bg-background">
+              <div key={doc.id} className={`flex items-center justify-between p-3 rounded-lg border bg-background ${selectedDocIds.has(doc.id) ? "border-primary/50 bg-primary/5" : ""}`}>
                 <div className="flex items-center gap-2 min-w-0">
+                  <Checkbox
+                    checked={selectedDocIds.has(doc.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedDocIds(prev => {
+                        const next = new Set(prev);
+                        checked ? next.add(doc.id) : next.delete(doc.id);
+                        return next;
+                      });
+                    }}
+                    className="shrink-0"
+                  />
                   <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{doc.file_name}</p>
@@ -1070,60 +1161,127 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
         {/* Send all dialog */}
         <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Odeslat dokumenty</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>Příjemce (klient)</Label>
-                <Input value={clientEmail || ""} disabled className="mt-1" />
-              </div>
-              {supplierEmails.length > 0 && (
-                <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
-                  <div>
-                    <Label htmlFor="cc-suppliers-toggle" className="text-sm font-medium cursor-pointer">
-                      Kopie dodavatelům (CC)
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {supplierEmails.join(", ")}
-                    </p>
-                  </div>
-                  <Switch
-                    id="cc-suppliers-toggle"
-                    checked={ccSuppliers}
-                    onCheckedChange={setCcSuppliers}
-                  />
+              {/* Mode selector */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Příjemce</Label>
+                <div className="grid grid-cols-1 gap-2">
+                  <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "client" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("client")}>
+                    <input type="radio" name="send-mode" checked={sendMode === "client"} onChange={() => setSendMode("client")} className="accent-primary" />
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="text-sm">
+                      <span className="font-medium">Pouze klientovi</span>
+                      {clientEmail && <span className="text-muted-foreground ml-2 text-xs">{clientEmail}</span>}
+                    </div>
+                  </label>
+                  {supplierEmails.length > 0 && (
+                    <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "both" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("both")}>
+                      <input type="radio" name="send-mode" checked={sendMode === "both"} onChange={() => setSendMode("both")} className="accent-primary" />
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <div className="text-sm">
+                        <span className="font-medium">Klientovi a dodavateli</span>
+                        <span className="text-muted-foreground ml-2 text-xs">{supplierEmails.join(", ")}</span>
+                      </div>
+                    </label>
+                  )}
+                  {supplierEmails.length > 0 && (
+                    <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "supplier" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("supplier")}>
+                      <input type="radio" name="send-mode" checked={sendMode === "supplier"} onChange={() => setSendMode("supplier")} className="accent-primary" />
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <div className="text-sm">
+                        <span className="font-medium">Pouze dodavateli</span>
+                        <span className="text-muted-foreground ml-2 text-xs">{supplierEmails.join(", ")}</span>
+                      </div>
+                    </label>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Extra recipients */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Další příjemci</Label>
+                {extraEmails.map((em, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input value={em} readOnly className="h-7 text-sm flex-1" />
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setExtraEmails(prev => prev.filter((_, j) => j !== i))}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Přidat e-mail..."
+                    value={newExtraEmail}
+                    onChange={(e) => setNewExtraEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newExtraEmail.trim()) {
+                        setExtraEmails(prev => [...prev, newExtraEmail.trim()]);
+                        setNewExtraEmail("");
+                      }
+                    }}
+                    className="h-8 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => {
+                      if (newExtraEmail.trim()) {
+                        setExtraEmails(prev => [...prev, newExtraEmail.trim()]);
+                        setNewExtraEmail("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Přidat
+                  </Button>
+                </div>
+              </div>
+
+              {/* Selected documents summary */}
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Vybrané dokumenty ({selectedDocIds.size + selectedVoucherIds.size})</Label>
+                <div className="rounded-md border p-2 max-h-28 overflow-y-auto space-y-1">
+                  {vouchers.filter(v => selectedVoucherIds.has(v.id)).map(v => (
+                    <div key={v.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <FileText className="h-3 w-3 text-primary shrink-0" />
+                      Voucher {v.voucher_code} – {v.client_name}
+                    </div>
+                  ))}
+                  {documents.filter(d => selectedDocIds.has(d.id)).map(d => (
+                    <div key={d.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <FileText className="h-3 w-3 shrink-0" />
+                      {d.file_name}
+                    </div>
+                  ))}
+                  {selectedDocIds.size + selectedVoucherIds.size === 0 && (
+                    <p className="text-xs text-muted-foreground italic">Žádné dokumenty vybrány</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Subject */}
               <div>
                 <Label>Předmět</Label>
-                <Input
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="mt-1" />
               </div>
+
+              {/* Body */}
               <div>
                 <Label>Text e-mailu</Label>
-                <Textarea
-                  value={emailBody}
-                  onChange={(e) => setEmailBody(e.target.value)}
-                  rows={8}
-                  className="mt-1"
-                />
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <p>Bude odesláno <strong>{documents.length}</strong> {documents.length === 1 ? "dokument" : documents.length < 5 ? "dokumenty" : "dokumentů"}
-                {vouchers.length > 0 && ` + ${vouchers.length} ${vouchers.length === 1 ? "voucher" : vouchers.length < 5 ? "vouchery" : "voucherů"} (PDF se vygeneruje automaticky)`}
-                </p>
+                <Textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={7} className="mt-1" />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSendDialogOpen(false)} disabled={sending}>
                 Zrušit
               </Button>
-              <Button onClick={handleSendAll} disabled={sending}>
+              <Button onClick={handleSendAll} disabled={sending || (selectedDocIds.size + selectedVoucherIds.size === 0)}>
                 {sending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
