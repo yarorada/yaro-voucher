@@ -9,7 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail, ChevronDown, User, Users, Building2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn, removeDiacritics } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
@@ -708,32 +714,41 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
   };
 
-  const handleSendVoucher = async (voucher: DealVoucher) => {
+  // mode: "client" | "both" | "supplier"
+  const handleSendVoucher = async (voucher: DealVoucher, mode: "client" | "both" | "supplier" = "both") => {
     setSendingVoucherId(voucher.id);
     try {
-      // Check client email first
-      const { data: travelerData } = await supabase
-        .from("voucher_travelers")
-        .select("is_main_client, clients:client_id(email, first_name, last_name)")
-        .eq("voucher_id", voucher.id)
-        .eq("is_main_client", true)
-        .limit(1)
-        .single();
-
-      const clientEmail = (travelerData?.clients as any)?.email;
-      if (!clientEmail) {
-        // Try fallback via voucher.client_id
-        const { data: voucherRow } = await supabase
-          .from("vouchers")
-          .select("client_id, clients:client_id(email, first_name, last_name)")
-          .eq("id", voucher.id)
+      // For client/both modes, check client email
+      if (mode !== "supplier") {
+        const { data: travelerData } = await supabase
+          .from("voucher_travelers")
+          .select("is_main_client, clients:client_id(email, first_name, last_name)")
+          .eq("voucher_id", voucher.id)
+          .eq("is_main_client", true)
+          .limit(1)
           .single();
-        const fallbackEmail = (voucherRow?.clients as any)?.email;
-        if (!fallbackEmail) {
-          toast.error(`Klient ${voucher.client_name} nemá vyplněný e-mail. Doplňte e-mail v kartě klienta.`);
-          setSendingVoucherId(null);
-          return;
+
+        const voucherClientEmail = (travelerData?.clients as any)?.email;
+        if (!voucherClientEmail) {
+          const { data: voucherRow } = await supabase
+            .from("vouchers")
+            .select("client_id, clients:client_id(email, first_name, last_name)")
+            .eq("id", voucher.id)
+            .single();
+          const fallbackEmail = (voucherRow?.clients as any)?.email;
+          if (!fallbackEmail) {
+            toast.error(`Klient ${voucher.client_name} nemá vyplněný e-mail. Doplňte e-mail v kartě klienta.`);
+            setSendingVoucherId(null);
+            return;
+          }
         }
+      }
+
+      // For supplier/both modes, check supplier email
+      if (mode !== "client" && !voucher.suppliers?.email) {
+        toast.error(`Voucher ${voucher.voucher_code} nemá přiřazeného dodavatele s e-mailem.`);
+        setSendingVoucherId(null);
+        return;
       }
 
       // Fetch full voucher data to generate PDF
@@ -750,29 +765,27 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name);
-
-            // Upload to voucher-pdfs bucket (where send-voucher-email expects it)
             const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
             const { error: uploadErr } = await supabase.storage
               .from("voucher-pdfs")
               .upload(voucherPdfPath, pdfBlob, { contentType: "application/pdf", upsert: true });
-
-            if (!uploadErr) {
-              pdfPath = voucherPdfPath;
-            }
+            if (!uploadErr) pdfPath = voucherPdfPath;
           }
         } catch (pdfErr) {
           console.error("PDF generation error:", pdfErr);
-          // Continue without PDF
         }
       }
 
-      // Use the send-voucher-email edge function
+      // Determine flags for edge function
+      const sendToClient = mode === "client" || mode === "both";
+      const sendToSupplier = mode === "supplier" || mode === "both";
+
       const { data, error } = await supabase.functions.invoke("send-voucher-email", {
         body: {
           voucherId: voucher.id,
           pdfPath,
-          emailCcSupplier: !!voucher.suppliers?.email,
+          emailCcSupplier: sendToSupplier && !!voucher.suppliers?.email,
+          skipClient: !sendToClient,
         },
       });
 
@@ -910,21 +923,42 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => handleSendVoucher(v)}
-                    disabled={sendingVoucherId === v.id}
-                    title={`Odeslat klientovi${v.suppliers?.email ? ` a dodavateli (${v.suppliers.email})` : ""}`}
-                  >
-                    {sendingVoucherId === v.id ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Mail className="h-3 w-3" />
-                    )}
-                    {v.sent_at ? "Znovu" : "Odeslat"}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={sendingVoucherId === v.id}
+                      >
+                        {sendingVoucherId === v.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Mail className="h-3 w-3" />
+                        )}
+                        {v.sent_at ? "Znovu" : "Odeslat"}
+                        <ChevronDown className="h-3 w-3 ml-0.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => handleSendVoucher(v, "client")}>
+                        <User className="h-4 w-4 mr-2" />
+                        Odeslat klientovi
+                      </DropdownMenuItem>
+                      {v.suppliers?.email && (
+                        <DropdownMenuItem onClick={() => handleSendVoucher(v, "both")}>
+                          <Users className="h-4 w-4 mr-2" />
+                          Odeslat klientovi a dodavateli
+                        </DropdownMenuItem>
+                      )}
+                      {v.suppliers?.email && (
+                        <DropdownMenuItem onClick={() => handleSendVoucher(v, "supplier")}>
+                          <Building2 className="h-4 w-4 mr-2" />
+                          Odeslat pouze dodavateli
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     size="icon"
                     variant="ghost"

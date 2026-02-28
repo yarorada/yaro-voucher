@@ -11,6 +11,7 @@ interface SendEmailRequest {
   pdfPath?: string | null;
   emailSubjectTemplate?: string;
   emailCcSupplier?: boolean;
+  skipClient?: boolean;
 }
 
 // Fallback Czech email text for client
@@ -102,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier }: SendEmailRequest = await req.json();
+    const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier, skipClient }: SendEmailRequest = await req.json();
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!voucherId || !uuidRegex.test(voucherId)) {
@@ -200,34 +201,36 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
 
-    // Send to CLIENT
-    const clientEmailText = clientTemplate
-      ? replacePlaceholders(clientTemplate.body, placeholderVars)
-      : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName);
+    // Send to CLIENT (unless skipClient is true)
+    if (!skipClient) {
+      const clientEmailText = clientTemplate
+        ? replacePlaceholders(clientTemplate.body, placeholderVars)
+        : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName);
 
-    const clientEmailPayload: any = {
-      from: "YARO Travel <radek@yarogolf.cz>",
-      to: [clientEmail],
-      bcc: ["zajezdy@yarotravel.cz"],
-      subject,
-      text: clientEmailText,
-    };
-    if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
+      const clientEmailPayload: any = {
+        from: "YARO Travel <radek@yarogolf.cz>",
+        to: [clientEmail],
+        bcc: ["zajezdy@yarotravel.cz"],
+        subject,
+        text: clientEmailText,
+      };
+      if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
 
-    const clientResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
-      body: JSON.stringify(clientEmailPayload),
-    });
+      const clientResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
+        body: JSON.stringify(clientEmailPayload),
+      });
 
-    if (clientResponse.ok) {
-      const clientResult = await clientResponse.json();
-      emailResults.push({ recipient: clientEmail, success: true, id: clientResult.id });
-      await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "sent" });
-    } else {
-      const clientError = await clientResponse.json();
-      emailResults.push({ recipient: clientEmail, success: false, error: JSON.stringify(clientError) });
-      await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "failed" });
+      if (clientResponse.ok) {
+        const clientResult = await clientResponse.json();
+        emailResults.push({ recipient: clientEmail, success: true, id: clientResult.id });
+        await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "sent" });
+      } else {
+        const clientError = await clientResponse.json();
+        emailResults.push({ recipient: clientEmail, success: false, error: JSON.stringify(clientError) });
+        await logEmail(supabase, { template_id: clientTemplate?.id, voucher_id: voucherId, recipient_email: clientEmail, status: "failed" });
+      }
     }
 
     // Send to SUPPLIER
