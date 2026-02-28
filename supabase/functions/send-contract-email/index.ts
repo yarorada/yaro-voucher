@@ -57,15 +57,15 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const jwt = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
-    if (authError || !user) {
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid authentication" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
