@@ -947,7 +947,6 @@ const Clients = () => {
                     <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
-                          {client.title ? `${client.title} ` : ""}
                           {client.first_name} {client.last_name}
                           {client.passport_number && (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">PAS</span>
