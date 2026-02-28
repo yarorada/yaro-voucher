@@ -552,37 +552,33 @@ const Clients = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label>Cestovní pas {ocrFilledFields.has("passport_number") && <span className="text-green-600 text-xs ml-1">✓ OCR</span>}</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Číslo"
-                            value={formData.passport_number}
-                            onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
-                            className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
-                          />
-                          <DateInput
-                            value={formData.passport_expiry}
-                            onChange={(date) => setFormData({ ...formData, passport_expiry: date })}
-                            placeholder="Platnost"
-                            className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50 w-32" : "w-32"}
-                          />
-                        </div>
+                        <Input
+                          placeholder="Číslo pasu"
+                          value={formData.passport_number}
+                          onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
+                          className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
+                        />
+                        <DateInput
+                          value={formData.passport_expiry}
+                          onChange={(date) => setFormData({ ...formData, passport_expiry: date })}
+                          placeholder="Platnost do"
+                          className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50" : ""}
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label>Občanský průkaz {ocrFilledFields.has("id_card_number") && <span className="text-green-600 text-xs ml-1">✓ OCR</span>}</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Číslo"
-                            value={formData.id_card_number}
-                            onChange={(e) => setFormData({ ...formData, id_card_number: e.target.value })}
-                            className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
-                          />
-                          <DateInput
-                            value={formData.id_card_expiry}
-                            onChange={(date) => setFormData({ ...formData, id_card_expiry: date })}
-                            placeholder="Platnost"
-                            className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50 w-32" : "w-32"}
-                          />
-                        </div>
+                        <Input
+                          placeholder="Číslo OP"
+                          value={formData.id_card_number}
+                          onChange={(e) => setFormData({ ...formData, id_card_number: e.target.value })}
+                          className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
+                        />
+                        <DateInput
+                          value={formData.id_card_expiry}
+                          onChange={(date) => setFormData({ ...formData, id_card_expiry: date })}
+                          placeholder="Platnost do"
+                          className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50" : ""}
+                        />
                       </div>
                     </div>
 
