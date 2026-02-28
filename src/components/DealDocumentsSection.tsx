@@ -668,7 +668,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     if (sendMode === "supplier" || sendMode === "both") {
       toEmails.push(...supplierEmails);
     }
-    // Always include extra emails
     toEmails.push(...extraEmails.filter(Boolean));
 
     if (toEmails.length === 0) {
@@ -678,39 +677,31 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
     setSending(true);
     try {
-      // Determine which vouchers to send
+      // Generate PDFs for selected vouchers directly in memory (no storage upload)
       const vouchersToSend = vouchers.filter(v => selectedVoucherIds.has(v.id));
+      const inlineAttachments: { filename: string; base64: string }[] = [];
 
-      // Generate PDFs for selected vouchers not yet in deal-documents
       if (vouchersToSend.length > 0) {
-        const existingNames = documents.map(d => d.file_name.toLowerCase());
-        const missingVouchers = vouchersToSend.filter(v =>
-          !existingNames.some(n => n.includes(v.voucher_code.toLowerCase()))
-        );
-        if (missingVouchers.length > 0) {
-          toast.info(`Generuji ${missingVouchers.length} PDF voucherů...`);
-          for (const v of missingVouchers) await generateVoucherPdf(v);
-          await fetchDocuments();
+        for (const v of vouchersToSend) {
+          try {
+            const { data: fullVoucher } = await supabase.from("vouchers").select("*").eq("id", v.id).single();
+            if (fullVoucher) {
+              const pdfBlob = buildVoucherPdfBlob(fullVoucher, v.suppliers?.name);
+              const arrayBuffer = await pdfBlob.arrayBuffer();
+              const uint8 = new Uint8Array(arrayBuffer);
+              let binary = "";
+              for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+              inlineAttachments.push({ filename: `Voucher ${v.voucher_code}.pdf`, base64: btoa(binary) });
+            }
+          } catch (err) {
+            console.error("Error generating voucher PDF:", err);
+          }
         }
       }
 
-      // Build list of document IDs to send
       const docIdsToSend = Array.from(selectedDocIds);
-      // Add newly generated voucher docs
-      const { data: freshDocs } = await supabase
-        .from("deal_documents")
-        .select("id, file_name")
-        .eq("deal_id", dealId);
 
-      const allDocIds = [
-        ...docIdsToSend,
-        ...(freshDocs || [])
-          .filter(d => vouchersToSend.some(v => d.file_name.toLowerCase().includes(v.voucher_code.toLowerCase())))
-          .map(d => d.id)
-          .filter(id => !docIdsToSend.includes(id)),
-      ];
-
-      if (allDocIds.length === 0) {
+      if (docIdsToSend.length === 0 && inlineAttachments.length === 0) {
         toast.error("Vyberte alespoň jeden dokument k odeslání");
         setSending(false);
         return;
@@ -724,7 +715,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           emailSubject,
           emailBody,
           ccEmails: toEmails.slice(1),
-          documentIds: allDocIds,
+          documentIds: docIdsToSend,
+          inlineAttachments,
         },
       });
 
