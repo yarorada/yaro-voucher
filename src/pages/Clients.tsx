@@ -9,6 +9,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
 import { BulkClientUpload } from "@/components/BulkClientUpload";
 import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
+import { DiacriticsChecker } from "@/components/DiacriticsChecker";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
   Select,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText, X } from "lucide-react";
+import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText, X, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -441,29 +442,43 @@ const Clients = () => {
           </button>
         )}
       </div>
-      <DuplicateClientChecker onComplete={fetchClients} />
-      <Button 
-        className={toolbarButtonClass}
-        onClick={async () => {
-          if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
-          try {
-            const { data, error } = await supabase.functions.invoke('assign-client-titles');
-            if (error) throw error;
-            if (data?.success) {
-              toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
-              if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
-              fetchClients();
-            } else {
-              throw new Error(data?.error || 'Unknown error');
-            }
-          } catch (error: any) {
-            console.error('Error assigning titles:', error);
-            toast.error(`Chyba při přiřazování titulů: ${error.message}`);
-          }
-        }}
-      >
-        Tituly
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className={toolbarButtonClass + " gap-1"}>
+            <Users className="h-3.5 w-3.5" />
+            Hromadné úpravy
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+          <DuplicateClientChecker onComplete={fetchClients} />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-sm"
+            onClick={async () => {
+              if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+              try {
+                const { data, error } = await supabase.functions.invoke('assign-client-titles');
+                if (error) throw error;
+                if (data?.success) {
+                  toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+                  if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+                  fetchClients();
+                } else {
+                  throw new Error(data?.error || 'Unknown error');
+                }
+              } catch (error: any) {
+                console.error('Error assigning titles:', error);
+                toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+              }
+            }}
+          >
+            <User className="h-4 w-4 mr-2" />
+            Přiřadit tituly
+          </Button>
+          <DiacriticsChecker onComplete={fetchClients} />
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button className={toolbarButtonClass + " gap-1"}>

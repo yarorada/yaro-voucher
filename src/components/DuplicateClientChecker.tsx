@@ -200,15 +200,15 @@ export function DuplicateClientChecker({ onComplete }: DuplicateClientCheckerPro
   return (
     <>
       <Button
-        variant="outline"
-        className="gap-2"
+        variant="ghost"
+        className="w-full justify-start text-sm"
         onClick={checkForDuplicates}
         disabled={loading}
       >
         {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         ) : (
-          <Users className="h-4 w-4" />
+          <Users className="h-4 w-4 mr-2" />
         )}
         Kontrola duplicit
       </Button>
