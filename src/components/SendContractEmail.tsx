@@ -85,28 +85,30 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
       const element = pdfContentRef.current;
 
       if (element) {
-        // Wait for QR codes to be generated (up to 5 seconds)
+        // Wait for QR codes to be generated (up to 2 seconds)
         await new Promise<void>((resolve) => {
-          const check = () => {
+          if (element.getAttribute('data-qr-ready') === 'true') {
+            resolve();
+            return;
+          }
+          const timeout = setTimeout(resolve, 2000);
+          const interval = setInterval(() => {
             if (element.getAttribute('data-qr-ready') === 'true') {
+              clearInterval(interval);
+              clearTimeout(timeout);
               resolve();
-            } else {
-              setTimeout(check, 200);
             }
-          };
-          // Set a timeout fallback
-          setTimeout(resolve, 5000);
-          check();
+          }, 100);
         });
 
         const opt = {
           margin: [10, 10, 10, 10] as [number, number, number, number],
-          image: { type: 'jpeg' as const, quality: 0.98 },
+          image: { type: 'jpeg' as const, quality: 0.85 },
           html2canvas: {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             allowTaint: true,
-            letterRendering: true,
+            letterRendering: false,
             onclone: (clonedDoc: Document) => {
               clonedDoc.documentElement.classList.remove('dark');
               const clonedElement = clonedDoc.getElementById('contract-pdf-content');
