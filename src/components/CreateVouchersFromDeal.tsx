@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -81,6 +91,8 @@ export function CreateVouchersFromDeal({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ supplierName: string; success: boolean; voucherId?: string; isYaro?: boolean }[]>([]);
+  const [existingVouchersDialogOpen, setExistingVouchersDialogOpen] = useState(false);
+  const [existingVouchers, setExistingVouchers] = useState<Array<{ id: string; voucher_code: string }>>([]);
 
   // Group services by supplier
   const supplierGroups: SupplierGroup[] = (() => {
@@ -314,12 +326,27 @@ export function CreateVouchersFromDeal({
 
   if (services.length === 0) return null;
 
+  const handleOpenDialog = async () => {
+    // Check if vouchers already exist for this deal
+    const { data: existing } = await supabase
+      .from("vouchers")
+      .select("id, voucher_code")
+      .eq("deal_id", dealId);
+    if (existing && existing.length > 0) {
+      setExistingVouchers(existing);
+      setExistingVouchersDialogOpen(true);
+      return;
+    }
+    setOpen(true);
+    setResults([]);
+  };
+
   return (
     <>
       <Button
         variant="outline"
         size="sm"
-        onClick={() => { setOpen(true); setResults([]); }}
+        onClick={handleOpenDialog}
         className="gap-2 md:size-default"
       >
         <FileText className="h-4 w-4" />
@@ -412,6 +439,35 @@ export function CreateVouchersFromDeal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Existing vouchers confirmation */}
+      <AlertDialog open={existingVouchersDialogOpen} onOpenChange={setExistingVouchersDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vouchery již existují</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tento obchodní případ již obsahuje {existingVouchers.length === 1 ? "voucher" : `${existingVouchers.length} vouchery`}:
+              {existingVouchers.map(v => (
+                <span key={v.id} className="block font-medium mt-1">{v.voucher_code}</span>
+              ))}
+              <br />
+              Chcete přesto vytvořit nové vouchery, nebo ponechat stávající?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setExistingVouchersDialogOpen(false)}>
+              Ponechat stávající
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setExistingVouchersDialogOpen(false);
+              setOpen(true);
+              setResults([]);
+            }}>
+              Vytvořit nové vouchery
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
