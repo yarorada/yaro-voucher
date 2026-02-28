@@ -30,6 +30,8 @@ interface Traveler {
     first_name: string;
     last_name: string;
     email: string | null;
+    title: string | null;
+    date_of_birth: string | null;
   };
 }
 
@@ -171,6 +173,34 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       toast.success("Rooming list uložen");
     }
     setSaving(false);
+  };
+
+  const getAgeCategory = (dateOfBirth: string | null): "adult" | "child" | "infant" => {
+    if (!dateOfBirth) return "adult";
+    const today = new Date();
+    const dob = new Date(dateOfBirth);
+    const ageMs = today.getTime() - dob.getTime();
+    const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+    if (ageYears < 2) return "infant";
+    if (ageYears < 12) return "child";
+    return "adult";
+  };
+
+  const getAgeCategoryColor = (category: "adult" | "child" | "infant") => {
+    if (category === "infant") return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700";
+    if (category === "child") return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700";
+    return "bg-primary/10 text-primary border-primary/20";
+  };
+
+  const getTravelerLabel = (clientId: string, forPdf = false) => {
+    const t = travelers.find((tr) => tr.client_id === clientId);
+    if (!t) return "Neznámý";
+    const { first_name, last_name, title, date_of_birth } = t.clients;
+    const titleStr = title ? `${title} ` : "";
+    const dobStr = date_of_birth
+      ? ` (${formatDate(date_of_birth)})`
+      : "";
+    return `${titleStr}${first_name} ${last_name}${dobStr}`;
   };
 
   const getTravelerName = (clientId: string) => {
@@ -408,17 +438,21 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                       Cestující ({room.traveler_ids.length})
                     </Label>
                     <div className="flex flex-wrap gap-1.5">
-                      {room.traveler_ids.map((clientId) => (
-                        <span
-                          key={clientId}
-                          className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full cursor-pointer hover:bg-primary/20 transition-colors"
-                          onClick={() => toggleTravelerInRoom(room.id, clientId)}
-                          title="Klikněte pro odebrání"
-                        >
-                          {getTravelerName(clientId)}
-                          <X className="h-3 w-3" />
-                        </span>
-                      ))}
+                      {room.traveler_ids.map((clientId) => {
+                        const t = travelers.find((tr) => tr.client_id === clientId);
+                        const category = getAgeCategory(t?.clients.date_of_birth || null);
+                        return (
+                          <span
+                            key={clientId}
+                            className={`inline-flex items-center gap-1 text-xs border px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getAgeCategoryColor(category)}`}
+                            onClick={() => toggleTravelerInRoom(room.id, clientId)}
+                            title="Klikněte pro odebrání"
+                          >
+                            {getTravelerLabel(clientId)}
+                            <X className="h-3 w-3" />
+                          </span>
+                        );
+                      })}
                       {room.traveler_ids.length === 0 && (
                         <span className="text-xs text-muted-foreground italic">
                           Klikněte na cestujícího níže pro přiřazení
@@ -507,7 +541,16 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                   <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
                   <td style={{ border: "1px solid #ccc", padding: "8px" }}>
                     {room.traveler_ids.length > 0
-                      ? room.traveler_ids.map((id) => getTravelerName(id)).join(", ")
+                      ? room.traveler_ids.map((id) => {
+                          const t = travelers.find((tr) => tr.client_id === id);
+                          const cat = getAgeCategory(t?.clients.date_of_birth || null);
+                          const color = cat === "infant" ? "#16a34a" : cat === "child" ? "#2563eb" : "#111";
+                          return (
+                            <span key={id} style={{ color, display: "block" }}>
+                              {getTravelerLabel(id, true)}
+                            </span>
+                          );
+                        })
                       : "—"}
                   </td>
                 </tr>
@@ -515,7 +558,13 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
             </tbody>
           </table>
 
-          <p style={{ fontSize: "10px", color: "#999", marginTop: "20px" }}>
+          <div style={{ marginTop: "12px", fontSize: "10px", color: "#555" }}>
+            <span style={{ marginRight: "16px" }}>&#9632; <span style={{ color: "#111" }}>Adult</span></span>
+            <span style={{ marginRight: "16px" }}>&#9632; <span style={{ color: "#2563eb" }}>Child (under 12)</span></span>
+            <span>&#9632; <span style={{ color: "#16a34a" }}>Infant (under 2)</span></span>
+          </div>
+
+          <p style={{ fontSize: "10px", color: "#999", marginTop: "12px" }}>
             Generated: {new Date().toLocaleDateString("en-GB")}
           </p>
         </div>

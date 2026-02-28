@@ -107,6 +107,7 @@ interface DealTraveler {
     last_name: string;
     email: string | null;
     date_of_birth: string | null;
+    title: string | null;
   };
 }
 
@@ -724,7 +725,7 @@ const DealDetail = () => {
             client_id,
             is_lead_traveler,
             order_index,
-            clients(id, first_name, last_name, email, date_of_birth)
+            clients(id, first_name, last_name, email, date_of_birth, title)
           )
         `)
         .eq("id", id)
