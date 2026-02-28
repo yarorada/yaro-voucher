@@ -192,11 +192,24 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     return "bg-primary/10 text-primary border-primary/20";
   };
 
+  const TITLE_EN_MAP: Record<string, string> = {
+    "Pan": "Mr.",
+    "Paní": "Mrs.",
+    "Slečna": "Miss",
+    "Mr.": "Mr.",
+    "Mrs.": "Mrs.",
+    "Miss": "Miss",
+    "Ms.": "Ms.",
+    "Dr.": "Dr.",
+    "Prof.": "Prof.",
+  };
+
   const getTravelerLabel = (clientId: string, forPdf = false) => {
     const t = travelers.find((tr) => tr.client_id === clientId);
     if (!t) return "Neznámý";
     const { first_name, last_name, title, date_of_birth } = t.clients;
-    const titleStr = title ? `${title} ` : "";
+    const resolvedTitle = forPdf && title ? (TITLE_EN_MAP[title] ?? title) : title;
+    const titleStr = resolvedTitle ? `${resolvedTitle} ` : "";
     const dobStr = date_of_birth
       ? ` (${formatDate(date_of_birth)})`
       : "";
