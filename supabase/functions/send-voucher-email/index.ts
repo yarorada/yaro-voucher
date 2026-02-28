@@ -12,6 +12,9 @@ interface SendEmailRequest {
   emailSubjectTemplate?: string;
   emailCcSupplier?: boolean;
   skipClient?: boolean;
+  customEmailSubject?: string;
+  customEmailBody?: string;
+  extraEmails?: string[];
 }
 
 // Fallback Czech email text for client
@@ -103,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier, skipClient }: SendEmailRequest = await req.json();
+    const { voucherId, pdfPath, emailSubjectTemplate, emailCcSupplier, skipClient, customEmailSubject, customEmailBody, extraEmails }: SendEmailRequest = await req.json();
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!voucherId || !uuidRegex.test(voucherId)) {
@@ -178,7 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supplierTemplate = await getTemplate(supabase, "voucher_supplier_en");
 
     const defaultSubjectTemplate = "Travel Voucher {{voucher_code}} - YARO Travel";
-    const subjectTemplate = clientTemplate?.subject || emailSubjectTemplate || defaultSubjectTemplate;
+    const subjectTemplate = customEmailSubject || clientTemplate?.subject || emailSubjectTemplate || defaultSubjectTemplate;
     const subject = replacePlaceholders(subjectTemplate, placeholderVars);
 
     // Prepare PDF attachment
@@ -203,9 +206,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send to CLIENT (unless skipClient is true)
     if (!skipClient) {
-      const clientEmailText = clientTemplate
+      const clientEmailText = customEmailBody || (clientTemplate
         ? replacePlaceholders(clientTemplate.body, placeholderVars)
-        : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName);
+        : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName));
 
       const clientEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
@@ -236,12 +239,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to SUPPLIER
     const shouldCcSupplier = emailCcSupplier !== false;
     if (shouldCcSupplier && supplier?.email) {
-      const supplierEmailText = supplierTemplate
+      const supplierEmailText = customEmailBody || (supplierTemplate
         ? replacePlaceholders(supplierTemplate.body, placeholderVars)
-        : buildSupplierEmailTextFallback(dateFrom, dateTo, hotelName);
-      const supplierSubject = supplierTemplate
+        : buildSupplierEmailTextFallback(dateFrom, dateTo, hotelName));
+      const supplierSubject = customEmailSubject || (supplierTemplate
         ? replacePlaceholders(supplierTemplate.subject, placeholderVars)
-        : subject;
+        : subject);
 
       const supplierEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
@@ -266,6 +269,29 @@ const handler = async (req: Request): Promise<Response> => {
         const supplierError = await supplierResponse.json();
         emailResults.push({ recipient: supplier.email, success: false, error: JSON.stringify(supplierError) });
         await logEmail(supabase, { template_id: supplierTemplate?.id, voucher_id: voucherId, recipient_email: supplier.email, status: "failed" });
+      }
+    }
+
+    // Send to extra emails
+    for (const extraEmail of (extraEmails || []).filter(Boolean)) {
+      const extraPayload: any = {
+        from: "YARO Travel <radek@yarogolf.cz>",
+        to: [extraEmail],
+        subject: customEmailSubject || subject,
+        text: customEmailBody || buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName),
+      };
+      if (pdfAttachment.length > 0) extraPayload.attachments = pdfAttachment;
+      const extraResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
+        body: JSON.stringify(extraPayload),
+      });
+      if (extraResponse.ok) {
+        const extraResult = await extraResponse.json();
+        emailResults.push({ recipient: extraEmail, success: true, id: extraResult.id });
+        await logEmail(supabase, { voucher_id: voucherId, recipient_email: extraEmail, status: "sent" });
+      } else {
+        emailResults.push({ recipient: extraEmail, success: false });
       }
     }
 
