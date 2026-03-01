@@ -17,6 +17,7 @@ interface PaymentRow {
   source_id: string;
   label: string;
   clientName: string | null;
+  currency: string;
 }
 
 export const OverduePaymentsCard = () => {
@@ -37,11 +38,23 @@ export const OverduePaymentsCard = () => {
 
       const { data: dealPayments, error } = await supabase
         .from("deal_payments")
-        .select("id, amount, due_date, payment_type, notes, deal_id, deals(deal_number, deal_travelers(is_lead_traveler, clients(first_name, last_name)))")
+        .select("id, amount, due_date, payment_type, notes, deal_id, deals(deal_number, currency, deal_travelers(is_lead_traveler, clients(first_name, last_name)))")
         .eq("paid", false)
         .order("due_date", { ascending: true });
 
       if (error) throw error;
+
+      // Also fetch currencies from travel_contracts for these deals
+      const dealIds = [...dealIdsWithContract];
+      const { data: contracts } = await supabase
+        .from("travel_contracts")
+        .select("deal_id, currency")
+        .in("deal_id", dealIds.length > 0 ? dealIds : ["00000000-0000-0000-0000-000000000000"]);
+
+      const contractCurrencyByDeal: Record<string, string> = {};
+      for (const c of contracts || []) {
+        if (c.deal_id) contractCurrencyByDeal[c.deal_id] = c.currency || "CZK";
+      }
 
       const rows: PaymentRow[] = [];
 
@@ -54,6 +67,8 @@ export const OverduePaymentsCard = () => {
         const clientName = lead?.clients
           ? `${lead.clients.first_name} ${lead.clients.last_name}`
           : null;
+        // Currency priority: contract currency -> deal currency -> CZK
+        const currency = contractCurrencyByDeal[dp.deal_id] || deal?.currency || "CZK";
         rows.push({
           id: dp.id,
           amount: dp.amount,
@@ -64,6 +79,7 @@ export const OverduePaymentsCard = () => {
           source_id: dp.deal_id,
           label: deal?.deal_number?.match(/^D-\d{6}/)?.[0] || "Deal",
           clientName,
+          currency,
         });
       }
 
@@ -74,7 +90,16 @@ export const OverduePaymentsCard = () => {
 
   const overdue = payments.filter((p) => p.due_date < today);
   const upcoming = payments.filter((p) => p.due_date >= today);
-  const totalOverdue = overdue.reduce((s, p) => s + p.amount, 0);
+
+  // Group overdue totals by currency
+  const overdueByCurrency: Record<string, number> = {};
+  for (const p of overdue) {
+    const cur = p.currency || "CZK";
+    overdueByCurrency[cur] = (overdueByCurrency[cur] || 0) + p.amount;
+  }
+  const totalOverdueStr = Object.entries(overdueByCurrency)
+    .map(([cur, amt]) => formatPriceCurrency(amt, cur))
+    .join(" + ");
 
   const typeLabel = (t: string) => (t === "final" ? "Doplatek" : "Záloha");
 
@@ -127,7 +152,7 @@ export const OverduePaymentsCard = () => {
           </p>
         </div>
         <span className={`text-sm font-bold whitespace-nowrap ${isOverdue ? "text-destructive" : ""}`}>
-          {formatPriceCurrency(p.amount)}
+          {formatPriceCurrency(p.amount, p.currency)}
         </span>
       </Link>
     );
@@ -156,10 +181,10 @@ export const OverduePaymentsCard = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {totalOverdue > 0 && (
+            {overdue.length > 0 && (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 text-destructive text-sm font-medium">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                Celkem po splatnosti: {formatPriceCurrency(totalOverdue)}
+                Celkem po splatnosti: {totalOverdueStr}
               </div>
             )}
 
