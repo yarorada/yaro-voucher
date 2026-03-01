@@ -7,6 +7,35 @@ import { AirlineCombobox } from "./AirlineCombobox";
 import { Plane, Plus, Trash2, Briefcase, Luggage, BaggageClaim } from "lucide-react";
 import golfBagIcon from "@/assets/golf-bag.png";
 
+/** Input pro čas s auto-formátováním HHMM → HH:MM */
+const TimeInput = ({
+  value,
+  onChange,
+  placeholder = "HH:MM",
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+    if (raw.length === 0) { onChange(""); return; }
+    if (raw.length >= 3) {
+      onChange(raw.slice(0, 2) + ":" + raw.slice(2, 4));
+    } else {
+      onChange(raw);
+    }
+  };
+  return (
+    <Input
+      value={value}
+      onChange={handleChange}
+      placeholder={placeholder}
+      className="h-9"
+    />
+  );
+};
+
 export interface FlightSegment {
   departure: string;
   arrival: string;
@@ -90,20 +119,18 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onBatchUpdate, 
       </div>
       <div className="space-y-1">
         <Label className="text-xs">Odlet</Label>
-        <Input
+        <TimeInput
           value={segment.departure_time || ""}
-          onChange={(e) => onUpdate(index, "departure_time", e.target.value)}
+          onChange={(val) => onUpdate(index, "departure_time", val)}
           placeholder="18:25"
-          className="h-9"
         />
       </div>
       <div className="space-y-1">
         <Label className="text-xs">Přílet</Label>
-        <Input
+        <TimeInput
           value={segment.arrival_time || ""}
-          onChange={(e) => onUpdate(index, "arrival_time", e.target.value)}
+          onChange={(val) => onUpdate(index, "arrival_time", val)}
           placeholder="22:50"
-          className="h-9"
         />
       </div>
     </div>
