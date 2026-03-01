@@ -483,12 +483,10 @@ Deno.serve(async (req) => {
 
     <!-- Greeting -->
     <div style="margin-bottom:24px;">
-      <p style="font-size:15px; color:#334155; line-height:1.6; margin:0 0 8px;">
-        ${vazenySalutation} ${salutation} ${escapeHtml(declinedName)},
-      </p>
-      <p style="font-size:15px; color:#334155; line-height:1.6; margin:0;">
-        ${escapeHtml(customMessage || 'zasíláme Vám nabídku podle Vašich požadavků.')}
-      </p>
+      ${(customMessage || `${vazenySalutation} ${salutation} ${escapeHtml(declinedName)},\n\nzasíláme Vám nabídku podle Vašich požadavků.`)
+        .split('\n')
+        .map((line: string) => `<p style="font-size:15px; color:#334155; line-height:1.6; margin:0 0 4px;">${escapeHtml(line)}</p>`)
+        .join('')}
     </div>
 
     ${variantsHtml}

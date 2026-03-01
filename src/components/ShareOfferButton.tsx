@@ -43,7 +43,15 @@ function generateToken(length = 12): string {
   return result;
 }
 
-const DEFAULT_MESSAGE = "zasíláme Vám nabídku podle Vašich požadavků.";
+const buildDefaultMessage = (client: any) => {
+  if (!client) return "zasíláme Vám nabídku podle Vašich požadavků.";
+  const lastName = client.last_name || "";
+  const title = client.title || "";
+  const isFemale = title === "paní" || title === "Paní" || lastName.endsWith("ová") || lastName.endsWith("á");
+  const salutation = isFemale ? "paní" : "pane";
+  const vazeny = isFemale ? "Vážená" : "Vážený";
+  return `${vazeny} ${salutation} ${lastName},\n\nzasíláme Vám nabídku podle Vašich požadavků.`;
+};
 
 export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -54,7 +62,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
 
   // Email compose dialog
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [customMessage, setCustomMessage] = useState(DEFAULT_MESSAGE);
+  const [customMessage, setCustomMessage] = useState("");
 
   const hasMultipleVariants = variants.length > 1;
 
@@ -131,7 +139,20 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     // Ensure token exists first
     const token = await ensureShareToken();
     if (!token) return;
-    setCustomMessage(DEFAULT_MESSAGE);
+
+    // Fetch lead client to build greeting
+    try {
+      const { data: deal } = await supabase
+        .from("deals")
+        .select("lead_client_id, clients:lead_client_id(title, last_name)")
+        .eq("id", dealId)
+        .single();
+      const client = (deal as any)?.clients;
+      setCustomMessage(buildDefaultMessage(client));
+    } catch {
+      setCustomMessage("zasíláme Vám nabídku podle Vašich požadavků.");
+    }
+
     setOpen(false);
     setEmailDialogOpen(true);
   };
@@ -298,7 +319,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
             <div className="space-y-1.5">
               <Label className="text-sm">Text zprávy</Label>
               <p className="text-xs text-muted-foreground">
-                Text se vloží do těla e-mailu za pozdrav klientovi.
+                Text celého e-mailu — oslovení je předvyplněno, ale lze upravit.
               </p>
               <Textarea
                 value={customMessage}
@@ -309,8 +330,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
             </div>
             <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
               <p>📧 E-mail bude obsahovat:</p>
-              <p className="pl-3">· Oslovení klienta (automaticky skloňováno)</p>
-              <p className="pl-3">· Váš text zprávy</p>
+              <p className="pl-3">· Váš text zprávy (oslovení + obsah)</p>
               <p className="pl-3">· Přehled nabídky s hotely a cenami</p>
               <p className="pl-3">· Odkaz na online nabídku</p>
             </div>
