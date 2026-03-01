@@ -68,6 +68,7 @@ interface HotelTemplate {
   room_types: any;
   highlights: any;
   is_published: boolean | null;
+  review_score: number | null;
   image_url: string | null;
   image_url_2: string | null;
   image_url_3: string | null;
@@ -341,6 +342,13 @@ export default function Hotels() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold truncate">{hotel.name}</h3>
+                      {hotel.review_score != null && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-yellow-500 text-xs">★</span>
+                          <span className="text-xs font-medium text-foreground">{hotel.review_score.toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground">/10</span>
+                        </div>
+                      )}
                       {hotel.subtitle && (
                         <p className="text-sm text-muted-foreground truncate">{hotel.subtitle}</p>
                       )}

@@ -1167,6 +1167,7 @@ export type Database = {
           name: string
           nights: string | null
           price_label: string | null
+          review_score: number | null
           room_types: Json | null
           slug: string | null
           subtitle: string | null
@@ -1197,6 +1198,7 @@ export type Database = {
           name: string
           nights?: string | null
           price_label?: string | null
+          review_score?: number | null
           room_types?: Json | null
           slug?: string | null
           subtitle?: string | null
@@ -1227,6 +1229,7 @@ export type Database = {
           name?: string
           nights?: string | null
           price_label?: string | null
+          review_score?: number | null
           room_types?: Json | null
           slug?: string | null
           subtitle?: string | null

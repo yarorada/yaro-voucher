@@ -1,0 +1,1 @@
+ALTER TABLE public.hotel_templates ADD COLUMN IF NOT EXISTS review_score numeric(3,1) NULL;
