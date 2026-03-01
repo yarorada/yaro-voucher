@@ -54,6 +54,7 @@ interface Deal {
   tee_times: any | null;
   destinations: { name: string; countries: { iso_code: string } | null } | null;
   lead_client_id: string | null;
+  lead_client: { first_name: string; last_name: string } | { first_name: string; last_name: string }[] | null;
   deal_travelers: { is_lead_traveler: boolean; client_id: string; order_index?: number; clients: { first_name: string; last_name: string } | null }[];
   deal_services: { service_type: string; service_name: string }[];
   created_at: string;
@@ -121,6 +122,7 @@ const Deals = () => {
           created_at,
           updated_at,
           lead_client_id,
+          lead_client:clients!deals_lead_client_id_fkey (first_name, last_name),
           destinations:destination_id (name, countries:country_id(iso_code)),
           deal_travelers (
             is_lead_traveler,
@@ -530,6 +532,12 @@ const Deals = () => {
                 if (ordererInTravelers?.clients && firstByOrder?.clients && ordererInTravelers.client_id !== firstByOrder.client_id) {
                   // Orderer is in travelers but different from first
                   displayDesc += ` (${ordererInTravelers.clients.first_name} ${ordererInTravelers.clients.last_name})`;
+                } else if (!ordererInTravelers && deal.lead_client_id && deal.lead_client_id !== firstByOrder?.client_id) {
+                  // Orderer is NOT in travelers — use lead_client join
+                  const lc = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
+                  if (lc) {
+                    displayDesc += ` (${lc.first_name} ${lc.last_name})`;
+                  }
                 }
 
                 const getBaseNumber = (dn: string) => {
