@@ -116,6 +116,7 @@ const Clients = () => {
     id_card_expiry: undefined as Date | undefined,
     company_name: "",
     ico: "",
+    dic: "",
     company_as_orderer: false,
   });
 
@@ -205,6 +206,7 @@ const Clients = () => {
             id_card_expiry: formatDateForDB(formData.id_card_expiry),
             company_name: formData.company_name.trim() || null,
             ico: formData.ico.trim() || null,
+            dic: formData.dic.trim() || null,
             company_as_orderer: formData.company_as_orderer,
           } as any)
           .eq("id", editingClient.id);
@@ -242,6 +244,7 @@ const Clients = () => {
           notes: formData.notes.trim() || null,
           company_name: formData.company_name.trim() || null,
           ico: formData.ico.trim() || null,
+          dic: formData.dic.trim() || null,
           company_as_orderer: formData.company_as_orderer,
         } as any);
 
@@ -264,6 +267,7 @@ const Clients = () => {
         id_card_expiry: undefined,
         company_name: "",
         ico: "",
+        dic: "",
         company_as_orderer: false,
       });
       setEditingClient(null);
@@ -291,6 +295,7 @@ const Clients = () => {
       id_card_expiry: client.id_card_expiry ? parseDateSafe(client.id_card_expiry) || undefined : undefined,
       company_name: client.company_name || "",
       ico: (client as any).ico || "",
+      dic: (client as any).dic || "",
       company_as_orderer: client.company_as_orderer || false,
     });
     setIsDialogOpen(true);
@@ -356,6 +361,7 @@ const Clients = () => {
       id_card_expiry: undefined,
       company_name: "",
       ico: "",
+      dic: "",
       company_as_orderer: false,
     });
   };
@@ -501,6 +507,7 @@ const Clients = () => {
             id_card_expiry: undefined,
             company_name: "",
             ico: "",
+            dic: "",
             company_as_orderer: false,
           }));
           setEditingClient(null);
@@ -669,8 +676,8 @@ const Clients = () => {
                       />
                     </div>
 
-                    {/* Row 3b: Společnost + IČO */}
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Row 3b: Společnost + IČO + DIČ */}
+                    <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1">
                         <Label htmlFor="company_name">Společnost</Label>
                         <Input
@@ -687,6 +694,15 @@ const Clients = () => {
                           value={formData.ico}
                           onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
                           placeholder="12345678"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="dic">DIČ</Label>
+                        <Input
+                          id="dic"
+                          value={formData.dic}
+                          onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
+                          placeholder="CZ12345678"
                         />
                       </div>
                     </div>
