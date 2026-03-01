@@ -57,6 +57,33 @@ interface Client {
   document_urls: Array<{ url: string; type: string; uploadedAt: string }> | null;
 }
 
+type ExpiryStatus = 'expired' | 'critical' | 'warning' | 'notice' | 'ok' | null;
+
+function getExpiryStatus(dateStr: string | null): ExpiryStatus {
+  if (!dateStr) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(dateStr);
+  expiry.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 'expired';
+  if (diffDays <= 30) return 'critical';
+  if (diffDays <= 90) return 'warning';
+  if (diffDays <= 180) return 'notice';
+  return 'ok';
+}
+
+function getExpiryBadgeClass(status: ExpiryStatus): string {
+  switch (status) {
+    case 'expired':
+    case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+    case 'warning': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300';
+    case 'notice': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300';
+    case 'ok': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+    default: return 'bg-muted text-muted-foreground';
+  }
+}
+
 const Clients = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
@@ -832,9 +859,22 @@ const Clients = () => {
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           {client.first_name} {client.last_name}
-                          {client.passport_number && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">PAS</span>
-                          )}
+                          {client.passport_number && (() => {
+                            const status = getExpiryStatus(client.passport_expiry);
+                            return (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${getExpiryBadgeClass(status)}`} title={client.passport_expiry || undefined}>
+                                PAS
+                              </span>
+                            );
+                          })()}
+                          {client.id_card_number && (() => {
+                            const status = getExpiryStatus(client.id_card_expiry);
+                            return (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${getExpiryBadgeClass(status)}`} title={client.id_card_expiry || undefined}>
+                                OP
+                              </span>
+                            );
+                          })()}
                           {client.document_urls && client.document_urls.length > 0 && (
                             <button
                               onClick={() => setDocumentPreviewClient(client)}
