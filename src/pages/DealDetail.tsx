@@ -1524,15 +1524,17 @@ const DealDetail = () => {
         start_date: tt.date || null,
         end_date: tt.date || null,
         price: tt.price_per_person || null,
-        cost_price: null,
+        price_currency: tt.currency || "CZK",
+        cost_price: 0,
         cost_currency: tt.currency || "CZK",
         cost_price_original: null,
         supplier_id: supplierId,
         person_count: parseInt(tt.golfers) || deal.deal_travelers?.length || 1,
+        quantity: 1,
+        order_index: 0,
       }));
 
-      // @ts-ignore
-      const { error } = await supabase.from("deal_services").insert(servicesToInsert);
+      const { error } = await supabase.from("deal_services").insert(servicesToInsert as any);
       if (error) throw error;
 
       // Save structured tee times to deal (with golfers count)
