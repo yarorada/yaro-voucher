@@ -55,7 +55,7 @@ interface OfferData {
     start_date: string | null;
     end_date: string | null;
   }>;
-  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null; golf_courses_data: any[] | null }>;
+  hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null; golf_courses_data: any[] | null; review_score: number | null }>;
   hasSelectedVariant: boolean;
 }
 
@@ -566,6 +566,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   const hotelService = variant.deal_variant_services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
   const allImages = getHotelImageUrls(hotelImgData);
+  const reviewScore = hotelImgData?.review_score ?? null;
   const dest = variant.destination;
 
   const totalPrice = variant.total_price || variant.deal_variant_services.reduce(
@@ -616,6 +617,13 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
             <h3 className="text-xl font-bold text-slate-800">
               {dest.name}, {dest.country?.name}
             </h3>
+            {reviewScore != null && (
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-yellow-400 text-sm">★</span>
+                <span className="text-sm font-semibold text-slate-700">{reviewScore.toFixed(1)}</span>
+                <span className="text-xs text-slate-400">/10 · Booking, TripAdvisor, Google</span>
+              </div>
+            )}
           </div>
         )}
         {(variant.start_date || variant.end_date) && (

@@ -41,6 +41,7 @@ interface HotelTemplate {
   room_types?: any;
   highlights?: any;
   is_published?: boolean | null;
+  review_score?: number | null;
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
@@ -90,6 +91,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     is_published: hotel.is_published || false,
     destination_id: hotel.destination_id || "",
     highlights: (Array.isArray(hotel.highlights) ? hotel.highlights : []) as Array<{ icon: string; title: string; text: string }>,
+    review_score: hotel.review_score ?? null as number | null,
   });
 
   const handleSave = async () => {
@@ -111,6 +113,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
           is_published: formData.is_published,
           destination_id: formData.destination_id || null,
           highlights: formData.highlights.length > 0 ? formData.highlights : null,
+          review_score: formData.review_score ?? null,
         })
         .eq("id", currentHotel.id)
         .select()
@@ -300,6 +303,19 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                   onChange={(e) => setFormData((f) => ({ ...f, price_label: e.target.value }))}
                   placeholder="37 900 Kč / os."
                 />
+              </div>
+              <div>
+                <Label>Celkové hodnocení (0–10)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  value={formData.review_score ?? ""}
+                  onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="Průměr Booking, TripAdvisor, Google"
+                />
+                <p className="text-xs text-muted-foreground mt-0.5">Průměr hodnocení z Booking.com, TripAdvisor a Google Reviews</p>
               </div>
 
               {/* Golf courses */}
