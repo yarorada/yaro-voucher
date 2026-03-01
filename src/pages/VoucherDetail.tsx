@@ -328,7 +328,10 @@ const buildVoucherPdfBlob = (
       if (fromCity && toCity) parts.push(`${fromCity} - ${toCity}`);
       if (f.departureTime) parts.push(`Dep. ${f.departureTime}`);
       if (f.arrivalTime) parts.push(`Arr. ${f.arrivalTime}`);
-      if (f.pax) parts.push(`Pax: ${f.pax} ADT`);
+      if (f.pax) {
+        const paxNum = String(f.pax).replace(/\s*ADT\s*/gi, "").trim();
+        parts.push(`Pax: ${paxNum} ADT`);
+      }
       const line = parts.join(" · ");
 
       // Render: normal text up to city part, bold city part, normal rest
