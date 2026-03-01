@@ -311,78 +311,67 @@ const Suppliers = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSuppliers.map((supplier) => (
-              <Card
-                key={supplier.id}
-                className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-title text-foreground break-words">
-                    {supplier.name}
-                  </h3>
-                  <div className="flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleEdit(supplier)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleDelete(supplier.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2 text-body text-muted-foreground">
-                  {supplier.contact_person && (
-                    <p>
-                      <span className="font-semibold text-foreground">
-                        Kontakt:
-                      </span>{" "}
-                      {supplier.contact_person}
-                    </p>
-                  )}
-                  {supplier.email && (
-                    <p>
-                      <span className="font-semibold text-foreground">
-                        Email:
-                      </span>{" "}
-                      {supplier.email}
-                    </p>
-                  )}
-                  {supplier.phone && (
-                    <p>
-                      <span className="font-semibold text-foreground">
-                        Telefon:
-                      </span>{" "}
-                      {supplier.phone}
-                    </p>
-                  )}
-                  {supplier.address && (
-                    <p>
-                      <span className="font-semibold text-foreground">
-                        Adresa:
-                      </span>{" "}
-                      {supplier.address}
-                    </p>
-                  )}
-                  {supplier.notes && (
-                    <p>
-                      <span className="font-semibold text-foreground">
-                        Poznámky:
-                      </span>{" "}
-                      {supplier.notes}
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left px-4 py-3 font-medium text-primary">Název dodavatele</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Adresa</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSuppliers.map((supplier) => (
+                    <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {supplier.name}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {supplier.email ? (
+                          <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">
+                            {supplier.email}
+                          </a>
+                        ) : <span className="text-muted-foreground/40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {supplier.phone || <span className="text-muted-foreground/40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {supplier.address || <span className="text-muted-foreground/40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(supplier)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(supplier.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
       </div>
     </div>
