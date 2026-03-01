@@ -52,7 +52,7 @@ const Destinations = () => {
     fetchDestinations();
   }, []);
 
-  usePageToolbar(null);
+  // toolbar set below after filtered/handleAddNew are declared
 
   const fetchCountries = async () => {
     const { data, error } = await supabase.from("countries").select("*").order("name");
@@ -139,22 +139,23 @@ const Destinations = () => {
     setIsAddOpen(true);
   };
 
+  usePageToolbar(
+    <SmartSearchInput
+      value={searchText}
+      onChange={setSearchText}
+      noResults={filtered.length === 0 && searchText.trim().length > 0}
+      addLabel={`destinaci „{text}"`}
+      onAddNew={handleAddNew}
+      placeholder="Hledat destinaci nebo zemi…"
+      className="w-48 md:w-64"
+      inputClassName="h-8 text-xs"
+    />,
+    [searchText, filtered.length]
+  );
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-6 px-4 space-y-4">
-
-        {/* Toolbar */}
-        <div className="flex items-center gap-3">
-          <SmartSearchInput
-            value={searchText}
-            onChange={setSearchText}
-            noResults={filtered.length === 0 && searchText.trim().length > 0}
-            addLabel={`destinaci „{text}"`}
-            onAddNew={handleAddNew}
-            placeholder="Hledat destinaci nebo zemi…"
-            className="flex-1 max-w-sm"
-          />
-        </div>
 
         {/* Table */}
         <div className="rounded-lg border bg-card overflow-hidden">

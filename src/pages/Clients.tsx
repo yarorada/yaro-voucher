@@ -425,7 +425,86 @@ const Clients = () => {
     }
   };
 
-  usePageToolbar(<></>, []);
+  usePageToolbar(
+    <div className="flex items-center gap-2">
+      <SmartSearchInput
+        value={searchText}
+        onChange={setSearchText}
+        noResults={filteredClients.length === 0 && !loading && clients.length > 0}
+        addLabel={`klienta „{text}"`}
+        onAddNew={(text) => {
+          const parts = text.trim().split(/\s+/);
+          const first = parts[0] || "";
+          const last = parts.slice(1).join(" ") || "";
+          setFormData(prev => ({
+            ...prev,
+            first_name: first,
+            last_name: last,
+            title: "",
+            email: "",
+            phone: "",
+            address: "",
+            notes: "",
+            date_of_birth: undefined,
+            passport_number: "",
+            passport_expiry: undefined,
+            id_card_number: "",
+            id_card_expiry: undefined,
+          }));
+          setEditingClient(null);
+          setIsDialogOpen(true);
+        }}
+        placeholder="Vyhledat zákazníka..."
+        className="w-44 md:w-56"
+        inputClassName="h-8 text-xs"
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+            <Users className="h-3.5 w-3.5" />
+            Duplicity
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+          <DuplicateClientChecker onComplete={fetchClients} />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-sm"
+            onClick={async () => {
+              if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+              try {
+                const { data, error } = await supabase.functions.invoke('assign-client-titles');
+                if (error) throw error;
+                if (data?.success) {
+                  toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+                  if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+                  fetchClients();
+                } else {
+                  throw new Error(data?.error || 'Unknown error');
+                }
+              } catch (error: any) {
+                toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+              }
+            }}
+          >
+            <User className="h-4 w-4 mr-2" />
+            Přiřadit tituly
+          </Button>
+          <DiacriticsChecker onComplete={fetchClients} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkDocumentUploadOpen(true)}>
+        <FileUp className="h-3.5 w-3.5" />
+        Skenovat doklad
+      </Button>
+      <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkImportOpen(true)}>
+        <FileText className="h-3.5 w-3.5" />
+        Import z textu
+      </Button>
+    </div>,
+    [searchText, filteredClients.length, loading]
+  );
 
   // Extract city from address
   const extractCity = (address: string | null): string => {
@@ -718,95 +797,6 @@ const Clients = () => {
                   />
                 </DialogContent>
               </Dialog>
-
-        {/* Top bar: search + buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
-          <div className="flex-1 max-w-sm">
-            <SmartSearchInput
-              value={searchText}
-              onChange={setSearchText}
-              noResults={filteredClients.length === 0 && !loading && clients.length > 0}
-              addLabel={`klienta „{text}"`}
-              onAddNew={(text) => {
-                const parts = text.trim().split(/\s+/);
-                const first = parts[0] || "";
-                const last = parts.slice(1).join(" ") || "";
-                setFormData(prev => ({
-                  ...prev,
-                  first_name: first,
-                  last_name: last,
-                  title: "",
-                  email: "",
-                  phone: "",
-                  address: "",
-                  notes: "",
-                  date_of_birth: undefined,
-                  passport_number: "",
-                  passport_expiry: undefined,
-                  id_card_number: "",
-                  id_card_expiry: undefined,
-                }));
-                setEditingClient(null);
-                setIsDialogOpen(true);
-              }}
-              placeholder="Vyhledat zákazníka..."
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1.5">
-                  <Users className="h-4 w-4" />
-                  Duplicity
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background p-1">
-                <DuplicateClientChecker onComplete={fetchClients} />
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-sm"
-                  onClick={async () => {
-                    if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
-                    try {
-                      const { data, error } = await supabase.functions.invoke('assign-client-titles');
-                      if (error) throw error;
-                      if (data?.success) {
-                        toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
-                        if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
-                        fetchClients();
-                      } else {
-                        throw new Error(data?.error || 'Unknown error');
-                      }
-                    } catch (error: any) {
-                      toast.error(`Chyba při přiřazování titulů: ${error.message}`);
-                    }
-                  }}
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Přiřadit tituly
-                </Button>
-                <DiacriticsChecker onComplete={fetchClients} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => setBulkDocumentUploadOpen(true)}
-            >
-              <FileUp className="h-4 w-4" />
-              Skenovat doklad
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => setBulkImportOpen(true)}
-            >
-              <FileText className="h-4 w-4" />
-              Import z textu
-            </Button>
-          </div>
-        </div>
 
         {loading ? (
           <div className="text-center py-12">

@@ -123,7 +123,7 @@ export default function Hotels() {
     highlights: [] as Array<{ icon: string; title: string; text: string }>,
   });
 
-  usePageToolbar(null, []);
+  // toolbar set below after filtered is declared
 
   useEffect(() => {
     fetchHotels();
@@ -268,6 +268,20 @@ export default function Hotels() {
     removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()))
   );
 
+  usePageToolbar(
+    <SmartSearchInput
+      value={search}
+      onChange={setSearch}
+      noResults={filtered.length === 0}
+      addLabel={`hotel „{text}"`}
+      onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
+      placeholder="Hledat hotel..."
+      className="w-48 md:w-64"
+      inputClassName="h-8 text-xs"
+    />,
+    [search, filtered.length]
+  );
+
   const imageCount = (h: HotelTemplate) => {
     return [h.image_url, h.image_url_2, h.image_url_3, h.image_url_4, h.image_url_5,
       h.image_url_6, h.image_url_7, h.image_url_8, h.image_url_9, h.image_url_10]
@@ -280,17 +294,6 @@ export default function Hotels() {
         <div>
           <h1 className="text-heading-1">Hotely</h1>
           <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
-        </div>
-
-        <div className="max-w-md">
-          <SmartSearchInput
-            value={search}
-            onChange={setSearch}
-            noResults={filtered.length === 0}
-            addLabel={`hotel „{text}"`}
-            onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
-            placeholder="Hledat hotel..."
-          />
         </div>
 
         {loading ? (
