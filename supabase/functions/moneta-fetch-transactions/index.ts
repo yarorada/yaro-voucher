@@ -61,11 +61,16 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
 
-    // Moneta Open Banking API base URLs to try (Berlin Group PSD2)
+    // Moneta Open Banking API base URLs to try
+    // Based on apiportal.moneta.cz - Moneta uses proprietary API portal
     const BASE_URLS = [
       'https://api.moneta.cz/openbanking/v1',
       'https://api.moneta.cz/aisp/v1',
       'https://api.moneta.cz/v1',
+      'https://api.moneta.cz/psd2/v1',
+      'https://api.moneta.cz/george/v1',
+      'https://george-api.moneta.cz/v1',
+      'https://george-api.moneta.cz/openbanking/v1',
     ];
 
     const monetaHeaders = {
@@ -107,8 +112,8 @@ Deno.serve(async (req) => {
           }
           break;
         } else {
-          console.log(`${baseUrl}/accounts returned ${accountsResp.status}`);
-          await accountsResp.text(); // consume body
+          const errBody = await accountsResp.text();
+          console.log(`${baseUrl}/accounts returned ${accountsResp.status}: ${errBody.slice(0, 300)}`);
         }
       } catch (e) {
         console.log(`Error fetching ${baseUrl}/accounts:`, e);
@@ -129,7 +134,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ 
         error: `Moneta API chyba: ${monetaResponse.status}`,
         detail: `URL: ${monetaUrl} — ${errText}`,
-        hint: 'Zkontrolujte MONETA_API_TOKEN a MONETA_ACCOUNT_ID. Funkce se pokusila načíst seznam účtů a pak transakce.',
+        hint: monetaResponse.status === 401 || monetaResponse.status === 403
+          ? 'Token MONETA_API_TOKEN je neplatný nebo vypršel. Obnovte token v Moneta API portálu (apiportal.moneta.cz).'
+          : 'Zkontrolujte správnou base URL Moneta API. Přihlaste se na apiportal.moneta.cz a ověřte, jaký endpoint je uveden v dokumentaci produktu.',
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
