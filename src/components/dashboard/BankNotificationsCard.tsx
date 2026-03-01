@@ -316,7 +316,7 @@ export const BankNotificationsCard = () => {
               <p className="font-semibold mb-1">Formát dat (JSON body):</p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-muted-foreground text-xs mb-1">Strukturovaná data (Google Sheets / Fintable):</p>
+                  <p className="text-muted-foreground text-xs mb-1">Strukturovaná data (JSON):</p>
                   <pre className="bg-muted p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap">{`{\n  "amount": 29000,\n  "variable_symbol": "26001",\n  "date": "2026-02-28",\n  "sender_name": "Jan Novák"\n}`}</pre>
                 </div>
                 <div>
