@@ -487,9 +487,13 @@ const Deals = () => {
               </Card>
             ) : (
               filteredDeals.map((deal) => {
-                const lead = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
-                const firstTraveler = deal.deal_travelers?.[0];
-                const leadClient = lead?.clients || firstTraveler?.clients;
+                // Sort travelers by order_index to find the first traveler
+                const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => (a.order_index ?? 999) - (b.order_index ?? 999));
+                const firstByOrder = sortedTravelers[0];
+                const orderer = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
+
+                // leadName for metadata row — prefer orderer, fallback to first
+                const leadClient = orderer?.clients || firstByOrder?.clients;
                 const leadName = leadClient ? `${leadClient.first_name} ${leadClient.last_name}` : "";
 
                 const mainTravelers = [...deal.deal_travelers]
@@ -501,12 +505,12 @@ const Deals = () => {
                 const iso = deal.destinations?.countries?.iso_code;
                 const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
 
-                // Build description: Jmeno Prijmeni • ISO • Hotel • DD-MM-RR (Objednatel)
-                const orderer = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
-                const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => (a.order_index ?? 999) - (b.order_index ?? 999));
-                const firstByOrder = sortedTravelers[0];
+                // Build description: [1. cestující] • ISO • Hotel • DD-MM-RR (Objednatel)
+                const firstTravelerName = firstByOrder?.clients
+                  ? `${firstByOrder.clients.first_name} ${firstByOrder.clients.last_name}`
+                  : "";
                 const descParts: string[] = [];
-                if (leadName) descParts.push(leadName);
+                if (firstTravelerName) descParts.push(firstTravelerName);
                 if (iso) descParts.push(iso);
                 if (hotel) descParts.push(hotel.service_name);
                 if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
