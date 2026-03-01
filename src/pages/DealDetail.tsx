@@ -3189,7 +3189,8 @@ const DealDetail = () => {
                           Celková cena: {formatPriceCurrency(
                             parseFloat(serviceForm.price) * (serviceForm.price_mode === "per_person" 
                               ? parseInt(serviceForm.person_count || "1") 
-                              : parseInt(serviceForm.quantity || "1"))
+                              : parseInt(serviceForm.quantity || "1")),
+                            serviceForm.price_currency || "CZK"
                           )}
                         </p>
                       </div>
