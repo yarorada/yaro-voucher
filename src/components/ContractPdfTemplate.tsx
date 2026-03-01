@@ -38,7 +38,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
   ({ contract }, ref) => {
     const deal = contract.deal;
     const services = deal?.services || [];
-    const currency = deal?.currency || (contract as any).currency || "CZK";
+    const currency = (contract as any).currency || deal?.currency || "CZK";
 
     // Sort travelers: main client first
     const sortedTravelers = useMemo(() => {

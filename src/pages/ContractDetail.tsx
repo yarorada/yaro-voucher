@@ -475,13 +475,13 @@ const ContractDetail = () => {
                             </td>
                             <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
                             <td className="py-2 text-right font-medium text-foreground">
-                              {formatPrice(getServiceTotal(service), true, contract.deal?.currency || (contract as any).currency || "CZK")}
+                              {formatPrice(getServiceTotal(service), true, (contract as any).currency || contract.deal?.currency || "CZK")}
                             </td>
                           </tr>
                         ))}
                     <tr className="bg-muted/50">
                       <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
-                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price, true, contract.deal?.currency || (contract as any).currency || "CZK")}</td>
+                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price, true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -496,7 +496,7 @@ const ContractDetail = () => {
             departureDate={contract.deal?.start_date}
             contractNumber={contract.contract_number}
             bankAccount={(contract as any).agency_bank_account}
-            currency={contract.deal?.currency || (contract as any).currency || "CZK"}
+            currency={(contract as any).currency || contract.deal?.currency || "CZK"}
           />
 
 
