@@ -40,6 +40,7 @@ import MfaSetup from "./pages/MfaSetup";
 import MfaVerify from "./pages/MfaVerify";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoles from "./pages/AdminRoles";
 
 const queryClient = new QueryClient();
 
@@ -280,6 +281,16 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedLayout>
                   <Hotels />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/roles"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <AdminRoles />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

@@ -1622,6 +1622,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       voucher_counters: {
         Row: {
           last_number: number
@@ -1814,6 +1835,13 @@ export type Database = {
         Args: { p_issue_date: string }
         Returns: string
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_task_admin: { Args: { _user_id: string }; Returns: boolean }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
       select_deal_variant: { Args: { p_variant_id: string }; Returns: boolean }
@@ -1823,6 +1851,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "prodejce"
       contract_status: "draft" | "sent" | "signed" | "cancelled"
       deal_status:
         | "inquiry"
@@ -1967,6 +1996,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "prodejce"],
       contract_status: ["draft", "sent", "signed", "cancelled"],
       deal_status: [
         "inquiry",
