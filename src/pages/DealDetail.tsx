@@ -2279,7 +2279,7 @@ const DealDetail = () => {
           status: "draft",
           contract_number: "",
           tee_times: teeTimes,
-          currency: dealCurrency,
+          currency: dealCurrency || "CZK",
         } as any)
         .select()
         .single();
