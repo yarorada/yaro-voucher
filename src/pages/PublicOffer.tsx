@@ -394,7 +394,7 @@ export default function PublicOffer() {
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <img src={yaroLogoWide} alt="YARO Travel" className="h-32" />
+          <img src={yaroLogoWide} alt="YARO Travel" className="h-40 w-auto" />
           <div className="flex items-center gap-3 text-xs text-slate-500">
             <a href="tel:+420602102108" className="hover:text-slate-700 transition-colors">📞 +420 602 102 108</a>
             <span>|</span>
