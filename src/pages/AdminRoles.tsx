@@ -21,17 +21,18 @@ interface UserRoleRow {
 }
 
 export default function AdminRoles() {
-  const { isAdmin, loading } = useUserRole();
+  const { isAdmin, loading, role } = useUserRole();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRoleRow[]>([]);
   const [assigning, setAssigning] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
+    // Only redirect if loading is done AND role is definitively not admin
+    if (!loading && role !== null && !isAdmin) {
       navigate("/");
     }
-  }, [isAdmin, loading, navigate]);
+  }, [isAdmin, loading, role, navigate]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -72,7 +73,11 @@ export default function AdminRoles() {
     }
   };
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="p-6 flex items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
   if (!isAdmin) return null;
 
   return (
