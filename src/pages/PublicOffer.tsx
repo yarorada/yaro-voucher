@@ -410,18 +410,22 @@ export default function PublicOffer() {
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
             Nabídka pro {deal.lead_client_name || deal.name || "klienta"}
           </h1>
-          {data.variants.length <= 1 && getMainHotelName(data) && (
-            <p className="text-lg font-medium text-slate-600">{getMainHotelName(data)}</p>
-          )}
-          {destination && (
-            <p className="text-base text-slate-500">
-              {destination.country?.name} – {destination.name}
-            </p>
-          )}
-          {deal.start_date && deal.end_date && (
-            <p className="text-base text-slate-400">
-              {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
-            </p>
+          {variants.length <= 1 && (
+            <>
+              {getMainHotelName(data) && (
+                <p className="text-lg font-medium text-slate-600">{getMainHotelName(data)}</p>
+              )}
+              {destination && (
+                <p className="text-base text-slate-500">
+                  {destination.country?.name} – {destination.name}
+                </p>
+              )}
+              {deal.start_date && deal.end_date && (
+                <p className="text-base text-slate-400">
+                  {formatDate(deal.start_date)} — {formatDate(deal.end_date)}
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -611,21 +615,24 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
 
       {/* Content */}
       <div className="p-5 space-y-4 flex-1 flex flex-col">
-        {/* Destination & dates */}
-        {dest && (
-          <div>
-            <h3 className="text-xl font-bold text-slate-800">
+        {/* Hotel name + destination + rating */}
+        <div>
+          {hotelService && (
+            <h3 className="text-xl font-bold text-slate-800">{hotelService.service_name}</h3>
+          )}
+          {dest && (
+            <p className="text-sm text-slate-500 mt-0.5">
               {dest.name}, {dest.country?.name}
-            </h3>
-            {reviewScore != null && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-400 text-sm">★</span>
-                <span className="text-sm font-semibold text-slate-700">{reviewScore.toFixed(1)}</span>
-                <span className="text-xs text-slate-400">/10 · Booking, TripAdvisor, Google</span>
-              </div>
-            )}
-          </div>
-        )}
+            </p>
+          )}
+          {reviewScore != null && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-yellow-400 text-sm">★</span>
+              <span className="text-sm font-semibold text-slate-700">{reviewScore.toFixed(1)}</span>
+              <span className="text-xs text-slate-400">/10 · Booking, TripAdvisor, Google</span>
+            </div>
+          )}
+        </div>
         {(variant.start_date || variant.end_date) && (
           <p className="text-sm text-slate-400">
             {formatDateShort(variant.start_date)} – {formatDateShort(variant.end_date)}
