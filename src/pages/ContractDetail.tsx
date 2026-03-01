@@ -375,12 +375,19 @@ const ContractDetail = () => {
 
             {/* Zákazník */}
             <Card className="p-4 md:p-6">
-              <h2 className="text-heading-2 text-foreground mb-4">Zákazník</h2>
+              <h2 className="text-heading-2 text-foreground mb-4">Zákazník / prodejce</h2>
               <div className="space-y-3">
                 <div>
                   <p className="font-semibold text-foreground">
-                    {contract.client?.first_name} {contract.client?.last_name}
+                    {contract.client?.company_as_orderer && contract.client?.company_name
+                      ? contract.client.company_name
+                      : `${contract.client?.first_name} ${contract.client?.last_name}`}
                   </p>
+                  {contract.client?.company_as_orderer && contract.client?.company_name && (
+                    <p className="text-sm text-muted-foreground">
+                      {contract.client?.first_name} {contract.client?.last_name}
+                    </p>
+                  )}
                 </div>
                 {contract.client?.address && (
                   <div>
@@ -388,14 +395,22 @@ const ContractDetail = () => {
                     <p className="text-foreground">{contract.client.address}</p>
                   </div>
                 )}
-                {contract.client?.date_of_birth && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Datum narození</p>
-                    <p className="text-foreground">
-                      {(() => { const d = parseDateSafe(contract.client.date_of_birth); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : '-'; })()}
-                    </p>
-                  </div>
-                )}
+                {contract.client?.company_as_orderer
+                  ? (contract.client as any)?.ico && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">IČO</p>
+                      <p className="text-foreground">{(contract.client as any).ico}</p>
+                    </div>
+                  )
+                  : contract.client?.date_of_birth && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Datum narození</p>
+                      <p className="text-foreground">
+                        {(() => { const d = parseDateSafe(contract.client.date_of_birth); return d ? format(d, "d. MMMM yyyy", { locale: cs }) : '-'; })()}
+                      </p>
+                    </div>
+                  )
+                }
                 <div>
                   <p className="text-sm text-muted-foreground">Kontakt</p>
                   <p className="text-foreground">
