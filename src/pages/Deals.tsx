@@ -53,7 +53,7 @@ interface Deal {
   notes: string | null;
   tee_times: any | null;
   destinations: { name: string; countries: { iso_code: string } | null } | null;
-  deal_travelers: { is_lead_traveler: boolean; clients: { first_name: string; last_name: string } | null }[];
+  deal_travelers: { is_lead_traveler: boolean; client_id: string; order_index?: number; clients: { first_name: string; last_name: string } | null }[];
   deal_services: { service_type: string; service_name: string }[];
   created_at: string;
   updated_at: string;
@@ -122,6 +122,8 @@ const Deals = () => {
           destinations:destination_id (name, countries:country_id(iso_code)),
           deal_travelers (
             is_lead_traveler,
+            client_id,
+            order_index,
             clients:client_id (
               first_name,
               last_name
@@ -499,13 +501,19 @@ const Deals = () => {
                 const iso = deal.destinations?.countries?.iso_code;
                 const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
 
-                // Build description: Jmeno Prijmeni • ISO • Hotel • DD-MM-RR
+                // Build description: Jmeno Prijmeni • ISO • Hotel • DD-MM-RR (Objednatel)
+                const orderer = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
+                const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => (a.order_index ?? 999) - (b.order_index ?? 999));
+                const firstByOrder = sortedTravelers[0];
                 const descParts: string[] = [];
                 if (leadName) descParts.push(leadName);
                 if (iso) descParts.push(iso);
                 if (hotel) descParts.push(hotel.service_name);
                 if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
-                const displayDesc = descParts.join(" • ");
+                let displayDesc = descParts.join(" • ");
+                if (orderer?.clients && firstByOrder?.clients && orderer.client_id !== firstByOrder.client_id) {
+                  displayDesc += ` (${orderer.clients.first_name} ${orderer.clients.last_name})`;
+                }
 
                 const getBaseNumber = (dn: string) => {
                   const match = dn.match(/^D-\d{6}/);
