@@ -321,25 +321,47 @@ const buildVoucherPdfBlob = (
       const flightCode = `${f.airlineCode || ""} ${f.flightNumber || ""}`.trim();
       const datePart = f.date ? fmtD(f.date) : "";
 
-      // Single line: Date · FlightCode · FromCity→ToCity · Departure HH:MM · Arr HH:MM · Pax: N ADT
+      // Build parts of the line
+      const parts: string[] = [];
+      if (datePart) parts.push(datePart);
+      if (flightCode) parts.push(flightCode);
+      if (fromCity && toCity) parts.push(`${fromCity} - ${toCity}`);
+      if (f.departureTime) parts.push(`Dep. ${f.departureTime}`);
+      if (f.arrivalTime) parts.push(`Arr. ${f.arrivalTime}`);
+      if (f.pax) parts.push(`Pax: ${f.pax} ADT`);
+      const line = parts.join(" · ");
+
+      // Render: normal text up to city part, bold city part, normal rest
       doc.setFontSize(8.5);
-      let x = margin;
+      doc.setTextColor(30, 41, 59);
 
-      const pb = (text: string) => {
-        doc.setFont("helvetica", "bold"); doc.setTextColor(15, 23, 42);
-        doc.text(text, x, y); x += doc.getTextWidth(text);
-      };
-      const pn = (text: string) => {
-        doc.setFont("helvetica", "normal"); doc.setTextColor(30, 41, 59);
-        doc.text(text, x, y); x += doc.getTextWidth(text);
-      };
+      if (fromCity && toCity) {
+        // Split into: before city · city · after city
+        const cityStr = `${fromCity} - ${toCity}`;
+        const beforeIdx = line.indexOf(cityStr);
+        const before = line.slice(0, beforeIdx);
+        const after = line.slice(beforeIdx + cityStr.length);
 
-      if (datePart) { pn(datePart); pn(" · "); }
-      if (flightCode) { pn(flightCode); pn(" · "); }
-      if (fromCity && toCity) { pb(`${fromCity}→${toCity}`); }
-      if (f.departureTime) { pn(` · Departure ${f.departureTime}`); }
-      if (f.arrivalTime) { pn(` · Arr ${f.arrivalTime}`); }
-      if (f.pax) { pn(` · Pax: ${f.pax} ADT`); }
+        let x = margin;
+        if (before) {
+          doc.setFont("helvetica", "normal");
+          doc.text(before, x, y);
+          x += doc.getTextWidth(before);
+        }
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text(cityStr, x, y);
+        x += doc.getTextWidth(cityStr);
+        if (after) {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          doc.text(after, x, y);
+        }
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.text(line, margin, y);
+      }
+
       y += 5;
     }
     // no extra blank line after last segment
