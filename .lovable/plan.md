@@ -1,29 +1,44 @@
 
-## Fix: Show orderer in parentheses in deal list view
+## Oprava zobrazení názvu obchodního případu v přehledu
 
-### Problem
-In the deals list (`Deals.tsx`), each deal row shows a description like:
-`Jméno • ISO • Hotel • Datum`
+### Požadovaný formát
 
-When the orderer (lead traveler) is different from the first traveler, their name should appear in parentheses at the end — matching the auto-generated deal name format used in `DealDetail.tsx`.
+```text
+Objednatel • ISO • Hotel • Datum (Objednatel)
+```
 
-### Root Cause
-The `displayDesc` building logic in `Deals.tsx` only shows the lead client's name but never appends the orderer in parentheses. Also, `order_index` is not fetched for travelers, making it impossible to distinguish "first traveler by order" from the "orderer (lead)".
+- **Primární jméno** = vždy objednatel (`lead_client_id` → join na `clients`)
+- **Závorka** = objednatel se přidá do závorky NA KONCI, pokud **není přítomen v `deal_travelers`** (tj. má odškrtnuto, že není 1. cestujícím)
+- Pokud je objednatel v `deal_travelers`, závorka se nezobrazí vůbec
 
-### Changes Required
+### Analýza aktuálního stavu
 
-**`src/pages/Deals.tsx`**
+V `src/pages/Deals.tsx` (řádky 493–541):
 
-1. **Query** — Add `order_index` and `client_id` to the `deal_travelers` select in `fetchDeals`.
+- Aktuálně se jako primární jméno bere **1. cestující** (`firstByOrder`)
+- Závorka se zobrazuje pokud se objednatel liší od 1. cestujícího — to je špatně
 
-2. **Interface** — Add `order_index?: number` and `client_id: string` to the `deal_travelers` type in the `Deal` interface.
+### Technické změny
 
-3. **Display logic** — Update the block that builds `displayDesc` (lines 488–508):
-   - Find the orderer: the traveler with `is_lead_traveler = true`
-   - Find the first traveler: traveler with the lowest `order_index`
-   - If orderer ≠ first traveler (different `client_id`), append `(Jméno Příjmení)` to the end of `displayDesc`
+**`src/pages/Deals.tsx`** (pouze logika sestavení `displayDesc`):
 
-### Result
-Deal list rows will display:
-- Same person: `Pavel Kadlic • TUR • Cornelia Diamond • 03-03-26`
-- Different orderer: `Pavel Kadlic • TUR • Cornelia Diamond • 03-03-26 (Roman Partl)`
+1. **Primární jméno** = objednatel:
+   - Pokud je `ordererInTravelers` (je v `deal_travelers` s `is_lead_traveler=true`) → použít jeho jméno
+   - Jinak použít `lead_client` (join přes `lead_client_id`)
+   - Fallback na `firstByOrder?.clients` pokud ani jedno není dostupné
+
+2. **Závorka** = zobrazit pouze pokud objednatel **není** v `deal_travelers`:
+   - `!ordererInTravelers && deal.lead_client_id` → přidat `(Jméno Příjmení)` na konec
+
+### Výsledné chování
+
+| Situace | Zobrazení |
+|---|---|
+| Objednatel = 1. cestující (checkbox zaškrtnut) | `Pavel Kadlic • TUR • Hotel • 03-03-26` |
+| Objednatel není cestující (odškrtnuto) | `Pavel Kadlic • TUR • Hotel • 03-03-26 (Pavel Kadlic)` |
+
+Poznámka: V druhém případě se objednatel zobrazí i v závorce, protože není v seznamu cestujících — to je záměrné chování dle zadání.
+
+### Soubory k úpravě
+
+- **`src/pages/Deals.tsx`** — úprava logiky sestavení `displayDesc` (řádky ~520–541), žádné změny v databázi ani dotazech
