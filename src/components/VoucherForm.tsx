@@ -213,7 +213,7 @@ const SortableServiceItem = React.memo(({
             maxLength={20}
           />
         </div>
-        <div>
+        <div className="space-y-1">
           <Label>Datum od *</Label>
           <DateInput
             value={service.dateFrom}
@@ -221,7 +221,7 @@ const SortableServiceItem = React.memo(({
             placeholder="DD.MM.RR"
           />
         </div>
-        <div>
+        <div className="space-y-1">
           <Label>Datum do *</Label>
           <DateInput
             value={service.dateTo}
