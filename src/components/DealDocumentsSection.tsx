@@ -468,13 +468,29 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     setSendDialogOpen(true);
   };
 
-  // Build voucher PDF using jsPDF directly (no html2canvas, works in all environments)
-  const buildVoucherPdfBlob = (fullVoucher: any, supplierName?: string, supplierAddress?: string): Blob => {
+  const getLogoBase64 = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const res = await fetch(yaroLogo);
+      const ab = await res.arrayBuffer();
+      const bytes = new Uint8Array(ab);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    } catch { return undefined; }
+  }, []);
+
+  // Build voucher PDF using jsPDF directly — identical to VoucherDetail version
+  const buildVoucherPdfBlob = (
+    fullVoucher: any,
+    supplierName?: string,
+    supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
+    logoBase64?: string
+  ): Blob => {
     const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const W = 210;
     const margin = 15;
     const contentW = W - margin * 2;
-    let y = margin;
+    let y = 0;
 
     const fmtD = (d: string) => {
       if (!d) return "";
@@ -483,35 +499,22 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       return d;
     };
 
-    // ── TOP BAR ──
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, W, 14, "F");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text(fullVoucher.voucher_code || "", margin, 9.5);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(180, 200, 255);
-    doc.text("# TRAVeL", W - margin, 9.5, { align: "right" });
-    y = 22;
-
-    // ── TITLE BLOCK ──
-    doc.setFontSize(22);
+    // ── HEADER ──
+    y = margin;
+    const logoW = 30;
+    const logoH = logoW / (1165 / 826);
+    if (logoBase64) {
+      try { doc.addImage(logoBase64, "PNG", margin, y, logoW, logoH, undefined, "NONE"); } catch { /* skip */ }
+    }
+    doc.setFontSize(15);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
-    doc.text("Travel Voucher", W / 2, y, { align: "center" });
-    y += 7;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(100, 116, 139);
-    doc.text("Your Journey, Our Passion", W / 2, y, { align: "center" });
-    y += 8;
-
+    doc.text(`TRAVEL VOUCHER · ${fullVoucher.voucher_code}`, W - margin, y + 11, { align: "right" });
+    y += logoH + 3;
     doc.setDrawColor(203, 213, 225);
     doc.setLineWidth(0.3);
     doc.line(margin, y, W - margin, y);
-    y += 7;
+    y += 6;
 
     // ── SERVICE PROVIDER ──
     if (supplierName) {
@@ -519,16 +522,33 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       doc.setFont("helvetica", "bold");
       doc.setTextColor(71, 85, 105);
       doc.text("SERVICE PROVIDER", margin, y);
-      y += 4;
+      y += 4.5;
+      const nameText = removeDiacritics(supplierName);
+      const addrText = supplierData?.address ? `, ${removeDiacritics(supplierData.address)}` : "";
       doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      const providerLines = doc.splitTextToSize(
-        [supplierName, supplierAddress].filter(Boolean).join(" · "),
-        contentW
-      );
-      doc.text(providerLines, margin, y);
-      y += providerLines.length * 4.5 + 5;
+      doc.text(nameText, margin, y);
+      if (addrText) {
+        const nameW = doc.getTextWidth(nameText);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(30, 41, 59);
+        const addrLines = doc.splitTextToSize(addrText, contentW - nameW);
+        doc.text(addrLines[0] || addrText, margin + nameW, y);
+      }
+      y += 5;
+      const contactParts: string[] = [];
+      if (supplierData?.contact_person) contactParts.push(removeDiacritics(supplierData.contact_person));
+      if (supplierData?.phone) contactParts.push(supplierData.phone);
+      if (supplierData?.email) contactParts.push(supplierData.email);
+      if (contactParts.length > 0) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 41, 59);
+        doc.text(contactParts.join(", "), margin, y);
+        y += 5;
+      }
       doc.setDrawColor(203, 213, 225);
       doc.line(margin, y, W - margin, y);
       y += 6;
@@ -540,23 +560,24 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     doc.setTextColor(71, 85, 105);
     doc.text("CLIENT INFORMATION", margin, y);
     y += 4;
+    const labelColW = 26;
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "bold");
     doc.text("Main Client:", margin, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`  1. ${removeDiacritics(fullVoucher.client_name || "")}`, margin + 22, y);
+    doc.text(`1. ${removeDiacritics(fullVoucher.client_name || "")}`, margin + labelColW, y);
     y += 5;
-
     const others: string[] = (fullVoucher.other_travelers as string[]) || [];
     if (others.length > 0) {
       doc.setFont("helvetica", "bold");
-      doc.text("Other Travelers:", margin, y);
+      doc.text("Others:", margin, y);
       doc.setFont("helvetica", "normal");
-      const otherText = others.map((n, i) => `${i + 2}. ${removeDiacritics(n)}`).join(", ");
-      const otherLines = doc.splitTextToSize(otherText, contentW - 32);
-      doc.text(otherLines, margin + 32, y);
-      y += otherLines.length * 4.5;
+      others.forEach((n, i) => {
+        doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin + labelColW, y);
+        y += 5;
+      });
+      y -= 5;
     }
     y += 4;
     doc.setDrawColor(203, 213, 225);
@@ -571,14 +592,12 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       doc.setTextColor(71, 85, 105);
       doc.text("SERVICE OVERVIEW", margin, y);
       y += 4;
-
       const colPax = margin;
       const colQty = margin + 13;
       const colService = margin + 24;
       const colFrom = margin + 128;
       const colTo = margin + 153;
       const rowH = 6;
-
       doc.setFillColor(241, 245, 249);
       doc.rect(margin, y, contentW, rowH, "F");
       doc.setFontSize(8);
@@ -590,7 +609,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       doc.text("Date From", colFrom, y + 4);
       doc.text("Date To", colTo + 2, y + 4);
       y += rowH;
-
       doc.setFont("helvetica", "normal");
       doc.setTextColor(15, 23, 42);
       let rowAlt = false;
@@ -599,10 +617,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         const nameLines = doc.splitTextToSize(removeDiacritics(serviceName), 100);
         const cellH = Math.max(rowH, nameLines.length * 4.5);
         if (y + cellH > 270) { doc.addPage(); y = margin; }
-        if (rowAlt) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin, y, contentW, cellH, "F");
-        }
+        if (rowAlt) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, contentW, cellH, "F"); }
         doc.setFontSize(8.5);
         doc.setDrawColor(226, 232, 240);
         doc.rect(margin, y, contentW, cellH);
@@ -618,9 +633,31 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
 
     // ── FLIGHT DETAILS ──
+    const iataToCity: Record<string, string> = {
+      PRG: "Prague", VIE: "Vienna", LHR: "London", CDG: "Paris", AMS: "Amsterdam",
+      FRA: "Frankfurt", MUC: "Munich", ZRH: "Zurich", BCN: "Barcelona", MAD: "Madrid",
+      FCO: "Rome", MXP: "Milan", ATH: "Athens", IST: "Istanbul", DXB: "Dubai",
+      AYT: "Antalya", DLM: "Dalaman", BJV: "Bodrum", ESB: "Ankara", SAW: "Istanbul",
+      ADB: "Izmir", TFS: "Tenerife", LPA: "Gran Canaria", PMI: "Mallorca",
+      HER: "Heraklion", RHO: "Rhodes", CFU: "Corfu", SKG: "Thessaloniki",
+      MLA: "Malta", OPO: "Porto", LIS: "Lisbon", FAO: "Faro",
+      BUD: "Budapest", WAW: "Warsaw", BRQ: "Brno", OSL: "Oslo",
+      CPH: "Copenhagen", ARN: "Stockholm", HEL: "Helsinki",
+      JFK: "New York", LAX: "Los Angeles", MIA: "Miami", ORD: "Chicago",
+      CUN: "Cancun", MCO: "Orlando", LAS: "Las Vegas",
+      NBO: "Nairobi", CMN: "Casablanca", JNB: "Johannesburg", CAI: "Cairo",
+      BKK: "Bangkok", SIN: "Singapore", HKG: "Hong Kong", NRT: "Tokyo",
+      ICN: "Seoul", PEK: "Beijing", PVG: "Shanghai", DEL: "Delhi",
+      BOM: "Mumbai", SYD: "Sydney", MEL: "Melbourne",
+    };
+    const resolveCity = (code: string) => {
+      if (!code) return "";
+      const upper = code.trim().toUpperCase();
+      return iataToCity[upper] || removeDiacritics(code);
+    };
     const flights = (fullVoucher.flights as any[]) || [];
     if (flights.length > 0) {
-      if (y > 255) { doc.addPage(); y = margin; }
+      if (y > 245) { doc.addPage(); y = margin; }
       doc.setDrawColor(203, 213, 225);
       doc.line(margin, y, W - margin, y);
       y += 5;
@@ -629,25 +666,42 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       doc.setTextColor(71, 85, 105);
       doc.text("FLIGHT DETAILS", margin, y);
       y += 5;
-      doc.setFontSize(8.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
       for (const f of flights) {
-        if (y > 272) { doc.addPage(); y = margin; }
-        const from = f.fromCity || f.fromIata || f.departure || "";
-        const to = f.toCity || f.toIata || f.arrival || "";
-        const paxStr = f.pax ? ` · PAX: ${f.pax} ADT` : "";
-        const line = `${f.date ? fmtD(f.date) : ""} · ${f.airlineCode || ""} ${f.flightNumber || ""} · ${removeDiacritics(from)} → ${removeDiacritics(to)} · Departure: ${f.departureTime || ""} · Arrival: ${f.arrivalTime || ""}${paxStr}`;
-        doc.text(line, margin, y);
+        if (y > 268) { doc.addPage(); y = margin; }
+        const fromCity = resolveCity(f.fromCity || f.fromIata || f.departure || "");
+        const toCity = resolveCity(f.toCity || f.toIata || f.arrival || "");
+        const flightCode = `${f.airlineCode || ""} ${f.flightNumber || ""}`.trim();
+        const datePart = f.date ? fmtD(f.date) : "";
+        const parts: string[] = [];
+        if (datePart) parts.push(datePart);
+        if (flightCode) parts.push(flightCode);
+        if (fromCity && toCity) parts.push(`${fromCity} - ${toCity}`);
+        if (f.departureTime) parts.push(`Dep. ${f.departureTime}`);
+        if (f.arrivalTime) parts.push(`Arr. ${f.arrivalTime}`);
+        if (f.pax) parts.push(`Pax: ${String(f.pax).replace(/\s*ADT\s*/gi, "").trim()} ADT`);
+        const line = parts.join(" · ");
+        doc.setFontSize(8.5);
+        doc.setTextColor(30, 41, 59);
+        if (fromCity && toCity) {
+          const cityStr = `${fromCity} - ${toCity}`;
+          const beforeIdx = line.indexOf(cityStr);
+          const before = line.slice(0, beforeIdx);
+          const after = line.slice(beforeIdx + cityStr.length);
+          let x = margin;
+          if (before) { doc.setFont("helvetica", "normal"); doc.text(before, x, y); x += doc.getTextWidth(before); }
+          doc.setFont("helvetica", "bold"); doc.setTextColor(15, 23, 42); doc.text(cityStr, x, y); x += doc.getTextWidth(cityStr);
+          if (after) { doc.setFont("helvetica", "normal"); doc.setTextColor(30, 41, 59); doc.text(after, x, y); }
+        } else {
+          doc.setFont("helvetica", "normal"); doc.text(line, margin, y);
+        }
         y += 5;
       }
-      y += 3;
     }
 
     // ── CONFIRMED TEE TIMES ──
     const teeTimes = (fullVoucher.tee_times as any[]) || [];
     if (teeTimes.length > 0) {
-      if (y > 255) { doc.addPage(); y = margin; }
+      if (y > 245) { doc.addPage(); y = margin; }
       doc.setDrawColor(203, 213, 225);
       doc.line(margin, y, W - margin, y);
       y += 5;
@@ -656,17 +710,32 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       doc.setTextColor(71, 85, 105);
       doc.text("CONFIRMED TEE TIMES", margin, y);
       y += 5;
-      doc.setFontSize(8.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(15, 23, 42);
       for (const t of teeTimes) {
-        if (y > 272) { doc.addPage(); y = margin; }
-        const golfers = t.golfers || t.players || "";
-        const line = `${t.date ? fmtD(t.date) : ""} | ${removeDiacritics(t.club || t.course || "")} at ${t.time || ""}${golfers ? ` (${golfers} golfers)` : ""}`;
-        doc.text(line, margin, y);
+        if (y > 268) { doc.addPage(); y = margin; }
+        const paxCount = Number(t.golfers || t.players || t.pax || 0);
+        const datePart = t.date ? fmtD(t.date) : "";
+        const clubPart = removeDiacritics(t.club || t.course || "");
+        const timePart = t.time || "";
+        const endTime = t.endTime || t.end_time || "";
+        doc.setFontSize(8.5);
+        let xCursor = margin;
+        const printBold = (text: string) => {
+          doc.setFont("helvetica", "bold"); doc.setTextColor(15, 23, 42);
+          doc.text(text, xCursor, y); xCursor += doc.getTextWidth(text);
+        };
+        const printNormal = (text: string) => {
+          doc.setFont("helvetica", "normal"); doc.setTextColor(30, 41, 59);
+          doc.text(text, xCursor, y); xCursor += doc.getTextWidth(text);
+        };
+        if (datePart) { printNormal(datePart); printNormal(" · "); }
+        printBold(clubPart);
+        if (timePart) {
+          printNormal(" · "); printNormal(timePart);
+          if (endTime) { printNormal(` - ${endTime}`); }
+        }
+        if (paxCount > 0) { printNormal(` · ${paxCount} golfers`); }
         y += 5;
       }
-      y += 3;
     }
 
     // ── DATES ROW ──
@@ -684,26 +753,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     doc.setTextColor(15, 23, 42);
     doc.text(fullVoucher.issue_date ? fmtD(fullVoucher.issue_date) : "", margin, y);
     doc.text(fullVoucher.expiration_date ? fmtD(fullVoucher.expiration_date) : "—", W / 2, y);
-    y += 8;
-
-    // ── YARO TRAVEL INFO ──
-    doc.setDrawColor(203, 213, 225);
-    doc.line(margin, y, W - margin, y);
     y += 5;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(15, 23, 42);
-    doc.text("YARO Travel", margin, y);
-    y += 4;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(71, 85, 105);
-    doc.text("Address: Bratrancu Veverkovych 680", margin, y); y += 4;
-    doc.text("Contact: Tel.: +420 602 102 108", margin, y); y += 4;
-    doc.text("Website: www.yarotravel.cz", margin, y); y += 4;
-    doc.setFont("helvetica", "italic");
-    doc.text("Available 24/7 for your travel needs", margin, y);
-    y += 8;
 
     // ── TERMS ──
     doc.setDrawColor(203, 213, 225);
@@ -718,17 +768,19 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     const terms = "This voucher is valid for the services listed above. Please present this voucher to service providers. Changes or cancellations must be made 48 hours in advance. For assistance, contact YARO Travel support.";
     const termsLines = doc.splitTextToSize(terms, contentW);
     doc.text(termsLines, margin, y);
+    y += termsLines.length * 4 + 2;
 
     // ── FOOTER ──
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 287, W, 10, "F");
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.3);
+      doc.line(margin, 284, W - margin, 284);
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(180, 200, 255);
-      doc.text("YARO Travel  ·  Tel.: +420 602 102 108  ·  www.yarotravel.cz  ·  zajezdy@yarotravel.cz", W / 2, 293, { align: "center" });
+      doc.setTextColor(100, 116, 139);
+      doc.text("YARO Travel  ·  +420 602 102 108  ·  www.yarotravel.cz  ·  zajezdy@yarotravel.cz", W / 2, 289, { align: "center" });
     }
 
     return doc.output("blob");
@@ -795,11 +847,18 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       const inlineAttachments: { filename: string; base64: string }[] = [];
 
       if (vouchersToSend.length > 0) {
+        const logoBase64 = await getLogoBase64();
         for (const v of vouchersToSend) {
           try {
             const { data: fullVoucher } = await supabase.from("vouchers").select("*").eq("id", v.id).single();
             if (fullVoucher) {
-              const pdfBlob = buildVoucherPdfBlob(fullVoucher, v.suppliers?.name);
+              // Load full supplier data including address/phone/contact
+              let supplierData: any = null;
+              if (fullVoucher.supplier_id) {
+                const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
+                supplierData = sd;
+              }
+              const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64);
               const arrayBuffer = await pdfBlob.arrayBuffer();
               const uint8 = new Uint8Array(arrayBuffer);
               let binary = "";
