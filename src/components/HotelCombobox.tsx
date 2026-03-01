@@ -90,9 +90,14 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
     }
     setLoading(true);
     try {
+      const autoSlug = newHotelName.trim()
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
       const { data, error } = await supabase
         .from("hotel_templates")
-        .insert({ name: newHotelName.trim() })
+        .insert({ name: newHotelName.trim(), slug: autoSlug })
         .select()
         .single();
       if (error) throw error;
