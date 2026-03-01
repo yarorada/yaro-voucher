@@ -12,6 +12,7 @@ interface SmartSearchInputProps {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  hint?: string | null; // optional hint shown below the add button (e.g. suggested country)
 }
 
 export function SmartSearchInput({
@@ -23,6 +24,7 @@ export function SmartSearchInput({
   placeholder = "Hledat...",
   className,
   inputClassName,
+  hint,
 }: SmartSearchInputProps) {
   const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,6 +87,12 @@ export function SmartSearchInput({
               Přidat {addLabel.replace("{text}", value.trim())}
             </span>
           </button>
+          {hint && (
+            <div className="px-3 pb-2 text-xs text-muted-foreground flex items-center gap-1">
+              <span>🌍</span>
+              <span>{hint}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

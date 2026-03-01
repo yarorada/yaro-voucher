@@ -128,6 +128,14 @@ const Destinations = () => {
     );
   }, [destinations, searchText]);
 
+  const smartSearchHint = useMemo(() => {
+    if (!searchText.trim() || filtered.length > 0) return null;
+    const guessed = guessCountryFromDestination(searchText.trim());
+    if (!guessed) return null;
+    const match = countries.find((c) => c.name.toLowerCase() === guessed.toLowerCase());
+    return match ? `Navrhovaná země: ${match.name}` : null;
+  }, [searchText, filtered.length, countries]);
+
   const handleAddNew = (text: string) => {
     const guessedCountryName = guessCountryFromDestination(text);
     let countryId = "";
@@ -152,8 +160,9 @@ const Destinations = () => {
       placeholder="Hledat destinaci nebo zemi…"
       className="w-48 md:w-64"
       inputClassName="h-8 text-xs"
+      hint={smartSearchHint}
     />,
-    [searchText, filtered.length]
+    [searchText, filtered.length, smartSearchHint]
   );
 
   return (
