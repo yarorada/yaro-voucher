@@ -1,98 +1,43 @@
 
-## Chytré vyhledávací pole s inline přidáváním
+## Barevné indikátory expirace dokladů u klientů
 
 ### Co se změní
 
-Vyhledávací pole na čtyřech stránkách (Hotely, Destinace, Dodavatelé, Klienti) se přemění na inteligentní vstup: pokud hledaný výraz **neodpovídá** žádnému záznamu, zobrazí se přímo pod polem nabídka „+ Přidat [zadaný text]". Kliknutím se rovnou otevře formulář pro nový záznam s předvyplněným názvem. Tlačítko „Přidat ..." v nástrojové liště (toolbar) se odstraní.
+V sekci Klienti, v tabulce vedle jména každého klienta, přibudou barevné odznak/chip pro pas a občanský průkaz. Barva odznaku bude odrážet stav platnosti dokladu.
 
----
+### Barevná logika
 
-### Chování pro každou sekci
+| Stav | Barva | Podmínka |
+|---|---|---|
+| Expirováno | Červená | Datum expirace je v minulosti, nebo do 30 dnů |
+| Brzy expiruje | Oranžová | Do 90 dnů |
+| Upozornění | Žlutá | Do 180 dnů |
+| Platný | Zelená/Výchozí (modrá) | Více než 180 dnů |
 
-**Hotely**
-- Pokud zadaný text nenajde shodu → pod polem se zobrazí `+ Přidat hotel „[text]"`
-- Kliknutí otevře stávající dialog „Nový hotel" s předvyplněným názvem
-- Tlačítko „Přidat hotel" v toolbaru se odebere
+### Technické detaily
 
-**Dodavatelé**
-- Pokud zadaný text nenajde shodu → `+ Přidat dodavatele „[text]"`
-- Kliknutí otevře dialog s předvyplněným názvem
-- Tlačítko „Přidat" v toolbaru se odebere
+**Soubor:** `src/pages/Clients.tsx`
 
-**Klienti**
-- Pokud zadaný text nenajde shodu → `+ Přidat klienta „[text]"`
-- Text se interpretuje jako „Jméno Příjmení" a předvyplní příslušná pole
-- Tlačítko „Nový zákazník" se odebere (ostatní tlačítka – Import, Skenovat – zůstanou)
+1. Přidat pomocnou funkci `getExpiryStatus(dateStr: string | null)`, která vrací `'expired' | 'critical' | 'warning' | 'notice' | 'ok' | null`.
 
-**Destinace** (nejsložitější)
-- Pokud zadaný text nenajde shodu → `+ Přidat destinaci „[text]"`
-- Kliknutí spustí **automatické dohledání země** z lokální mapy (COUNTRY_DATA + vlastní tabulka destinací → zemí)
-  - Příklad: „Vídeň" → Rakousko (předdefinovaná mapa destinace→země)
-  - Pokud je země nalezena automaticky, zobrazí se potvrzovací dialog s předvyplněnou zemí, kterou lze změnit
-  - Pokud zemi nelze odvodit, dialog se zeptá na výběr ze seznamu zemí
-- Tlačítko „Nová destinace" se odebere
+2. Nahradit stávající pevně modrý odznak `PAS` dynamickým odznakem, jehož barva závisí na výsledku `getExpiryStatus(client.passport_expiry)`.
 
----
+3. Přidat podobný odznak pro občanský průkaz `OP`, pokud je vyplněno `id_card_number`.
 
-### Technická realizace
+4. Pokud klient nemá vyplněno datum expirace, ale má číslo dokladu, zobrazit neutrální šedý odznak (jako dosud – bez indikace expirace).
 
-**1. Nová mapa destinací → zemí (`src/lib/destinationCountryMap.ts`)**
-
-Slovník ~100 nejčastějších golfových destinací v češtině mapující název destinace na název země v databázi:
-```typescript
-export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
-  "vídeň": "Rakousko",
-  "antalya": "Turecko",
-  "istanbul": "Turecko",
-  "mallorca": "Španělsko",
-  "costa del sol": "Španělsko",
-  // ... atd.
-};
+```text
+Jméno klienta  [PAS]  [OP]
+               ↑       ↑
+            červená  oranžová
+            = expir  = do 90 dní
 ```
 
-**2. Nová sdílená komponenta `src/components/SmartSearchInput.tsx`**
+**Ukázka barev (Tailwind třídy):**
+- Expirováno/kritické (≤30 dní): `bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300`
+- Brzy (31–90 dní): `bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300`
+- Upozornění (91–180 dní): `bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300`
+- OK (>180 dní): stávající modrá `bg-blue-100 text-blue-700`
+- Bez data expirace: šedá
 
-Wrapper kolem `Input` který:
-- Vykreslí standardní vyhledávací pole
-- Pokud `searchText` neprázdný a `noResults === true` → zobrazí pod polem dropdown s tlačítkem „+ Přidat..."
-- Přijme `onAddNew(text: string)` callback
-
-**3. Úpravy jednotlivých stránek**
-
-| Soubor | Změna |
-|---|---|
-| `src/pages/Hotels.tsx` | Nahradit Input za SmartSearchInput, odstranit toolbar „Přidat hotel", napojit `onAddNew` na stávající `handleCreate` |
-| `src/pages/Suppliers.tsx` | Stejný pattern, předvyplnit název v dialog formData |
-| `src/pages/Clients.tsx` | Předvyplnit first_name/last_name z textu (split na první mezeru) |
-| `src/pages/Destinations.tsx` | Přidat logiku dohledání země + potvrzovací/výběrový dialog |
-
-**4. Dialog pro Destinace**
-
-Místo okamžitého uložení se otevře dialog:
-```
-Nová destinace: „Vídeň"
-Navrhovaná země: [Rakousko ▾]   ← pokud nalezena automaticky
-             nebo
-Vyberte zemi: [rozbalovací seznam všech zemí]
-[Zrušit]  [Přidat destinaci]
-```
-
----
-
-### Co se nemění
-
-- Existující dialogy pro editaci (Upravit hotel, Upravit dodavatele, atd.) zůstávají beze změny
-- Ostatní tlačítka v toolbaru Klientů (Import z textu, Skenovat doklad, Duplicity) zůstávají
-- BulkSupplierUpload v toolbaru Dodavatelů zůstává
-- Žádné změny databáze nejsou nutné
-
----
-
-### Pořadí implementace
-
-1. Vytvořit `src/lib/destinationCountryMap.ts` se slovníkem destinací
-2. Vytvořit `src/components/SmartSearchInput.tsx`
-3. Upravit `src/pages/Hotels.tsx`
-4. Upravit `src/pages/Suppliers.tsx`
-5. Upravit `src/pages/Clients.tsx`
-6. Upravit `src/pages/Destinations.tsx` (nejsložitější – dialog s výběrem země)
+Změny jsou čistě frontendové — pouze v `src/pages/Clients.tsx`, žádné databázové změny.
