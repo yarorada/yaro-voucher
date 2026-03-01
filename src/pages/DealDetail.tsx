@@ -593,6 +593,12 @@ const DealDetail = () => {
   // Currency conversion state
   const [convertingCurrency, setConvertingCurrency] = useState(false);
   
+  // Derive deal's selling currency from services (or fallback to deal.currency)
+  const dealCurrency = services.find(s => s.price_currency && s.price_currency !== "CZK")?.price_currency
+    || services.find(s => s.price_currency)?.price_currency
+    || deal?.currency
+    || "CZK";
+  
   // Store original flight details to preserve all segments
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
@@ -2111,7 +2117,7 @@ const DealDetail = () => {
             total_price: totalPrice ? parseFloat(totalPrice) : 0,
             deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
             tee_times: deal.tee_times || null,
-            currency: deal.currency || "CZK",
+            currency: dealCurrency,
           } as any)
           .eq("id", contract.id);
 
@@ -2243,7 +2249,7 @@ const DealDetail = () => {
           status: "draft",
           contract_number: "",
           tee_times: teeTimes,
-          currency: deal.currency || "CZK",
+          currency: dealCurrency,
         } as any)
         .select()
         .single();
@@ -2761,7 +2767,7 @@ const DealDetail = () => {
             dealId={deal.id} 
             totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
             departureDate={deal.start_date || undefined}
-            currency={deal.currency || "CZK"}
+            currency={dealCurrency}
           />
         </div>
 
@@ -3272,7 +3278,7 @@ const DealDetail = () => {
                   <span className="font-bold text-base sm:text-lg text-primary">
                     {formatPriceCurrency(
                       services.reduce((sum, s) => sum + getServiceTotal(s), 0),
-                      deal?.currency || services[0]?.price_currency || "CZK"
+                      dealCurrency
                     )}
                   </span>
                 </div>
