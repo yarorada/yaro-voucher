@@ -125,7 +125,7 @@ const buildVoucherPdfBlob = (
   }
 
   // Voucher title + code right-aligned, single bold line
-  doc.setFontSize(12);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
   doc.text(`TRAVEL VOUCHER · ${voucher.voucher_code}`, W - margin, y + 11, { align: "right" });
