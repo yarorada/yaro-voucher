@@ -521,7 +521,8 @@ const Deals = () => {
                 // Primary name = orderer (lead_client)
                 const ordererClients = ordererInTravelers?.clients;
                 const leadClientJoin = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
-                const primaryClient = ordererClients || leadClientJoin || firstByOrder?.clients;
+                // Use orderer from travelers, then from lead_client join, then first traveler ONLY if no lead_client_id set
+                const primaryClient = ordererClients || leadClientJoin || (!deal.lead_client_id ? firstByOrder?.clients : null);
                 const primaryName = primaryClient ? `${primaryClient.first_name} ${primaryClient.last_name}` : "";
 
                 const descParts: string[] = [];
