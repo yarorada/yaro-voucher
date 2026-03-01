@@ -212,17 +212,14 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             </table>
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={sectionTitle}>Zákazník</h2>
+            <h2 style={sectionTitle}>Zákazník / prodejce</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 <tr><td style={{ ...valueStyle, fontWeight: 'bold', padding: '2px 0' }}>
                   {contract.client?.company_as_orderer && contract.client?.company_name
-                    ? contract.client.company_name
+                    ? `${contract.client.company_name} / ${contract.client?.title ? `${contract.client.title} ` : ''}${contract.client?.first_name} ${contract.client?.last_name}`
                     : `${contract.client?.title ? `${contract.client.title} ` : ''}${contract.client?.first_name} ${contract.client?.last_name}`}
                 </td></tr>
-                {contract.client?.company_as_orderer && contract.client?.company_name && (
-                  <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Zastoupena: </span>{contract.client?.title ? `${contract.client.title} ` : ''}{contract.client?.first_name} {contract.client?.last_name}</td></tr>
-                )}
                 <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>Adresa: </span>{contract.client?.address || '-'}</td></tr>
                 {contract.client?.company_as_orderer
                   ? <tr><td style={{ ...valueStyle, padding: '2px 0' }}><span style={{ color: '#666', fontSize: '9px' }}>IČO: </span>{(contract.client as any)?.ico || '-'}</td></tr>
