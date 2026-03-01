@@ -514,27 +514,28 @@ const Deals = () => {
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
 
-                const iso = deal.destinations?.countries?.iso_code;
-                const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
-
-                // Build description: Objednatel • ISO • Hotel • Datum (Objednatel pokud není v deal_travelers)
-                // Primary name = orderer (lead_client)
-                const ordererClients = ordererInTravelers?.clients;
-                const leadClientJoin = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
-                // Use orderer from travelers, then from lead_client join, then first traveler ONLY if no lead_client_id set
-                const primaryClient = ordererClients || leadClientJoin || (!deal.lead_client_id ? firstByOrder?.clients : null);
-                const primaryName = primaryClient ? `${primaryClient.first_name} ${primaryClient.last_name}` : "";
-
-                const descParts: string[] = [];
-                if (primaryName) descParts.push(primaryName);
-                if (iso) descParts.push(iso);
-                if (hotel) descParts.push(hotel.service_name);
-                if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
-                let displayDesc = descParts.join(" • ");
-
-                // Append orderer in parentheses ONLY if orderer is NOT in deal_travelers
-                if (!ordererInTravelers && leadClientJoin) {
-                  displayDesc += ` (${leadClientJoin.first_name} ${leadClientJoin.last_name})`;
+                // Use deal.name if available (generated on save in DealDetail) — it's always correct
+                // Strip leading deal number prefix (e.g. "D-260023 ") if present
+                let displayDesc = "";
+                if (deal.name) {
+                  displayDesc = deal.name.replace(/^D-\d{6,}\s*/, "").trim();
+                } else {
+                  // Fallback: compute from joined data
+                  const iso = deal.destinations?.countries?.iso_code;
+                  const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
+                  const ordererClients = ordererInTravelers?.clients;
+                  const leadClientJoin = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
+                  const primaryClient = ordererClients || leadClientJoin || (!deal.lead_client_id ? firstByOrder?.clients : null);
+                  const primaryName = primaryClient ? `${primaryClient.first_name} ${primaryClient.last_name}` : "";
+                  const descParts: string[] = [];
+                  if (primaryName) descParts.push(primaryName);
+                  if (iso) descParts.push(iso);
+                  if (hotel) descParts.push(hotel.service_name);
+                  if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
+                  displayDesc = descParts.join(" • ");
+                  if (!ordererInTravelers && leadClientJoin) {
+                    displayDesc += ` (${leadClientJoin.first_name} ${leadClientJoin.last_name})`;
+                  }
                 }
 
                 const getBaseNumber = (dn: string) => {
