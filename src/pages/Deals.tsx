@@ -452,7 +452,7 @@ const Deals = () => {
                 { value: "quote", label: "Nabídka odeslána" },
                 { value: "approved", label: "Schváleno" },
                 { value: "confirmed", label: "Potvrzeno" },
-                { value: "dispatched", label: "Expedováno" },
+                { value: "dispatched", label: "Odbaveno" },
                 { value: "completed", label: "Dokončeno" },
                 { value: "cancelled", label: "Zrušeno" },
               ] as const).map((tab) => {
