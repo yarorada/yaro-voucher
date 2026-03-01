@@ -53,6 +53,8 @@ interface Deal {
   notes: string | null;
   tee_times: any | null;
   destinations: { name: string; countries: { iso_code: string } | null } | null;
+  lead_client_id: string | null;
+  lead_client: { first_name: string; last_name: string }[] | null;
   deal_travelers: { is_lead_traveler: boolean; client_id: string; order_index?: number; clients: { first_name: string; last_name: string } | null }[];
   deal_services: { service_type: string; service_name: string }[];
   created_at: string;
@@ -119,6 +121,8 @@ const Deals = () => {
           tee_times,
           created_at,
           updated_at,
+          lead_client_id,
+          lead_client:clients!deals_lead_client_id_fkey (first_name, last_name),
           destinations:destination_id (name, countries:country_id(iso_code)),
           deal_travelers (
             is_lead_traveler,
@@ -490,10 +494,13 @@ const Deals = () => {
                 // Sort travelers by order_index to find the first traveler
                 const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => (a.order_index ?? 999) - (b.order_index ?? 999));
                 const firstByOrder = sortedTravelers[0];
-                const orderer = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
+
+                // Orderer = traveler with is_lead_traveler, OR the lead_client_id if not in travelers
+                const ordererInTravelers = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
+                const leadClientId = deal.lead_client_id;
 
                 // leadName for metadata row — prefer orderer, fallback to first
-                const leadClient = orderer?.clients || firstByOrder?.clients;
+                const leadClient = ordererInTravelers?.clients || firstByOrder?.clients;
                 const leadName = leadClient ? `${leadClient.first_name} ${leadClient.last_name}` : "";
 
                 const mainTravelers = [...deal.deal_travelers]
@@ -515,8 +522,17 @@ const Deals = () => {
                 if (hotel) descParts.push(hotel.service_name);
                 if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
                 let displayDesc = descParts.join(" • ");
-                if (orderer?.clients && firstByOrder?.clients && orderer.client_id !== firstByOrder.client_id) {
-                  displayDesc += ` (${orderer.clients.first_name} ${orderer.clients.last_name})`;
+
+                // Append orderer in parentheses if different from first traveler
+                if (ordererInTravelers?.clients && firstByOrder?.clients && ordererInTravelers.client_id !== firstByOrder.client_id) {
+                  // Orderer is in travelers but different from first
+                  displayDesc += ` (${ordererInTravelers.clients.first_name} ${ordererInTravelers.clients.last_name})`;
+                } else if (!ordererInTravelers && leadClientId && leadClientId !== firstByOrder?.client_id) {
+                  // Orderer is NOT in travelers (checkbox unchecked) — use lead_client from join
+                  const lc = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
+                  if (lc) {
+                    displayDesc += ` (${lc.first_name} ${lc.last_name})`;
+                  }
                 }
 
                 const getBaseNumber = (dn: string) => {
