@@ -896,6 +896,20 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
 
       toast.success(`E-mail odeslán na: ${toEmails.join(", ")} (${data.attachmentCount} příloh)`);
+
+      // Mark sent vouchers as sent_at in vouchers table
+      const sentVoucherIds = Array.from(selectedVoucherIds);
+      if (sentVoucherIds.length > 0) {
+        await supabase
+          .from("vouchers")
+          .update({ sent_at: new Date().toISOString() })
+          .in("id", sentVoucherIds);
+        // Refresh local vouchers state to show sent_at indicator
+        setVouchers(prev => prev.map(v =>
+          sentVoucherIds.includes(v.id) ? { ...v, sent_at: new Date().toISOString() } : v
+        ));
+      }
+
       setSendDialogOpen(false);
       setSelectedDocIds(new Set());
       setSelectedVoucherIds(new Set());
