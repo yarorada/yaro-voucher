@@ -457,7 +457,7 @@ Deno.serve(async (req) => {
     <table cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px; margin:0 auto;">
       <tr>
         <td style="padding:12px 16px;">
-          <img src="https://jwaskoeqryjdjrdwupoi.supabase.co/storage/v1/object/public/hotel-images/brand%2Fyaro-logo-wide.png" alt="YARO Travel" style="height:32px;" />
+          <img src="https://jwaskoeqryjdjrdwupoi.supabase.co/storage/v1/object/public/hotel-images/brand%2Fyaro-logo-wide.png" alt="YARO Travel" style="height:64px;" />
         </td>
         <td style="padding:12px 16px; text-align:center; font-size:11px; color:#64748b;">
           <a href="tel:+420602102108" style="color:#64748b; text-decoration:none;">📞 +420 602 102 108</a>
