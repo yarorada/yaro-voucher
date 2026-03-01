@@ -61,87 +61,82 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
 
-    // Moneta Open Banking API base URLs to try
-    // Based on apiportal.moneta.cz - Moneta uses proprietary API portal
-    const BASE_URLS = [
-      'https://api.moneta.cz/openbanking/v1',
-      'https://api.moneta.cz/aisp/v1',
-      'https://api.moneta.cz/v1',
-      'https://api.moneta.cz/psd2/v1',
-      'https://api.moneta.cz/george/v1',
-      'https://george-api.moneta.cz/v1',
-      'https://george-api.moneta.cz/openbanking/v1',
-    ];
-
     const monetaHeaders = {
       'Authorization': `Bearer ${MONETA_API_TOKEN}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
 
-    // Step 1: try to resolve accountId via /accounts list (Berlin Group standard)
-    let resolvedAccountId = MONETA_ACCOUNT_ID;
-    let workingBaseUrl = BASE_URLS[0];
+    // Moneta API: try multiple URL patterns
+    // Moneta proprietární API (komerční klienti) generuje token přímo v George internetovém bankovnictví
+    // Dokumentace: apiportal.moneta.cz
+    const ibanClean = MONETA_ACCOUNT_ID.replace(/\s/g, '');
+    const ibanMatch = ibanClean.match(/CZ\d{2}(\d{4})(\d{6})(\d{10})/);
+    const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean;
+    const bankCode = ibanMatch ? ibanMatch[2] : '';
 
-    for (const baseUrl of BASE_URLS) {
-      const accountsUrl = `${baseUrl}/accounts`;
-      console.log(`Trying accounts list: ${accountsUrl}`);
+    const accountCandidates = [
+      ibanClean,
+      bareAccountNumber,
+      `${bareAccountNumber}/${bankCode}`,
+    ].filter((v, i, a) => v && a.indexOf(v) === i);
+
+    // All known Moneta API URL patterns (both Berlin Group PSD2 and proprietary)
+    const urlPatterns: string[] = [];
+    for (const base of [
+      'https://api.moneta.cz/openbanking/v1',
+      'https://api.moneta.cz/aisp/v1',
+      'https://api.moneta.cz/v1',
+      'https://api.moneta.cz/psd2/v1',
+    ]) {
+      for (const accountId of accountCandidates) {
+        urlPatterns.push(`${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
+      }
+      // Also try "my" endpoint (some banks use this for single-account tokens)
+      urlPatterns.push(`${base}/my/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
+      urlPatterns.push(`${base}/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
+    }
+
+    let monetaResponse: Response | null = null;
+    let monetaUrl = '';
+
+    for (const url of urlPatterns) {
+      console.log(`Trying: ${url}`);
       try {
-        const accountsResp = await fetch(accountsUrl, { headers: monetaHeaders });
-        if (accountsResp.ok) {
-          const accountsData = await accountsResp.json();
-          workingBaseUrl = baseUrl;
-          console.log(`Accounts response from ${baseUrl}:`, JSON.stringify(accountsData).slice(0, 500));
-          // Try to find matching account by IBAN
-          const accounts = accountsData?.accounts || accountsData?.data || accountsData || [];
-          if (Array.isArray(accounts) && accounts.length > 0) {
-            const match = accounts.find((a: any) =>
-              a.iban === MONETA_ACCOUNT_ID ||
-              a.resourceId === MONETA_ACCOUNT_ID ||
-              a.id === MONETA_ACCOUNT_ID ||
-              (a.iban || '').replace(/\s/g, '') === MONETA_ACCOUNT_ID.replace(/\s/g, '')
-            );
-            if (match) {
-              resolvedAccountId = match.resourceId || match.id || match.iban || MONETA_ACCOUNT_ID;
-              console.log(`Resolved accountId: ${resolvedAccountId}`);
-            } else {
-              // Use first account's resourceId if no exact match
-              resolvedAccountId = accounts[0].resourceId || accounts[0].id || MONETA_ACCOUNT_ID;
-              console.log(`No exact match, using first account: ${resolvedAccountId}`);
-            }
-          }
+        const resp = await fetch(url, { headers: monetaHeaders });
+        console.log(`  → ${resp.status}`);
+        if (resp.ok) {
+          monetaResponse = resp;
+          monetaUrl = url;
           break;
-        } else {
-          const errBody = await accountsResp.text();
-          console.log(`${baseUrl}/accounts returned ${accountsResp.status}: ${errBody.slice(0, 300)}`);
+        } else if (resp.status === 401 || resp.status === 403) {
+          const errText = await resp.text();
+          return new Response(JSON.stringify({
+            error: `Moneta API chyba: ${resp.status}`,
+            detail: `URL: ${url} — ${errText}`,
+            hint: 'Token MONETA_API_TOKEN je neplatný nebo vypršel. Obnovte token v George internetovém bankovnictví nebo na apiportal.moneta.cz.',
+          }), {
+            status: 502,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
       } catch (e) {
-        console.log(`Error fetching ${baseUrl}/accounts:`, e);
+        console.log(`  → Error: ${e}`);
       }
     }
 
-    // Step 2: fetch transactions
-    const encodedAccountId = encodeURIComponent(resolvedAccountId);
-    const monetaUrl = `${workingBaseUrl}/accounts/${encodedAccountId}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
-    
-    console.log(`Calling Moneta transactions URL: ${monetaUrl}`);
-
-    const monetaResponse = await fetch(monetaUrl, { headers: monetaHeaders });
-
-    if (!monetaResponse.ok) {
-      const errText = await monetaResponse.text();
-      console.error(`Moneta API error: ${monetaResponse.status}`, monetaUrl, errText);
-      return new Response(JSON.stringify({ 
-        error: `Moneta API chyba: ${monetaResponse.status}`,
-        detail: `URL: ${monetaUrl} — ${errText}`,
-        hint: monetaResponse.status === 401 || monetaResponse.status === 403
-          ? 'Token MONETA_API_TOKEN je neplatný nebo vypršel. Obnovte token v Moneta API portálu (apiportal.moneta.cz).'
-          : 'Zkontrolujte správnou base URL Moneta API. Přihlaste se na apiportal.moneta.cz a ověřte, jaký endpoint je uveden v dokumentaci produktu.',
+    if (!monetaResponse) {
+      return new Response(JSON.stringify({
+        error: 'Moneta API: žádný endpoint nefunguje (všechny vrátily 404)',
+        detail: `Vyzkoušeno ${urlPatterns.length} URL variant. První: ${urlPatterns[0]}`,
+        hint: 'Správná base URL není známa. Kontaktujte Moneta (qaapi@moneta.cz) nebo ověřte endpoint v dokumentaci na apiportal.moneta.cz. Token musí být generován v George internetovém bankovnictví.',
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`Working Moneta URL: ${monetaUrl}`);
 
     const monetaData = await monetaResponse.json();
     
