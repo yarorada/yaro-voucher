@@ -176,8 +176,24 @@ const Suppliers = () => {
   });
 
   usePageToolbar(
-    <BulkSupplierUpload onComplete={fetchSuppliers} />,
-    []
+    <div className="flex items-center gap-2">
+      <SmartSearchInput
+        value={searchText}
+        onChange={setSearchText}
+        noResults={filteredSuppliers.length === 0 && !loading}
+        addLabel={`dodavatele „{text}"`}
+        onAddNew={(text) => {
+          setFormData({ name: text, contact_person: "", email: "", phone: "", address: "", notes: "" });
+          setEditingSupplier(null);
+          setIsDialogOpen(true);
+        }}
+        placeholder="Hledat dodavatele..."
+        className="w-48 md:w-64"
+        inputClassName="h-8 text-xs"
+      />
+      <BulkSupplierUpload onComplete={fetchSuppliers} />
+    </div>,
+    [searchText, filteredSuppliers.length, loading]
   );
 
   return (
@@ -280,22 +296,6 @@ const Suppliers = () => {
                 </form>
                 </DialogContent>
         </Dialog>
-
-        {/* Search */}
-        <div className="mb-4 max-w-sm">
-          <SmartSearchInput
-            value={searchText}
-            onChange={setSearchText}
-            noResults={filteredSuppliers.length === 0 && !loading}
-            addLabel={`dodavatele „{text}"`}
-            onAddNew={(text) => {
-              setFormData({ name: text, contact_person: "", email: "", phone: "", address: "", notes: "" });
-              setEditingSupplier(null);
-              setIsDialogOpen(true);
-            }}
-            placeholder="Hledat dodavatele..."
-          />
-        </div>
 
         {loading ? (
           <div className="text-center py-12">
