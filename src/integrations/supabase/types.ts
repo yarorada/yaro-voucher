@@ -137,6 +137,7 @@ export type Database = {
         Row: {
           confirmed_at: string | null
           created_at: string
+          external_transaction_id: string | null
           id: string
           matched_contract_id: string | null
           matched_payment_id: string | null
@@ -150,6 +151,7 @@ export type Database = {
         Insert: {
           confirmed_at?: string | null
           created_at?: string
+          external_transaction_id?: string | null
           id?: string
           matched_contract_id?: string | null
           matched_payment_id?: string | null
@@ -163,6 +165,7 @@ export type Database = {
         Update: {
           confirmed_at?: string | null
           created_at?: string
+          external_transaction_id?: string | null
           id?: string
           matched_contract_id?: string | null
           matched_payment_id?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.bank_notifications ADD COLUMN IF NOT EXISTS external_transaction_id text UNIQUE;
