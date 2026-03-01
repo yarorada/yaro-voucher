@@ -1,68 +1,98 @@
-## Úpravy PDF voucheru – Flight Details & Confirmed Tee Times
+
+## Chytré vyhledávací pole s inline přidáváním
 
 ### Co se změní
 
-**1. Flight Details – jednořádkový formát s tučnými destinacemi**
+Vyhledávací pole na čtyřech stránkách (Hotely, Destinace, Dodavatelé, Klienti) se přemění na inteligentní vstup: pokud hledaný výraz **neodpovídá** žádnému záznamu, zobrazí se přímo pod polem nabídka „+ Přidat [zadaný text]". Kliknutím se rovnou otevře formulář pro nový záznam s předvyplněným názvem. Tlačítko „Přidat ..." v nástrojové liště (toolbar) se odstraní.
 
-Aktuální stav: datum, kód letu i destinace jsou všechny tučné.
+---
 
-Nový formát na jednom řádku:
+### Chování pro každou sekci
 
-```
-21.06.26 · OK 123 · Prague → Antalya · Dep. 10:30 · Arr. 14:15 · Pax: 2 ADT
-```
+**Hotely**
+- Pokud zadaný text nenajde shodu → pod polem se zobrazí `+ Přidat hotel „[text]"`
+- Kliknutí otevře stávající dialog „Nový hotel" s předvyplněným názvem
+- Tlačítko „Přidat hotel" v toolbaru se odebere
 
-- Datum (`datePart`) – normální font
-- Separator `·` – normální
-- Kód letu (`flightCode`) – normální
-- Separator `·` – normální
-- `fromCity→toCity` – **tučně**
-- Zbytek (Departure, Arr, Pax) – normální font
+**Dodavatelé**
+- Pokud zadaný text nenajde shodu → `+ Přidat dodavatele „[text]"`
+- Kliknutí otevře dialog s předvyplněným názvem
+- Tlačítko „Přidat" v toolbaru se odebere
 
-**2. Confirmed Tee Times – přidat počet hráčů za tečku uprostřed řádku**
+**Klienti**
+- Pokud zadaný text nenajde shodu → `+ Přidat klienta „[text]"`
+- Text se interpretuje jako „Jméno Příjmení" a předvyplní příslušná pole
+- Tlačítko „Nový zákazník" se odebere (ostatní tlačítka – Import, Skenovat – zůstanou)
 
-Aktuální formát: `21 Jun  Golf Club at 10:00 (4 golfers)`
+**Destinace** (nejsložitější)
+- Pokud zadaný text nenajde shodu → `+ Přidat destinaci „[text]"`
+- Kliknutí spustí **automatické dohledání země** z lokální mapy (COUNTRY_DATA + vlastní tabulka destinací → zemí)
+  - Příklad: „Vídeň" → Rakousko (předdefinovaná mapa destinace→země)
+  - Pokud je země nalezena automaticky, zobrazí se potvrzovací dialog s předvyplněnou zemí, kterou lze změnit
+  - Pokud zemi nelze odvodit, dialog se zeptá na výběr ze seznamu zemí
+- Tlačítko „Nová destinace" se odebere
 
-Nový formát:
+---
 
-```
-21.06.26 · Golf Club · 10:00 - 12:00 · 4 golfers
-```
+### Technická realizace
 
-Konkrétně: za časem přidat  `· N golfers` místo závorky – přehledný, jednotný styl s tečkami jako separátory.
+**1. Nová mapa destinací → zemí (`src/lib/destinationCountryMap.ts`)**
 
-### Technické změny
-
-Soubor: `src/pages/VoucherDetail.tsx`, sekce Flight Details (řádky ~337–342) a Tee Times (řádky ~380–386).
-
-**Flight Details (řádky ~337–342):**
-
+Slovník ~100 nejčastějších golfových destinací v češtině mapující název destinace na název země v databázi:
 ```typescript
-// Datum a kód letu – normální font
-if (datePart) { pn(datePart); pn(" · "); }
-if (flightCode) { pn(flightCode); pn(" · "); }
-// Destinace – tučné
-if (fromCity && toCity) { pb(`${fromCity}→${toCity}`); }
-// Zbytek – normální
-if (f.departureTime) { pn(` · Departure ${f.departureTime}`); }
-if (f.arrivalTime) { pn(` · Arr ${f.arrivalTime}`); }
-if (f.pax) { pn(` · Pax: ${f.pax} ADT`); }
+export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
+  "vídeň": "Rakousko",
+  "antalya": "Turecko",
+  "istanbul": "Turecko",
+  "mallorca": "Španělsko",
+  "costa del sol": "Španělsko",
+  // ... atd.
+};
 ```
 
-**Tee Times (řádky ~380–386):**
+**2. Nová sdílená komponenta `src/components/SmartSearchInput.tsx`**
 
-```typescript
-if (datePart) { printBold(datePart); printNormal(" · "); }
-printBold(clubPart);
-if (timePart) {
-  printNormal(" · "); printNormal(timePart);
-  if (endTime) { printNormal(` - ${endTime}`); }
-}
-if (paxCount > 0) { printNormal(` · ${paxCount} golfers`); }
+Wrapper kolem `Input` který:
+- Vykreslí standardní vyhledávací pole
+- Pokud `searchText` neprázdný a `noResults === true` → zobrazí pod polem dropdown s tlačítkem „+ Přidat..."
+- Přijme `onAddNew(text: string)` callback
+
+**3. Úpravy jednotlivých stránek**
+
+| Soubor | Změna |
+|---|---|
+| `src/pages/Hotels.tsx` | Nahradit Input za SmartSearchInput, odstranit toolbar „Přidat hotel", napojit `onAddNew` na stávající `handleCreate` |
+| `src/pages/Suppliers.tsx` | Stejný pattern, předvyplnit název v dialog formData |
+| `src/pages/Clients.tsx` | Předvyplnit first_name/last_name z textu (split na první mezeru) |
+| `src/pages/Destinations.tsx` | Přidat logiku dohledání země + potvrzovací/výběrový dialog |
+
+**4. Dialog pro Destinace**
+
+Místo okamžitého uložení se otevře dialog:
+```
+Nová destinace: „Vídeň"
+Navrhovaná země: [Rakousko ▾]   ← pokud nalezena automaticky
+             nebo
+Vyberte zemi: [rozbalovací seznam všech zemí]
+[Zrušit]  [Přidat destinaci]
 ```
 
-### Rozsah změn
+---
 
-- Pouze `src/pages/VoucherDetail.tsx`, ~10 řádků
-- Žádné databázové změny
-- Žádné nové závislosti
+### Co se nemění
+
+- Existující dialogy pro editaci (Upravit hotel, Upravit dodavatele, atd.) zůstávají beze změny
+- Ostatní tlačítka v toolbaru Klientů (Import z textu, Skenovat doklad, Duplicity) zůstávají
+- BulkSupplierUpload v toolbaru Dodavatelů zůstává
+- Žádné změny databáze nejsou nutné
+
+---
+
+### Pořadí implementace
+
+1. Vytvořit `src/lib/destinationCountryMap.ts` se slovníkem destinací
+2. Vytvořit `src/components/SmartSearchInput.tsx`
+3. Upravit `src/pages/Hotels.tsx`
+4. Upravit `src/pages/Suppliers.tsx`
+5. Upravit `src/pages/Clients.tsx`
+6. Upravit `src/pages/Destinations.tsx` (nejsložitější – dialog s výběrem země)
