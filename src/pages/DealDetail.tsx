@@ -1903,18 +1903,23 @@ const DealDetail = () => {
     setSaving(true);
     try {
       // Build auto-generated deal name
-      // Extract base number D-RRNNNN from deal_number
+      // Format: D-RRNNNN [první cestující] ISO Hotel DD-MM-YY (objednatel)
       const baseNumber = deal.deal_number.match(/^D-\d{6}/)?.[0] || "";
       let autoName = baseNumber;
-      
-      // Find orderer (lead traveler)
-      const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler)
+
+      // Find orderer (lead client)
+      const orderer = deal.deal_travelers.find(t => t.is_lead_traveler)
         || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
-      
-      // First traveler (by order_index, excluding orderer if they are not a traveler)
+
+      // First traveler (lowest order_index)
       const sortedTravelers = [...deal.deal_travelers].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
       const firstTraveler = sortedTravelers[0];
-      
+
+      // First traveler name right after base number
+      if (firstTraveler?.clients) {
+        autoName += ` ${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
+      }
+
       // Country code from destination
       if (destinationId) {
         const { data: destData } = await supabase
@@ -1927,28 +1932,23 @@ const DealDetail = () => {
           if (cc) autoName += ` ${cc}`;
         }
       }
-      
+
       // Hotel name from services
       const hotelService = services.find(s => s.service_type === "hotel");
       if (hotelService?.service_name) {
         autoName += ` ${hotelService.service_name}`;
       }
-      
+
       // Start date in DD-MM-YY format
       if (startDate) {
         autoName += ` ${format(startDate, "dd-MM-yy")}`;
       }
 
-      // Orderer name in parentheses after date
-      if (leadTraveler?.clients) {
-        autoName += ` (${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name})`;
+      // Orderer in parentheses after date (only if different from first traveler)
+      if (orderer?.clients && orderer.client_id !== firstTraveler?.client_id) {
+        autoName += ` (${orderer.clients.first_name} ${orderer.clients.last_name})`;
       }
 
-      // If first traveler differs from orderer, append their name
-      if (firstTraveler?.clients && firstTraveler.client_id !== leadTraveler?.client_id) {
-        autoName += ` ${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
-      }
-      
       const finalName = autoName.trim() || dealName || null;
       setDealName(finalName || "");
 
