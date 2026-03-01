@@ -3066,8 +3066,22 @@ const DealDetail = () => {
                         <DateRangePicker
                           dateFrom={serviceForm.start_date}
                           dateTo={serviceForm.end_date}
-                          onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
-                          onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
+                          onDateFromChange={(date) => setServiceForm(prev => {
+                            const updated = { ...prev, start_date: date };
+                            if (prev.service_type === 'meal' && date && prev.end_date) {
+                              const diff = Math.round((prev.end_date.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                              if (diff > 0) updated.quantity = diff.toString();
+                            }
+                            return updated;
+                          })}
+                          onDateToChange={(date) => setServiceForm(prev => {
+                            const updated = { ...prev, end_date: date };
+                            if (prev.service_type === 'meal' && date && prev.start_date) {
+                              const diff = Math.round((date.getTime() - prev.start_date.getTime()) / (1000 * 60 * 60 * 24));
+                              if (diff > 0) updated.quantity = diff.toString();
+                            }
+                            return updated;
+                          })}
                         />
                       </div>
                       <div className="w-16">
