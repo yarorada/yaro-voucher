@@ -95,6 +95,16 @@ export const VariantServiceDialog = ({
   const [aiImportText, setAiImportText] = useState("");
   const [aiImportLoading, setAiImportLoading] = useState(false);
 
+  // Auto-calculate quantity (days) for meal service when dates change
+  useEffect(() => {
+    if (serviceType === 'meal' && startDate && endDate) {
+      const diff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff > 0) {
+        setQuantity(diff.toString());
+      }
+    }
+  }, [serviceType, startDate, endDate]);
+
   useEffect(() => {
     if (service) {
       setServiceType(service.service_type);
