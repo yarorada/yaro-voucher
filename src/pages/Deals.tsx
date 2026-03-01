@@ -182,7 +182,13 @@ const Deals = () => {
     }
 
     // Sort
+    const terminalStatuses = new Set(["completed", "cancelled"]);
     filtered = [...filtered].sort((a, b) => {
+      // Completed/cancelled always at the bottom
+      const aTerminal = terminalStatuses.has(a.status) ? 1 : 0;
+      const bTerminal = terminalStatuses.has(b.status) ? 1 : 0;
+      if (aTerminal !== bTerminal) return aTerminal - bTerminal;
+
       switch (sortBy) {
         case "deal_number_asc": {
           const numA = a.deal_number.match(/^D-(\d+)/)?.[1] || "";
@@ -203,10 +209,8 @@ const Deals = () => {
           const today = new Date().toISOString().split("T")[0];
           const aFuture = da >= today;
           const bFuture = db >= today;
-          // Future dates first, then past
           if (aFuture && !bFuture) return -1;
           if (!aFuture && bFuture) return 1;
-          // Within future: nearest first (asc); within past: most recent first (desc)
           if (aFuture) return da < db ? -1 : da > db ? 1 : 0;
           return db < da ? -1 : db > da ? 1 : 0;
         }
