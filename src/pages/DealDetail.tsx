@@ -1907,13 +1907,28 @@ const DealDetail = () => {
       const baseNumber = deal.deal_number.match(/^D-\d{6}/)?.[0] || "";
       let autoName = baseNumber;
 
-      // Find orderer (lead client)
-      const orderer = deal.deal_travelers.find(t => t.is_lead_traveler)
-        || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
-
       // First traveler (lowest order_index)
       const sortedTravelers = [...deal.deal_travelers].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
       const firstTraveler = sortedTravelers[0];
+
+      // Find orderer: prefer traveler with is_lead_traveler, fallback to leadTravelerId
+      const ordererFromTravelers = deal.deal_travelers.find(t => t.is_lead_traveler)
+        || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
+
+      // If orderer is not among travelers, fetch their name from clients table
+      let ordererName: string | null = null;
+      if (ordererFromTravelers?.clients) {
+        ordererName = `${ordererFromTravelers.clients.first_name} ${ordererFromTravelers.clients.last_name}`;
+      } else if (leadTravelerId && !leadTravelerIsFirstPassenger) {
+        const { data: ordererClient } = await supabase
+          .from("clients")
+          .select("first_name, last_name")
+          .eq("id", leadTravelerId)
+          .single();
+        if (ordererClient) {
+          ordererName = `${ordererClient.first_name} ${ordererClient.last_name}`;
+        }
+      }
 
       // First traveler name right after base number
       if (firstTraveler?.clients) {
@@ -1945,8 +1960,10 @@ const DealDetail = () => {
       }
 
       // Orderer in parentheses after date (only if different from first traveler)
-      if (orderer?.clients && orderer.client_id !== firstTraveler?.client_id) {
-        autoName += ` (${orderer.clients.first_name} ${orderer.clients.last_name})`;
+      const ordererClientId = ordererFromTravelers?.client_id || leadTravelerId;
+      const firstTravelerClientId = firstTraveler?.client_id;
+      if (ordererName && ordererClientId !== firstTravelerClientId) {
+        autoName += ` (${ordererName})`;
       }
 
       const finalName = autoName.trim() || dealName || null;
