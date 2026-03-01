@@ -61,15 +61,9 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
 
-    const monetaHeaders = {
-      'Authorization': `Bearer ${MONETA_API_TOKEN}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+    // Optional: allow overriding the exact base URL via secret MONETA_BASE_URL
+    const MONETA_BASE_URL = Deno.env.get("MONETA_BASE_URL");
 
-    // Moneta API: try multiple URL patterns
-    // Moneta proprietární API (komerční klienti) generuje token přímo v George internetovém bankovnictví
-    // Dokumentace: apiportal.moneta.cz
     const ibanClean = MONETA_ACCOUNT_ID.replace(/\s/g, '');
     const ibanMatch = ibanClean.match(/CZ\d{2}(\d{4})(\d{6})(\d{10})/);
     const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean;
@@ -81,29 +75,43 @@ Deno.serve(async (req) => {
       `${bareAccountNumber}/${bankCode}`,
     ].filter((v, i, a) => v && a.indexOf(v) === i);
 
-    // All known Moneta API URL patterns (both Berlin Group PSD2 and proprietary)
-    const urlPatterns: string[] = [];
-    for (const base of [
-      'https://api.moneta.cz/openbanking/v1',
-      'https://api.moneta.cz/aisp/v1',
-      'https://api.moneta.cz/v1',
-      'https://api.moneta.cz/psd2/v1',
-    ]) {
+    // Auth headers variants: Bearer token and API-Key header (Moneta uses both depending on product)
+    const headerVariants = [
+      { 'Authorization': `Bearer ${MONETA_API_TOKEN}`, 'Accept': 'application/json' },
+      { 'Authorization': `Token ${MONETA_API_TOKEN}`, 'Accept': 'application/json' },
+      { 'X-API-Key': MONETA_API_TOKEN, 'Accept': 'application/json' },
+      { 'apikey': MONETA_API_TOKEN, 'Accept': 'application/json' },
+    ];
+
+    // If user provided explicit base URL, try only that
+    const basesToTry = MONETA_BASE_URL
+      ? [MONETA_BASE_URL.replace(/\/$/, '')]
+      : [
+          'https://api.moneta.cz/openbanking/v1',
+          'https://api.moneta.cz/aisp/v1',
+          'https://api.moneta.cz/v1',
+          'https://api.moneta.cz/psd2/v1',
+          'https://api.moneta.cz/business/v1',
+          'https://api.moneta.cz/corporate/v1',
+        ];
+
+    const urlPatterns: Array<{url: string, headers: Record<string,string>}> = [];
+    for (const base of basesToTry) {
       for (const accountId of accountCandidates) {
-        urlPatterns.push(`${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
+        for (const hdrs of headerVariants.slice(0, MONETA_BASE_URL ? headerVariants.length : 1)) {
+          urlPatterns.push({ url: `${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`, headers: hdrs });
+        }
+        urlPatterns.push({ url: `${base}/my/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`, headers: headerVariants[0] });
       }
-      // Also try "my" endpoint (some banks use this for single-account tokens)
-      urlPatterns.push(`${base}/my/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
-      urlPatterns.push(`${base}/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`);
     }
 
     let monetaResponse: Response | null = null;
     let monetaUrl = '';
 
-    for (const url of urlPatterns) {
+    for (const { url, headers } of urlPatterns) {
       console.log(`Trying: ${url}`);
       try {
-        const resp = await fetch(url, { headers: monetaHeaders });
+        const resp = await fetch(url, { headers });
         console.log(`  → ${resp.status}`);
         if (resp.ok) {
           monetaResponse = resp;
@@ -128,8 +136,8 @@ Deno.serve(async (req) => {
     if (!monetaResponse) {
       return new Response(JSON.stringify({
         error: 'Moneta API: žádný endpoint nefunguje (všechny vrátily 404)',
-        detail: `Vyzkoušeno ${urlPatterns.length} URL variant. První: ${urlPatterns[0]}`,
-        hint: 'Správná base URL není známa. Kontaktujte Moneta (qaapi@moneta.cz) nebo ověřte endpoint v dokumentaci na apiportal.moneta.cz. Token musí být generován v George internetovém bankovnictví.',
+        detail: `Zkontrolujte MONETA_ACCOUNT_ID (IBAN: ${ibanClean}) a MONETA_API_TOKEN. Pokud znáte přesnou URL z dokumentace, nastavte secret MONETA_BASE_URL (např. https://api.moneta.cz/openbanking/v1).`,
+        hint: 'Přihlaste se do George IB > Nastavení > Napojení třetích stran / API. Tam byste měli vidět URL endpointu. Případně kontaktujte Moneta na qaapi@moneta.cz.',
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
