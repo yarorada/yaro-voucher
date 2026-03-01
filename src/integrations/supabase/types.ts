@@ -918,6 +918,13 @@ export type Database = {
             referencedRelation: "destinations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deals_lead_client_id_fkey"
+            columns: ["lead_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
         ]
       }
       destinations: {
