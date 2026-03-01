@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
@@ -52,10 +53,14 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { open, setOpen, setOpenMobile } = useSidebar();
   const { signOut } = useAuth();
-  const { isProdejce, isAdmin } = useUserRole();
+  const { isAdmin } = useUserRole();
+  const { canAccess } = useUserPermissions();
   const isMobile = useIsMobile();
 
-  const menuItems = allMenuItems.filter(item => !isProdejce || item.prodejce);
+  const menuItems = allMenuItems.filter(item => {
+    const key = item.url.replace("/", "");
+    return canAccess(key as any);
+  });
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
