@@ -193,6 +193,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          company_as_orderer: boolean
           company_name: string | null
           created_at: string
           date_of_birth: string | null
@@ -215,6 +216,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          company_as_orderer?: boolean
           company_name?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -237,6 +239,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          company_as_orderer?: boolean
           company_name?: string | null
           created_at?: string
           date_of_birth?: string | null

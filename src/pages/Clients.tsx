@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatDateForDB, parseDateSafe } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,8 @@ interface Client {
   passport_expiry: string | null;
   id_card_number: string | null;
   id_card_expiry: string | null;
+  company_name: string | null;
+  company_as_orderer: boolean;
   document_urls: Array<{ url: string; type: string; uploadedAt: string }> | null;
 }
 
@@ -110,6 +113,8 @@ const Clients = () => {
     passport_expiry: undefined as Date | undefined,
     id_card_number: "",
     id_card_expiry: undefined as Date | undefined,
+    company_name: "",
+    company_as_orderer: false,
   });
 
   useEffect(() => {
@@ -196,6 +201,8 @@ const Clients = () => {
             passport_expiry: formatDateForDB(formData.passport_expiry),
             id_card_number: formData.id_card_number.trim() || null,
             id_card_expiry: formatDateForDB(formData.id_card_expiry),
+            company_name: formData.company_name.trim() || null,
+            company_as_orderer: formData.company_as_orderer,
           })
           .eq("id", editingClient.id);
 
@@ -230,6 +237,8 @@ const Clients = () => {
           id_card_number: formData.id_card_number.trim() || null,
           id_card_expiry: formatDateForDB(formData.id_card_expiry),
           notes: formData.notes.trim() || null,
+          company_name: formData.company_name.trim() || null,
+          company_as_orderer: formData.company_as_orderer,
         });
 
         if (error) throw error;
@@ -249,6 +258,8 @@ const Clients = () => {
         passport_expiry: undefined,
         id_card_number: "",
         id_card_expiry: undefined,
+        company_name: "",
+        company_as_orderer: false,
       });
       setEditingClient(null);
       setIsDialogOpen(false);
@@ -273,6 +284,8 @@ const Clients = () => {
       passport_expiry: client.passport_expiry ? parseDateSafe(client.passport_expiry) || undefined : undefined,
       id_card_number: client.id_card_number || "",
       id_card_expiry: client.id_card_expiry ? parseDateSafe(client.id_card_expiry) || undefined : undefined,
+      company_name: client.company_name || "",
+      company_as_orderer: client.company_as_orderer || false,
     });
     setIsDialogOpen(true);
   };
@@ -335,6 +348,8 @@ const Clients = () => {
       passport_expiry: undefined,
       id_card_number: "",
       id_card_expiry: undefined,
+      company_name: "",
+      company_as_orderer: false,
     });
   };
 
@@ -477,6 +492,8 @@ const Clients = () => {
             passport_expiry: undefined,
             id_card_number: "",
             id_card_expiry: undefined,
+            company_name: "",
+            company_as_orderer: false,
           }));
           setEditingClient(null);
           setIsDialogOpen(true);
@@ -642,6 +659,29 @@ const Clients = () => {
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       />
+                    </div>
+
+                    {/* Row 3b: Společnost */}
+                    <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                      <div className="space-y-1">
+                        <Label htmlFor="company_name">Společnost</Label>
+                        <Input
+                          id="company_name"
+                          value={formData.company_name}
+                          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                          placeholder="Název společnosti"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pb-2">
+                        <Checkbox
+                          id="company_as_orderer"
+                          checked={formData.company_as_orderer}
+                          onCheckedChange={(checked) => setFormData({ ...formData, company_as_orderer: !!checked })}
+                        />
+                        <Label htmlFor="company_as_orderer" className="text-sm cursor-pointer">
+                          Zobrazit jako objednatel
+                        </Label>
+                      </div>
                     </div>
 
                     {/* Row 4: Poznámky */}
