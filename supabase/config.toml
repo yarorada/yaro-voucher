@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.proxy-file]
 verify_jwt = false
+
+[functions.moneta-fetch-transactions]
+verify_jwt = false
