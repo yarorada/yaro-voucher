@@ -25,25 +25,30 @@ export const OverduePaymentsCard = () => {
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["dashboard-unpaid-payments"],
     queryFn: async () => {
-      const [dealRes, contractRes] = await Promise.all([
-        supabase
-          .from("deal_payments")
-          .select("id, amount, due_date, payment_type, notes, deal_id, deals(deal_number, deal_travelers(is_lead_traveler, clients(first_name, last_name)))")
-          .eq("paid", false)
-          .order("due_date", { ascending: true }),
-        supabase
-          .from("contract_payments")
-          .select("id, amount, due_date, payment_type, notes, contract_id, travel_contracts(contract_number, clients(first_name, last_name))")
-          .eq("paid", false)
-          .order("due_date", { ascending: true }),
-      ]);
+      // Fetch deal IDs that have at least one travel contract
+      const { data: contractDeals } = await supabase
+        .from("travel_contracts")
+        .select("deal_id")
+        .not("deal_id", "is", null);
 
-      if (dealRes.error) throw dealRes.error;
-      if (contractRes.error) throw contractRes.error;
+      const dealIdsWithContract = new Set(
+        (contractDeals || []).map((c: any) => c.deal_id).filter(Boolean)
+      );
+
+      const { data: dealPayments, error } = await supabase
+        .from("deal_payments")
+        .select("id, amount, due_date, payment_type, notes, deal_id, deals(deal_number, deal_travelers(is_lead_traveler, clients(first_name, last_name)))")
+        .eq("paid", false)
+        .order("due_date", { ascending: true });
+
+      if (error) throw error;
 
       const rows: PaymentRow[] = [];
 
-      for (const dp of dealRes.data || []) {
+      for (const dp of dealPayments || []) {
+        // Only include deals that have a travel contract
+        if (!dealIdsWithContract.has(dp.deal_id)) continue;
+
         const deal = dp.deals as any;
         const lead = deal?.deal_travelers?.find((t: any) => t.is_lead_traveler);
         const clientName = lead?.clients
@@ -58,25 +63,6 @@ export const OverduePaymentsCard = () => {
           source: "deal",
           source_id: dp.deal_id,
           label: deal?.deal_number?.match(/^D-\d{6}/)?.[0] || "Deal",
-          clientName,
-        });
-      }
-
-      for (const cp of contractRes.data || []) {
-        const contract = cp.travel_contracts as any;
-        const client = contract?.clients;
-        const clientName = client
-          ? `${client.first_name} ${client.last_name}`
-          : null;
-        rows.push({
-          id: cp.id,
-          amount: cp.amount,
-          due_date: cp.due_date,
-          payment_type: cp.payment_type,
-          notes: cp.notes,
-          source: "contract",
-          source_id: cp.contract_id,
-          label: contract?.contract_number || "Smlouva",
           clientName,
         });
       }
