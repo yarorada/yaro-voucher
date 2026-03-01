@@ -61,22 +61,27 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
 
-    // Call Moneta API
-    const monetaUrl = `https://api.moneta.cz/v1/accounts/${MONETA_ACCOUNT_ID}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
+    // Call Moneta API — account ID must be URL-encoded (IBAN or numeric account ID)
+    const encodedAccountId = encodeURIComponent(MONETA_ACCOUNT_ID);
+    const monetaUrl = `https://api.moneta.cz/v1/accounts/${encodedAccountId}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
     
+    console.log(`Calling Moneta URL: ${monetaUrl}`);
+
     const monetaResponse = await fetch(monetaUrl, {
       headers: {
         'Authorization': `Bearer ${MONETA_API_TOKEN}`,
         'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     });
 
     if (!monetaResponse.ok) {
       const errText = await monetaResponse.text();
-      console.error("Moneta API error:", monetaResponse.status, errText);
+      console.error(`Moneta API error: ${monetaResponse.status}`, monetaUrl, errText);
       return new Response(JSON.stringify({ 
         error: `Moneta API chyba: ${monetaResponse.status}`,
-        detail: errText 
+        detail: `URL: ${monetaUrl} — ${errText}`,
+        hint: 'Zkontrolujte hodnotu MONETA_ACCOUNT_ID – musí být IBAN nebo číslo účtu (např. CZ65 0800...), nikoliv název účtu.',
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
