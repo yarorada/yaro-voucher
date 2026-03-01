@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
     const isFemale = client.title === 'paní' || client.title === 'Paní' || 
       clientLastName.endsWith('ová') || clientLastName.endsWith('á');
     const salutation = isFemale ? 'paní' : 'pane';
+    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
 
     // Build public URL
     const publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}${allVariants ? '?all=1' : ''}`;
@@ -456,7 +457,7 @@ Deno.serve(async (req) => {
     <table cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px; margin:0 auto;">
       <tr>
         <td style="padding:12px 16px;">
-          <img src="https://yarogolf-crm.lovable.app/assets/yaro-logo-wide-DhQmBkqU.png" alt="YARO Travel" style="height:32px;" />
+          <img src="https://jwaskoeqryjdjrdwupoi.supabase.co/storage/v1/object/public/hotel-images/brand%2Fyaro-logo-wide.png" alt="YARO Travel" style="height:32px;" />
         </td>
         <td style="padding:12px 16px; text-align:center; font-size:11px; color:#64748b;">
           <a href="tel:+420602102108" style="color:#64748b; text-decoration:none;">📞 +420 602 102 108</a>
@@ -483,7 +484,7 @@ Deno.serve(async (req) => {
     <!-- Greeting -->
     <div style="margin-bottom:24px;">
       <p style="font-size:15px; color:#334155; line-height:1.6; margin:0 0 8px;">
-        Vážený ${salutation} ${escapeHtml(declinedName)},
+        ${vazenySalutation} ${salutation} ${escapeHtml(declinedName)},
       </p>
       <p style="font-size:15px; color:#334155; line-height:1.6; margin:0;">
         ${escapeHtml(customMessage || 'zasíláme Vám nabídku podle Vašich požadavků.')}
