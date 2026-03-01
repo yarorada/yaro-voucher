@@ -1,43 +1,29 @@
 
-## Barevné indikátory expirace dokladů u klientů
+## Fix: Show orderer in parentheses in deal list view
 
-### Co se změní
+### Problem
+In the deals list (`Deals.tsx`), each deal row shows a description like:
+`Jméno • ISO • Hotel • Datum`
 
-V sekci Klienti, v tabulce vedle jména každého klienta, přibudou barevné odznak/chip pro pas a občanský průkaz. Barva odznaku bude odrážet stav platnosti dokladu.
+When the orderer (lead traveler) is different from the first traveler, their name should appear in parentheses at the end — matching the auto-generated deal name format used in `DealDetail.tsx`.
 
-### Barevná logika
+### Root Cause
+The `displayDesc` building logic in `Deals.tsx` only shows the lead client's name but never appends the orderer in parentheses. Also, `order_index` is not fetched for travelers, making it impossible to distinguish "first traveler by order" from the "orderer (lead)".
 
-| Stav | Barva | Podmínka |
-|---|---|---|
-| Expirováno | Červená | Datum expirace je v minulosti, nebo do 30 dnů |
-| Brzy expiruje | Oranžová | Do 90 dnů |
-| Upozornění | Žlutá | Do 180 dnů |
-| Platný | Zelená/Výchozí (modrá) | Více než 180 dnů |
+### Changes Required
 
-### Technické detaily
+**`src/pages/Deals.tsx`**
 
-**Soubor:** `src/pages/Clients.tsx`
+1. **Query** — Add `order_index` and `client_id` to the `deal_travelers` select in `fetchDeals`.
 
-1. Přidat pomocnou funkci `getExpiryStatus(dateStr: string | null)`, která vrací `'expired' | 'critical' | 'warning' | 'notice' | 'ok' | null`.
+2. **Interface** — Add `order_index?: number` and `client_id: string` to the `deal_travelers` type in the `Deal` interface.
 
-2. Nahradit stávající pevně modrý odznak `PAS` dynamickým odznakem, jehož barva závisí na výsledku `getExpiryStatus(client.passport_expiry)`.
+3. **Display logic** — Update the block that builds `displayDesc` (lines 488–508):
+   - Find the orderer: the traveler with `is_lead_traveler = true`
+   - Find the first traveler: traveler with the lowest `order_index`
+   - If orderer ≠ first traveler (different `client_id`), append `(Jméno Příjmení)` to the end of `displayDesc`
 
-3. Přidat podobný odznak pro občanský průkaz `OP`, pokud je vyplněno `id_card_number`.
-
-4. Pokud klient nemá vyplněno datum expirace, ale má číslo dokladu, zobrazit neutrální šedý odznak (jako dosud – bez indikace expirace).
-
-```text
-Jméno klienta  [PAS]  [OP]
-               ↑       ↑
-            červená  oranžová
-            = expir  = do 90 dní
-```
-
-**Ukázka barev (Tailwind třídy):**
-- Expirováno/kritické (≤30 dní): `bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300`
-- Brzy (31–90 dní): `bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300`
-- Upozornění (91–180 dní): `bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300`
-- OK (>180 dní): stávající modrá `bg-blue-100 text-blue-700`
-- Bez data expirace: šedá
-
-Změny jsou čistě frontendové — pouze v `src/pages/Clients.tsx`, žádné databázové změny.
+### Result
+Deal list rows will display:
+- Same person: `Pavel Kadlic • TUR • Cornelia Diamond • 03-03-26`
+- Different orderer: `Pavel Kadlic • TUR • Cornelia Diamond • 03-03-26 (Roman Partl)`
