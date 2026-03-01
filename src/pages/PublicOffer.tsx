@@ -392,9 +392,9 @@ export default function PublicOffer() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-8 flex items-center justify-between">
-          <img src={yaroLogoWide} alt="YARO Travel" style={{ height: '140px', width: 'auto' }} />
+      <header className="border-b bg-white sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <img src={yaroLogoWide} alt="YARO Travel" style={{ height: '80px', width: '320px', objectFit: 'contain', objectPosition: 'left center', display: 'block' }} />
           <div className="flex items-center gap-3 text-xs text-slate-500">
             <a href="tel:+420602102108" className="hover:text-slate-700 transition-colors">📞 +420 602 102 108</a>
             <span>|</span>
