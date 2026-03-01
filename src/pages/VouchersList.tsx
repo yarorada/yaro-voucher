@@ -455,10 +455,11 @@ const VouchersList = () => {
                   .sort()
                   .slice(-1)[0] || null;
 
-                // Check if voucher is expired: either expiration_date passed, or last service date is in the past
+                // Check if voucher is utilized (set by daily backend job) or locally expired
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                const isExpired = (voucher.expiration_date && new Date(voucher.expiration_date) < today)
+                const isExpired = (voucher as any).status === 'utilized'
+                  || (voucher.expiration_date && new Date(voucher.expiration_date) < today)
                   || (lastServiceDate && new Date(lastServiceDate) < today);
 
                 return (

@@ -1672,6 +1672,7 @@ export type Database = {
           other_travelers: string[] | null
           sent_at: string | null
           services: Json
+          status: string | null
           supplier_id: string | null
           tee_times: Json | null
           updated_at: string
@@ -1693,6 +1694,7 @@ export type Database = {
           other_travelers?: string[] | null
           sent_at?: string | null
           services: Json
+          status?: string | null
           supplier_id?: string | null
           tee_times?: Json | null
           updated_at?: string
@@ -1714,6 +1716,7 @@ export type Database = {
           other_travelers?: string[] | null
           sent_at?: string | null
           services?: Json
+          status?: string | null
           supplier_id?: string | null
           tee_times?: Json | null
           updated_at?: string
