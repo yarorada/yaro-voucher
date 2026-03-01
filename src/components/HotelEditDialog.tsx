@@ -66,6 +66,8 @@ interface HotelEditDialogProps {
 export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEditDialogProps) {
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  const [fetchingRating, setFetchingRating] = useState(false);
+  const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [currentHotel, setCurrentHotel] = useState<HotelTemplate>(hotel);
   const [aiSuggestion, setAiSuggestion] = useState<{
     destination: string;
@@ -93,6 +95,29 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     highlights: (Array.isArray(hotel.highlights) ? hotel.highlights : []) as Array<{ icon: string; title: string; text: string }>,
     review_score: hotel.review_score ?? null as number | null,
   });
+
+  const handleFetchRating = async () => {
+    setFetchingRating(true);
+    setRatingNote(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-hotel-rating", {
+        body: { hotelName: formData.name },
+      });
+      if (error) throw error;
+      if (data?.average != null) {
+        setFormData((f) => ({ ...f, review_score: data.average }));
+        setRatingNote(data.note ?? null);
+        toast.success(`Hodnocení načteno: ${data.average}/10`);
+      } else {
+        toast.error("Hodnocení nenalezeno");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Chyba při načítání hodnocení");
+    } finally {
+      setFetchingRating(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.name.trim()) return;
@@ -306,16 +331,30 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
               </div>
               <div>
                 <Label>Celkové hodnocení (0–10)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="10"
-                  value={formData.review_score ?? ""}
-                  onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? Number(e.target.value) : null }))}
-                  placeholder="Průměr Booking, TripAdvisor, Google"
-                />
-                <p className="text-xs text-muted-foreground mt-0.5">Průměr hodnocení z Booking.com, TripAdvisor a Google Reviews</p>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    value={formData.review_score ?? ""}
+                    onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? Number(e.target.value) : null }))}
+                    placeholder="Průměr Booking, TripAdvisor, Google"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 gap-1"
+                    disabled={fetchingRating || !formData.name.trim()}
+                    onClick={handleFetchRating}
+                  >
+                    {fetchingRating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    AI
+                  </Button>
+                </div>
+                {ratingNote && <p className="text-xs text-muted-foreground mt-0.5">{ratingNote}</p>}
+                {!ratingNote && <p className="text-xs text-muted-foreground mt-0.5">Průměr z Booking.com, TripAdvisor a Google Reviews</p>}
               </div>
 
               {/* Golf courses */}
