@@ -16,13 +16,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -33,10 +26,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { HotelImageUpload } from "@/components/HotelImageUpload";
+import { HotelEditDialog } from "@/components/HotelEditDialog";
 
 interface HotelTemplate {
   id: string;
@@ -71,7 +63,6 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
   const [deletingHotel, setDeletingHotel] = useState<HotelTemplate | null>(null);
   const [editingHotel, setEditingHotel] = useState<HotelTemplate | null>(null);
   const [newHotelName, setNewHotelName] = useState("");
-  const [autoScrapeOnOpen, setAutoScrapeOnOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -84,7 +75,6 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
         .from("hotel_templates")
         .select("*")
         .order("name");
-
       if (error) throw error;
       setHotels(data || []);
     } catch (error) {
@@ -98,7 +88,6 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
       toast.error("Název hotelu je povinný");
       return;
     }
-
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -106,7 +95,6 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
         .insert({ name: newHotelName.trim() })
         .select()
         .single();
-
       if (error) throw error;
 
       toast.success("Hotel přidán do databáze");
@@ -114,10 +102,8 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
       onChange(data.name);
       setCreateDialogOpen(false);
       setOpen(false);
-      // Auto-open edit dialog with scrape
+      // Auto-open full edit dialog
       setEditingHotel(data);
-      setNewHotelName(data.name);
-      setAutoScrapeOnOpen(true);
       setEditDialogOpen(true);
     } catch (error) {
       console.error("Error creating hotel:", error);
@@ -127,49 +113,15 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
     }
   };
 
-  const handleUpdateHotel = async () => {
-    if (!editingHotel || !newHotelName.trim()) {
-      toast.error("Název hotelu je povinný");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("hotel_templates")
-        .update({ name: newHotelName.trim() })
-        .eq("id", editingHotel.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success("Hotel upraven");
-      setHotels(hotels.map(h => h.id === data.id ? data : h));
-      onChange(data.name);
-      setNewHotelName("");
-      setEditDialogOpen(false);
-      setEditingHotel(null);
-    } catch (error) {
-      console.error("Error updating hotel:", error);
-      toast.error("Nepodařilo se upravit hotel");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteHotel = async () => {
     if (!deletingHotel) return;
-
     setLoading(true);
     try {
       const { error } = await supabase
         .from("hotel_templates")
         .delete()
         .eq("id", deletingHotel.id);
-
       if (error) throw error;
-
       toast.success("Hotel smazán");
       setHotels(hotels.filter(h => h.id !== deletingHotel.id));
       setDeleteDialogOpen(false);
@@ -282,7 +234,6 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingHotel(hotel);
-                          setNewHotelName(hotel.name);
                           setEditDialogOpen(true);
                         }}
                       >
@@ -309,6 +260,7 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
         </PopoverContent>
       </Popover>
 
+      {/* Confirm create */}
       <AlertDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -326,67 +278,26 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={editDialogOpen} onOpenChange={(v) => { setEditDialogOpen(v); if (!v) setAutoScrapeOnOpen(false); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upravit hotel</DialogTitle>
-            <DialogDescription>Změňte název hotelu nebo nahrajte fotky</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-hotel-name">Název hotelu *</Label>
-              <Input
-                id="edit-hotel-name"
-                value={newHotelName}
-                onChange={(e) => setNewHotelName(e.target.value)}
-                placeholder="např. Marriott Resort & Spa"
-              />
-            </div>
-            {editingHotel && (
-              <div>
-                <Label>Fotky hotelu</Label>
-                <div className="mt-2">
-                  <HotelImageUpload
-                    hotelId={editingHotel.id}
-                    hotelName={editingHotel.name}
-                    imageUrl={editingHotel.image_url || null}
-                    imageUrl2={editingHotel.image_url_2 || null}
-                    imageUrl3={editingHotel.image_url_3 || null}
-                    imageUrl4={editingHotel.image_url_4 || null}
-                    imageUrl5={editingHotel.image_url_5 || null}
-                    imageUrl6={editingHotel.image_url_6 || null}
-                    imageUrl7={editingHotel.image_url_7 || null}
-                    imageUrl8={editingHotel.image_url_8 || null}
-                    imageUrl9={editingHotel.image_url_9 || null}
-                    imageUrl10={editingHotel.image_url_10 || null}
-                    description={editingHotel.description || null}
-                    autoScrape={autoScrapeOnOpen}
-                    onUpdate={async () => {
-                      await fetchHotels();
-                      // Refresh editingHotel from DB so image previews update immediately
-                      const { data } = await supabase
-                        .from("hotel_templates")
-                        .select("*")
-                        .eq("id", editingHotel.id)
-                        .single();
-                      if (data) setEditingHotel(data);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setEditDialogOpen(false); setNewHotelName(""); setEditingHotel(null); }}>
-                Zrušit
-              </Button>
-              <Button onClick={handleUpdateHotel} disabled={loading}>
-                {loading ? "Ukládám..." : "Uložit"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Full hotel edit dialog */}
+      {editingHotel && (
+        <HotelEditDialog
+          open={editDialogOpen}
+          onOpenChange={(v) => {
+            setEditDialogOpen(v);
+            if (!v) {
+              setEditingHotel(null);
+              fetchHotels();
+            }
+          }}
+          hotel={editingHotel}
+          onSaved={(saved) => {
+            setHotels(hotels.map(h => h.id === saved.id ? { ...h, ...saved } : h));
+            onChange(saved.name);
+          }}
+        />
+      )}
 
+      {/* Delete confirm */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
