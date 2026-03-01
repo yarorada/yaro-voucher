@@ -101,6 +101,7 @@ interface DealTraveler {
   client_id: string;
   is_lead_traveler: boolean;
   sort_order?: number;
+  order_index?: number;
   clients: {
     id: string;
     first_name: string;
@@ -1906,12 +1907,13 @@ const DealDetail = () => {
       const baseNumber = deal.deal_number.match(/^D-\d{6}/)?.[0] || "";
       let autoName = baseNumber;
       
-      // Lead traveler name
-      const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler) 
+      // Find orderer (lead traveler)
+      const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler)
         || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
-      if (leadTraveler?.clients) {
-        autoName += ` ${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name}`;
-      }
+      
+      // First traveler (by order_index, excluding orderer if they are not a traveler)
+      const sortedTravelers = [...deal.deal_travelers].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      const firstTraveler = sortedTravelers[0];
       
       // Country code from destination
       if (destinationId) {
@@ -1935,6 +1937,16 @@ const DealDetail = () => {
       // Start date in DD-MM-YY format
       if (startDate) {
         autoName += ` ${format(startDate, "dd-MM-yy")}`;
+      }
+
+      // Orderer name in parentheses after date
+      if (leadTraveler?.clients) {
+        autoName += ` (${leadTraveler.clients.first_name} ${leadTraveler.clients.last_name})`;
+      }
+
+      // If first traveler differs from orderer, append their name
+      if (firstTraveler?.clients && firstTraveler.client_id !== leadTraveler?.client_id) {
+        autoName += ` ${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
       }
       
       const finalName = autoName.trim() || dealName || null;
