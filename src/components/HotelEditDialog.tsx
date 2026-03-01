@@ -100,9 +100,11 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     review_score: hotel.review_score ?? null as number | null,
   });
 
-  // Auto-fetch all AI data when dialog opens (only once per hotel)
+  // Auto-fetch AI data only when hotel has no data yet (first time creation)
+  const hotelIsNew = !hotel.image_url && !hotel.review_score && !hotel.description && !hotel.subtitle;
+
   useEffect(() => {
-    if (open && hotel.id && autoFetchDone.current !== hotel.id) {
+    if (open && hotel.id && hotelIsNew && autoFetchDone.current !== hotel.id) {
       autoFetchDone.current = hotel.id;
       setAutoScrape(true);
       handleFetchAll();
