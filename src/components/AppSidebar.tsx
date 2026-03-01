@@ -9,10 +9,10 @@ import {
   FileSignature,
   BarChart3,
   LogOut,
-  Menu,
   Mail,
   Hotel,
   Calculator,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,27 +24,27 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
+import { useSidebar } from "@/components/ui/sidebar";
 
-const menuItems = [
-  { title: "Domů", url: "/", icon: Home },
-  { title: "Obchodní případy", url: "/deals", icon: Briefcase },
-  { title: "Smlouvy", url: "/contracts", icon: FileSignature },
-  { title: "Vouchery", url: "/vouchers", icon: FileText },
-  { title: "Statistiky", url: "/statistics", icon: BarChart3 },
-  { title: "Klienti", url: "/clients", icon: Users },
-  { title: "Dodavatelé", url: "/suppliers", icon: Building2 },
-  { title: "Hotely", url: "/hotels", icon: Hotel },
-  { title: "Destinace", url: "/destinations", icon: MapPin },
-  { title: "Účetnictví", url: "/accounting", icon: Calculator },
-  { title: "E-maily", url: "/email-templates", icon: Mail },
+const allMenuItems = [
+  { title: "Domů", url: "/", icon: Home, prodejce: true },
+  { title: "Obchodní případy", url: "/deals", icon: Briefcase, prodejce: true },
+  { title: "Smlouvy", url: "/contracts", icon: FileSignature, prodejce: true },
+  { title: "Vouchery", url: "/vouchers", icon: FileText, prodejce: true },
+  { title: "Statistiky", url: "/statistics", icon: BarChart3, prodejce: false },
+  { title: "Klienti", url: "/clients", icon: Users, prodejce: true },
+  { title: "Dodavatelé", url: "/suppliers", icon: Building2, prodejce: false },
+  { title: "Hotely", url: "/hotels", icon: Hotel, prodejce: true },
+  { title: "Destinace", url: "/destinations", icon: MapPin, prodejce: false },
+  { title: "Účetnictví", url: "/accounting", icon: Calculator, prodejce: false },
+  { title: "E-maily", url: "/email-templates", icon: Mail, prodejce: false },
 ];
 
 export function AppSidebar() {
@@ -52,7 +52,10 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { open, setOpen, setOpenMobile } = useSidebar();
   const { signOut } = useAuth();
+  const { isProdejce, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
+
+  const menuItems = allMenuItems.filter(item => !isProdejce || item.prodejce);
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -108,6 +111,28 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => handleNavigate("/admin/roles")}
+                    isActive={isActive("/admin/roles")}
+                    tooltip="Správa rolí"
+                    className={`
+                      group relative transition-colors duration-150
+                      ${isActive("/admin/roles")
+                        ? 'bg-primary/10 text-primary font-medium' 
+                        : 'hover:bg-muted text-foreground/70 hover:text-foreground'
+                      }
+                    `}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Správa rolí</span>
+                    {isActive("/admin/roles") && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
