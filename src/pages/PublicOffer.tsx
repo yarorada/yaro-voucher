@@ -410,7 +410,7 @@ export default function PublicOffer() {
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
             Nabídka pro {deal.lead_client_name || deal.name || "klienta"}
           </h1>
-          {getMainHotelName(data) && (
+          {data.variants.length <= 1 && getMainHotelName(data) && (
             <p className="text-lg font-medium text-slate-600">{getMainHotelName(data)}</p>
           )}
           {destination && (
