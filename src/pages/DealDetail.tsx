@@ -2663,7 +2663,6 @@ const DealDetail = () => {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Interní poznámky..."
                     rows={2}
-                    className="resize-none"
                   />
                 </div>
               </div>

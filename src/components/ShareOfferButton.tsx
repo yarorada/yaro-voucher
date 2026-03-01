@@ -304,7 +304,6 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
                 value={customMessage}
                 onChange={(e) => setCustomMessage(e.target.value)}
                 rows={4}
-                className="resize-none"
                 placeholder="zasíláme Vám nabídku podle Vašich požadavků."
               />
             </div>
