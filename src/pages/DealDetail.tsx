@@ -345,6 +345,7 @@ const SortableTravelerRow = ({
 };
 
 
+
 const ClientOfferResponseCard = ({ dealId }: { dealId: string }) => {
   const [response, setResponse] = useState<{
     client_name: string | null;
@@ -716,6 +717,16 @@ const DealDetail = () => {
       );
     }
   }, [services, discountAmount, adjustmentAmount]);
+
+  // Auto-calculate quantity (days) for meal service when dates change
+  useEffect(() => {
+    if (serviceForm.service_type === 'meal' && serviceForm.start_date && serviceForm.end_date) {
+      const diff = Math.round((serviceForm.end_date.getTime() - serviceForm.start_date.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff > 0) {
+        setServiceForm(prev => ({ ...prev, quantity: diff.toString() }));
+      }
+    }
+  }, [serviceForm.service_type, serviceForm.start_date, serviceForm.end_date]);
 
   const fetchDeal = async () => {
     try {
@@ -3066,22 +3077,8 @@ const DealDetail = () => {
                         <DateRangePicker
                           dateFrom={serviceForm.start_date}
                           dateTo={serviceForm.end_date}
-                          onDateFromChange={(date) => setServiceForm(prev => {
-                            const updated = { ...prev, start_date: date };
-                            if (prev.service_type === 'meal' && date && prev.end_date) {
-                              const diff = Math.round((prev.end_date.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-                              if (diff > 0) updated.quantity = diff.toString();
-                            }
-                            return updated;
-                          })}
-                          onDateToChange={(date) => setServiceForm(prev => {
-                            const updated = { ...prev, end_date: date };
-                            if (prev.service_type === 'meal' && date && prev.start_date) {
-                              const diff = Math.round((date.getTime() - prev.start_date.getTime()) / (1000 * 60 * 60 * 24));
-                              if (diff > 0) updated.quantity = diff.toString();
-                            }
-                            return updated;
-                          })}
+                          onDateFromChange={(date) => setServiceForm(prev => ({ ...prev, start_date: date }))}
+                          onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
                         />
                       </div>
                       <div className="w-16">
