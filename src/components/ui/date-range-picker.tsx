@@ -17,9 +17,8 @@ export const DateRangePicker = React.forwardRef<
 >(({ dateFrom, dateTo, onDateFromChange, onDateToChange, className }, ref) => {
   const [toOpen, setToOpen] = React.useState(false);
 
-  // When user selects "from" via calendar, auto-open "to" with +7 days
-  const handleFromCalendarSelect = (date: Date) => {
-    // Set default "to" date = from + 7 days if not already set
+  // When user selects "from" via calendar OR types it, auto-fill "to" = from + 7 days
+  const handleFromDateSet = (date: Date) => {
     if (!dateTo) {
       onDateToChange(addDays(date, 7));
     }
@@ -38,7 +37,8 @@ export const DateRangePicker = React.forwardRef<
           onChange={onDateFromChange}
           placeholder="DD.MM.RRRR"
           className="flex-1"
-          onCalendarSelect={handleFromCalendarSelect}
+          onCalendarSelect={handleFromDateSet}
+          onTextInput={handleFromDateSet}
         />
       </div>
       <div className="flex items-center gap-2 flex-1 w-full">

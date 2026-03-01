@@ -19,6 +19,8 @@ interface DateInputProps {
   autoSetDate?: () => Date | undefined;
   /** Called when user selects a date via calendar (not typing) */
   onCalendarSelect?: (date: Date) => void;
+  /** Called when user finishes typing a valid date */
+  onTextInput?: (date: Date) => void;
   /** If true, this popover is controlled externally */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -33,6 +35,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       className,
       autoSetDate,
       onCalendarSelect,
+      onTextInput,
       open: controlledOpen,
       onOpenChange: controlledOnOpenChange,
     },
@@ -108,6 +111,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
           if (isValid(parsedDate)) {
             onChange(parsedDate);
+            onTextInput?.(parsedDate);
             return;
           }
         }
@@ -117,6 +121,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           const parsedDate = parse(formatted, "dd.MM.yy", new Date());
           if (isValid(parsedDate)) {
             onChange(parsedDate);
+            onTextInput?.(parsedDate);
             return;
           }
         }
