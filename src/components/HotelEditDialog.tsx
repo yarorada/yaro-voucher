@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -65,8 +65,7 @@ interface HotelEditDialogProps {
 
 export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEditDialogProps) {
   const [saving, setSaving] = useState(false);
-  const [suggesting, setSuggesting] = useState(false);
-  const [fetchingRating, setFetchingRating] = useState(false);
+  const [fetchingAll, setFetchingAll] = useState(false);
   const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [currentHotel, setCurrentHotel] = useState<HotelTemplate>(hotel);
   const [aiSuggestion, setAiSuggestion] = useState<{
@@ -79,6 +78,11 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     golf_courses_data?: GolfCourseData[];
     highlights?: Array<{ icon: string; title: string; text: string }>;
   } | null>(null);
+
+  // Track whether auto-fetch has already been triggered for this hotel
+  const autoFetchDone = useRef<string | null>(null);
+  // Controls whether HotelImageUpload should auto-scrape (only on first open)
+  const [autoScrape, setAutoScrape] = useState(false);
 
   const [formData, setFormData] = useState({
     name: hotel.name || "",
@@ -96,26 +100,76 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     review_score: hotel.review_score ?? null as number | null,
   });
 
-  const handleFetchRating = async () => {
-    setFetchingRating(true);
+  // Auto-fetch all AI data when dialog opens (only once per hotel)
+  useEffect(() => {
+    if (open && hotel.id && autoFetchDone.current !== hotel.id) {
+      autoFetchDone.current = hotel.id;
+      setAutoScrape(true);
+      handleFetchAll();
+    }
+    if (!open) {
+      setAutoScrape(false);
+    }
+  }, [open, hotel.id]);
+
+  const handleFetchAll = async () => {
+    if (!hotel.name?.trim()) return;
+    setFetchingAll(true);
     setRatingNote(null);
+    toast.info("Získávám data pomocí AI…", { id: "ai-fetch" });
+
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-hotel-rating", {
-        body: { hotelName: formData.name },
-      });
-      if (error) throw error;
-      if (data?.average != null) {
-        setFormData((f) => ({ ...f, review_score: data.average }));
-        setRatingNote(data.note ?? null);
-        toast.success(`Hodnocení načteno: ${data.average}/10`);
-      } else {
-        toast.error("Hodnocení nenalezeno");
+      // Run rating + suggest in parallel
+      const [ratingRes, suggestRes] = await Promise.allSettled([
+        supabase.functions.invoke("fetch-hotel-rating", { body: { hotelName: hotel.name } }),
+        supabase.functions.invoke("suggest-hotel-destination", { body: { hotelName: hotel.name } }),
+      ]);
+
+      // Handle rating
+      if (ratingRes.status === "fulfilled" && !ratingRes.value.error) {
+        const d = ratingRes.value.data;
+        if (d?.average != null) {
+          setFormData((f) => ({ ...f, review_score: d.average }));
+          setRatingNote(d.note ?? null);
+        }
       }
+
+      // Handle suggest
+      if (suggestRes.status === "fulfilled" && !suggestRes.value.error) {
+        const data = suggestRes.value.data;
+        if (data && !data.error) {
+          setAiSuggestion(data);
+
+          setFormData((f) => {
+            let next = { ...f };
+            if (data.subtitle && !f.subtitle.trim()) next = { ...next, subtitle: data.subtitle };
+            if (data.golf_courses && !f.golf_courses.trim()) next = { ...next, golf_courses: data.golf_courses };
+            if (data.golf_courses_data?.length > 0 && f.golf_courses_data.length === 0) next = { ...next, golf_courses_data: data.golf_courses_data };
+            if (data.highlights?.length > 0 && f.highlights.length === 0) next = { ...next, highlights: data.highlights };
+            return next;
+          });
+
+          // Try to match destination
+          const { data: destinations } = await supabase
+            .from("destinations")
+            .select("id, name, countries:country_id(name, iso_code)")
+            .ilike("name", data.destination);
+          const match = destinations?.find(
+            (d: any) => d.name.toLowerCase() === data.destination.toLowerCase()
+          );
+          if (match) {
+            setFormData((f) => ({ ...f, destination_id: match.id }));
+            setAiSuggestion(null);
+          }
+        }
+      }
+
+      toast.success("Data z AI načtena", { id: "ai-fetch" });
     } catch (e) {
       console.error(e);
-      toast.error("Chyba při načítání hodnocení");
+      toast.error("Chyba při načítání dat z AI", { id: "ai-fetch" });
     } finally {
-      setFetchingRating(false);
+      setFetchingAll(false);
     }
   };
 
@@ -159,53 +213,6 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     }
   };
 
-  const handleAiSuggest = async () => {
-    setSuggesting(true);
-    setAiSuggestion(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("suggest-hotel-destination", {
-        body: { hotelName: formData.name },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setAiSuggestion(data);
-
-      if (data.subtitle && !formData.subtitle.trim()) {
-        setFormData((f) => ({ ...f, subtitle: data.subtitle }));
-        toast.success("Podtitulek navržen");
-      }
-      if (data.golf_courses && !formData.golf_courses.trim()) {
-        setFormData((f) => ({ ...f, golf_courses: data.golf_courses }));
-      }
-      if (data.golf_courses_data?.length > 0 && formData.golf_courses_data.length === 0) {
-        setFormData((f) => ({ ...f, golf_courses_data: data.golf_courses_data }));
-        toast.success("Golfová hřiště navržena");
-      }
-      if (data.highlights?.length > 0 && formData.highlights.length === 0) {
-        setFormData((f) => ({ ...f, highlights: data.highlights }));
-        toast.success("Důvody pro výběr hotelu navrženy");
-      }
-
-      const { data: destinations } = await supabase
-        .from("destinations")
-        .select("id, name, countries:country_id(name, iso_code)")
-        .ilike("name", data.destination);
-      const match = destinations?.find(
-        (d: any) => d.name.toLowerCase() === data.destination.toLowerCase()
-      );
-      if (match) {
-        setFormData((f) => ({ ...f, destination_id: match.id }));
-        toast.success(`Nalezena existující destinace: ${match.name}`);
-        setAiSuggestion(null);
-      }
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Nepodařilo se získat návrh");
-    } finally {
-      setSuggesting(false);
-    }
-  };
-
   const refreshHotel = async () => {
     const { data } = await supabase
       .from("hotel_templates")
@@ -222,8 +229,23 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Upravit hotel</DialogTitle>
-          <DialogDescription>Upravte údaje hotelu, fotky a popis</DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Upravit hotel</DialogTitle>
+              <DialogDescription>Upravte údaje hotelu, fotky a popis</DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5 mt-0.5"
+              disabled={fetchingAll || !hotel.name?.trim()}
+              onClick={handleFetchAll}
+            >
+              {fetchingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Získat data pomocí AI
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 overflow-y-auto flex-1 pr-1">
@@ -266,26 +288,14 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                 description={currentHotel.description || null}
                 websiteUrl={currentHotel.website_url || null}
                 onUpdate={refreshHotel}
+                autoScrape={autoScrape}
               />
             </div>
           </div>
 
           {/* Detail fields */}
           <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <Label className="text-base font-semibold">Detaily hotelu</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                disabled={suggesting || !formData.name.trim()}
-                onClick={handleAiSuggest}
-              >
-                {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                Navrhnout vše z AI
-              </Button>
-            </div>
+            <Label className="text-base font-semibold mb-4 block">Detaily hotelu</Label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -331,28 +341,16 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
               </div>
               <div>
                 <Label>Celkové hodnocení (0–10)</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="10"
-                    value={formData.review_score ?? ""}
-                    onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? Number(e.target.value) : null }))}
-                    placeholder="Průměr Booking, TripAdvisor, Google"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 gap-1"
-                    disabled={fetchingRating || !formData.name.trim()}
-                    onClick={handleFetchRating}
-                  >
-                    {fetchingRating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    AI
-                  </Button>
-                </div>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  className="mt-1"
+                  value={formData.review_score ?? ""}
+                  onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="Průměr Booking, TripAdvisor, Google"
+                />
                 {ratingNote && <p className="text-xs text-muted-foreground mt-0.5">{ratingNote}</p>}
                 {!ratingNote && <p className="text-xs text-muted-foreground mt-0.5">Průměr z Booking.com, TripAdvisor a Google Reviews</p>}
               </div>
