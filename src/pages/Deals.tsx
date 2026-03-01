@@ -517,27 +517,23 @@ const Deals = () => {
                 const iso = deal.destinations?.countries?.iso_code;
                 const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
 
-                // Build description: [1. cestující] • ISO • Hotel • DD-MM-RR (Objednatel)
-                const firstTravelerName = firstByOrder?.clients
-                  ? `${firstByOrder.clients.first_name} ${firstByOrder.clients.last_name}`
-                  : "";
+                // Build description: Objednatel • ISO • Hotel • Datum (Objednatel pokud není v deal_travelers)
+                // Primary name = orderer (lead_client)
+                const ordererClients = ordererInTravelers?.clients;
+                const leadClientJoin = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
+                const primaryClient = ordererClients || leadClientJoin || firstByOrder?.clients;
+                const primaryName = primaryClient ? `${primaryClient.first_name} ${primaryClient.last_name}` : "";
+
                 const descParts: string[] = [];
-                if (firstTravelerName) descParts.push(firstTravelerName);
+                if (primaryName) descParts.push(primaryName);
                 if (iso) descParts.push(iso);
                 if (hotel) descParts.push(hotel.service_name);
                 if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
                 let displayDesc = descParts.join(" • ");
 
-                // Append orderer in parentheses if different from first traveler
-                if (ordererInTravelers?.clients && firstByOrder?.clients && ordererInTravelers.client_id !== firstByOrder.client_id) {
-                  // Orderer is in travelers but different from first
-                  displayDesc += ` (${ordererInTravelers.clients.first_name} ${ordererInTravelers.clients.last_name})`;
-                } else if (!ordererInTravelers && deal.lead_client_id && deal.lead_client_id !== firstByOrder?.client_id) {
-                  // Orderer is NOT in travelers — use lead_client join
-                  const lc = Array.isArray(deal.lead_client) ? deal.lead_client[0] : deal.lead_client;
-                  if (lc) {
-                    displayDesc += ` (${lc.first_name} ${lc.last_name})`;
-                  }
+                // Append orderer in parentheses ONLY if orderer is NOT in deal_travelers
+                if (!ordererInTravelers && leadClientJoin) {
+                  displayDesc += ` (${leadClientJoin.first_name} ${leadClientJoin.last_name})`;
                 }
 
                 const getBaseNumber = (dn: string) => {
