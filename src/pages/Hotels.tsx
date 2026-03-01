@@ -218,13 +218,7 @@ export default function Hotels() {
       if (error) throw error;
       toast.success("Hotel uložen");
       await fetchHotels();
-      // Refresh editHotel
-      const { data } = await supabase
-        .from("hotel_templates")
-        .select("*, destinations:destination_id(name, countries:country_id(name, iso_code))")
-        .eq("id", editHotel.id)
-        .single();
-      if (data) setEditHotel(data as any);
+      setEditDialogOpen(false);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message?.includes("duplicate") ? "Slug je již použitý" : "Nepodařilo se uložit");
