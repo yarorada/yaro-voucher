@@ -57,6 +57,7 @@ const VouchersList = () => {
   const [filteredVouchers, setFilteredVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -69,7 +70,7 @@ const VouchersList = () => {
 
   useEffect(() => {
     filterVouchers();
-  }, [searchQuery, vouchers]);
+  }, [searchQuery, statusFilter, vouchers]);
 
   const fetchVouchers = async () => {
     try {
@@ -122,13 +123,22 @@ const VouchersList = () => {
   };
 
   const filterVouchers = () => {
+    let filtered = vouchers;
+
+    // Filter by status
+    if (statusFilter === "sent") {
+      filtered = filtered.filter(v => !!v.sent_at);
+    } else if (statusFilter === "unsent") {
+      filtered = filtered.filter(v => !v.sent_at);
+    }
+
     if (!searchQuery.trim()) {
-      setFilteredVouchers(vouchers);
+      setFilteredVouchers(filtered);
       return;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = vouchers.filter((voucher) => {
+    filtered = filtered.filter((voucher) => {
       const clientName = voucher.clients
         ? `${voucher.clients.first_name} ${voucher.clients.last_name}`.toLowerCase()
         : voucher.client_name.toLowerCase();
@@ -370,15 +380,38 @@ const VouchersList = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Celkem: <span className="font-semibold text-foreground">{vouchers.length}</span>
-                {searchQuery && filteredVouchers.length !== vouchers.length && (
-                  <span className="ml-1">
-                    (zobrazeno: <span className="font-semibold text-foreground">{filteredVouchers.length}</span>)
-                  </span>
-                )}
-              </p>
+            {/* Status tabs */}
+            <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
+              {([
+                { value: "all", label: "Všechny" },
+                { value: "sent", label: "Odesláno" },
+                { value: "unsent", label: "Neodesláno" },
+              ] as const).map((tab) => {
+                const count = tab.value === "all"
+                  ? vouchers.length
+                  : tab.value === "sent"
+                    ? vouchers.filter(v => !!v.sent_at).length
+                    : vouchers.filter(v => !v.sent_at).length;
+                const isActive = statusFilter === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setStatusFilter(tab.value)}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                      isActive
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>{count}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {filteredVouchers.length === 0 ? (

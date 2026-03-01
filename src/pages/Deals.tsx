@@ -402,22 +402,6 @@ const Deals = () => {
           </button>
         )}
       </div>
-      <Select value={statusFilter} onValueChange={setStatusFilter}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
-          <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Všechny statusy</SelectItem>
-          <SelectItem value="inquiry">Poptávka</SelectItem>
-          <SelectItem value="quote">Nabídka odeslána</SelectItem>
-          <SelectItem value="approved">Schváleno</SelectItem>
-          <SelectItem value="confirmed">Potvrzeno</SelectItem>
-          <SelectItem value="dispatched">Expedováno</SelectItem>
-          <SelectItem value="completed">Dokončeno</SelectItem>
-          <SelectItem value="cancelled">Zrušeno</SelectItem>
-        </SelectContent>
-      </Select>
       <Select value={sortBy} onValueChange={setSortBy}>
         <SelectTrigger className="w-[150px] h-8 text-xs">
           <SelectValue placeholder="Řazení" />
@@ -460,15 +444,39 @@ const Deals = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Celkem: <span className="font-semibold text-foreground">{deals.length}</span>
-                {(searchQuery || statusFilter !== "all" || dateFilter.preset !== "all") && filteredDeals.length !== deals.length && (
-                  <span className="ml-1">
-                    (zobrazeno: <span className="font-semibold text-foreground">{filteredDeals.length}</span>)
-                  </span>
-                )}
-              </p>
+            {/* Status tabs */}
+            <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
+              {([
+                { value: "all", label: "Všechny" },
+                { value: "inquiry", label: "Poptávka" },
+                { value: "quote", label: "Nabídka odeslána" },
+                { value: "approved", label: "Schváleno" },
+                { value: "confirmed", label: "Potvrzeno" },
+                { value: "dispatched", label: "Expedováno" },
+                { value: "completed", label: "Dokončeno" },
+                { value: "cancelled", label: "Zrušeno" },
+              ] as const).map((tab) => {
+                const count = tab.value === "all" ? deals.length : deals.filter(d => d.status === tab.value).length;
+                const isActive = statusFilter === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setStatusFilter(tab.value)}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                      isActive
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>{count}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {filteredDeals.length === 0 ? (
