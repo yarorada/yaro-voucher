@@ -1,44 +1,20 @@
 
-## Oprava zobrazení názvu obchodního případu v přehledu
+## Zvětšení loga YARO Travel ve veřejné nabídce
 
-### Požadovaný formát
+### Problém
+Logo je v současnosti nastaveno na `height: '80px'` pomocí inline stylu — ale záhlaví header má `py-6` (24px padding nahoře a dole), což celkovou výšku headeru nijak neomezuje na větší logo. Problém je pravděpodobně v tom, že 80px je stále příliš malé, nebo obrázek samotný je světlý/transparentní a vizuálně splývá.
 
-```text
-Objednatel • ISO • Hotel • Datum (Objednatel)
+### Řešení
+Zvýšit výšku loga na **140px** pomocí inline stylu, a zároveň zvýšit padding headeru na `py-8`, aby byl header dostatečně vysoký a logo nepůsobilo stísněně.
+
+### Změny
+
+**`src/pages/PublicOffer.tsx`** — řádek 396–397:
+```tsx
+<div className="max-w-5xl mx-auto px-4 py-8 flex items-center justify-between">
+  <img src={yaroLogoWide} alt="YARO Travel" style={{ height: '140px', width: 'auto' }} />
 ```
 
-- **Primární jméno** = vždy objednatel (`lead_client_id` → join na `clients`)
-- **Závorka** = objednatel se přidá do závorky NA KONCI, pokud **není přítomen v `deal_travelers`** (tj. má odškrtnuto, že není 1. cestujícím)
-- Pokud je objednatel v `deal_travelers`, závorka se nezobrazí vůbec
-
-### Analýza aktuálního stavu
-
-V `src/pages/Deals.tsx` (řádky 493–541):
-
-- Aktuálně se jako primární jméno bere **1. cestující** (`firstByOrder`)
-- Závorka se zobrazuje pokud se objednatel liší od 1. cestujícího — to je špatně
-
-### Technické změny
-
-**`src/pages/Deals.tsx`** (pouze logika sestavení `displayDesc`):
-
-1. **Primární jméno** = objednatel:
-   - Pokud je `ordererInTravelers` (je v `deal_travelers` s `is_lead_traveler=true`) → použít jeho jméno
-   - Jinak použít `lead_client` (join přes `lead_client_id`)
-   - Fallback na `firstByOrder?.clients` pokud ani jedno není dostupné
-
-2. **Závorka** = zobrazit pouze pokud objednatel **není** v `deal_travelers`:
-   - `!ordererInTravelers && deal.lead_client_id` → přidat `(Jméno Příjmení)` na konec
-
-### Výsledné chování
-
-| Situace | Zobrazení |
-|---|---|
-| Objednatel = 1. cestující (checkbox zaškrtnut) | `Pavel Kadlic • TUR • Hotel • 03-03-26` |
-| Objednatel není cestující (odškrtnuto) | `Pavel Kadlic • TUR • Hotel • 03-03-26 (Pavel Kadlic)` |
-
-Poznámka: V druhém případě se objednatel zobrazí i v závorce, protože není v seznamu cestujících — to je záměrné chování dle zadání.
-
-### Soubory k úpravě
-
-- **`src/pages/Deals.tsx`** — úprava logiky sestavení `displayDesc` (řádky ~520–541), žádné změny v databázi ani dotazech
+Tato změna:
+- Zvýší logo z 80px na **140px** výšky (téměř 2× větší)
+- Zvětší padding headeru z `py-6` na `py-8` pro pohodlnější zobrazení
