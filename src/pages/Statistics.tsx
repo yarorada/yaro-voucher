@@ -79,7 +79,7 @@ const Statistics = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch deals with destination and country info
+      // Fetch deals with destination and country info — only deals with a travel contract
       const { data: dealsData, error: dealsError } = await supabase
         .from("deals")
         .select(`
@@ -97,9 +97,16 @@ const Statistics = () => {
               id,
               name
             )
-          )
+          ),
+          travel_contracts!travel_contracts_deal_id_fkey (id)
         `)
-        .not("start_date", "is", null);
+        .not("start_date", "is", null)
+        .not("travel_contracts", "is", null);
+      
+      // Keep only deals that have at least one travel contract
+      const dealsWithContract = (dealsData || []).filter(
+        (d: any) => Array.isArray(d.travel_contracts) && d.travel_contracts.length > 0
+      );
 
       if (dealsError) throw dealsError;
 
@@ -140,13 +147,13 @@ const Statistics = () => {
         flightCost: v.cost,
       }));
 
-      setDeals((dealsData as unknown as DealWithDetails[]) || []);
+      setDeals((dealsWithContract as unknown as DealWithDetails[]) || []);
       setProfitability(profitData || []);
       setFlightCosts(flightCostsArr);
 
       // Extract available years
       const years = new Set<number>();
-      dealsData?.forEach((deal) => {
+      dealsWithContract?.forEach((deal) => {
         if (deal.start_date) {
           years.add(new Date(deal.start_date).getFullYear());
         }

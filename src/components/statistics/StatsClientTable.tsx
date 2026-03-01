@@ -68,8 +68,19 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
 
       if (profitError) throw profitError;
 
+      // Get set of deal_ids that have at least one travel contract
+      const { data: contractDeals, error: contractError } = await supabase
+        .from("travel_contracts")
+        .select("deal_id")
+        .not("deal_id", "is", null);
+
+      if (contractError) throw contractError;
+
+      const dealIdsWithContract = new Set((contractDeals || []).map((c: any) => c.deal_id));
+
       const profitMap = new Map<string, { revenue: number; cost: number; start_date: string | null; status: string | null }>();
       (profitData || []).forEach((d: any) => {
+        if (!dealIdsWithContract.has(d.deal_id)) return; // skip deals without contract
         profitMap.set(d.deal_id, {
           revenue: Number(d.revenue) || 0,
           cost: Number(d.total_costs) || 0,
