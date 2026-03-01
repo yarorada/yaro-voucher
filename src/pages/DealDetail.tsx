@@ -786,9 +786,11 @@ const DealDetail = () => {
       const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
       if (leadTraveler) {
         setLeadTravelerId(leadTraveler.client_id);
-        // Check if lead traveler is also in the travelers list (as a non-lead entry or as lead)
-        // Since lead traveler is always in the list when is_lead_traveler=true, we check if there's an entry
         setLeadTravelerIsFirstPassenger(true);
+      } else if ((data as any).lead_client_id) {
+        // Orderer is set but not a traveler (checkbox was unchecked)
+        setLeadTravelerId((data as any).lead_client_id);
+        setLeadTravelerIsFirstPassenger(false);
       }
 
       // Fetch variant count
@@ -1949,7 +1951,8 @@ const DealDetail = () => {
           adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
           discount_note: discountNote || null,
           adjustment_note: adjustmentNote || null,
-        })
+          lead_client_id: leadTravelerId || null,
+        } as any)
         .eq("id", deal.id);
 
       if (dealError) throw dealError;

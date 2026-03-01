@@ -841,6 +841,7 @@ export type Database = {
           documents_auto_sent_at: string | null
           end_date: string | null
           id: string
+          lead_client_id: string | null
           name: string | null
           notes: string | null
           rooming_list: Json | null
@@ -867,6 +868,7 @@ export type Database = {
           documents_auto_sent_at?: string | null
           end_date?: string | null
           id?: string
+          lead_client_id?: string | null
           name?: string | null
           notes?: string | null
           rooming_list?: Json | null
@@ -893,6 +895,7 @@ export type Database = {
           documents_auto_sent_at?: string | null
           end_date?: string | null
           id?: string
+          lead_client_id?: string | null
           name?: string | null
           notes?: string | null
           rooming_list?: Json | null
