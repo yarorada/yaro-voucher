@@ -43,12 +43,19 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
   ) => {
     const [inputValue, setInputValue] = React.useState("");
     const [internalOpen, setInternalOpen] = React.useState(false);
+    const [calendarMonth, setCalendarMonth] = React.useState<Date | undefined>(value);
 
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
     const setOpen = isControlled
-      ? (v: boolean) => controlledOnOpenChange?.(v)
-      : setInternalOpen;
+      ? (v: boolean) => {
+          if (v) setCalendarMonth(value ?? new Date());
+          controlledOnOpenChange?.(v);
+        }
+      : (v: boolean) => {
+          if (v) setCalendarMonth(value ?? new Date());
+          setInternalOpen(v);
+        };
 
     // Update input value when date prop changes
     React.useEffect(() => {
@@ -160,7 +167,8 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
               mode="single"
               selected={value}
               onSelect={handleCalendarSelect}
-              defaultMonth={value}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
