@@ -124,15 +124,11 @@ const buildVoucherPdfBlob = (
     } catch { /* skip */ }
   }
 
-  // Voucher code right-aligned
+  // Voucher title + code right-aligned, single bold line
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text(voucher.voucher_code || "", W - margin, y + 6, { align: "right" });
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Travel Voucher", W - margin, y + 11, { align: "right" });
+  doc.text(`TRAVEL VOUCHER · ${voucher.voucher_code}`, W - margin, y + 11, { align: "right" });
 
   // Advance y snugly past logo height
   y += logoH + 3;
