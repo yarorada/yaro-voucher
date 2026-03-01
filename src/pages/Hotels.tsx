@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { SmartSearchInput } from "@/components/SmartSearchInput";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -122,13 +123,7 @@ export default function Hotels() {
     highlights: [] as Array<{ icon: string; title: string; text: string }>,
   });
 
-  usePageToolbar(
-    <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-      <Plus className="h-4 w-4" />
-      Přidat hotel
-    </Button>,
-    []
-  );
+  usePageToolbar(null, []);
 
   useEffect(() => {
     fetchHotels();
@@ -287,19 +282,15 @@ export default function Hotels() {
           <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Hledat hotel..."
+        <div className="max-w-md">
+          <SmartSearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-8"
+            onChange={setSearch}
+            noResults={filtered.length === 0}
+            addLabel={`hotel „{text}"`}
+            onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
+            placeholder="Hledat hotel..."
           />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X className="h-4 w-4" />
-            </button>
-          )}
         </div>
 
         {loading ? (

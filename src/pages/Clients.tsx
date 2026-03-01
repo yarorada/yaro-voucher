@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Edit, User, Users, CheckCircle2, Search, FileUp, ChevronDown, Eye, ExternalLink, FileText, X, Settings2 } from "lucide-react";
+import { Trash2, Edit, User, Users, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
+import { SmartSearchInput } from "@/components/SmartSearchInput";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -720,19 +721,36 @@ const Clients = () => {
 
         {/* Top bar: search + buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Vyhledat zákazníka..."
+          <div className="flex-1 max-w-sm">
+            <SmartSearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="pl-9 pr-8"
+              onChange={setSearchText}
+              noResults={filteredClients.length === 0 && !loading && clients.length > 0}
+              addLabel={`klienta „{text}"`}
+              onAddNew={(text) => {
+                const parts = text.trim().split(/\s+/);
+                const first = parts[0] || "";
+                const last = parts.slice(1).join(" ") || "";
+                setFormData(prev => ({
+                  ...prev,
+                  first_name: first,
+                  last_name: last,
+                  title: "",
+                  email: "",
+                  phone: "",
+                  address: "",
+                  notes: "",
+                  date_of_birth: undefined,
+                  passport_number: "",
+                  passport_expiry: undefined,
+                  id_card_number: "",
+                  id_card_expiry: undefined,
+                }));
+                setEditingClient(null);
+                setIsDialogOpen(true);
+              }}
+              placeholder="Vyhledat zákazníka..."
             />
-            {searchText && (
-              <button onClick={() => setSearchText("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="h-4 w-4" />
-              </button>
-            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <DropdownMenu>
@@ -786,13 +804,6 @@ const Clients = () => {
             >
               <FileText className="h-4 w-4" />
               Import z textu
-            </Button>
-            <Button
-              className="gap-1.5"
-              onClick={() => setIsDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Nový zákazník
             </Button>
           </div>
         </div>

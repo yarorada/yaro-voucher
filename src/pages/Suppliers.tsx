@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit, Search, X } from "lucide-react";
+import { Plus, Trash2, Edit, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { BulkSupplierUpload } from "@/components/BulkSupplierUpload";
+import { SmartSearchInput } from "@/components/SmartSearchInput";
 
 interface Supplier {
   id: string;
@@ -175,28 +176,8 @@ const Suppliers = () => {
   });
 
   usePageToolbar(
-    <>
-      <div className="relative w-48 md:w-64">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          placeholder="Hledat..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          className="pl-8 pr-7 h-8 text-xs"
-        />
-        {searchText && (
-          <button onClick={() => setSearchText("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-      <BulkSupplierUpload onComplete={fetchSuppliers} />
-      <Button className={toolbarButtonClass + " gap-1"} onClick={() => setIsDialogOpen(true)}>
-        <Plus className="h-3.5 w-3.5" />
-        Přidat
-      </Button>
-    </>,
-    [searchText]
+    <BulkSupplierUpload onComplete={fetchSuppliers} />,
+    []
   );
 
   return (
@@ -299,6 +280,22 @@ const Suppliers = () => {
                 </form>
                 </DialogContent>
         </Dialog>
+
+        {/* Search */}
+        <div className="mb-4 max-w-sm">
+          <SmartSearchInput
+            value={searchText}
+            onChange={setSearchText}
+            noResults={filteredSuppliers.length === 0 && !loading}
+            addLabel={`dodavatele „{text}"`}
+            onAddNew={(text) => {
+              setFormData({ name: text, contact_person: "", email: "", phone: "", address: "", notes: "" });
+              setEditingSupplier(null);
+              setIsDialogOpen(true);
+            }}
+            placeholder="Hledat dodavatele..."
+          />
+        </div>
 
         {loading ? (
           <div className="text-center py-12">

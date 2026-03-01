@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Plus, Trash2, Search, Globe } from "lucide-react";
+import { Pencil, Trash2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { COUNTRY_DATA } from "@/lib/countryData";
+import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { guessCountryFromDestination } from "@/lib/destinationCountryMap";
 
 interface Country {
   id: string;
@@ -81,6 +82,7 @@ const Destinations = () => {
       toast.success("Destinace přidána");
       setNewDest({ name: "", country_id: "" });
       setIsAddOpen(false);
+      setSearchText("");
       fetchDestinations();
     }
   };
@@ -124,25 +126,34 @@ const Destinations = () => {
     );
   }, [destinations, searchText]);
 
+  const handleAddNew = (text: string) => {
+    const guessedCountryName = guessCountryFromDestination(text);
+    let countryId = "";
+    if (guessedCountryName) {
+      const match = countries.find(
+        (c) => c.name.toLowerCase() === guessedCountryName.toLowerCase()
+      );
+      countryId = match?.id || "";
+    }
+    setNewDest({ name: text, country_id: countryId });
+    setIsAddOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-5xl mx-auto py-6 px-4 space-y-4">
 
         {/* Toolbar */}
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Hledat destinaci nebo zemi…"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Button onClick={() => setIsAddOpen(true)} className="gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
-            Nová destinace
-          </Button>
+          <SmartSearchInput
+            value={searchText}
+            onChange={setSearchText}
+            noResults={filtered.length === 0 && searchText.trim().length > 0}
+            addLabel={`destinaci „{text}"`}
+            onAddNew={handleAddNew}
+            placeholder="Hledat destinaci nebo zemi…"
+            className="flex-1 max-w-sm"
+          />
         </div>
 
         {/* Table */}
@@ -216,7 +227,11 @@ const Destinations = () => {
         <DialogContent className="bg-background">
           <DialogHeader>
             <DialogTitle>Nová destinace</DialogTitle>
-            <DialogDescription>Přidejte novou destinaci do systému</DialogDescription>
+            <DialogDescription>
+              {newDest.country_id
+                ? "Automaticky jsme navrhli zemi – můžete ji změnit."
+                : "Přidejte novou destinaci a vyberte zemi."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
