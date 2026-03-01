@@ -142,7 +142,22 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
             <Card key={index} className="p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  {isImageUrl(doc.url) ? (
+                    <button
+                      onClick={() => handlePreview(doc)}
+                      className="shrink-0 w-10 h-10 rounded border overflow-hidden bg-muted hover:opacity-80 transition-opacity"
+                      title="Náhled"
+                    >
+                      <img
+                        src={doc.url}
+                        alt={getDocumentTypeLabel(doc.type)}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </button>
+                  ) : (
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  )}
                   <div>
                     <p className="text-sm font-medium">{getDocumentTypeLabel(doc.type)}</p>
                     <p className="text-xs text-muted-foreground">

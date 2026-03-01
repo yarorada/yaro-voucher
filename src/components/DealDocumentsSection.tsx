@@ -1254,7 +1254,25 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     }}
                     className="shrink-0"
                   />
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  {isImage(doc.file_type || doc.file_url) ? (
+                    <button
+                      onClick={() => handlePreview(doc)}
+                      className="shrink-0 w-10 h-10 rounded border overflow-hidden bg-muted hover:opacity-80 transition-opacity"
+                      title="Náhled"
+                    >
+                      <img
+                        src={doc.file_url}
+                        alt={doc.file_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          (e.currentTarget.parentElement as HTMLElement).innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-full h-full p-2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>';
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{doc.file_name}</p>
                     <p className="text-xs text-muted-foreground">
