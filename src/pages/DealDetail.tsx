@@ -1976,14 +1976,15 @@ const DealDetail = () => {
               });
           }
         } else {
-          // Not a traveler – remove from list if present
+          // Orderer is not the first traveler – keep in list as regular traveler (is_lead_traveler: false)
           if (existingTraveler) {
             await supabase
               .from("deal_travelers")
-              .delete()
+              .update({ is_lead_traveler: false })
               .eq("deal_id", deal.id)
               .eq("client_id", leadTravelerId);
           }
+          // If not in list at all, leave it – don't add automatically
         }
       }
 
