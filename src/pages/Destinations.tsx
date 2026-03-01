@@ -46,6 +46,7 @@ const Destinations = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newDest, setNewDest] = useState({ name: "", country_id: "" });
   const [editingDestination, setEditingDestination] = useState<{ id: string; name: string; country_id: string } | null>(null);
+  const [autoGuessedCountryName, setAutoGuessedCountryName] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCountries();
@@ -81,6 +82,7 @@ const Destinations = () => {
     } else {
       toast.success("Destinace přidána");
       setNewDest({ name: "", country_id: "" });
+      setAutoGuessedCountryName(null);
       setIsAddOpen(false);
       setSearchText("");
       fetchDestinations();
@@ -136,6 +138,7 @@ const Destinations = () => {
       countryId = match?.id || "";
     }
     setNewDest({ name: text, country_id: countryId });
+    setAutoGuessedCountryName(guessedCountryName && countryId ? guessedCountryName : null);
     setIsAddOpen(true);
   };
 
@@ -240,9 +243,33 @@ const Destinations = () => {
               <Input
                 placeholder="např. Antalya"
                 value={newDest.name}
-                onChange={(e) => setNewDest({ ...newDest, name: e.target.value })}
+                onChange={(e) => {
+                  const text = e.target.value;
+                  const guessedCountryName = guessCountryFromDestination(text);
+                  let countryId = newDest.country_id;
+                  if (guessedCountryName) {
+                    const match = countries.find(
+                      (c) => c.name.toLowerCase() === guessedCountryName.toLowerCase()
+                    );
+                    if (match) {
+                      countryId = match.id;
+                      setAutoGuessedCountryName(match.name);
+                    } else {
+                      setAutoGuessedCountryName(null);
+                    }
+                  } else {
+                    setAutoGuessedCountryName(null);
+                  }
+                  setNewDest({ ...newDest, name: text, country_id: countryId });
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleAddDestination()}
               />
+              {autoGuessedCountryName && (
+                <p className="text-xs text-primary flex items-center gap-1">
+                  <span>🌍</span>
+                  <span>Navrhujeme zemi: <strong>{autoGuessedCountryName}</strong> – můžete ji níže změnit.</span>
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Země *</Label>
