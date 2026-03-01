@@ -122,6 +122,7 @@ export default function Hotels() {
     is_published: false,
     destination_id: "",
     highlights: [] as Array<{ icon: string; title: string; text: string }>,
+    review_score: null as number | null,
   });
 
   // toolbar set below after filtered is declared
@@ -190,6 +191,7 @@ export default function Hotels() {
       is_published: hotel.is_published || false,
       destination_id: hotel.destination_id || "",
       highlights: parsedHighlights,
+      review_score: hotel.review_score ?? null,
     });
     setEditDialogOpen(true);
   };
@@ -213,6 +215,7 @@ export default function Hotels() {
           is_published: formData.is_published,
           destination_id: formData.destination_id || null,
           highlights: formData.highlights.length > 0 ? formData.highlights : null,
+          review_score: formData.review_score ?? null,
         })
         .eq("id", editHotel.id);
       if (error) throw error;
@@ -412,6 +415,22 @@ export default function Hotels() {
                     onChange={(e) => setFormData((f) => ({ ...f, slug: e.target.value }))}
                     placeholder="gloria-verde"
                   />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Celkové hodnocení (0–10)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={formData.review_score ?? ""}
+                    onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? parseFloat(e.target.value) : null }))}
+                    placeholder="např. 8.5"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Průměr z Booking.com, TripAdvisor a Google</p>
                 </div>
               </div>
 
