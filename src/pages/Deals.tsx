@@ -491,8 +491,13 @@ const Deals = () => {
               </Card>
             ) : (
               filteredDeals.map((deal) => {
-                // Sort travelers by order_index to find the first traveler
-                const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => (a.order_index ?? 999) - (b.order_index ?? 999));
+                // Sort travelers by order_index to find the first traveler (non-orderer preferred on tie)
+                const sortedTravelers = [...(deal.deal_travelers || [])].sort((a: any, b: any) => {
+                  const idxDiff = (a.order_index ?? 999) - (b.order_index ?? 999);
+                  if (idxDiff !== 0) return idxDiff;
+                  // On tie, prefer non-lead (is_lead_traveler=false) as "first traveler"
+                  return (a.is_lead_traveler ? 1 : 0) - (b.is_lead_traveler ? 1 : 0);
+                });
                 const firstByOrder = sortedTravelers[0];
 
                 // Orderer = traveler with is_lead_traveler, OR the lead_client_id if not in travelers
