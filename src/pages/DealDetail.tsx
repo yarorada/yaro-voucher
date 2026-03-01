@@ -3272,7 +3272,7 @@ const DealDetail = () => {
                   <span className="font-bold text-base sm:text-lg text-primary">
                     {formatPriceCurrency(
                       services.reduce((sum, s) => sum + getServiceTotal(s), 0),
-                      services[0]?.price_currency || "CZK"
+                      deal?.currency || services[0]?.price_currency || "CZK"
                     )}
                   </span>
                 </div>
