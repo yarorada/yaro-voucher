@@ -56,6 +56,7 @@ interface Client {
   id_card_number: string | null;
   id_card_expiry: string | null;
   company_name: string | null;
+  ico: string | null;
   company_as_orderer: boolean;
   document_urls: Array<{ url: string; type: string; uploadedAt: string }> | null;
 }
@@ -114,6 +115,7 @@ const Clients = () => {
     id_card_number: "",
     id_card_expiry: undefined as Date | undefined,
     company_name: "",
+    ico: "",
     company_as_orderer: false,
   });
 
@@ -202,8 +204,9 @@ const Clients = () => {
             id_card_number: formData.id_card_number.trim() || null,
             id_card_expiry: formatDateForDB(formData.id_card_expiry),
             company_name: formData.company_name.trim() || null,
+            ico: formData.ico.trim() || null,
             company_as_orderer: formData.company_as_orderer,
-          })
+          } as any)
           .eq("id", editingClient.id);
 
         if (error) throw error;
@@ -238,8 +241,9 @@ const Clients = () => {
           id_card_expiry: formatDateForDB(formData.id_card_expiry),
           notes: formData.notes.trim() || null,
           company_name: formData.company_name.trim() || null,
+          ico: formData.ico.trim() || null,
           company_as_orderer: formData.company_as_orderer,
-        });
+        } as any);
 
         if (error) throw error;
         toast.success("Klient byl přidán");
@@ -259,6 +263,7 @@ const Clients = () => {
         id_card_number: "",
         id_card_expiry: undefined,
         company_name: "",
+        ico: "",
         company_as_orderer: false,
       });
       setEditingClient(null);
@@ -285,6 +290,7 @@ const Clients = () => {
       id_card_number: client.id_card_number || "",
       id_card_expiry: client.id_card_expiry ? parseDateSafe(client.id_card_expiry) || undefined : undefined,
       company_name: client.company_name || "",
+      ico: (client as any).ico || "",
       company_as_orderer: client.company_as_orderer || false,
     });
     setIsDialogOpen(true);
@@ -349,6 +355,7 @@ const Clients = () => {
       id_card_number: "",
       id_card_expiry: undefined,
       company_name: "",
+      ico: "",
       company_as_orderer: false,
     });
   };
@@ -493,6 +500,7 @@ const Clients = () => {
             id_card_number: "",
             id_card_expiry: undefined,
             company_name: "",
+            ico: "",
             company_as_orderer: false,
           }));
           setEditingClient(null);
@@ -661,8 +669,8 @@ const Clients = () => {
                       />
                     </div>
 
-                    {/* Row 3b: Společnost */}
-                    <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                    {/* Row 3b: Společnost + IČO */}
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label htmlFor="company_name">Společnost</Label>
                         <Input
@@ -672,16 +680,25 @@ const Clients = () => {
                           placeholder="Název společnosti"
                         />
                       </div>
-                      <div className="flex items-center gap-2 pb-2">
-                        <Checkbox
-                          id="company_as_orderer"
-                          checked={formData.company_as_orderer}
-                          onCheckedChange={(checked) => setFormData({ ...formData, company_as_orderer: !!checked })}
+                      <div className="space-y-1">
+                        <Label htmlFor="ico">IČO</Label>
+                        <Input
+                          id="ico"
+                          value={formData.ico}
+                          onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+                          placeholder="12345678"
                         />
-                        <Label htmlFor="company_as_orderer" className="text-sm cursor-pointer">
-                          Zobrazit jako objednatel
-                        </Label>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="company_as_orderer"
+                        checked={formData.company_as_orderer}
+                        onCheckedChange={(checked) => setFormData({ ...formData, company_as_orderer: !!checked })}
+                      />
+                      <Label htmlFor="company_as_orderer" className="text-sm cursor-pointer">
+                        Zobrazit jako objednatel (použít název společnosti a IČO)
+                      </Label>
                     </div>
 
                     {/* Row 4: Poznámky */}
