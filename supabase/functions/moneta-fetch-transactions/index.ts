@@ -61,19 +61,67 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
 
-    // Call Moneta API — account ID must be URL-encoded (IBAN or numeric account ID)
-    const encodedAccountId = encodeURIComponent(MONETA_ACCOUNT_ID);
-    const monetaUrl = `https://api.moneta.cz/aisp/v1/accounts/${encodedAccountId}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
-    
-    console.log(`Calling Moneta URL: ${monetaUrl}`);
+    // Moneta Open Banking API base URLs to try (Berlin Group PSD2)
+    const BASE_URLS = [
+      'https://api.moneta.cz/openbanking/v1',
+      'https://api.moneta.cz/aisp/v1',
+      'https://api.moneta.cz/v1',
+    ];
 
-    const monetaResponse = await fetch(monetaUrl, {
-      headers: {
-        'Authorization': `Bearer ${MONETA_API_TOKEN}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
+    const monetaHeaders = {
+      'Authorization': `Bearer ${MONETA_API_TOKEN}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    // Step 1: try to resolve accountId via /accounts list (Berlin Group standard)
+    let resolvedAccountId = MONETA_ACCOUNT_ID;
+    let workingBaseUrl = BASE_URLS[0];
+
+    for (const baseUrl of BASE_URLS) {
+      const accountsUrl = `${baseUrl}/accounts`;
+      console.log(`Trying accounts list: ${accountsUrl}`);
+      try {
+        const accountsResp = await fetch(accountsUrl, { headers: monetaHeaders });
+        if (accountsResp.ok) {
+          const accountsData = await accountsResp.json();
+          workingBaseUrl = baseUrl;
+          console.log(`Accounts response from ${baseUrl}:`, JSON.stringify(accountsData).slice(0, 500));
+          // Try to find matching account by IBAN
+          const accounts = accountsData?.accounts || accountsData?.data || accountsData || [];
+          if (Array.isArray(accounts) && accounts.length > 0) {
+            const match = accounts.find((a: any) =>
+              a.iban === MONETA_ACCOUNT_ID ||
+              a.resourceId === MONETA_ACCOUNT_ID ||
+              a.id === MONETA_ACCOUNT_ID ||
+              (a.iban || '').replace(/\s/g, '') === MONETA_ACCOUNT_ID.replace(/\s/g, '')
+            );
+            if (match) {
+              resolvedAccountId = match.resourceId || match.id || match.iban || MONETA_ACCOUNT_ID;
+              console.log(`Resolved accountId: ${resolvedAccountId}`);
+            } else {
+              // Use first account's resourceId if no exact match
+              resolvedAccountId = accounts[0].resourceId || accounts[0].id || MONETA_ACCOUNT_ID;
+              console.log(`No exact match, using first account: ${resolvedAccountId}`);
+            }
+          }
+          break;
+        } else {
+          console.log(`${baseUrl}/accounts returned ${accountsResp.status}`);
+          await accountsResp.text(); // consume body
+        }
+      } catch (e) {
+        console.log(`Error fetching ${baseUrl}/accounts:`, e);
+      }
+    }
+
+    // Step 2: fetch transactions
+    const encodedAccountId = encodeURIComponent(resolvedAccountId);
+    const monetaUrl = `${workingBaseUrl}/accounts/${encodedAccountId}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
+    
+    console.log(`Calling Moneta transactions URL: ${monetaUrl}`);
+
+    const monetaResponse = await fetch(monetaUrl, { headers: monetaHeaders });
 
     if (!monetaResponse.ok) {
       const errText = await monetaResponse.text();
@@ -81,7 +129,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ 
         error: `Moneta API chyba: ${monetaResponse.status}`,
         detail: `URL: ${monetaUrl} — ${errText}`,
-        hint: 'Zkontrolujte MONETA_ACCOUNT_ID (IBAN nebo číslo účtu) a MONETA_API_TOKEN. Endpoint: /aisp/v1/accounts/{id}/transactions',
+        hint: 'Zkontrolujte MONETA_API_TOKEN a MONETA_ACCOUNT_ID. Funkce se pokusila načíst seznam účtů a pak transakce.',
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
