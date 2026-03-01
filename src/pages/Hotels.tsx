@@ -97,6 +97,8 @@ export default function Hotels() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newHotelName, setNewHotelName] = useState("");
   const [suggesting, setSuggesting] = useState(false);
+  const [fetchingRating, setFetchingRating] = useState(false);
+  const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [aiSuggestion, setAiSuggestion] = useState<{
     destination: string;
     country: string;
@@ -194,6 +196,30 @@ export default function Hotels() {
       review_score: hotel.review_score ?? null,
     });
     setEditDialogOpen(true);
+  };
+
+  const handleFetchRating = async () => {
+    if (!formData.name.trim()) return;
+    setFetchingRating(true);
+    setRatingNote(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-hotel-rating", {
+        body: { hotelName: formData.name },
+      });
+      if (error) throw error;
+      if (data?.average != null) {
+        setFormData((f) => ({ ...f, review_score: data.average }));
+        setRatingNote(data.note ?? null);
+        toast.success(`Hodnocení načteno: ${data.average}/10`);
+      } else {
+        toast.error("Hodnocení nenalezeno");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Chyba při načítání hodnocení");
+    } finally {
+      setFetchingRating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -421,16 +447,32 @@ export default function Hotels() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Celkové hodnocení (0–10)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={formData.review_score ?? ""}
-                    onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? parseFloat(e.target.value) : null }))}
-                    placeholder="např. 8.5"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Průměr z Booking.com, TripAdvisor a Google</p>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={formData.review_score ?? ""}
+                      onChange={(e) => setFormData((f) => ({ ...f, review_score: e.target.value ? parseFloat(e.target.value) : null }))}
+                      placeholder="např. 8.5"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1"
+                      disabled={fetchingRating || !formData.name.trim()}
+                      onClick={handleFetchRating}
+                    >
+                      {fetchingRating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      AI
+                    </Button>
+                  </div>
+                  {ratingNote
+                    ? <p className="text-xs text-muted-foreground mt-1">{ratingNote}</p>
+                    : <p className="text-xs text-muted-foreground mt-1">Průměr z Booking.com, TripAdvisor a Google</p>
+                  }
                 </div>
               </div>
 
