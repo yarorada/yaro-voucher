@@ -2233,9 +2233,10 @@ const DealDetail = () => {
   const handleCreateContract = async () => {
     if (!deal) return;
 
-    // Check if there's a lead traveler
-    const leadTraveler = deal.deal_travelers.find(t => t.is_lead_traveler);
-    if (!leadTraveler) {
+    // Prefer lead_client_id (objednatel), fallback to is_lead_traveler in travelers
+    const leadClientId = (deal as any).lead_client_id
+      || deal.deal_travelers.find(t => t.is_lead_traveler)?.client_id;
+    if (!leadClientId) {
       toast({
         title: "Chyba",
         description: "Obchodní případ musí mít hlavního cestujícího",
@@ -2257,7 +2258,7 @@ const DealDetail = () => {
       return;
     }
 
-    await doCreateContract(leadTraveler.client_id);
+    await doCreateContract(leadClientId);
   };
 
   const doCreateContract = async (clientId: string) => {
