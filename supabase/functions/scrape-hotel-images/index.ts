@@ -23,145 +23,212 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Searching images for hotel:", hotelName, "golf:", golfCourseName);
+    console.log("Searching images for hotel:", hotelName);
 
-    // Search for hotel official website
-    const searchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: `${hotelName} hotel official website`,
-        limit: 3,
-        scrapeOptions: { formats: ["links", "markdown"] },
-      }),
-    });
+    // Helper: extract image URLs from rawHtml using <img src> and srcset
+    function extractImgsFromHtml(html: string): string[] {
+      const urls: string[] = [];
+      // <img src="...">
+      const srcRegex = /<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
+      let m: RegExpExecArray | null;
+      while ((m = srcRegex.exec(html)) !== null) {
+        const u = m[1].split("?")[0];
+        if (!shouldSkip(u)) urls.push(m[1]);
+      }
+      // srcset="url1 1x, url2 2x"
+      const srcsetRegex = /<img[^>]+srcset=["']([^"']+)/gi;
+      while ((m = srcsetRegex.exec(html)) !== null) {
+        const parts = m[1].split(",").map((s) => s.trim().split(" ")[0]);
+        for (const p of parts) {
+          if (/\.(jpg|jpeg|png|webp)/i.test(p) && !shouldSkip(p)) urls.push(p);
+        }
+      }
+      // data-src (lazy loaded)
+      const dataSrcRegex = /data-src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
+      while ((m = dataSrcRegex.exec(html)) !== null) {
+        if (!shouldSkip(m[1])) urls.push(m[1]);
+      }
+      // og:image meta
+      const ogRegex = /<meta[^>]+(?:property=["']og:image["']|name=["']og:image["'])[^>]+content=["']([^"']+)/gi;
+      while ((m = ogRegex.exec(html)) !== null) {
+        if (/\.(jpg|jpeg|png|webp)/i.test(m[1]) && !shouldSkip(m[1])) urls.push(m[1]);
+      }
+      return urls;
+    }
 
-    const searchData = await searchResponse.json();
-    console.log("Search results:", JSON.stringify(searchData).substring(0, 500));
+    function shouldSkip(url: string): boolean {
+      const lower = url.toLowerCase();
+      return (
+        lower.includes("icon") ||
+        lower.includes("logo") ||
+        lower.includes("favicon") ||
+        lower.includes("avatar") ||
+        lower.includes("sprite") ||
+        lower.includes("1x1") ||
+        lower.includes("pixel") ||
+        lower.includes("map") ||
+        lower.includes("flag") ||
+        lower.includes("star") ||
+        // Skip obviously tiny thumbnails by URL pattern
+        /[_-](\d{1,2}x\d{1,2})[_.]/.test(lower) ||
+        url.length > 600
+      );
+    }
 
-    // Scrape the top result for images
+    // Prefer larger images: sort by hints in URL
+    function preferLarger(urls: string[]): string[] {
+      return [...urls].sort((a, b) => {
+        const scoreA = sizeScore(a);
+        const scoreB = sizeScore(b);
+        return scoreB - scoreA;
+      });
+    }
+
+    function sizeScore(url: string): number {
+      // Higher resolution hints
+      const hints = ["1920", "1600", "1400", "1280", "1024", "800", "original", "full", "large", "xl", "big"];
+      const lower = url.toLowerCase();
+      for (let i = 0; i < hints.length; i++) {
+        if (lower.includes(hints[i])) return hints.length - i;
+      }
+      return 0;
+    }
+
+    async function firecrawlScrape(url: string): Promise<{ html: string; links: string[] }> {
+      const r = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ url, formats: ["rawHtml", "links"], onlyMainContent: false }),
+      });
+      const d = await r.json();
+      const html = d?.data?.rawHtml || d?.rawHtml || "";
+      const links: string[] = (d?.data?.links || d?.links || []).map((l: any) =>
+        typeof l === "string" ? l : l?.url || ""
+      );
+      return { html, links };
+    }
+
+    async function firecrawlSearch(query: string, limit = 5): Promise<{ url: string; html?: string }[]> {
+      const r = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query, limit, scrapeOptions: { formats: ["rawHtml"] } }),
+      });
+      const d = await r.json();
+      return (d?.data || []).map((item: any) => ({
+        url: item.url,
+        html: item.rawHtml || "",
+      }));
+    }
+
+    // --- Run parallel searches ---
+    const [
+      officialResults,
+      bookingResults,
+      tripadvisorResults,
+      googleResults,
+    ] = await Promise.allSettled([
+      // 1. Official website via search
+      firecrawlSearch(`"${hotelName}" hotel official site photos gallery`, 3),
+      // 2. Booking.com
+      firecrawlSearch(`site:booking.com "${hotelName}" photos`, 2),
+      // 3. TripAdvisor
+      firecrawlSearch(`site:tripadvisor.com "${hotelName}" photos`, 2),
+      // 4. General image search
+      firecrawlSearch(`${hotelName} hotel rooms exterior photos gallery`, 4),
+    ]);
+
     const hotelImages: string[] = [];
     let detectedWebsiteUrl: string | null = null;
 
-    if (searchData?.data && searchData.data.length > 0) {
-      const topUrl = searchData.data[0].url;
-      // Extract the base domain as the official website URL
+    // Process official website — scrape top result's full page
+    if (officialResults.status === "fulfilled" && officialResults.value.length > 0) {
+      const top = officialResults.value[0];
       try {
-        const parsedUrl = new URL(topUrl);
-        detectedWebsiteUrl = parsedUrl.origin;
+        const parsedUrl = new URL(top.url);
+        // Avoid booking.com/tripadvisor as "official"
+        if (!parsedUrl.hostname.includes("booking") && !parsedUrl.hostname.includes("tripadvisor")) {
+          detectedWebsiteUrl = parsedUrl.origin;
+        }
       } catch { /* ignore */ }
-      console.log("Scraping hotel URL:", topUrl, "detected website:", detectedWebsiteUrl);
 
-      const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: topUrl,
-          formats: ["screenshot", "links", "markdown"],
-          onlyMainContent: false,
-        }),
-      });
-
-      const scrapeData = await scrapeResponse.json();
-      const content = scrapeData?.data?.markdown || scrapeData?.markdown || "";
-
-      // Extract image URLs from markdown
-      const imgRegex = /!\[.*?\]\((https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|webp)[^\s)]*)\)/gi;
-      let match;
-      while ((match = imgRegex.exec(content)) !== null) {
-        if (!match[1].includes("icon") && !match[1].includes("logo") && !match[1].includes("favicon")) {
-          hotelImages.push(match[1]);
-        }
+      for (const result of officialResults.value) {
+        const imgs = extractImgsFromHtml(result.html || "");
+        hotelImages.push(...imgs);
       }
 
-      // Extract from links
-      const links = scrapeData?.data?.links || scrapeData?.links || [];
-      for (const link of links) {
-        const linkStr = typeof link === "string" ? link : link?.url || "";
-        if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) &&
-            !linkStr.includes("icon") && !linkStr.includes("logo") && !linkStr.includes("favicon") &&
-            linkStr.length < 500) {
-          hotelImages.push(linkStr);
-        }
+      // Also scrape top result's gallery page if we found the base URL
+      if (detectedWebsiteUrl) {
+        const gallerySuffixes = ["/gallery", "/photos", "/images", "/galerie", "/fotky"];
+        const galleryAttempts = gallerySuffixes.slice(0, 2).map((suffix) =>
+          firecrawlScrape(detectedWebsiteUrl! + suffix).then(({ html }) => {
+            const imgs = extractImgsFromHtml(html);
+            hotelImages.push(...imgs);
+          }).catch(() => {})
+        );
+        await Promise.allSettled(galleryAttempts);
       }
+    }
 
-      // Extract from src attributes in markdown
-      const imgRegex2 = /(?:src=["'])(https?:\/\/[^\s"']+\.(?:jpg|jpeg|png|webp)[^\s"']*)/gi;
-      while ((match = imgRegex2.exec(content)) !== null) {
-        if (!match[1].includes("icon") && !match[1].includes("logo")) {
-          hotelImages.push(match[1]);
+    // Process Booking.com results
+    if (bookingResults.status === "fulfilled") {
+      for (const result of bookingResults.value) {
+        const imgs = extractImgsFromHtml(result.html || "");
+        // Booking.com uses bstatic.com for images
+        const bookingImgs = imgs.filter((u) => u.includes("bstatic") || u.includes("booking"));
+        hotelImages.push(...bookingImgs);
+        // Also try full page scrape of booking.com hotel page
+        if (result.url.includes("booking.com/hotel")) {
+          const { html } = await firecrawlScrape(result.url).catch(() => ({ html: "", links: [] }));
+          const full = extractImgsFromHtml(html);
+          hotelImages.push(...full.filter((u) => u.includes("bstatic") || u.includes("booking")));
         }
       }
     }
 
-    // Search for golf course images if provided
+    // Process TripAdvisor results
+    if (tripadvisorResults.status === "fulfilled") {
+      for (const result of tripadvisorResults.value) {
+        const imgs = extractImgsFromHtml(result.html || "");
+        // TripAdvisor uses media-cdn.tripadvisor.com
+        const taImgs = imgs.filter((u) => u.includes("tripadvisor") || u.includes("media-cdn") || u.includes("ta-cdn"));
+        hotelImages.push(...taImgs);
+      }
+    }
+
+    // Process general search results
+    if (googleResults.status === "fulfilled") {
+      for (const result of googleResults.value) {
+        const imgs = extractImgsFromHtml(result.html || "");
+        hotelImages.push(...imgs);
+      }
+    }
+
+    // Deduplicate and prioritize larger images
+    const uniqueHotelImages = preferLarger([...new Set(hotelImages)]).slice(0, 30);
+
+    // --- Golf course images ---
     const golfImages: string[] = [];
     if (golfCourseName) {
-      const golfSearchResponse = await fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: `${golfCourseName} golf course photos`,
-          limit: 3,
-          scrapeOptions: { formats: ["links", "markdown"] },
-        }),
-      });
+      const [golfOfficial, golfSearch] = await Promise.allSettled([
+        firecrawlSearch(`"${golfCourseName}" golf course official website photos`, 2),
+        firecrawlSearch(`${golfCourseName} golf course holes fairway photos`, 3),
+      ]);
 
-      const golfSearchData = await golfSearchResponse.json();
-
-      if (golfSearchData?.data && golfSearchData.data.length > 0) {
-        const golfUrl = golfSearchData.data[0].url;
-        console.log("Scraping golf URL:", golfUrl);
-
-        const golfScrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url: golfUrl,
-            formats: ["links", "markdown"],
-            onlyMainContent: false,
-          }),
-        });
-
-        const golfScrapeData = await golfScrapeResponse.json();
-        const golfContent = golfScrapeData?.data?.markdown || golfScrapeData?.markdown || "";
-
-        const golfImgRegex = /!\[.*?\]\((https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|webp)[^\s)]*)\)/gi;
-        let gMatch;
-        while ((gMatch = golfImgRegex.exec(golfContent)) !== null) {
-          if (!gMatch[1].includes("icon") && !gMatch[1].includes("logo")) {
-            golfImages.push(gMatch[1]);
-          }
-        }
-
-        const golfLinks = golfScrapeData?.data?.links || golfScrapeData?.links || [];
-        for (const link of golfLinks) {
-          const linkStr = typeof link === "string" ? link : link?.url || "";
-          if (/\.(jpg|jpeg|png|webp)/i.test(linkStr) &&
-              !linkStr.includes("icon") && !linkStr.includes("logo") &&
-              linkStr.length < 500) {
-            golfImages.push(linkStr);
+      for (const res of [golfOfficial, golfSearch]) {
+        if (res.status === "fulfilled") {
+          for (const result of res.value) {
+            golfImages.push(...extractImgsFromHtml(result.html || ""));
           }
         }
       }
     }
 
-    const uniqueHotelImages = [...new Set(hotelImages)].slice(0, 12);
-    const uniqueGolfImages = [...new Set(golfImages)].slice(0, 8);
+    const uniqueGolfImages = preferLarger([...new Set(golfImages)]).slice(0, 15);
 
-    console.log(`Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images`);
+    console.log(
+      `Found ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images`
+    );
 
     return new Response(
       JSON.stringify({
@@ -175,7 +242,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Error scraping:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "Failed to scrape" }),
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to scrape",
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
