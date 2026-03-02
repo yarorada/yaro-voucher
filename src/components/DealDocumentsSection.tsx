@@ -484,7 +484,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     fullVoucher: any,
     supplierName?: string,
     supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
-    logoBase64?: string
+    logoBase64?: string,
+    travelers?: { client_id: string; is_main_client: boolean; clients: { first_name: string; last_name: string } }[]
   ): Blob => {
     const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const W = 210;
@@ -563,10 +564,15 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     const labelColW = 26;
     doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
+    const mainTraveler = travelers?.find(t => t.is_main_client);
+    const mainClientName = mainTraveler
+      ? `${mainTraveler.clients.first_name} ${mainTraveler.clients.last_name}`
+      : fullVoucher.client_name || "";
+
     doc.setFont("helvetica", "bold");
     doc.text("Main Client:", margin, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`1. ${removeDiacritics(fullVoucher.client_name || "")}`, margin + labelColW, y);
+    doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + labelColW, y);
     y += 5;
     const others: string[] = (fullVoucher.other_travelers as string[]) || [];
     if (others.length > 0) {
@@ -796,7 +802,12 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         .single();
       if (error || !fullVoucher) return false;
 
-      const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name);
+      const { data: voucherTravelers } = await supabase
+        .from("voucher_travelers")
+        .select("client_id, is_main_client, clients(first_name, last_name)")
+        .eq("voucher_id", voucher.id);
+
+      const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name, null, undefined, (voucherTravelers || []) as any);
 
       // Upload to deal-documents storage
       const path = `${dealId}/voucher-${fullVoucher.voucher_code}-${Date.now()}.pdf`;
@@ -858,7 +869,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                 const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
                 supplierData = sd;
               }
-              const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64);
+              const { data: vTravelers } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", v.id);
+              const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64, (vTravelers || []) as any);
               const arrayBuffer = await pdfBlob.arrayBuffer();
               const uint8 = new Uint8Array(arrayBuffer);
               let binary = "";
@@ -984,7 +996,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name);
+            const { data: vTravelers2 } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", voucher.id);
+            const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name, null, undefined, (vTravelers2 || []) as any);
             const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
             const { error: uploadErr } = await supabase.storage
               .from("voucher-pdfs")

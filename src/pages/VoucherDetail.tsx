@@ -97,7 +97,8 @@ const buildVoucherPdfBlob = (
   voucher: any,
   supplierName?: string,
   supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
-  logoBase64?: string
+  logoBase64?: string,
+  travelers?: VoucherTraveler[]
 ): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
@@ -194,10 +195,15 @@ const buildVoucherPdfBlob = (
   const labelColW = 26;
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
+  const mainTraveler = travelers?.find(t => t.is_main_client);
+  const mainClientName = mainTraveler
+    ? `${mainTraveler.clients.first_name} ${mainTraveler.clients.last_name}`
+    : voucher.client_name || "";
+
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
   doc.setFont("helvetica", "normal");
-  doc.text(`1. ${removeDiacritics(voucher.client_name || "")}`, margin + labelColW, y);
+  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + labelColW, y);
   y += 5;
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
@@ -553,7 +559,7 @@ const VoucherDetail = () => {
     setIsDownloading(true);
     try {
       const logoBase64 = await getLogoBase64();
-      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64);
+      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64, travelers);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -621,7 +627,7 @@ const VoucherDetail = () => {
     try {
       // Generate PDF
       const logoBase64 = await getLogoBase64();
-      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64);
+      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64, travelers);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
