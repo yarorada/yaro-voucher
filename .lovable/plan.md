@@ -1,69 +1,102 @@
 
-# Integrace Moneta API — automatický import plateb
+# Plán: Správa úrovní přístupu a přepínač rozsahu dat
 
-## Co se udělá
+## Co bude přidáno
 
-Vytvoříme backend funkci, která bude periodicky nebo na vyžádání načítat transakce z Moneta API a automaticky je párovat s neuhrazenými splátkami smluv v CRM. Uživatel jen jednou zadá API token z Internet Banky.
+### 1. Přepínač "Rozsah dat" per uživatel
+Každý uživatel bude mít nové nastavení:
+- **Všechna data** — vidí záznamy všech kolegů (výchozí pro Admin a "Bez role")
+- **Pouze vlastní data** — vidí pouze záznamy, které sám vložil (výchozí pro Prodejce)
 
-## Architektura
+Toto nastavení bude uloženo v nové tabulce `user_data_scope` a správce ho může u každého uživatele přepnout v rozhraní `/admin/roles`.
 
-```text
-Internet Banka (Moneta)
-        |
-        | (Bearer Token)
-        v
- Backend funkce: moneta-fetch-transactions
-        |
-        | Porovnání s nezaplacenými splátkami
-        v
-  Tabulka bank_notifications
-        |
-        v
-  Dashboard → BankNotificationsCard (existující UI)
+### 2. Rozšíření sekce oprávnění v UI
+V rozbalitelné části každého uživatele přibude nová vizuální sekce **"Rozsah přístupu k datům"** s přepínačem, oddělenou od přepínačů sekcí.
+
+### 3. Vynucení rozsahu dat v kódu (hook)
+Nový hook `useDataScope` vrátí aktuálnímu přihlášenému uživateli jeho nastavení (`own` nebo `all`). Tento hook bude použit na místech, kde se data filtrují — primárně v komponentách se seznamy (Deals, Clients, Vouchers, Contracts).
+
+---
+
+## Technické změny
+
+### Databáze (migrace)
+Nová tabulka `user_data_scope`:
+```sql
+CREATE TABLE public.user_data_scope (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  scope text NOT NULL DEFAULT 'all', -- 'all' | 'own'
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id)
+);
+
+ALTER TABLE public.user_data_scope ENABLE ROW LEVEL SECURITY;
+
+-- Admins can manage all
+CREATE POLICY "Admins can manage data scope"
+  ON public.user_data_scope FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+
+-- Users can read own scope
+CREATE POLICY "Users can view own scope"
+  ON public.user_data_scope FOR SELECT
+  USING (auth.uid() = user_id);
 ```
 
-## Kroky implementace
+### Nový hook: `src/hooks/useDataScope.tsx`
+- Načte záznam z `user_data_scope` pro aktuálního uživatele
+- Vrátí `scope: 'all' | 'own'`
+- Prodejce bez záznamu = defaultně `'own'`, ostatní = `'all'`
 
-### 1. Uložení API tokenu (secret)
+### Rozšíření `useUserPermissionsForUser`
+- Přidání metod `getDataScope()` a `setDataScope(scope)` pro admin UI
 
-Uložíme Moneta API token jako bezpečný backend secret pod názvem `MONETA_API_TOKEN`. Uživatel ho zadá jednou přes Lovable secret manager.
+### Úprava `src/pages/AdminRoles.tsx`
+V rozbalitelné části každého uživatele přibude sekce:
 
-### 2. Nová backend funkce: `moneta-fetch-transactions`
+```
+┌─────────────────────────────────────────────┐
+│ Rozsah přístupu k datům                     │
+│                                             │
+│ ○ Všechna data   ● Pouze vlastní data       │
+│                                             │
+│ [popis aktuálního nastavení]                │
+└─────────────────────────────────────────────┘
+```
 
-Funkce bude:
-- Volat Moneta API endpoint pro transakce: `GET /accounts/{accountId}/transactions`
-- Filtrovat transakce za posledních N dní (configurable, default 7)
-- Pro každou transakci zkontrolovat, zda již není v `bank_notifications` (deduplicace podle ID transakce)
-- Nové transakce vložit do `bank_notifications` stejným způsobem jako existující webhook
+### Vynucení v seznamech dat
+Hook `useDataScope` bude použit na těchto stránkách:
+- `src/pages/Deals.tsx` — filtr deals
+- `src/pages/Clients.tsx` — filtr klientů
+- `src/pages/VouchersList.tsx` — filtr voucherů
+- `src/pages/Contracts.tsx` — filtr smluv
 
-Parametry dotazu:
-- `Authorization: Bearer {MONETA_API_TOKEN}`
-- `dateFrom`, `dateTo` pro filtrování období
-- Parsování polí: `amount`, `variableSymbol`, `transactionDate`, `counterAccountName`, `transactionNote`
+Když `scope === 'own'`, do Supabase dotazů bude přidán filtr `.eq('user_id', user.id)`. Když `scope === 'all'`, filtr se neaplikuje.
 
-### 3. Rozšíření tabulky `bank_notifications`
+---
 
-Přidat sloupec `external_transaction_id` (text, nullable) pro deduplicaci — aby při opakovaném importu tatáž transakce nebyla vložena dvakrát.
+## Výchozí hodnoty dle role
 
-### 4. UI — tlačítko "Načíst z Monety"
+| Role | Výchozí rozsah dat |
+|------|-------------------|
+| admin | Všechna data |
+| prodejce | Pouze vlastní data |
+| bez role | Všechna data |
 
-Do existující karty `BankNotificationsCard` (v dashboardu) přidat tlačítko **Načíst platby z Monety**, které ručně spustí funkci. Zároveň přidat nastavení čísla účtu (accountId) přímo v UI nastavení karty.
+Pokud v tabulce `user_data_scope` není záznam pro daného uživatele, aplikuje se výchozí hodnota dle role.
 
-### 5. Volitelné: Automatické spouštění
+---
 
-Pokud budete chtít, lze přidat automatické spouštění každý den (cron trigger přes existující `auto-triggered-emails` vzor).
+## Souhrn souborů ke změně / vytvoření
 
-## Technické poznámky
-
-- Moneta API sandbox je dostupný přes `https://api.moneta.cz` (přesná URL se ověří po přihlášení do portálu)
-- Po získání tokenu ověřím správné endpointy přes API portál
-- Párování plateb využije **existující logiku** z `bank-webhook` funkce (VS + amount matching) — žádná duplicitní logika
-- Token z Internet Banky je statický (nevyprší jako OAuth) — stačí ho jednou uložit
-
-## Co musíte udělat před implementací
-
-1. Přihlaste se do **Internet Banky Monety**
-2. Jděte do Nastavení → Integrace a API → aktivujte službu
-3. Vytvořte API token s oprávněním čtení transakcí
-4. Poznamenejte si **číslo účtu** (accountId) — bude potřeba jako parametr
-5. Až budete mít token, zadáte ho jako secret a já dokončím implementaci
+- `supabase/migrations/...` — nová tabulka `user_data_scope`
+- `src/hooks/useDataScope.tsx` — nový hook
+- `src/hooks/useUserPermissions.tsx` — rozšíření `useUserPermissionsForUser` o data scope
+- `src/pages/AdminRoles.tsx` — UI přepínač rozsahu dat
+- `src/pages/Deals.tsx` — aplikace data scope filtru
+- `src/pages/Clients.tsx` — aplikace data scope filtru
+- `src/pages/VouchersList.tsx` — aplikace data scope filtru
+- `src/pages/Contracts.tsx` — aplikace data scope filtru
