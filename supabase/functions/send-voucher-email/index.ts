@@ -142,12 +142,37 @@ const handler = async (req: Request): Promise<Response> => {
       supplier = supplierData;
     }
 
-    const mainClient = travelers?.find((t: any) => t.is_main_client);
-    const mainClientData = mainClient?.clients as any;
-    let clientEmail = mainClientData?.email;
-    let clientLastName = mainClientData?.last_name || "klient";
-    let clientFirstName = mainClientData?.first_name || "";
+    // Get orderer (lead_client_id) from the deal — that's who gets the email
+    let clientEmail: string | null = null;
+    let clientLastName = "klient";
+    let clientFirstName = "";
 
+    if (voucher.deal_id) {
+      const { data: deal } = await supabase
+        .from("deals").select("lead_client_id").eq("id", voucher.deal_id).single();
+      if (deal?.lead_client_id) {
+        const { data: orderer } = await supabase
+          .from("clients").select("email, first_name, last_name").eq("id", deal.lead_client_id).single();
+        if (orderer) {
+          clientEmail = orderer.email;
+          clientLastName = orderer.last_name || "klient";
+          clientFirstName = orderer.first_name || "";
+        }
+      }
+    }
+
+    // Fallback: main traveler on voucher
+    if (!clientEmail) {
+      const mainClient = travelers?.find((t: any) => t.is_main_client);
+      const mainClientData = mainClient?.clients as any;
+      if (mainClientData?.email) {
+        clientEmail = mainClientData.email;
+        clientLastName = mainClientData.last_name || "klient";
+        clientFirstName = mainClientData.first_name || "";
+      }
+    }
+
+    // Fallback: voucher.client_id
     if (!clientEmail && voucher.client_id) {
       const { data: fallbackClient } = await supabase
         .from("clients").select("email, first_name, last_name").eq("id", voucher.client_id).single();
