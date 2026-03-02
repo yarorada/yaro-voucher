@@ -126,16 +126,32 @@ export function CreateVouchersFromDeal({
     const newResults: typeof results = [];
 
     try {
-      // Fetch all travelers for this deal (lead first)
+      // Fetch all travelers for this deal ordered by order_index (first traveler = main client on voucher)
       const { data: dealTravelers } = await supabase
         .from("deal_travelers")
-        .select("client_id, is_lead_traveler, clients(id, first_name, last_name)")
+        .select("client_id, is_lead_traveler, order_index, clients(id, first_name, last_name)")
         .eq("deal_id", dealId)
-        .order("is_lead_traveler", { ascending: false });
+        .order("order_index", { ascending: true });
 
       const sortedTravelers = dealTravelers || [];
+
+      // First traveler (lowest order_index) is main client on voucher
+      const firstTraveler = sortedTravelers[0] || null;
+      const orderer = sortedTravelers.find((t: any) => t.is_lead_traveler) || null;
+
+      // If orderer exists and differs from first traveler, orderer goes as secondary client
+      // All others (not first, not orderer) are listed in other_travelers text field
+      const secondaryClientId = (orderer && firstTraveler && orderer.client_id !== firstTraveler.client_id)
+        ? orderer.client_id
+        : null;
+
       const otherTravelerNames = sortedTravelers
-        .filter((t: any) => !t.is_lead_traveler && t.clients)
+        .filter((t: any) => {
+          if (!t.clients) return false;
+          if (firstTraveler && t.client_id === firstTraveler.client_id) return false;
+          if (secondaryClientId && t.client_id === secondaryClientId) return false;
+          return true;
+        })
         .map((t: any) => `${t.clients.first_name} ${t.clients.last_name}`);
 
       // Build flights array from all flight services across all groups
@@ -263,15 +279,46 @@ export function CreateVouchersFromDeal({
 
           if (voucherError) throw voucherError;
 
-          // Insert voucher_travelers – lead first, then others
+          // Insert voucher_travelers:
+          // - First traveler (order_index asc) → is_main_client: true
+          // - Orderer (is_lead_traveler), if different from first → is_main_client: false
+          // - All other travelers → is_main_client: false
           if (sortedTravelers.length > 0) {
-            const travelerInserts = sortedTravelers
-              .filter((t: any) => t.clients)
-              .map((t: any) => ({
+            const travelerInserts: { voucher_id: string; client_id: string; is_main_client: boolean }[] = [];
+
+            // First traveler is always main client on voucher
+            if (firstTraveler?.clients) {
+              travelerInserts.push({
                 voucher_id: voucher.id,
-                client_id: t.client_id,
-                is_main_client: t.is_lead_traveler,
-              }));
+                client_id: firstTraveler.client_id,
+                is_main_client: true,
+              });
+            }
+
+            // Orderer as secondary client if different from first traveler
+            if (secondaryClientId && orderer?.clients) {
+              travelerInserts.push({
+                voucher_id: voucher.id,
+                client_id: secondaryClientId,
+                is_main_client: false,
+              });
+            }
+
+            // All other travelers (not first, not orderer)
+            sortedTravelers
+              .filter((t: any) => {
+                if (!t.clients) return false;
+                if (firstTraveler && t.client_id === firstTraveler.client_id) return false;
+                if (secondaryClientId && t.client_id === secondaryClientId) return false;
+                return true;
+              })
+              .forEach((t: any) => {
+                travelerInserts.push({
+                  voucher_id: voucher.id,
+                  client_id: t.client_id,
+                  is_main_client: false,
+                });
+              });
 
             if (travelerInserts.length > 0) {
               await supabase.from("voucher_travelers").insert(travelerInserts);
