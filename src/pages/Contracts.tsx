@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDataScope } from "@/hooks/useDataScope";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,8 @@ const formatDateShort = (dateString: string | null | undefined): string => {
 
 const Contracts = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { scope } = useDataScope();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -59,9 +63,9 @@ const Contracts = () => {
   const [contractToDelete, setContractToDelete] = useState<{ id: string; number: string } | null>(null);
 
   const { data: contracts, isLoading } = useQuery({
-    queryKey: ["travel_contracts"],
+    queryKey: ["travel_contracts", scope, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("travel_contracts")
         .select(`
           *,
@@ -80,6 +84,11 @@ const Contracts = () => {
         `)
         .order("created_at", { ascending: false });
 
+      if (scope === "own" && user?.id) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

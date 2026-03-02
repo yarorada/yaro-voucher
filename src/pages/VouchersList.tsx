@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useDataScope } from "@/hooks/useDataScope";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -53,6 +55,8 @@ interface Voucher {
 
 const VouchersList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { scope } = useDataScope();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [filteredVouchers, setFilteredVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +70,7 @@ const VouchersList = () => {
 
   useEffect(() => {
     fetchVouchers();
-  }, []);
+  }, [scope, user?.id]);
 
   useEffect(() => {
     filterVouchers();
@@ -75,7 +79,7 @@ const VouchersList = () => {
   const fetchVouchers = async () => {
     try {
       // Fetch vouchers
-      const { data: vouchersData, error: vouchersError } = await supabase
+      let query = supabase
         .from("vouchers")
         .select(
           `
@@ -94,7 +98,11 @@ const VouchersList = () => {
         )
         .order("created_at", { ascending: false });
 
-      if (vouchersError) throw vouchersError;
+      if (scope === "own" && user?.id) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data: vouchersData, error: vouchersError } = await query;
 
       // Fetch profiles to get creator emails
       const { data: profilesData, error: profilesError } = await supabase

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, User, ChevronDown, ChevronUp } from "lucide-react";
+import { ShieldCheck, User, ChevronDown, ChevronUp, Database } from "lucide-react";
 import { ALL_SECTIONS, useUserPermissionsForUser, SectionKey } from "@/hooks/useUserPermissions";
 
 interface Profile {
@@ -29,7 +29,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, assigning }: {
   assigning: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const { loading, getEffective, setOverride, defaults, overrides } = useUserPermissionsForUser(profile.id);
+  const { loading, getEffective, setOverride, defaults, overrides, getDataScope, setDataScope, dataScopeLoading } = useUserPermissionsForUser(profile.id);
 
   return (
     <div className="rounded-lg border border-border bg-muted/20">
@@ -110,6 +110,40 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, assigning }: {
               })}
             </div>
           )}
+
+          {/* Data scope section */}
+          <div className="mt-4 rounded-md border border-border bg-background p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Database className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-medium">Rozsah přístupu k datům</p>
+            </div>
+            {dataScopeLoading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <div className="flex gap-4">
+                {[
+                  { value: "all", label: "Všechna data", desc: "Vidí záznamy všech kolegů" },
+                  { value: "own", label: "Pouze vlastní data", desc: "Vidí jen záznamy, které sám vložil" },
+                ].map((opt) => {
+                  const current = getDataScope();
+                  return (
+                    <label key={opt.value} className={`flex-1 cursor-pointer rounded-md border px-3 py-2 transition-colors ${current === opt.value ? "border-primary bg-primary/5" : "border-border"}`}>
+                      <input
+                        type="radio"
+                        className="sr-only"
+                        name={`scope-${profile.id}`}
+                        value={opt.value}
+                        checked={current === opt.value}
+                        onChange={() => setDataScope(opt.value)}
+                      />
+                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

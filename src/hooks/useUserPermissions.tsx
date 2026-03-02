@@ -134,5 +134,38 @@ export function useUserPermissionsForUser(userId: string) {
     }
   };
 
-  return { loading, overrides, userRole, getEffective, setOverride, defaults, refetch: fetchData };
+  // Data scope
+  const [dataScope, setDataScopeState] = useState<string | null>(null);
+  const [dataScopeLoading, setDataScopeLoading] = useState(true);
+
+  const fetchDataScope = async () => {
+    const { data } = await (supabase as any)
+      .from("user_data_scope")
+      .select("scope")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setDataScopeState(data?.scope ?? null);
+    setDataScopeLoading(false);
+  };
+
+  useEffect(() => {
+    if (userId) fetchDataScope();
+  }, [userId]);
+
+  const getDataScope = (): string => {
+    if (dataScope !== null) return dataScope;
+    // role default
+    const roleDefaults: Record<string, string> = { admin: "all", prodejce: "own", none: "all" };
+    return roleDefaults[userRole ?? "none"] ?? "all";
+  };
+
+  const setDataScope = async (scope: string) => {
+    await (supabase as any).from("user_data_scope").upsert(
+      { user_id: userId, scope },
+      { onConflict: "user_id" }
+    );
+    setDataScopeState(scope);
+  };
+
+  return { loading, overrides, userRole, getEffective, setOverride, defaults, refetch: fetchData, getDataScope, setDataScope, dataScopeLoading };
 }

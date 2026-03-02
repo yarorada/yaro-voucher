@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useDataScope } from "@/hooks/useDataScope";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Copy, MoreHorizontal, Filter, Trash2, FileText, ScrollText, X } from "lucide-react";
@@ -73,6 +75,8 @@ const formatDateShort = (d: string | null) => {
 const Deals = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { scope } = useDataScope();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +98,7 @@ const Deals = () => {
 
   useEffect(() => {
     fetchDeals();
-  }, []);
+  }, [scope, user?.id]);
 
   useEffect(() => {
     filterDeals();
@@ -102,7 +106,7 @@ const Deals = () => {
 
   const fetchDeals = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("deals")
         .select(`
           id,
@@ -136,6 +140,12 @@ const Deals = () => {
           deal_services (service_type, service_name)
         `)
         .order("created_at", { ascending: false });
+
+      if (scope === "own" && user?.id) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setDeals(data || []);
