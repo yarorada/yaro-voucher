@@ -149,22 +149,24 @@ const buildVoucherPdfBlob = (
     doc.text("SERVICE PROVIDER", margin, y);
     y += 4.5;
 
-    // Line 1: Name bold + Address normal
+    // Line 1: Name bold
     const nameText = removeDiacritics(supplierName);
-    const addrText = supplierData?.address ? `, ${removeDiacritics(supplierData.address)}` : "";
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
     doc.text(nameText, margin, y);
-    if (addrText) {
-      const nameW = doc.getTextWidth(nameText);
+    y += 5;
+
+    // Line 2 (optional): Address
+    if (supplierData?.address) {
+      const addrText = removeDiacritics(supplierData.address);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(30, 41, 59);
-      const addrLines = doc.splitTextToSize(addrText, contentW - nameW);
-      doc.text(addrLines[0] || addrText, margin + nameW, y);
+      const addrLines = doc.splitTextToSize(addrText, contentW * 0.6);
+      doc.text(addrLines, margin, y);
+      y += addrLines.length * 4.5;
     }
-    y += 5;
 
     // Line 2: Contact, Phone, Email
     const contactParts: string[] = [];
