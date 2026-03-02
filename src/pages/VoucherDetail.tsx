@@ -97,7 +97,7 @@ const buildVoucherPdfBlob = (
   voucher: any,
   supplierName?: string,
   supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
-  logoBase64?: string,
+  logoInfo?: { base64: string; w: number; h: number },
   travelers?: VoucherTraveler[]
 ): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
@@ -116,12 +116,13 @@ const buildVoucherPdfBlob = (
   // ── HEADER ──
   y = margin;
 
-  // Logo on left — 30mm wide, correct aspect ratio (1165×826 ≈ 1.41:1) → ~21mm tall
+  // Logo on left — 30mm wide, correct aspect ratio derived from actual image dimensions
   const logoW = 30;
-  const logoH = logoW / (1165 / 826);
-  if (logoBase64) {
+  const aspectRatio = logoInfo ? (logoInfo.w / logoInfo.h) : (1165 / 826);
+  const logoH = logoW / aspectRatio;
+  if (logoInfo?.base64) {
     try {
-      doc.addImage(logoBase64, "PNG", margin, y, logoW, logoH, undefined, "NONE");
+      doc.addImage(logoInfo.base64, "PNG", margin, y, logoW, logoH, undefined, "NONE");
     } catch { /* skip */ }
   }
 
@@ -543,14 +544,22 @@ const VoucherDetail = () => {
     }
   };
 
-  const getLogoBase64 = useCallback(async (): Promise<string | undefined> => {
+  const getLogoBase64 = useCallback(async (): Promise<{ base64: string; w: number; h: number } | undefined> => {
     try {
       const res = await fetch(yaroLogoWide);
       const ab = await res.arrayBuffer();
       const bytes = new Uint8Array(ab);
       let binary = "";
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      return btoa(binary);
+      const base64 = btoa(binary);
+      // Get real dimensions via Image element
+      const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 1165, h: 826 });
+        img.src = yaroLogoWide;
+      });
+      return { base64, w: dims.w, h: dims.h };
     } catch { return undefined; }
   }, []);
 
@@ -558,8 +567,8 @@ const VoucherDetail = () => {
     if (!voucher) return;
     setIsDownloading(true);
     try {
-      const logoBase64 = await getLogoBase64();
-      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64, travelers);
+      const logoInfo = await getLogoBase64();
+      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -626,8 +635,8 @@ const VoucherDetail = () => {
     setSending(true);
     try {
       // Generate PDF
-      const logoBase64 = await getLogoBase64();
-      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoBase64, travelers);
+      const logoInfo = await getLogoBase64();
+      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";

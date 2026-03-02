@@ -253,13 +253,18 @@ export function CreateVouchersFromDeal({
             }
           }
 
-          // Create voucher
+          // Create voucher — client_name = first traveler's name, client_id = first traveler's id
+          const mainClientId = firstTraveler?.client_id || clientId;
+          const mainClientName = firstTraveler?.clients
+            ? `${(firstTraveler.clients as any).first_name} ${(firstTraveler.clients as any).last_name}`
+            : clientName;
+
           const { data: voucher, error: voucherError } = await supabase
             .from("vouchers")
             .insert({
               deal_id: dealId,
-              client_id: clientId,
-              client_name: clientName,
+              client_id: mainClientId,
+              client_name: mainClientName,
               supplier_id: group.supplierId,
               services: translatedServices,
               issue_date: new Date().toISOString().split("T")[0],
