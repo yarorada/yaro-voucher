@@ -158,7 +158,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    if (!clientEmail) throw new Error("Client email not found");
+    // If client email not found, skip sending to client (don't throw)
+    const noClientEmail = !clientEmail;
 
     const { dateFrom, dateTo } = getTravelDateRange(voucher.services || []);
     const hotelName = voucher.hotel_name || "N/A";
@@ -204,8 +205,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResults: { recipient: string; success: boolean; id?: string; error?: string }[] = [];
 
-    // Send to CLIENT (unless skipClient is true)
-    if (!skipClient) {
+    // Send to CLIENT (unless skipClient is true or no client email)
+    if (!skipClient && !noClientEmail) {
       const clientEmailText = customEmailBody || (clientTemplate
         ? replacePlaceholders(clientTemplate.body, placeholderVars)
         : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName));
