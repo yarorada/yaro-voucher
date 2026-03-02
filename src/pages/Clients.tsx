@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useDataScope } from "@/hooks/useDataScope";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +91,8 @@ function getExpiryBadgeClass(status: ExpiryStatus): string {
 }
 
 const Clients = () => {
+  const { user } = useAuth();
+  const { scope } = useDataScope();
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,14 +126,20 @@ const Clients = () => {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [scope, user?.id]);
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("clients")
         .select("*")
         .order("last_name", { ascending: true });
+
+      if (scope === "own" && user?.id) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setClients((data as unknown as Client[]) || []);
