@@ -35,7 +35,7 @@ import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { useSidebar } from "@/components/ui/sidebar";
 
 const allMenuItems = [
-  { title: "Domů", url: "/", icon: Home, prodejce: true },
+  { title: "Přehled", url: "/", icon: Home, prodejce: true },
   { title: "Obchodní případy", url: "/deals", icon: Briefcase, prodejce: true },
   { title: "Smlouvy", url: "/contracts", icon: FileSignature, prodejce: true },
   { title: "Vouchery", url: "/vouchers", icon: FileText, prodejce: true },
@@ -58,6 +58,7 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
 
   const menuItems = allMenuItems.filter(item => {
+    if (item.url === "/") return true;
     const key = item.url.replace("/", "");
     return canAccess(key as any);
   });
