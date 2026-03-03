@@ -66,13 +66,14 @@ Deno.serve(async (req) => {
 
     const ibanClean = MONETA_ACCOUNT_ID.replace(/\s/g, '');
     const ibanMatch = ibanClean.match(/CZ\d{2}(\d{4})(\d{6})(\d{10})/);
-    const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean;
-    const bankCode = ibanMatch ? ibanMatch[2] : '';
+    const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean.split('/')[0];
+    const bankCode = ibanMatch ? ibanMatch[2] : (ibanClean.includes('/') ? ibanClean.split('/')[1] : '0600');
 
     const accountCandidates = [
-      ibanClean,
-      bareAccountNumber,
-      `${bareAccountNumber}/${bankCode}`,
+      ibanClean,                              // as-is (e.g. 304408071/0600 or full IBAN)
+      `${bareAccountNumber}/${bankCode}`,     // number/bankcode
+      bareAccountNumber,                      // bare number
+      encodeURIComponent(ibanClean),          // URL-encoded
     ].filter((v, i, a) => v && a.indexOf(v) === i);
 
     // Auth headers variants: Bearer token and API-Key header (Moneta uses both depending on product)
