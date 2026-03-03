@@ -25,9 +25,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user is authenticated
-    const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await supabaseAuth.auth.getUser(token);
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
     if (authError || !authData?.user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -35,11 +34,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const MONETA_API_TOKEN = Deno.env.get("MONETA_API_TOKEN");
+    const MONETA_CLIENT_ID = Deno.env.get("MONETA_CLIENT_ID");
+    const MONETA_CLIENT_SECRET = Deno.env.get("MONETA_CLIENT_SECRET");
     const MONETA_ACCOUNT_ID = Deno.env.get("MONETA_ACCOUNT_ID");
+    // Legacy support: if no client credentials, try direct token
+    const MONETA_API_TOKEN = Deno.env.get("MONETA_API_TOKEN");
 
-    if (!MONETA_API_TOKEN || !MONETA_ACCOUNT_ID) {
-      return new Response(JSON.stringify({ error: 'Moneta API token nebo Account ID není nastaveno' }), {
+    if (!MONETA_ACCOUNT_ID) {
+      return new Response(JSON.stringify({ error: 'MONETA_ACCOUNT_ID není nastaveno' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -55,90 +57,152 @@ Deno.serve(async (req) => {
     const dateTo = new Date();
     const dateFrom = new Date();
     dateFrom.setDate(dateTo.getDate() - daysBack);
-
     const dateFromStr = dateFrom.toISOString().split('T')[0];
     const dateToStr = dateTo.toISOString().split('T')[0];
 
-    console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr} for account ${MONETA_ACCOUNT_ID}`);
+    console.log(`Fetching Moneta transactions from ${dateFromStr} to ${dateToStr}`);
 
-    // Optional: allow overriding the exact base URL via secret MONETA_BASE_URL
-    const MONETA_BASE_URL = Deno.env.get("MONETA_BASE_URL");
+    // Step 1: Get OAuth2 access token
+    let accessToken: string | null = null;
 
+    if (MONETA_CLIENT_ID && MONETA_CLIENT_SECRET) {
+      console.log('Attempting OAuth2 client_credentials flow...');
+      const tokenUrl = 'https://api.moneta.cz/auth/oauth/v2/token';
+      
+      // Try client_credentials grant
+      const tokenBody = new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: MONETA_CLIENT_ID,
+        client_secret: MONETA_CLIENT_SECRET,
+        scope: 'aisp',
+      });
+
+      try {
+        const tokenResp = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenBody.toString(),
+        });
+
+        console.log(`OAuth2 token response: ${tokenResp.status}`);
+        
+        if (tokenResp.ok) {
+          const tokenData = await tokenResp.json();
+          accessToken = tokenData.access_token;
+          console.log('Got OAuth2 access token successfully');
+        } else {
+          const errText = await tokenResp.text();
+          console.log(`OAuth2 token error: ${errText}`);
+          
+          // Try with MONETA_API_TOKEN as refresh_token if available
+          if (MONETA_API_TOKEN) {
+            const refreshBody = new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: MONETA_CLIENT_ID,
+              client_secret: MONETA_CLIENT_SECRET,
+              refresh_token: MONETA_API_TOKEN,
+            });
+            const refreshResp = await fetch(tokenUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: refreshBody.toString(),
+            });
+            console.log(`OAuth2 refresh_token response: ${refreshResp.status}`);
+            if (refreshResp.ok) {
+              const refreshData = await refreshResp.json();
+              accessToken = refreshData.access_token;
+              console.log('Got access token via refresh_token');
+            }
+          }
+        }
+      } catch (e) {
+        console.log(`OAuth2 token fetch error: ${e}`);
+      }
+    }
+
+    // Fallback: use MONETA_API_TOKEN directly as Bearer token
+    if (!accessToken && MONETA_API_TOKEN) {
+      console.log('No OAuth2 token obtained, using MONETA_API_TOKEN directly as Bearer');
+      accessToken = MONETA_API_TOKEN;
+    }
+
+    if (!accessToken) {
+      return new Response(JSON.stringify({
+        error: 'Nelze získat přístupový token Moneta API',
+        hint: 'Nastavte MONETA_CLIENT_ID a MONETA_CLIENT_SECRET z Moneta API portálu (apiportal.moneta.cz), nebo MONETA_API_TOKEN jako přímý Bearer token.',
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Step 2: Call transactions API
+    // Parse account ID - handle IBAN, number/bankcode, or bare number
     const ibanClean = MONETA_ACCOUNT_ID.replace(/\s/g, '');
     const ibanMatch = ibanClean.match(/CZ\d{2}(\d{4})(\d{6})(\d{10})/);
     const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean.split('/')[0];
     const bankCode = ibanMatch ? ibanMatch[2] : (ibanClean.includes('/') ? ibanClean.split('/')[1] : '0600');
 
-    const accountCandidates = [
-      ibanClean,                              // as-is (e.g. 304408071/0600 or full IBAN)
-      `${bareAccountNumber}/${bankCode}`,     // number/bankcode
-      bareAccountNumber,                      // bare number
-      encodeURIComponent(ibanClean),          // URL-encoded
-    ].filter((v, i, a) => v && a.indexOf(v) === i);
+    const authHeaders = { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' };
 
-    // Auth headers variants: Bearer token and API-Key header (Moneta uses both depending on product)
-    const headerVariants = [
-      { 'Authorization': `Bearer ${MONETA_API_TOKEN}`, 'Accept': 'application/json' },
-      { 'Authorization': `Token ${MONETA_API_TOKEN}`, 'Accept': 'application/json' },
-      { 'X-API-Key': MONETA_API_TOKEN, 'Accept': 'application/json' },
-      { 'apikey': MONETA_API_TOKEN, 'Accept': 'application/json' },
-    ];
-
-    // If user provided explicit base URL, try only that
+    // Transaction endpoint candidates (most likely first based on Moneta PSD2/AISP docs)
+    const MONETA_BASE_URL = Deno.env.get("MONETA_BASE_URL");
     const basesToTry = MONETA_BASE_URL
       ? [MONETA_BASE_URL.replace(/\/$/, '')]
       : [
-          'https://api.moneta.cz/openbanking/v1',
+          'https://api.moneta.cz/aisp/v3',
+          'https://api.moneta.cz/aisp/v2',
           'https://api.moneta.cz/aisp/v1',
-          'https://api.moneta.cz/v1',
-          'https://api.moneta.cz/psd2/v1',
-          'https://api.moneta.cz/business/v1',
-          'https://api.moneta.cz/corporate/v1',
+          'https://api.moneta.cz/openbanking/v3',
+          'https://api.moneta.cz/openbanking/v2',
+          'https://api.moneta.cz/openbanking/v1',
         ];
 
-    const urlPatterns: Array<{url: string, headers: Record<string,string>}> = [];
-    for (const base of basesToTry) {
-      for (const accountId of accountCandidates) {
-        for (const hdrs of headerVariants.slice(0, MONETA_BASE_URL ? headerVariants.length : 1)) {
-          urlPatterns.push({ url: `${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`, headers: hdrs });
-        }
-        urlPatterns.push({ url: `${base}/my/accounts/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`, headers: headerVariants[0] });
-      }
-    }
+    const accountCandidates = [
+      `${bareAccountNumber}/${bankCode}`,
+      ibanClean,
+      bareAccountNumber,
+    ].filter((v, i, a) => v && a.indexOf(v) === i);
 
     let monetaResponse: Response | null = null;
     let monetaUrl = '';
 
-    for (const { url, headers } of urlPatterns) {
-      console.log(`Trying: ${url}`);
-      try {
-        const resp = await fetch(url, { headers });
-        console.log(`  → ${resp.status}`);
-        if (resp.ok) {
-          monetaResponse = resp;
-          monetaUrl = url;
-          break;
-        } else if (resp.status === 401 || resp.status === 403) {
-          const errText = await resp.text();
-          return new Response(JSON.stringify({
-            error: `Moneta API chyba: ${resp.status}`,
-            detail: `URL: ${url} — ${errText}`,
-            hint: 'Token MONETA_API_TOKEN je neplatný nebo vypršel. Obnovte token v George internetovém bankovnictví nebo na apiportal.moneta.cz.',
-          }), {
-            status: 502,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+    for (const base of basesToTry) {
+      for (const accountId of accountCandidates) {
+        const url = `${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
+        console.log(`Trying: ${url}`);
+        try {
+          const resp = await fetch(url, { headers: authHeaders });
+          console.log(`  → ${resp.status}`);
+          if (resp.ok) {
+            monetaResponse = resp;
+            monetaUrl = url;
+            break;
+          } else if (resp.status === 401 || resp.status === 403) {
+            const errText = await resp.text();
+            return new Response(JSON.stringify({
+              error: `Moneta API autorizační chyba: ${resp.status}`,
+              detail: errText,
+              hint: 'Access token je neplatný nebo nemá oprávnění AISP. Zkontrolujte MONETA_CLIENT_ID a MONETA_CLIENT_SECRET na apiportal.moneta.cz.',
+            }), {
+              status: 502,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (e) {
+          console.log(`  → Error: ${e}`);
         }
-      } catch (e) {
-        console.log(`  → Error: ${e}`);
       }
+      if (monetaResponse) break;
     }
 
     if (!monetaResponse) {
       return new Response(JSON.stringify({
-        error: 'Moneta API: žádný endpoint nefunguje (všechny vrátily 404)',
-        detail: `Zkontrolujte MONETA_ACCOUNT_ID (IBAN: ${ibanClean}) a MONETA_API_TOKEN. Pokud znáte přesnou URL z dokumentace, nastavte secret MONETA_BASE_URL (např. https://api.moneta.cz/openbanking/v1).`,
-        hint: 'Přihlaste se do George IB > Nastavení > Napojení třetích stran / API. Tam byste měli vidět URL endpointu. Případně kontaktujte Moneta na qaapi@moneta.cz.',
+        error: 'Moneta API: žádný endpoint nefunguje',
+        detail: `Zkontrolujte MONETA_ACCOUNT_ID (${ibanClean}) a přístupový token. Pokud znáte přesnou URL endpointu, nastavte secret MONETA_BASE_URL.`,
+        hint: 'Přihlaste se na apiportal.moneta.cz a ověřte, jaký base URL a scopes jsou přiděleny vaší aplikaci.',
+        tried_bases: basesToTry,
+        tried_accounts: accountCandidates,
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -148,15 +212,11 @@ Deno.serve(async (req) => {
     console.log(`Working Moneta URL: ${monetaUrl}`);
 
     const monetaData = await monetaResponse.json();
-    
-    // Moneta API returns transactions in transactions array
     const rawTransactions = monetaData?.transactions || monetaData?.data || [];
     console.log(`Got ${rawTransactions.length} transactions from Moneta`);
 
     // Filter only credit (incoming) transactions
     const creditTransactions = rawTransactions.filter((t: any) => {
-      const amount = t.amount?.value ?? t.amount ?? t.creditDebitIndicator;
-      // Accept transactions where amount > 0 or creditDebitIndicator = 'CRDT'
       if (t.creditDebitIndicator === 'CRDT') return true;
       if (typeof t.amount === 'object' && t.amount?.value > 0) return true;
       if (typeof t.amount === 'number' && t.amount > 0) return true;
@@ -170,48 +230,33 @@ Deno.serve(async (req) => {
     const results: any[] = [];
 
     for (const tx of creditTransactions) {
-      // Extract transaction ID for deduplication
       const externalId = tx.transactionId || tx.id || tx.entryReference || null;
 
-      // Skip if already exists
       if (externalId) {
         const { data: existing } = await supabase
           .from('bank_notifications')
           .select('id')
           .eq('external_transaction_id', externalId)
           .single();
-        
-        if (existing) {
-          skipped++;
-          continue;
-        }
+        if (existing) { skipped++; continue; }
       }
 
-      // Parse fields
       const amount = typeof tx.amount === 'object' ? Math.abs(tx.amount.value ?? 0) : Math.abs(tx.amount ?? 0);
-      const variableSymbol = tx.remittanceInformation?.variableSymbol 
-        || tx.variableSymbol 
+      const variableSymbol = tx.remittanceInformation?.variableSymbol
+        || tx.variableSymbol
         || tx.details?.variableSymbol
         || extractVS(tx.remittanceInformation?.unstructured || tx.additionalTransactionInformation || '');
-      
+
       const txDate = tx.bookingDate || tx.valueDate || tx.transactionDate || null;
       const senderName = tx.counterParty?.name || tx.creditorName || tx.debtorName || tx.counterpartName || null;
-      const senderAccount = tx.counterParty?.accountNumber 
-        || (tx.counterParty?.iban) 
-        || tx.creditorAccount?.iban 
-        || null;
-      const note = tx.remittanceInformation?.unstructured 
-        || tx.additionalTransactionInformation 
-        || tx.transactionNote 
-        || null;
+      const senderAccount = tx.counterParty?.accountNumber || tx.counterParty?.iban || tx.creditorAccount?.iban || null;
+      const note = tx.remittanceInformation?.unstructured || tx.additionalTransactionInformation || tx.transactionNote || null;
 
       if (!amount || amount <= 0) continue;
 
-      // Match against unpaid payments (same logic as bank-webhook)
       let matchedPaymentId: string | null = null;
       let matchedContractId: string | null = null;
 
-      // Strategy 1: Match by VS
       if (variableSymbol) {
         const vs = variableSymbol.replace(/\D/g, '');
         const { data: contracts } = await supabase
@@ -240,7 +285,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Strategy 2: Fallback by amount
       if (!matchedPaymentId) {
         const { data: allUnpaid } = await supabase
           .from('contract_payments')
@@ -257,7 +301,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Insert notification
       const { data: notification, error: insertError } = await supabase
         .from('bank_notifications')
         .insert({
@@ -278,12 +321,7 @@ Deno.serve(async (req) => {
         console.error("Insert error:", insertError);
       } else {
         inserted++;
-        results.push({
-          id: notification?.id,
-          amount,
-          vs: variableSymbol,
-          matched: !!matchedPaymentId,
-        });
+        results.push({ id: notification?.id, amount, vs: variableSymbol, matched: !!matchedPaymentId });
       }
     }
 
@@ -309,10 +347,9 @@ Deno.serve(async (req) => {
   }
 });
 
-// Helper: extract variable symbol from free text
 function extractVS(text: string): string | null {
   if (!text) return null;
-  const match = text.match(/VS[:\s]*(\d{1,10})/i) 
+  const match = text.match(/VS[:\s]*(\d{1,10})/i)
     || text.match(/variabiln[ií]\s+symbol[:\s]*(\d{1,10})/i)
     || text.match(/\bVS\b[:\s]*(\d+)/);
   return match ? match[1] : null;
