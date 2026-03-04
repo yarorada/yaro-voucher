@@ -137,7 +137,6 @@ Deno.serve(async (req) => {
     }
 
     // Step 2: Call transactions API
-    // Parse account ID - handle IBAN, number/bankcode, or bare number
     const ibanClean = MONETA_ACCOUNT_ID.replace(/\s/g, '');
     const ibanMatch = ibanClean.match(/CZ\d{2}(\d{4})(\d{6})(\d{10})/);
     const bareAccountNumber = ibanMatch ? ibanMatch[3] : ibanClean.split('/')[0];
@@ -145,7 +144,6 @@ Deno.serve(async (req) => {
 
     const authHeaders = { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' };
 
-    // Transaction endpoint candidates (most likely first based on Moneta PSD2/AISP docs)
     const MONETA_BASE_URL = Deno.env.get("MONETA_BASE_URL");
     const basesToTry = MONETA_BASE_URL
       ? [MONETA_BASE_URL.replace(/\/$/, '')]
@@ -158,17 +156,57 @@ Deno.serve(async (req) => {
           'https://api.moneta.cz/openbanking/v1',
         ];
 
+    // Build account ID candidates including IBAN variants
     const accountCandidates = [
+      ibanClean, // full IBAN if provided
       `${bareAccountNumber}/${bankCode}`,
-      ibanClean,
       bareAccountNumber,
     ].filter((v, i, a) => v && a.indexOf(v) === i);
 
     let monetaResponse: Response | null = null;
     let monetaUrl = '';
+    let workingBase = '';
 
+    // Step 2a: Try to discover account via /accounts endpoint first
     for (const base of basesToTry) {
-      for (const accountId of accountCandidates) {
+      try {
+        const accountsUrl = `${base}/accounts`;
+        console.log(`Trying accounts discovery: ${accountsUrl}`);
+        const accountsResp = await fetch(accountsUrl, { headers: authHeaders });
+        console.log(`  → ${accountsResp.status}`);
+        if (accountsResp.ok) {
+          const accountsData = await accountsResp.json();
+          console.log(`Accounts response: ${JSON.stringify(accountsData).slice(0, 500)}`);
+          workingBase = base;
+          // Extract account IDs from response
+          const accounts = accountsData?.accounts || accountsData?.data || [];
+          for (const acc of accounts) {
+            const discoveredId = acc.id || acc.accountId || acc.resourceId || acc.iban;
+            if (discoveredId) accountCandidates.unshift(discoveredId);
+          }
+          break;
+        } else if (accountsResp.status === 401 || accountsResp.status === 403) {
+          const errText = await accountsResp.text();
+          return new Response(JSON.stringify({
+            error: `Moneta API autorizační chyba: ${accountsResp.status}`,
+            detail: errText,
+            hint: 'Access token je neplatný nebo nemá oprávnění AISP. Zkontrolujte MONETA_CLIENT_ID a MONETA_CLIENT_SECRET na apiportal.moneta.cz.',
+          }), {
+            status: 502,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (e) {
+        console.log(`  → Error: ${e}`);
+      }
+    }
+
+    // Step 2b: Try transaction endpoints
+    const basesForTx = workingBase ? [workingBase, ...basesToTry.filter(b => b !== workingBase)] : basesToTry;
+    const uniqueAccountCandidates = [...new Set(accountCandidates)];
+
+    for (const base of basesForTx) {
+      for (const accountId of uniqueAccountCandidates) {
         const url = `${base}/accounts/${encodeURIComponent(accountId)}/transactions?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
         console.log(`Trying: ${url}`);
         try {
@@ -198,11 +236,11 @@ Deno.serve(async (req) => {
 
     if (!monetaResponse) {
       return new Response(JSON.stringify({
-        error: 'Moneta API: žádný endpoint nefunguje',
-        detail: `Zkontrolujte MONETA_ACCOUNT_ID (${ibanClean}) a přístupový token. Pokud znáte přesnou URL endpointu, nastavte secret MONETA_BASE_URL.`,
-        hint: 'Přihlaste se na apiportal.moneta.cz a ověřte, jaký base URL a scopes jsou přiděleny vaší aplikaci.',
+        error: 'Moneta API: žádný endpoint nefunguje (všechny vrátily 404)',
+        detail: `Zkontrolujte MONETA_ACCOUNT_ID (${ibanClean}) a MONETA_API_TOKEN. Pokud znáte přesnou URL z dokumentace, nastavte secret MONETA_BASE_URL (např. https://api.moneta.cz/openbanking/v1).`,
+        hint: 'Přihlaste se do George IB > Nastavení > Napojení třetích stran / API. Tam byste měli vidět URL endpointu. Případně kontaktujte Moneta na qaapi@moneta.cz.',
         tried_bases: basesToTry,
-        tried_accounts: accountCandidates,
+        tried_accounts: uniqueAccountCandidates,
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
