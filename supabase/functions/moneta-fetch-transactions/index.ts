@@ -151,9 +151,15 @@ Deno.serve(async (req) => {
           'https://api.moneta.cz/aisp/v3',
           'https://api.moneta.cz/aisp/v2',
           'https://api.moneta.cz/aisp/v1',
+          'https://api.moneta.cz/api/aisp/v3',
+          'https://api.moneta.cz/api/aisp/v2',
+          'https://api.moneta.cz/api/aisp/v1',
           'https://api.moneta.cz/openbanking/v3',
           'https://api.moneta.cz/openbanking/v2',
           'https://api.moneta.cz/openbanking/v1',
+          'https://api.moneta.cz/api/v3',
+          'https://api.moneta.cz/api/v2',
+          'https://api.moneta.cz/api/v1',
         ];
 
     // Build account ID candidates including IBAN variants
