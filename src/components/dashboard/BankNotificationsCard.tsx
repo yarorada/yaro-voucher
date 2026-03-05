@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck, RefreshCw } from "lucide-react";
+import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck, RefreshCw, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 const WEBHOOK_URL = "https://jwaskoeqryjdjrdwupoi.supabase.co/functions/v1/bank-webhook";
@@ -65,6 +65,27 @@ export const BankNotificationsCard = () => {
     },
     onError: (err: any) => {
       toast.error(err.message || "Chyba při načítání z Monety");
+    },
+  });
+
+  const amnissMutation = useMutation({
+    mutationFn: async (daysBack: number = 7) => {
+      const response = await supabase.functions.invoke("amnis-fetch-transactions", {
+        body: { daysBack },
+      });
+      if (response.error) throw response.error;
+      if (!response.data?.success) throw new Error(response.data?.error || "Chyba při importu z Amnis");
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["bank-notifications-pending"] });
+      const msg = data.inserted > 0
+        ? `Načteno ${data.inserted} nových plateb z Amnis`
+        : "Žádné nové platby z Amnis k načtení";
+      toast.success(msg);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Chyba při načítání z Amnis");
     },
   });
 
@@ -164,6 +185,21 @@ export const BankNotificationsCard = () => {
                 Moneta
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 px-2"
+                onClick={() => amnissMutation.mutate(7)}
+                disabled={amnissMutation.isPending}
+                title="Načíst platby z Amnis za posledních 7 dní"
+              >
+                {amnissMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Building2 className="h-3.5 w-3.5" />
+                )}
+                Amnis
+              </Button>
+              <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
@@ -195,6 +231,20 @@ export const BankNotificationsCard = () => {
                     <RefreshCw className="h-3.5 w-3.5" />
                   )}
                   Načíst z Monety
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1"
+                  onClick={() => amnissMutation.mutate(7)}
+                  disabled={amnissMutation.isPending}
+                >
+                  {amnissMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Building2 className="h-3.5 w-3.5" />
+                  )}
+                  Načíst z Amnis
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setSetupOpen(true)}>
                   <Settings className="h-3.5 w-3.5" />
