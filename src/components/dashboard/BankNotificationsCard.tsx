@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck, RefreshCw } from "lucide-react";
+import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck, RefreshCw, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 const WEBHOOK_URL = "https://jwaskoeqryjdjrdwupoi.supabase.co/functions/v1/bank-webhook";
