@@ -185,6 +185,21 @@ export const BankNotificationsCard = () => {
                 Moneta
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 px-2"
+                onClick={() => amnissMutation.mutate(7)}
+                disabled={amnissMutation.isPending}
+                title="Načíst platby z Amnis za posledních 7 dní"
+              >
+                {amnissMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Building2 className="h-3.5 w-3.5" />
+                )}
+                Amnis
+              </Button>
+              <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
@@ -216,6 +231,20 @@ export const BankNotificationsCard = () => {
                     <RefreshCw className="h-3.5 w-3.5" />
                   )}
                   Načíst z Monety
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1"
+                  onClick={() => amnissMutation.mutate(7)}
+                  disabled={amnissMutation.isPending}
+                >
+                  {amnissMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Building2 className="h-3.5 w-3.5" />
+                  )}
+                  Načíst z Amnis
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setSetupOpen(true)}>
                   <Settings className="h-3.5 w-3.5" />
