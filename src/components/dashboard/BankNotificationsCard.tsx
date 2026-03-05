@@ -68,6 +68,27 @@ export const BankNotificationsCard = () => {
     },
   });
 
+  const amnissMutation = useMutation({
+    mutationFn: async (daysBack: number = 7) => {
+      const response = await supabase.functions.invoke("amnis-fetch-transactions", {
+        body: { daysBack },
+      });
+      if (response.error) throw response.error;
+      if (!response.data?.success) throw new Error(response.data?.error || "Chyba při importu z Amnis");
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["bank-notifications-pending"] });
+      const msg = data.inserted > 0
+        ? `Načteno ${data.inserted} nových plateb z Amnis`
+        : "Žádné nové platby z Amnis k načtení";
+      toast.success(msg);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Chyba při načítání z Amnis");
+    },
+  });
+
   const confirmMutation = useMutation({
     mutationFn: async (notification: BankNotification) => {
       if (!notification.matched_payment_id) {
