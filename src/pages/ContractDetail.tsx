@@ -340,6 +340,55 @@ const ContractDetail = () => {
                   })()}
                 </p>
               </div>
+              {/* Itinerář letů */}
+              {(() => {
+                const flightServices = contract.deal?.services?.filter((s: any) => s.service_type === 'flight') || [];
+                const allSegments: { label: string; segments: any[] }[] = [];
+                flightServices.forEach((fs: any) => {
+                  const details = fs.details || {};
+                  const outbound = details.outbound_segments || details.segments || [];
+                  const returnSegs = details.return_segments || [];
+                  const extra = details.extra_flight_groups || [];
+                  if (outbound.length > 0) allSegments.push({ label: 'Odlet', segments: outbound });
+                  if (returnSegs.length > 0) allSegments.push({ label: 'Zpáteční', segments: returnSegs });
+                  extra.forEach((g: any, gi: number) => {
+                    if (g.segments?.length > 0) allSegments.push({ label: `Let ${gi + 2}`, segments: g.segments });
+                  });
+                });
+                if (allSegments.length === 0) return null;
+                const fmtDate = (d: string) => {
+                  if (!d) return '';
+                  const date = parseDateSafe(d);
+                  return date ? format(date, 'd.M.yy') : d;
+                };
+                return (
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-muted-foreground mb-2">Itinerář letů</p>
+                    <div className="space-y-2">
+                      {allSegments.map((group, gi) => (
+                        <div key={gi}>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{group.label}</p>
+                          <div className="space-y-1">
+                            {group.segments.map((seg: any, si: number) => (
+                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-foreground bg-muted/40 rounded px-2 py-1">
+                                {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
+                                {(seg.flight_number || seg.airline_code) && (
+                                  <span className="text-muted-foreground">{[seg.airline_code, seg.flight_number].filter(Boolean).join(' ')}</span>
+                                )}
+                                <span className="font-semibold">{seg.departure_airport} → {seg.arrival_airport}</span>
+                                {(seg.departure_time || seg.arrival_time) && (
+                                  <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
+                                )}
+                                {seg.airline_name && <span className="text-xs text-muted-foreground">({seg.airline_name})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Vytvořeno</p>
                 <p className="font-medium text-foreground">
