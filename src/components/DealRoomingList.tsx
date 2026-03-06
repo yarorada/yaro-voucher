@@ -202,7 +202,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   };
 
   const removeRoom = (roomId: string) => {
-    setRooms((prev) => prev.filter((r) => r.id !== roomId));
+    setRooms((prev) => renumber(prev.filter((r) => r.id !== roomId)));
   };
 
   const updateRoom = (roomId: string, updates: Partial<RoomAssignment>) => {
