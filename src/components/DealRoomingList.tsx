@@ -12,7 +12,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, BedDouble, Save, Users, X, FileDown, Send, Loader2 } from "lucide-react";
+import { Plus, Trash2, BedDouble, Save, Users, X, FileDown, Send, Loader2, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
 import {
@@ -58,6 +75,41 @@ const ROOM_TYPES = [
   { value: "OTHER", label: "Jiný" },
 ];
 
+// Sortable room wrapper component
+function SortableRoomItem({ room, index, children }: { room: RoomAssignment; index: number; children: (dragHandle: React.ReactNode) => React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: room.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const dragHandle = (
+    <button
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground touch-none flex-shrink-0 mt-4 p-1 rounded hover:bg-muted"
+      title="Přetáhněte pro změnu pořadí"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  );
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children(dragHandle)}
+    </div>
+  );
+}
+
 export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [rooms, setRooms] = useState<RoomAssignment[]>([]);
   const [hotelRoomTypes, setHotelRoomTypes] = useState<string[]>([]);
@@ -68,6 +120,22 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [hotelSupplier, setHotelSupplier] = useState<{ name: string; email: string | null } | null>(null);
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setRooms((prev) => {
+        const oldIndex = prev.findIndex((r) => r.id === active.id);
+        const newIndex = prev.findIndex((r) => r.id === over.id);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -398,104 +466,110 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
               Zatím žádné pokoje. Klikněte na „Pokoj" pro přidání.
             </p>
           ) : (
-            <div className="space-y-3">
-              {rooms.map((room, index) => (
-                <div
-                  key={room.id}
-                  className="border rounded-lg p-3 space-y-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Název</Label>
-                        <Input
-                          value={room.room_label}
-                          onChange={(e) =>
-                            updateRoom(room.id, { room_label: e.target.value })
-                          }
-                          className="h-8 text-sm"
-                          placeholder={`Room ${index + 1}`}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Typ pokoje</Label>
-                        <Select
-                          value={room.room_type}
-                          onValueChange={(v) =>
-                            updateRoom(room.id, { room_type: v })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allRoomTypes.map((rt) => (
-                              <SelectItem key={rt.value} value={rt.value}>
-                                {rt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-destructive hover:text-destructive flex-shrink-0 mt-4"
-                      onClick={() => removeRoom(room.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={rooms.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {rooms.map((room, index) => (
+                    <SortableRoomItem key={room.id} room={room} index={index}>
+                      {(dragHandle) => (
+                        <div className="border rounded-lg p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            {dragHandle}
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Název</Label>
+                                <Input
+                                  value={room.room_label}
+                                  onChange={(e) =>
+                                    updateRoom(room.id, { room_label: e.target.value })
+                                  }
+                                  className="h-8 text-sm"
+                                  placeholder={`Room ${index + 1}`}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Typ pokoje</Label>
+                                <Select
+                                  value={room.room_type}
+                                  onValueChange={(v) =>
+                                    updateRoom(room.id, { room_type: v })
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {allRoomTypes.map((rt) => (
+                                      <SelectItem key={rt.value} value={rt.value}>
+                                        {rt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive flex-shrink-0 mt-4"
+                              onClick={() => removeRoom(room.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
 
-                  {/* Assigned travelers */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">
-                      Cestující ({room.traveler_ids.length})
-                    </Label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {room.traveler_ids.map((clientId) => {
-                        const t = travelers.find((tr) => tr.client_id === clientId);
-                        const category = getAgeCategory(t?.clients.date_of_birth || null);
-                        return (
-                          <span
-                            key={clientId}
-                            className={`inline-flex items-center gap-1 text-xs border px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getAgeCategoryColor(category)}`}
-                            onClick={() => toggleTravelerInRoom(room.id, clientId)}
-                            title="Klikněte pro odebrání"
-                          >
-                            {getTravelerLabel(clientId)}
-                            <X className="h-3 w-3" />
-                          </span>
-                        );
-                      })}
-                      {room.traveler_ids.length === 0 && (
-                        <span className="text-xs text-muted-foreground italic">
-                          Klikněte na cestujícího níže pro přiřazení
-                        </span>
+                          {/* Assigned travelers */}
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              Cestující ({room.traveler_ids.length})
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {room.traveler_ids.map((clientId) => {
+                                const t = travelers.find((tr) => tr.client_id === clientId);
+                                const category = getAgeCategory(t?.clients.date_of_birth || null);
+                                return (
+                                  <span
+                                    key={clientId}
+                                    className={`inline-flex items-center gap-1 text-xs border px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getAgeCategoryColor(category)}`}
+                                    onClick={() => toggleTravelerInRoom(room.id, clientId)}
+                                    title="Klikněte pro odebrání"
+                                  >
+                                    {getTravelerLabel(clientId)}
+                                    <X className="h-3 w-3" />
+                                  </span>
+                                );
+                              })}
+                              {room.traveler_ids.length === 0 && (
+                                <span className="text-xs text-muted-foreground italic">
+                                  Klikněte na cestujícího níže pro přiřazení
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Available travelers to add */}
+                          {unassignedTravelers.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {unassignedTravelers.map((t) => (
+                                <button
+                                  key={t.client_id}
+                                  className="text-xs px-2 py-1 rounded border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
+                                  onClick={() =>
+                                    toggleTravelerInRoom(room.id, t.client_id)
+                                  }
+                                >
+                                  + {t.clients.first_name} {t.clients.last_name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Available travelers to add */}
-                  {unassignedTravelers.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {unassignedTravelers.map((t) => (
-                        <button
-                          key={t.client_id}
-                          className="text-xs px-2 py-1 rounded border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
-                          onClick={() =>
-                            toggleTravelerInRoom(room.id, t.client_id)
-                          }
-                        >
-                          + {t.clients.first_name} {t.clients.last_name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    </SortableRoomItem>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
 
           {/* Summary: unassigned travelers */}
