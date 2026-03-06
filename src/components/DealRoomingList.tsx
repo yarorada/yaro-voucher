@@ -122,9 +122,12 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const renumber = (list: RoomAssignment[]) =>
+    list.map((r, i) => ({ ...r, room_label: `Room ${i + 1}` }));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -132,8 +135,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       setRooms((prev) => {
         const oldIndex = prev.findIndex((r) => r.id === active.id);
         const newIndex = prev.findIndex((r) => r.id === over.id);
-        const reordered = arrayMove(prev, oldIndex, newIndex);
-        return reordered.map((r, i) => ({ ...r, room_label: `Room ${i + 1}` }));
+        return renumber(arrayMove(prev, oldIndex, newIndex));
       });
     }
   };
@@ -200,7 +202,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   };
 
   const removeRoom = (roomId: string) => {
-    setRooms((prev) => prev.filter((r) => r.id !== roomId));
+    setRooms((prev) => renumber(prev.filter((r) => r.id !== roomId)));
   };
 
   const updateRoom = (roomId: string, updates: Partial<RoomAssignment>) => {
