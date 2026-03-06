@@ -372,6 +372,9 @@ const ContractDetail = () => {
                             {group.segments.map((seg: any, si: number) => (
                               <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-foreground bg-muted/40 rounded px-2 py-1">
                                 {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
+                                {(seg.airline_name || seg.airline_code) && (
+                                  <span className="text-foreground font-medium">{seg.airline_name || seg.airline_code}</span>
+                                )}
                                 {(seg.flight_number || seg.airline_code) && (
                                   <span className="text-muted-foreground">{[seg.airline_code, seg.flight_number].filter(Boolean).join(' ')}</span>
                                 )}
@@ -379,7 +382,6 @@ const ContractDetail = () => {
                                 {(seg.departure_time || seg.arrival_time) && (
                                   <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
                                 )}
-                                {seg.airline_name && <span className="text-xs text-muted-foreground">({seg.airline_name})</span>}
                               </div>
                             ))}
                           </div>
