@@ -392,10 +392,10 @@ const ContractDetail = () => {
                                   <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
                                 )}
                                 {(seg.flight_number || seg.airline) && (
-                                  <span className="text-muted-foreground">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
+                                  <span className="text-muted-foreground text-xs">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
                                 )}
                                 {(seg.departure || seg.arrival) && (
-                                  <span className="font-semibold">{seg.departure} → {seg.arrival}</span>
+                                  <span className="font-semibold">{airportLabel(seg.departure)} → {airportLabel(seg.arrival)}</span>
                                 )}
                                 {(seg.departure_time || seg.arrival_time) && (
                                   <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
