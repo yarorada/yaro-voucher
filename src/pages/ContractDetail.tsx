@@ -346,7 +346,8 @@ const ContractDetail = () => {
                 const allSegments: { label: string; segments: any[] }[] = [];
                 flightServices.forEach((fs: any) => {
                   const details = fs.details || {};
-                  const outbound = details.outbound_segments || details.segments || [];
+                  // Data are stored with keys: departure, arrival, airline, airline_name, flight_number
+                  const outbound = details.outbound_segments || [];
                   const returnSegs = details.return_segments || [];
                   const extra = details.extra_flight_groups || [];
                   if (outbound.length > 0) allSegments.push({ label: 'Odlet', segments: outbound });
@@ -372,13 +373,15 @@ const ContractDetail = () => {
                             {group.segments.map((seg: any, si: number) => (
                               <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-foreground bg-muted/40 rounded px-2 py-1">
                                 {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
-                                {(seg.airline_name || seg.airline_code) && (
-                                  <span className="text-foreground font-medium">{seg.airline_name || seg.airline_code}</span>
+                                {(seg.airline_name || seg.airline) && (
+                                  <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
                                 )}
-                                {(seg.flight_number || seg.airline_code) && (
-                                  <span className="text-muted-foreground">{[seg.airline_code, seg.flight_number].filter(Boolean).join(' ')}</span>
+                                {(seg.flight_number || seg.airline) && (
+                                  <span className="text-muted-foreground">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
                                 )}
-                                <span className="font-semibold">{seg.departure_airport} → {seg.arrival_airport}</span>
+                                {(seg.departure || seg.arrival) && (
+                                  <span className="font-semibold">{seg.departure} → {seg.arrival}</span>
+                                )}
                                 {(seg.departure_time || seg.arrival_time) && (
                                   <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
                                 )}
