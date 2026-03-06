@@ -75,6 +75,41 @@ const ROOM_TYPES = [
   { value: "OTHER", label: "Jiný" },
 ];
 
+// Sortable room wrapper component
+function SortableRoomItem({ room, index, children }: { room: RoomAssignment; index: number; children: (dragHandle: React.ReactNode) => React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: room.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const dragHandle = (
+    <button
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground touch-none flex-shrink-0 mt-4 p-1 rounded hover:bg-muted"
+      title="Přetáhněte pro změnu pořadí"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  );
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children(dragHandle)}
+    </div>
+  );
+}
+
 export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [rooms, setRooms] = useState<RoomAssignment[]>([]);
   const [hotelRoomTypes, setHotelRoomTypes] = useState<string[]>([]);
