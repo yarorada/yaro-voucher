@@ -36,6 +36,21 @@ const ContractDetail = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
+  const { data: airports = [] } = useQuery({
+    queryKey: ["airport_templates_for_contract"],
+    queryFn: async () => {
+      const { data } = await supabase.from("airport_templates").select("iata, city, name");
+      return (data || []) as { iata: string; city: string; name: string }[];
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const airportLabel = (iata: string) => {
+    if (!iata) return '';
+    const a = airports.find(a => a.iata === iata);
+    return a ? `${a.city} (${iata})` : iata;
+  };
+
   const { data: contract, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ["travel_contract", id],
     queryFn: async () => {
