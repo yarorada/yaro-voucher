@@ -36,6 +36,21 @@ const ContractDetail = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
+  const { data: airports = [] } = useQuery({
+    queryKey: ["airport_templates_for_contract"],
+    queryFn: async () => {
+      const { data } = await supabase.from("airport_templates").select("iata, city, name");
+      return (data || []) as { iata: string; city: string; name: string }[];
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const airportLabel = (iata: string) => {
+    if (!iata) return '';
+    const a = airports.find(a => a.iata === iata);
+    return a ? `${a.city} (${iata})` : iata;
+  };
+
   const { data: contract, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ["travel_contract", id],
     queryFn: async () => {
@@ -377,10 +392,10 @@ const ContractDetail = () => {
                                   <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
                                 )}
                                 {(seg.flight_number || seg.airline) && (
-                                  <span className="text-muted-foreground">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
+                                  <span className="text-muted-foreground text-xs">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
                                 )}
                                 {(seg.departure || seg.arrival) && (
-                                  <span className="font-semibold">{seg.departure} → {seg.arrival}</span>
+                                  <span className="font-semibold">{airportLabel(seg.departure)} → {airportLabel(seg.arrival)}</span>
                                 )}
                                 {(seg.departure_time || seg.arrival_time) && (
                                   <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
