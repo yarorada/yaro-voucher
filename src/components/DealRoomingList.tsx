@@ -132,7 +132,8 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       setRooms((prev) => {
         const oldIndex = prev.findIndex((r) => r.id === active.id);
         const newIndex = prev.findIndex((r) => r.id === over.id);
-        return arrayMove(prev, oldIndex, newIndex);
+        const reordered = arrayMove(prev, oldIndex, newIndex);
+        return reordered.map((r, i) => ({ ...r, room_label: `Room ${i + 1}` }));
       });
     }
   };
