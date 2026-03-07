@@ -236,7 +236,8 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
 
   const handleTogglePaid = async (paymentId: string, paid: boolean) => {
     try {
-      const updateData = !paid 
+      const nowPaid = !paid;
+      const updateData = nowPaid 
         ? { paid: true, paid_at: new Date().toISOString() }
         : { paid: false, paid_at: null };
       
@@ -246,6 +247,16 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
         .eq("id", paymentId);
 
       if (error) throw error;
+
+      // When marking a payment as paid, set deal status to 'confirmed'
+      if (nowPaid) {
+        await supabase
+          .from("deals")
+          .update({ status: "confirmed" })
+          .eq("id", dealId)
+          .in("status", ["inquiry", "offer", "approved"]);
+      }
+
       fetchPayments();
     } catch (error) {
       console.error("Error updating payment:", error);
