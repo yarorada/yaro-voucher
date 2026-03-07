@@ -254,7 +254,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
           .from("deals")
           .update({ status: "confirmed" })
           .eq("id", dealId)
-          .in("status", ["inquiry", "offer", "approved"]);
+          .in("status", ["inquiry", "quote", "approved"]);
       }
 
       fetchPayments();
