@@ -2803,6 +2803,19 @@ const DealDetail = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="pt-6">
+            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
+          </CardContent>
+        </Card>
+
+        {/* Client Offer Response Card */}
+        <ClientOfferResponseCard dealId={deal.id} />
+
+          </TabsContent>
+
+          {/* ── CESTUJÍCÍ ── */}
+          <TabsContent value="travelers" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
