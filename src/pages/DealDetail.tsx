@@ -96,6 +96,7 @@ import {
 } from "@/components/ui/table";
 import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface DealTraveler {
   id: string;
