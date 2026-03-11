@@ -249,10 +249,12 @@ export const DealBulkTravelerImport = ({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <FileText className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">AI Import</span>
-        </Button>
+        {trigger || (
+          <Button size="sm" variant="outline">
+            <FileText className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">AI Import</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-background max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
