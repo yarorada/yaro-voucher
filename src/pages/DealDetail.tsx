@@ -2659,7 +2659,17 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="info" className="mt-2">
+          <TabsList className="mb-4">
+            <TabsTrigger value="info">Základní info</TabsTrigger>
+            <TabsTrigger value="travelers">Cestující</TabsTrigger>
+            <TabsTrigger value="payments">Platební kalendář</TabsTrigger>
+            <TabsTrigger value="services">Služby</TabsTrigger>
+            <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+          </TabsList>
+
+          {/* ── ZÁKLADNÍ INFO ── */}
+          <TabsContent value="info" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
