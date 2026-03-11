@@ -1114,6 +1114,85 @@ const DealDetail = () => {
     );
   };
 
+  const handleExportTravelersPdf = () => {
+    if (!deal) return;
+    const travelers = deal.deal_travelers;
+    const dealNum = deal.deal_number || "";
+    
+    const rows = travelers.map((t, idx) => {
+      const title = translateTitleToEnglish(t.clients?.title || null);
+      const firstName = removeDiacritics(t.clients?.first_name || "");
+      const lastName = removeDiacritics(t.clients?.last_name || "");
+      const dob = t.clients?.date_of_birth ? formatDateDisplay(t.clients.date_of_birth) : "-";
+      return `
+        <tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${idx + 1}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${title}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${firstName}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${lastName}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${dob}</td>
+        </tr>`;
+    }).join("");
+    
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/><title>Passenger List - ${dealNum}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; margin: 40px; }
+  h2 { font-size: 16px; margin-bottom: 4px; }
+  p { margin: 0 0 16px; color: #555; font-size: 11px; }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #f4f4f4; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #ddd; }
+</style>
+</head><body>
+<h2>Passenger List</h2>
+<p>Deal: ${dealNum} &nbsp;|&nbsp; Total passengers: ${travelers.length}</p>
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>First Name</th><th>Last Name</th><th>Date of Birth</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+</body></html>`;
+    
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  };
+
+  const handleExportAmadeus = () => {
+    if (!deal) return;
+    const travelers = deal.deal_travelers;
+    const parts = travelers.map(t => {
+      const title = translateTitleToEnglish(t.clients?.title || null);
+      // Amadeus title code: MR / MRS / MISS / MSTR
+      let titleCode = "MR";
+      if (title === "Mrs." || title === "Ms.") titleCode = "MRS";
+      const lastName = removeDiacritics((t.clients?.last_name || "").toUpperCase());
+      const firstName = removeDiacritics((t.clients?.first_name || "").toUpperCase());
+      return `NM1${lastName}/${firstName} ${titleCode}`;
+    });
+    const result = parts.join("1");
+    
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/><title>Amadeus NM - ${deal.deal_number}</title>
+<style>
+  body { font-family: monospace; font-size: 14px; color: #111; margin: 40px; }
+  h2 { font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 8px; }
+  p { font-family: Arial, sans-serif; font-size: 11px; color: #555; margin: 0 0 16px; }
+  .cmd { background: #f0f0f0; padding: 16px 20px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; cursor: pointer; border: 1px solid #ddd; }
+  .hint { font-family: Arial, sans-serif; font-size: 11px; color: #888; margin-top: 8px; }
+</style>
+</head><body>
+<h2>Amadeus NM Command</h2>
+<p>Deal: ${deal.deal_number} &nbsp;|&nbsp; Passengers: ${travelers.length}</p>
+<div class="cmd" onclick="navigator.clipboard.writeText(this.innerText)">${result}</div>
+<p class="hint">Click to copy to clipboard</p>
+</body></html>`);
+    win.document.close();
+  };
+
   const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
     try {
       // Fetch all existing payments for this deal
