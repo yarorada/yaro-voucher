@@ -96,6 +96,7 @@ import {
 } from "@/components/ui/table";
 import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface DealTraveler {
   id: string;
@@ -2658,7 +2659,17 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="info" className="mt-2">
+          <TabsList className="mb-4">
+            <TabsTrigger value="info">Základní info</TabsTrigger>
+            <TabsTrigger value="travelers">Cestující</TabsTrigger>
+            <TabsTrigger value="payments">Platební kalendář</TabsTrigger>
+            <TabsTrigger value="services">Služby</TabsTrigger>
+            <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+          </TabsList>
+
+          {/* ── ZÁKLADNÍ INFO ── */}
+          <TabsContent value="info" className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
@@ -2792,8 +2803,20 @@ const DealDetail = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <Card>
+          <CardContent className="pt-6">
+            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
+          </CardContent>
+        </Card>
+
+        {/* Client Offer Response Card */}
+        <ClientOfferResponseCard dealId={deal.id} />
+
+          </TabsContent>
+
+          {/* ── CESTUJÍCÍ ── */}
+          <TabsContent value="travelers" className="space-y-6">
+        <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -2894,26 +2917,26 @@ const DealDetail = () => {
             </CardContent>
           </Card>
 
-          <DealPaymentSchedule 
-            key={paymentRefreshKey}
-            dealId={deal.id} 
-            totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
-            departureDate={deal.start_date || undefined}
-            currency={dealCurrency}
-          />
-        </div>
-
         <DealRoomingList dealId={deal.id} travelers={deal.deal_travelers} />
 
-        <Card>
-          <CardContent className="pt-6">
-            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* Client Offer Response Card */}
-        <ClientOfferResponseCard dealId={deal.id} />
+          {/* ── PLATEBNÍ KALENDÁŘ ── */}
+          <TabsContent value="payments" className="space-y-6">
+        <DealPaymentSchedule
+          key={paymentRefreshKey}
+          dealId={deal.id}
+          totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
+          departureDate={deal.start_date || undefined}
+          currency={dealCurrency}
+        />
 
+
+
+          </TabsContent>
+
+          {/* ── SLUŽBY ── */}
+          <TabsContent value="services" className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -3432,6 +3455,10 @@ const DealDetail = () => {
           />
         )}
 
+          </TabsContent>
+
+          {/* ── DOKUMENTY ── */}
+          <TabsContent value="documents" className="space-y-6">
         {/* Cestovní dokumenty section */}
         <DealDocumentsSection
           dealId={deal.id}
@@ -3450,7 +3477,9 @@ const DealDetail = () => {
 
         {/* Doklady dodavatelům */}
         <DealSupplierInvoices dealId={deal.id} />
-        </div>
+          </TabsContent>
+
+        </Tabs>
       </div>
 
       {/* Contract Sync Confirmation Dialog */}

@@ -1,50 +1,102 @@
 
-## Plan: Převod sekcí Detailu obchodního případu na záložky (Tabs)
+# Plán: Správa úrovní přístupu a přepínač rozsahu dat
 
-### Současný stav
-Stránka `src/pages/DealDetail.tsx` (~3606 řádků) zobrazuje vše na jedné stránce ve vertikálním scrollu. Sekce jsou:
-1. **Základní informace** (Karta, řádky 2662–2793)
-2. **Cestující + Platební kalendář** (Grid 2/2, řádky 2795–2904)
-3. **Rooming list** (`DealRoomingList`, řádek 2906)
-4. **Varianty** (`DealVariants`, řádky 2908–2912)
-5. **Odpověď klienta** (`ClientOfferResponseCard`, řádek 2915)
-6. **Služby** (Karta se službami a Tee Times, řádky 2917–3433)
-7. **Cestovní dokumenty** (`DealDocumentsSection`, řádky 3435–3449)
-8. **Doklady dodavatelům** (`DealSupplierInvoices`, řádek 3452)
+## Co bude přidáno
 
-### Návrh záložek
+### 1. Přepínač "Rozsah dat" per uživatel
+Každý uživatel bude mít nové nastavení:
+- **Všechna data** — vidí záznamy všech kolegů (výchozí pro Admin a "Bez role")
+- **Pouze vlastní data** — vidí pouze záznamy, které sám vložil (výchozí pro Prodejce)
 
-```text
-[Základní info] [Cestující] [Platební kalendář] [Služby] [Dokumenty]
+Toto nastavení bude uloženo v nové tabulce `user_data_scope` a správce ho může u každého uživatele přepnout v rozhraní `/admin/roles`.
+
+### 2. Rozšíření sekce oprávnění v UI
+V rozbalitelné části každého uživatele přibude nová vizuální sekce **"Rozsah přístupu k datům"** s přepínačem, oddělenou od přepínačů sekcí.
+
+### 3. Vynucení rozsahu dat v kódu (hook)
+Nový hook `useDataScope` vrátí aktuálnímu přihlášenému uživateli jeho nastavení (`own` nebo `all`). Tento hook bude použit na místech, kde se data filtrují — primárně v komponentách se seznamy (Deals, Clients, Vouchers, Contracts).
+
+---
+
+## Technické změny
+
+### Databáze (migrace)
+Nová tabulka `user_data_scope`:
+```sql
+CREATE TABLE public.user_data_scope (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  scope text NOT NULL DEFAULT 'all', -- 'all' | 'own'
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id)
+);
+
+ALTER TABLE public.user_data_scope ENABLE ROW LEVEL SECURITY;
+
+-- Admins can manage all
+CREATE POLICY "Admins can manage data scope"
+  ON public.user_data_scope FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+
+-- Users can read own scope
+CREATE POLICY "Users can view own scope"
+  ON public.user_data_scope FOR SELECT
+  USING (auth.uid() = user_id);
 ```
 
-- **Základní info** — původní karta + Varianty + Odpověď klienta
-- **Cestující** — tabulka cestujících + Rooming list
-- **Platební kalendář** — `DealPaymentSchedule`
-- **Služby** — tabulka služeb + Tee Times editor
-- **Dokumenty** — `DealDocumentsSection` + `DealSupplierInvoices`
+### Nový hook: `src/hooks/useDataScope.tsx`
+- Načte záznam z `user_data_scope` pro aktuálního uživatele
+- Vrátí `scope: 'all' | 'own'`
+- Prodejce bez záznamu = defaultně `'own'`, ostatní = `'all'`
 
-### Implementace
+### Rozšíření `useUserPermissionsForUser`
+- Přidání metod `getDataScope()` a `setDataScope(scope)` pro admin UI
 
-**Soubor**: `src/pages/DealDetail.tsx`
+### Úprava `src/pages/AdminRoles.tsx`
+V rozbalitelné části každého uživatele přibude sekce:
 
-1. Přidat import `Tabs, TabsList, TabsTrigger, TabsContent` z `@/components/ui/tabs`
-2. Obalit sekce pod `<header>` do `<Tabs defaultValue="info">` místo `<div className="space-y-6">`
-3. Přidat `<TabsList>` s 5 záložkami:
-   - `info` → Základní informace
-   - `travelers` → Cestující
-   - `payments` → Platební kalendář
-   - `services` → Služby
-   - `documents` → Dokumenty
-4. Každou sekci obalit příslušným `<TabsContent value="...">`
+```
+┌─────────────────────────────────────────────┐
+│ Rozsah přístupu k datům                     │
+│                                             │
+│ ○ Všechna data   ● Pouze vlastní data       │
+│                                             │
+│ [popis aktuálního nastavení]                │
+└─────────────────────────────────────────────┘
+```
 
-### URL state (volitelně)
-Záložky budou pouze UI state (React state / výchozí hodnota). Není potřeba URL parametr – zachová se jednoduchost.
+### Vynucení v seznamech dat
+Hook `useDataScope` bude použit na těchto stránkách:
+- `src/pages/Deals.tsx` — filtr deals
+- `src/pages/Clients.tsx` — filtr klientů
+- `src/pages/VouchersList.tsx` — filtr voucherů
+- `src/pages/Contracts.tsx` — filtr smluv
 
-### Co se nemění
-- Hlavička stránky (název, badge, toolbar tlačítka) zůstává nad záložkami
-- Všechny dialogy, modaly a logika zůstávají beze změny
-- Záložky jsou plné šířky, vizuálně konzistentní s existujícím designem
+Když `scope === 'own'`, do Supabase dotazů bude přidán filtr `.eq('user_id', user.id)`. Když `scope === 'all'`, filtr se neaplikuje.
 
-### Rozsah změn
-Pouze soubor `src/pages/DealDetail.tsx` – pouze JSX struktura od řádku ~2660 do ~3453. Žádné změny v logice, hooky ani backend.
+---
+
+## Výchozí hodnoty dle role
+
+| Role | Výchozí rozsah dat |
+|------|-------------------|
+| admin | Všechna data |
+| prodejce | Pouze vlastní data |
+| bez role | Všechna data |
+
+Pokud v tabulce `user_data_scope` není záznam pro daného uživatele, aplikuje se výchozí hodnota dle role.
+
+---
+
+## Souhrn souborů ke změně / vytvoření
+
+- `supabase/migrations/...` — nová tabulka `user_data_scope`
+- `src/hooks/useDataScope.tsx` — nový hook
+- `src/hooks/useUserPermissions.tsx` — rozšíření `useUserPermissionsForUser` o data scope
+- `src/pages/AdminRoles.tsx` — UI přepínač rozsahu dat
+- `src/pages/Deals.tsx` — aplikace data scope filtru
+- `src/pages/Clients.tsx` — aplikace data scope filtru
+- `src/pages/VouchersList.tsx` — aplikace data scope filtru
+- `src/pages/Contracts.tsx` — aplikace data scope filtru
