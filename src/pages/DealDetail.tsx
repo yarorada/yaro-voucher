@@ -2816,8 +2816,7 @@ const DealDetail = () => {
 
           {/* ── CESTUJÍCÍ ── */}
           <TabsContent value="travelers" className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
