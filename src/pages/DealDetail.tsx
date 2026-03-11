@@ -2929,6 +2929,18 @@ const DealDetail = () => {
 
         <DealRoomingList dealId={deal.id} travelers={deal.deal_travelers} />
 
+          </TabsContent>
+
+          {/* ── PLATEBNÍ KALENDÁŘ ── */}
+          <TabsContent value="payments" className="space-y-6">
+        <DealPaymentSchedule
+          key={paymentRefreshKey}
+          dealId={deal.id}
+          totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
+          departureDate={deal.start_date || undefined}
+          currency={dealCurrency}
+        />
+
         <Card>
           <CardContent className="pt-6">
             <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
@@ -2938,6 +2950,10 @@ const DealDetail = () => {
         {/* Client Offer Response Card */}
         <ClientOfferResponseCard dealId={deal.id} />
 
+          </TabsContent>
+
+          {/* ── SLUŽBY ── */}
+          <TabsContent value="services" className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
