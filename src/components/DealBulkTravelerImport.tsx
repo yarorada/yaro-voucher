@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { removeDiacritics } from "@/lib/utils";
+import * as React from "react";
 
 interface ParsedClient {
   title?: string;
@@ -47,12 +48,14 @@ interface DealBulkTravelerImportProps {
   dealId: string;
   existingTravelerIds: string[];
   onComplete: () => void;
+  trigger?: React.ReactNode;
 }
 
 export const DealBulkTravelerImport = ({
   dealId,
   existingTravelerIds,
   onComplete,
+  trigger,
 }: DealBulkTravelerImportProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -246,10 +249,12 @@ export const DealBulkTravelerImport = ({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <FileText className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">AI Import</span>
-        </Button>
+        {trigger || (
+          <Button size="sm" variant="outline">
+            <FileText className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">AI Import</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-background max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
