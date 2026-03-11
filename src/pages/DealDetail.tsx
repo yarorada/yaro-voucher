@@ -2916,7 +2916,6 @@ const DealDetail = () => {
               </DndContext>
             </CardContent>
           </Card>
-        </div>
 
         <DealRoomingList dealId={deal.id} travelers={deal.deal_travelers} />
 
