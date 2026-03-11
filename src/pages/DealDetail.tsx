@@ -3472,6 +3472,10 @@ const DealDetail = () => {
           />
         )}
 
+          </TabsContent>
+
+          {/* ── DOKUMENTY ── */}
+          <TabsContent value="documents" className="space-y-6">
         {/* Cestovní dokumenty section */}
         <DealDocumentsSection
           dealId={deal.id}
@@ -3490,7 +3494,9 @@ const DealDetail = () => {
 
         {/* Doklady dodavatelům */}
         <DealSupplierInvoices dealId={deal.id} />
-        </div>
+          </TabsContent>
+
+        </Tabs>
       </div>
 
       {/* Contract Sync Confirmation Dialog */}
