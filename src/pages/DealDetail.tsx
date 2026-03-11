@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download } from "lucide-react";
+import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
@@ -1111,6 +1112,85 @@ const DealDetail = () => {
         supabase.from("deal_travelers").update({ order_index: idx }).eq("id", t.id)
       )
     );
+  };
+
+  const handleExportTravelersPdf = () => {
+    if (!deal) return;
+    const travelers = deal.deal_travelers;
+    const dealNum = deal.deal_number || "";
+    
+    const rows = travelers.map((t, idx) => {
+      const title = translateTitleToEnglish(t.clients?.title || null);
+      const firstName = removeDiacritics(t.clients?.first_name || "");
+      const lastName = removeDiacritics(t.clients?.last_name || "");
+      const dob = t.clients?.date_of_birth ? formatDateDisplay(t.clients.date_of_birth) : "-";
+      return `
+        <tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${idx + 1}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${title}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${firstName}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${lastName}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${dob}</td>
+        </tr>`;
+    }).join("");
+    
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/><title>Passenger List - ${dealNum}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; margin: 40px; }
+  h2 { font-size: 16px; margin-bottom: 4px; }
+  p { margin: 0 0 16px; color: #555; font-size: 11px; }
+  table { border-collapse: collapse; width: 100%; }
+  th { background: #f4f4f4; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #ddd; }
+</style>
+</head><body>
+<h2>Passenger List</h2>
+<p>Deal: ${dealNum} &nbsp;|&nbsp; Total passengers: ${travelers.length}</p>
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>First Name</th><th>Last Name</th><th>Date of Birth</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+</body></html>`;
+    
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  };
+
+  const handleExportAmadeus = () => {
+    if (!deal) return;
+    const travelers = deal.deal_travelers;
+    const parts = travelers.map(t => {
+      const title = translateTitleToEnglish(t.clients?.title || null);
+      // Amadeus title code: MR / MRS / MISS / MSTR
+      let titleCode = "MR";
+      if (title === "Mrs." || title === "Ms.") titleCode = "MRS";
+      const lastName = removeDiacritics((t.clients?.last_name || "").toUpperCase());
+      const firstName = removeDiacritics((t.clients?.first_name || "").toUpperCase());
+      return `NM1${lastName}/${firstName} ${titleCode}`;
+    });
+    const result = parts.join("1");
+    
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/><title>Amadeus NM - ${deal.deal_number}</title>
+<style>
+  body { font-family: monospace; font-size: 14px; color: #111; margin: 40px; }
+  h2 { font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 8px; }
+  p { font-family: Arial, sans-serif; font-size: 11px; color: #555; margin: 0 0 16px; }
+  .cmd { background: #f0f0f0; padding: 16px 20px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; cursor: pointer; border: 1px solid #ddd; }
+  .hint { font-family: Arial, sans-serif; font-size: 11px; color: #888; margin-top: 8px; }
+</style>
+</head><body>
+<h2>Amadeus NM Command</h2>
+<p>Deal: ${deal.deal_number} &nbsp;|&nbsp; Passengers: ${travelers.length}</p>
+<div class="cmd" onclick="navigator.clipboard.writeText(this.innerText)">${result}</div>
+<p class="hint">Click to copy to clipboard</p>
+</body></html>`);
+    win.document.close();
   };
 
   const autoGeneratePayments = async (dealId: string, totalPrice: number) => {
@@ -2726,13 +2806,30 @@ const DealDetail = () => {
                     existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
                     onComplete={fetchDeal}
                   />
-                  <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" onClick={() => setNewTravelerId("")}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm">
                         <Plus className="h-4 w-4 mr-1" />
                         <span className="hidden sm:inline">Přidat</span>
+                        <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
-                    </DialogTrigger>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background w-52">
+                      <DropdownMenuItem onClick={() => { setNewTravelerId(""); setTravelerDialogOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Přidat cestujícího
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportTravelersPdf} disabled={deal.deal_travelers.length === 0}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export do PDF (EN)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportAmadeus} disabled={deal.deal_travelers.length === 0}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export Amadeus NM
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
                   <DialogContent className="bg-background">
                     <DialogHeader>
                       <DialogTitle>Přidat cestujícího</DialogTitle>
