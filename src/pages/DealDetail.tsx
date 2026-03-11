@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare } from "lucide-react";
+import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, Users } from "lucide-react";
+import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
   DndContext,
