@@ -139,12 +139,12 @@ All colors MUST be HSL.
   /* Typography system - 3 levels */
   .text-heading-1 {
     @apply font-bold leading-tight;
-    font-size: 1.6875rem; /* 27px */
+    font-size: 1.5rem; /* 24px */
   }
   
   .text-heading-2 {
     @apply font-semibold leading-tight;
-    font-size: 1.3125rem; /* 21px */
+    font-size: 1.125rem; /* 18px */
   }
   
   .text-title {
