@@ -2801,11 +2801,16 @@ const DealDetail = () => {
                   <CardDescription>Správa cestujících v obchodním případu</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  <DealBulkTravelerImport
+                    dealId={deal.id}
+                    existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
+                    onComplete={fetchDeal}
+                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm">
-                        <Users className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Cestující</span>
+                        <Plus className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Přidat</span>
                         <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -2813,16 +2818,6 @@ const DealDetail = () => {
                       <DropdownMenuItem onClick={() => { setNewTravelerId(""); setTravelerDialogOpen(true); }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Přidat cestujícího
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <div className="cursor-default p-0">
-                          <DealBulkTravelerImport
-                            dealId={deal.id}
-                            existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
-                            onComplete={fetchDeal}
-                            asMenuItem
-                          />
-                        </div>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleExportTravelersPdf} disabled={deal.deal_travelers.length === 0}>
                         <FileText className="h-4 w-4 mr-2" />
