@@ -2801,18 +2801,40 @@ const DealDetail = () => {
                   <CardDescription>Správa cestujících v obchodním případu</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <DealBulkTravelerImport
-                    dealId={deal.id}
-                    existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
-                    onComplete={fetchDeal}
-                  />
-                  <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" onClick={() => setNewTravelerId("")}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Přidat</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm">
+                        <Users className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Cestující</span>
+                        <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
-                    </DialogTrigger>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background w-52">
+                      <DropdownMenuItem onClick={() => { setNewTravelerId(""); setTravelerDialogOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Přidat cestujícího
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <div className="cursor-default p-0">
+                          <DealBulkTravelerImport
+                            dealId={deal.id}
+                            existingTravelerIds={deal.deal_travelers.map(t => t.client_id)}
+                            onComplete={fetchDeal}
+                            asMenuItem
+                          />
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportTravelersPdf} disabled={deal.deal_travelers.length === 0}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export do PDF (EN)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportAmadeus} disabled={deal.deal_travelers.length === 0}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export Amadeus NM
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Dialog open={travelerDialogOpen} onOpenChange={setTravelerDialogOpen}>
                   <DialogContent className="bg-background">
                     <DialogHeader>
                       <DialogTitle>Přidat cestujícího</DialogTitle>
