@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { removeDiacritics } from "@/lib/utils";
+import * as React from "react";
 
 interface ParsedClient {
   title?: string;
@@ -47,12 +48,14 @@ interface DealBulkTravelerImportProps {
   dealId: string;
   existingTravelerIds: string[];
   onComplete: () => void;
+  trigger?: React.ReactNode;
 }
 
 export const DealBulkTravelerImport = ({
   dealId,
   existingTravelerIds,
   onComplete,
+  trigger,
 }: DealBulkTravelerImportProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
