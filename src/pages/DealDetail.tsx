@@ -2917,14 +2917,6 @@ const DealDetail = () => {
               </DndContext>
             </CardContent>
           </Card>
-
-          <DealPaymentSchedule 
-            key={paymentRefreshKey}
-            dealId={deal.id} 
-            totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
-            departureDate={deal.start_date || undefined}
-            currency={dealCurrency}
-          />
         </div>
 
         <DealRoomingList dealId={deal.id} travelers={deal.deal_travelers} />
