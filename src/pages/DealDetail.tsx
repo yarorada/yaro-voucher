@@ -2941,14 +2941,7 @@ const DealDetail = () => {
           currency={dealCurrency}
         />
 
-        <Card>
-          <CardContent className="pt-6">
-            <DealVariants dealId={deal.id} onVariantSelected={() => { fetchDeal(); fetchServices(); setPaymentRefreshKey(k => k + 1); }} />
-          </CardContent>
-        </Card>
 
-        {/* Client Offer Response Card */}
-        <ClientOfferResponseCard dealId={deal.id} />
 
           </TabsContent>
 
