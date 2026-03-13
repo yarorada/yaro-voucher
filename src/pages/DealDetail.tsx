@@ -433,6 +433,9 @@ const DealDetail = () => {
   const [pendingVoucherSync, setPendingVoucherSync] = useState<Array<{ id: string; voucher_code: string; client_name: string }> | null>(null);
   
   // Service form state
+  // Room type definition for hotel services
+  type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
+
    const [serviceForm, setServiceForm] = useState({
     id: "",
     service_type: "hotel" as DealService["service_type"],
@@ -458,6 +461,8 @@ const DealDetail = () => {
     price_exchange_rate: null as number | null,
     price_czk_value: null as number | null,
   });
+  // Room types for hotel services
+  const [roomTypes, setRoomTypes] = useState<RoomTypeEntry[]>([]);
   
   // Flight segments state (separate from form to avoid serialization issues)
   const [flightFormData, setFlightFormData] = useState<FlightFormData>({
@@ -1292,6 +1297,16 @@ const DealDetail = () => {
   const handleSaveService = async () => {
     if (!deal) return;
     
+    // Derive price and person_count from room types for hotel services
+    let effectivePrice = serviceForm.price;
+    let effectivePersonCount = serviceForm.person_count;
+    if (serviceForm.service_type === "hotel" && roomTypes.length > 0) {
+      const totalRoomsPrice = roomTypes.reduce((sum, rt) => sum + rt.price * rt.rooms, 0);
+      const totalPersons = roomTypes.reduce((sum, rt) => sum + rt.rooms * rt.persons_per_room, 0);
+      effectivePrice = totalRoomsPrice.toString();
+      effectivePersonCount = totalPersons.toString();
+    }
+    
     // Convert currency if needed
     let costPriceCzk: number | null = null;
     const costPriceOriginal = serviceForm.cost_price_original ? parseFloat(serviceForm.cost_price_original) : null;
@@ -1375,6 +1390,10 @@ const DealDetail = () => {
       ? { tee_time: serviceForm.tee_time }
       : {};
 
+    const hotelRoomDetails = serviceForm.service_type === 'hotel' && roomTypes.length > 0
+      ? { room_types: roomTypes }
+      : {};
+
     try {
       if (serviceForm.id) {
         // Update existing service
@@ -1386,16 +1405,16 @@ const DealDetail = () => {
             description: serviceForm.description || null,
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
-            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price: effectivePrice ? parseFloat(effectivePrice) : null,
             price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
-            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            person_count: effectivePersonCount ? parseInt(effectivePersonCount) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, ...hotelRoomDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any)
           .eq("id", serviceForm.id);
 
@@ -1411,16 +1430,16 @@ const DealDetail = () => {
             description: serviceForm.description || null,
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
-            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price: effectivePrice ? parseFloat(effectivePrice) : null,
             price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
-            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            person_count: effectivePersonCount ? parseInt(effectivePersonCount) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, ...hotelRoomDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any]);
 
         if (error) throw error;
@@ -1870,6 +1889,7 @@ const DealDetail = () => {
       price_exchange_rate: null,
       price_czk_value: null,
     });
+    setRoomTypes([]);
     resetFlightForm();
     setOriginalFlightDetails(null);
     // Clear draft and history
@@ -1968,6 +1988,13 @@ const DealDetail = () => {
       price_exchange_rate: null,
       price_czk_value: null,
     });
+    // Load room types for hotel services
+    const existingRoomTypes = (service.details as any)?.room_types;
+    if (service.service_type === "hotel" && Array.isArray(existingRoomTypes) && existingRoomTypes.length > 0) {
+      setRoomTypes(existingRoomTypes);
+    } else {
+      setRoomTypes([]);
+    }
     setServiceDialogOpen(true);
   };
 
@@ -3206,15 +3233,93 @@ const DealDetail = () => {
                         </div>
 
                         {serviceForm.service_type === 'hotel' ? (
-                          <div>
-                            <Label>Název a Typ pokoje</Label>
-                            <Input
-                              id="deal-service-description"
-                              value={serviceForm.description}
-                              onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
-                              placeholder="např. Deluxe Double Room"
-                            />
-                          </div>
+                          <>
+                            {/* Room Types Editor */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label>Typy pokojů</Label>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => setRoomTypes(prev => [...prev, { name: "Double", rooms: 1, persons_per_room: 2, price: 0 }])}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" /> Přidat typ pokoje
+                                </Button>
+                              </div>
+                              {roomTypes.length === 0 ? (
+                                <p className="text-xs text-muted-foreground italic">Klikněte na "Přidat typ pokoje" pro zadání cen dle typu pokoje</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-[1fr_60px_60px_100px_80px_32px] gap-1 text-xs text-muted-foreground px-1">
+                                    <span>Typ pokoje</span><span className="text-center">Pokojů</span><span className="text-center">Os./pokoj</span><span className="text-right">Cena/pokoj</span><span className="text-right">Celkem</span><span></span>
+                                  </div>
+                                  {roomTypes.map((rt, idx) => (
+                                    <div key={idx} className="grid grid-cols-[1fr_60px_60px_100px_80px_32px] gap-1 items-center">
+                                      <Input
+                                        value={rt.name}
+                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, name: e.target.value } : r))}
+                                        placeholder="Double"
+                                        className="h-8 text-xs"
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={rt.rooms}
+                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, rooms: parseInt(e.target.value) || 1 } : r))}
+                                        className="h-8 text-xs text-center"
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={rt.persons_per_room}
+                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, persons_per_room: parseInt(e.target.value) || 1 } : r))}
+                                        className="h-8 text-xs text-center"
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={rt.price || ""}
+                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, price: parseFloat(e.target.value) || 0 } : r))}
+                                        placeholder="0"
+                                        className="h-8 text-xs text-right"
+                                      />
+                                      <div className="text-xs text-right text-muted-foreground font-medium pr-1">
+                                        {(rt.price * rt.rooms).toLocaleString("cs-CZ")}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => setRoomTypes(prev => prev.filter((_, i) => i !== idx))}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  <div className="flex justify-between text-xs font-semibold border-t pt-2 px-1">
+                                    <span className="text-muted-foreground">
+                                      Celkem osob: {roomTypes.reduce((s, r) => s + r.rooms * r.persons_per_room, 0)}
+                                    </span>
+                                    <span className="text-primary">
+                                      Celkem: {roomTypes.reduce((s, r) => s + r.price * r.rooms, 0).toLocaleString("cs-CZ")} {serviceForm.price_currency}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <Label>Popis / Stravování</Label>
+                              <Input
+                                id="deal-service-description"
+                                value={serviceForm.description}
+                                onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                                placeholder="např. All Inclusive, HB..."
+                              />
+                            </div>
+                          </>
                         ) : serviceForm.service_type === 'golf' ? (
                           <div>
                             <Label>Čas tee time</Label>
@@ -3262,32 +3367,37 @@ const DealDetail = () => {
                           onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
                         />
                       </div>
-                      <div className="w-16">
-                        <Label>Osoby</Label>
-                        <Input
-                          id="deal-service-persons"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={serviceForm.person_count}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '') || '';
-                            setServiceForm(prev => ({ ...prev, person_count: val }));
-                          }}
-                          placeholder="1"
-                          className="text-center"
-                        />
-                      </div>
-                      <div className="w-16">
-                        <Label>Počet</Label>
-                        <Input
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={serviceForm.quantity}
-                          onChange={(e) => setServiceForm(prev => ({ ...prev, quantity: e.target.value.replace(/\D/g, '') || '' }))}
-                          placeholder="1"
-                          className="text-center"
-                        />
-                      </div>
+                      {/* Hide persons/quantity when room types are defined - they auto-derive */}
+                      {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
+                        <>
+                          <div className="w-16">
+                            <Label>Osoby</Label>
+                            <Input
+                              id="deal-service-persons"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={serviceForm.person_count}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '') || '';
+                                setServiceForm(prev => ({ ...prev, person_count: val }));
+                              }}
+                              placeholder="1"
+                              className="text-center"
+                            />
+                          </div>
+                          <div className="w-16">
+                            <Label>Počet</Label>
+                            <Input
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={serviceForm.quantity}
+                              onChange={(e) => setServiceForm(prev => ({ ...prev, quantity: e.target.value.replace(/\D/g, '') || '' }))}
+                              placeholder="1"
+                              className="text-center"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
 
                      {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
@@ -3349,56 +3459,59 @@ const DealDetail = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <Label>Prodejní cena</Label>
-                        <div className="flex gap-1">
-                          <Input
-                            type="number"
-                            value={serviceForm.price}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setServiceForm(prev => ({ ...prev, price: val, price_manually_set: true, price_czk_value: prev.price_currency === "CZK" && val ? parseFloat(val) : null }));
-                              if (val && serviceForm.price_currency !== "CZK") {
-                                try {
-                                  const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                                    body: { currency: serviceForm.price_currency, amount: parseFloat(val) },
-                                  });
-                                  if (data?.rate && data?.convertedAmount) {
-                                    setServiceForm(prev => ({ ...prev, price_exchange_rate: data.rate, price_czk_value: data.convertedAmount }));
-                                  }
-                                } catch {}
-                              }
-                            }}
-                            placeholder="0"
-                            className="flex-1"
-                          />
-                          <CurrencySelect
-                            value={serviceForm.price_currency}
-                            onChange={async (value) => {
-                              const p = serviceForm.price;
-                              const updates: any = { price_currency: value, price_exchange_rate: null, price_czk_value: value === "CZK" && p ? parseFloat(p) : null };
-                              if (p && value !== "CZK") {
-                                try {
-                                  const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                                    body: { currency: value, amount: parseFloat(p) },
-                                  });
-                                  if (data?.rate && data?.convertedAmount) {
-                                    updates.price_exchange_rate = data.rate;
-                                    updates.price_czk_value = data.convertedAmount;
-                                  }
-                                } catch {}
-                              }
-                              setServiceForm(prev => ({ ...prev, ...updates }));
-                            }}
-                            className="w-24"
-                          />
+                      {/* When room types are defined, selling price is auto-derived — hide the field */}
+                      {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
+                        <div className="flex-1">
+                          <Label>Prodejní cena</Label>
+                          <div className="flex gap-1">
+                            <Input
+                              type="number"
+                              value={serviceForm.price}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setServiceForm(prev => ({ ...prev, price: val, price_manually_set: true, price_czk_value: prev.price_currency === "CZK" && val ? parseFloat(val) : null }));
+                                if (val && serviceForm.price_currency !== "CZK") {
+                                  try {
+                                    const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                      body: { currency: serviceForm.price_currency, amount: parseFloat(val) },
+                                    });
+                                    if (data?.rate && data?.convertedAmount) {
+                                      setServiceForm(prev => ({ ...prev, price_exchange_rate: data.rate, price_czk_value: data.convertedAmount }));
+                                    }
+                                  } catch {}
+                                }
+                              }}
+                              placeholder="0"
+                              className="flex-1"
+                            />
+                            <CurrencySelect
+                              value={serviceForm.price_currency}
+                              onChange={async (value) => {
+                                const p = serviceForm.price;
+                                const updates: any = { price_currency: value, price_exchange_rate: null, price_czk_value: value === "CZK" && p ? parseFloat(p) : null };
+                                if (p && value !== "CZK") {
+                                  try {
+                                    const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                      body: { currency: value, amount: parseFloat(p) },
+                                    });
+                                    if (data?.rate && data?.convertedAmount) {
+                                      updates.price_exchange_rate = data.rate;
+                                      updates.price_czk_value = data.convertedAmount;
+                                    }
+                                  } catch {}
+                                }
+                                setServiceForm(prev => ({ ...prev, ...updates }));
+                              }}
+                              className="w-24"
+                            />
+                          </div>
+                          {serviceForm.price_currency !== "CZK" && serviceForm.price_czk_value != null && serviceForm.price_exchange_rate != null && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ≈ {Math.round(serviceForm.price_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.price_exchange_rate.toFixed(3)} Kč/{serviceForm.price_currency})
+                            </p>
+                          )}
                         </div>
-                        {serviceForm.price_currency !== "CZK" && serviceForm.price_czk_value != null && serviceForm.price_exchange_rate != null && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ≈ {Math.round(serviceForm.price_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.price_exchange_rate.toFixed(3)} Kč/{serviceForm.price_currency})
-                          </p>
-                        )}
-                      </div>
+                      )}
                       <div className="w-32">
                         <Label>Režim</Label>
                         <Select value={serviceForm.price_mode} onValueChange={(v: "per_person" | "per_service") => setServiceForm(prev => ({ ...prev, price_mode: v }))}>
@@ -3413,13 +3526,22 @@ const DealDetail = () => {
                       </div>
                     </div>
 
-                    {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && (
+                    {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && !(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
                       <p className="text-xs text-muted-foreground -mt-2">
                         Prodejní cena s 15% marží: {Math.round(parseFloat(serviceForm.cost_price) * 1.15).toLocaleString("cs-CZ")} Kč
                       </p>
                     )}
 
-                    {serviceForm.price && (
+                    {serviceForm.service_type === 'hotel' && roomTypes.length > 0 ? (
+                      <div className="bg-muted p-3 rounded-md">
+                        <p className="text-sm font-medium">
+                          Celková cena: {formatPriceCurrency(roomTypes.reduce((s, r) => s + r.price * r.rooms, 0), serviceForm.price_currency || "CZK")}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {roomTypes.reduce((s, r) => s + r.rooms * r.persons_per_room, 0)} osob celkem
+                        </p>
+                      </div>
+                    ) : serviceForm.price ? (
                       <div className="bg-muted p-3 rounded-md">
                         <p className="text-sm font-medium">
                           Celková cena: {formatPriceCurrency(
@@ -3430,7 +3552,7 @@ const DealDetail = () => {
                           )}
                         </p>
                       </div>
-                    )}
+                    ) : null}
 
                     <div className="flex justify-end gap-2 pt-4">
                       <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>
