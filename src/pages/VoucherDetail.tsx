@@ -526,6 +526,7 @@ const VoucherDetail = () => {
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [baggage, setBaggage] = useState<BaggageAllowance | null>(null);
 
   // Send dialog state
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
