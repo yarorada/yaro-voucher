@@ -222,21 +222,32 @@ export const FloatingTaskButton = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Datum splnění</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "d. MMMM yyyy", { locale: cs }) : "Vyberte datum"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dueDate} onSelect={(d) => d && setDueDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
-                </PopoverContent>
-              </Popover>
+              <label className="text-sm font-medium">Datum a čas splnění</label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("flex-1 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "d. MMMM yyyy", { locale: cs }) : "Vyberte datum"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dueDate} onSelect={(d) => d && setDueDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+                <div className="flex items-center gap-1.5 border rounded-md px-2 bg-background">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="w-20 text-sm bg-transparent outline-none"
+                  />
+                </div>
+              </div>
             </div>
             <Button className="w-full" onClick={handleSubmit} disabled={!title.trim() || addTaskMutation.isPending}>
               Vytvořit úkol
