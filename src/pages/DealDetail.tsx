@@ -1974,6 +1974,13 @@ const DealDetail = () => {
       price_exchange_rate: null,
       price_czk_value: null,
     });
+    // Load room types for hotel services
+    const existingRoomTypes = (service.details as any)?.room_types;
+    if (service.service_type === "hotel" && Array.isArray(existingRoomTypes) && existingRoomTypes.length > 0) {
+      setRoomTypes(existingRoomTypes);
+    } else {
+      setRoomTypes([]);
+    }
     setServiceDialogOpen(true);
   };
 
