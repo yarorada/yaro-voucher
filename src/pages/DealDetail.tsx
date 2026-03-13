@@ -1390,6 +1390,10 @@ const DealDetail = () => {
       ? { tee_time: serviceForm.tee_time }
       : {};
 
+    const hotelRoomDetails = serviceForm.service_type === 'hotel' && roomTypes.length > 0
+      ? { room_types: roomTypes }
+      : {};
+
     try {
       if (serviceForm.id) {
         // Update existing service
@@ -1401,16 +1405,16 @@ const DealDetail = () => {
             description: serviceForm.description || null,
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
-            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price: effectivePrice ? parseFloat(effectivePrice) : null,
             price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
-            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            person_count: effectivePersonCount ? parseInt(effectivePersonCount) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, ...hotelRoomDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any)
           .eq("id", serviceForm.id);
 
@@ -1426,16 +1430,16 @@ const DealDetail = () => {
             description: serviceForm.description || null,
             start_date: formatDateForDB(serviceForm.start_date),
             end_date: formatDateForDB(serviceForm.end_date),
-            price: serviceForm.price ? parseFloat(serviceForm.price) : null,
+            price: effectivePrice ? parseFloat(effectivePrice) : null,
             price_currency: serviceForm.price_currency,
             cost_price: costPriceCzk,
             cost_currency: serviceForm.cost_currency,
             cost_price_original: costPriceOriginal,
             supplier_id: serviceForm.supplier_id || null,
-            person_count: serviceForm.person_count ? parseInt(serviceForm.person_count) : 1,
+            person_count: effectivePersonCount ? parseInt(effectivePersonCount) : 1,
             quantity: serviceForm.quantity ? parseInt(serviceForm.quantity) : 1,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
+            details: { ...(flightDetails || {}), ...golfTeeTimeDetails, ...hotelRoomDetails, person_count_unit: serviceForm.person_count_unit, price_mode: serviceForm.price_mode } as any,
           } as any]);
 
         if (error) throw error;
