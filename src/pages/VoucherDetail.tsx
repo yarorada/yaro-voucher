@@ -93,12 +93,20 @@ const fmtDatePdf = (d: string) => {
   return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
 };
 
+interface BaggageAllowance {
+  cabin_bag?: { included?: boolean; kg?: number };
+  hand_luggage?: { included?: boolean; kg?: number };
+  checked_luggage?: { included?: boolean; kg?: number };
+  golf_bag?: { included?: boolean; kg?: number };
+}
+
 const buildVoucherPdfBlob = (
   voucher: any,
   supplierName?: string,
   supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
   logoInfo?: { base64: string; w: number; h: number },
-  travelers?: VoucherTraveler[]
+  travelers?: VoucherTraveler[],
+  baggage?: BaggageAllowance | null
 ): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
