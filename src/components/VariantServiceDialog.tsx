@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, X } from "lucide-react";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "./FlightSegmentForm";
 import {
   Dialog,
