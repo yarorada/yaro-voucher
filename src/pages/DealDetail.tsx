@@ -1875,6 +1875,7 @@ const DealDetail = () => {
       price_exchange_rate: null,
       price_czk_value: null,
     });
+    setRoomTypes([]);
     resetFlightForm();
     setOriginalFlightDetails(null);
     // Clear draft and history
