@@ -105,9 +105,16 @@ export default function PublicHotels() {
 
                 {/* Content */}
                 <div className="p-5 space-y-2">
-                <h2 className="text-lg font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
-                    {hotel.name}
-                  </h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                      {hotel.name}
+                    </h2>
+                    {hotel.star_category != null && (
+                      <span className="text-sm" style={{ color: "#f59e0b" }}>
+                        {"★".repeat(hotel.star_category)}
+                      </span>
+                    )}
+                  </div>
                   {hotel.subtitle && (
                     <p className="text-sm text-slate-500 line-clamp-2">{hotel.subtitle}</p>
                   )}
