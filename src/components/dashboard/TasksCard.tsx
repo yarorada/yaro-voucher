@@ -52,6 +52,7 @@ interface EditingState {
   title: string;
   priority: string;
   description: string;
+  due_date: string;
 }
 
 const TaskRow = ({
