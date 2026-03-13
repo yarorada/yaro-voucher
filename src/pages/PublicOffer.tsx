@@ -245,10 +245,10 @@ function computePerPersonPrices(services: Array<{
   const nonHotels = services.filter(s => s.service_type !== "hotel");
   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
-  const calcPerPerson = (s: typeof services[0]) => {
+  const calcNonHotelPerPerson = (s: typeof services[0], fallbackPersons?: number) => {
     const priceMode = s.details?.price_mode || "per_service";
     const price = s.price || 0;
-    const persons = s.person_count || 1;
+    const persons = s.person_count || fallbackPersons || 1;
     const qty = s.quantity || 1;
     return priceMode === "per_person" ? price : (price * qty) / persons;
   };
@@ -256,11 +256,10 @@ function computePerPersonPrices(services: Array<{
   // Fallback: no hotel services — aggregate all services per person count group
   if (hotels.length === 0) {
     if (nonHotels.length === 0) return [];
-    // Group by person_count
     const groups: Record<number, number> = {};
     nonHotels.forEach(s => {
       const persons = s.person_count || 1;
-      groups[persons] = (groups[persons] || 0) + calcPerPerson(s);
+      groups[persons] = (groups[persons] || 0) + calcNonHotelPerPerson(s);
     });
     return Object.entries(groups)
       .map(([persons, total]) => ({
@@ -272,18 +271,54 @@ function computePerPersonPrices(services: Array<{
       .filter(l => l.pricePerPerson > 0);
   }
 
-  // Sum of non-hotel services cost per person
-  let sharedPerPerson = 0;
-  nonHotels.forEach(s => { sharedPerPerson += calcPerPerson(s); });
+  const lines: PerPersonLine[] = [];
 
-  return hotels
-    .map(h => ({
-      label: h.description || h.service_name,
-      personCount: h.person_count || 1,
-      pricePerPerson: Math.round(calcPerPerson(h) + sharedPerPerson),
-      currency,
-    }))
-    .filter(l => l.pricePerPerson > 0);
+  hotels.forEach(h => {
+    const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
+      Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
+        ? h.details.room_types
+        : null;
+
+    if (roomTypes) {
+      // Generate one line per room type
+      roomTypes.forEach(rt => {
+        if (!rt.price || rt.price <= 0) return;
+        const personsInRoom = rt.persons_per_room || 1;
+        // Shared (non-hotel) services cost per person for this room type's person count
+        let sharedCost = 0;
+        nonHotels.forEach(s => { sharedCost += calcNonHotelPerPerson(s, personsInRoom); });
+        const pricePerPerson = Math.round(rt.price / personsInRoom + sharedCost);
+        if (pricePerPerson > 0) {
+          lines.push({
+            label: rt.name || (h.description || h.service_name),
+            personCount: personsInRoom,
+            pricePerPerson,
+            currency,
+          });
+        }
+      });
+    } else {
+      // No room types — use service price directly
+      const priceMode = h.details?.price_mode || "per_service";
+      const price = h.price || 0;
+      const persons = h.person_count || 1;
+      const qty = h.quantity || 1;
+      const hotelPerPerson = priceMode === "per_person" ? price : (price * qty) / persons;
+      let sharedCost = 0;
+      nonHotels.forEach(s => { sharedCost += calcNonHotelPerPerson(s, persons); });
+      const pricePerPerson = Math.round(hotelPerPerson + sharedCost);
+      if (pricePerPerson > 0) {
+        lines.push({
+          label: h.description || h.service_name,
+          personCount: persons,
+          pricePerPerson,
+          currency,
+        });
+      }
+    }
+  });
+
+  return lines;
 }
 
 export default function PublicOffer() {
