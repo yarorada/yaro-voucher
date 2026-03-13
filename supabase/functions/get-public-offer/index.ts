@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     const { data: variants } = await supabase
       .from('deal_variants')
       .select(`
-        id, variant_name, destination_id, start_date, end_date, total_price, is_selected, notes,
+        id, variant_name, destination_id, start_date, end_date, total_price, is_selected, notes, hide_price,
         destination:destinations(id, name, country:countries(id, name, iso_code)),
         deal_variant_services(
           id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, details, order_index
