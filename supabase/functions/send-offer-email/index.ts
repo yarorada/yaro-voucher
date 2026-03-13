@@ -288,12 +288,6 @@ Deno.serve(async (req) => {
     function renderServiceLine(s: any): string {
       const emoji = serviceEmoji[s.service_type] || '📋';
       let extra = '';
-      if (s.service_type === 'hotel' && (s.quantity || 1) > 1) {
-        extra += `<span style="color:#94a3b8; margin-left:4px;">· ${s.quantity}× pokoj</span>`;
-      }
-      if (s.service_type === 'golf' && (s.quantity || 1) > 1) {
-        extra += `<span style="color:#94a3b8; margin-left:4px;">· ${s.quantity}× hra</span>`;
-      }
       if (s.description) {
         extra += `<span style="color:#94a3b8; margin-left:4px;">· ${escapeHtml(s.description)}</span>`;
       }
@@ -310,6 +304,49 @@ Deno.serve(async (req) => {
             </td>
           </tr></table>
         </td></tr>`;
+    }
+
+    // Render "Cena zahrnuje" section with consolidated hotel + green fee lines
+    function renderIncludesHtml(services: any[], startDate?: string, endDate?: string): string {
+      const hotelSvc = services.find((s: any) => s.service_type === 'hotel');
+      const totalGreenFees = services.filter((s: any) => s.service_type === 'golf').reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
+      const otherServices = services.filter((s: any) => s.service_type !== 'hotel' && s.service_type !== 'golf');
+
+      const nightsSrc = { start: startDate || hotelSvc?.start_date, end: endDate || hotelSvc?.end_date };
+      const nights = nightsSrc.start && nightsSrc.end
+        ? Math.round((new Date(nightsSrc.end).getTime() - new Date(nightsSrc.start).getTime()) / 86400000)
+        : null;
+
+      let rows = '';
+
+      if (hotelSvc) {
+        const nightsLabel = nights ? `${nights} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`;
+        const desc = hotelSvc.description ? `, ${hotelSvc.description}` : '';
+        rows += `
+          <tr><td style="padding:5px 0; vertical-align:top;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+              <td style="vertical-align:top; padding-right:10px; font-size:14px; line-height:20px;">🏨</td>
+              <td style="vertical-align:top; font-size:14px; line-height:20px;">
+                <strong style="color:#334155;">${escapeHtml(nightsLabel)}${escapeHtml(desc)}</strong>
+              </td>
+            </tr></table>
+          </td></tr>`;
+      }
+
+      if (totalGreenFees > 0) {
+        rows += `
+          <tr><td style="padding:5px 0; vertical-align:top;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+              <td style="vertical-align:top; padding-right:10px; font-size:14px; line-height:20px;">⛳</td>
+              <td style="vertical-align:top; font-size:14px; line-height:20px;">
+                <strong style="color:#334155;">${totalGreenFees}× green fee</strong>
+              </td>
+            </tr></table>
+          </td></tr>`;
+      }
+
+      rows += otherServices.map((s: any) => renderServiceLine(s)).join('');
+      return rows;
     }
 
     // Per-person price lines
@@ -383,7 +420,7 @@ Deno.serve(async (req) => {
             ${v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : ''}
             ${descHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-              ${vServices.map((s: any) => renderServiceLine(s)).join('')}
+              ${renderIncludesHtml(vServices, v.start_date, v.end_date)}
             </table>
             ${v.notes ? `<p style="font-size:12px; color:#94a3b8; font-style:italic; border-top:1px solid #e2e8f0; padding-top:12px; margin:12px 0 0;">${escapeHtml(v.notes)}</p>` : ''}
             ${renderPerPersonHtml(vServices)}
@@ -428,7 +465,7 @@ Deno.serve(async (req) => {
           <div style="padding:20px;">
             ${dDescHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-              ${sortedDirectServices.map((s: any) => renderServiceLine(s)).join('')}
+              ${renderIncludesHtml(sortedDirectServices)}
             </table>
             ${deal.total_price && deal.total_price > 0 ? `
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
