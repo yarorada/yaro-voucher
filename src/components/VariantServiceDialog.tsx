@@ -689,13 +689,26 @@ export const VariantServiceDialog = ({
                 <Input
                   type="number"
                   value={costPriceOriginal || costPrice}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const val = e.target.value;
                     setCostPriceOriginal(val);
                     if (costCurrency === "CZK") setCostPrice(val);
-                    // Auto-margin 15%
                     if (val && !priceManuallySet) {
-                      setPrice(Math.round(parseFloat(val) * 1.15).toString());
+                      if (costCurrency === "CZK") {
+                        // CZK: apply 15% directly
+                        setPrice(Math.round(parseFloat(val) * 1.15).toString());
+                      } else {
+                        // Foreign currency: fetch exchange rate, convert to CZK + 15%
+                        try {
+                          const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                            body: { currency: costCurrency, amount: parseFloat(val) },
+                          });
+                          if (data?.convertedAmount) {
+                            setPrice(Math.round(data.convertedAmount * 1.15).toString());
+                            setPriceCurrency("CZK");
+                          }
+                        } catch {}
+                      }
                     }
                   }}
                   placeholder="0"
