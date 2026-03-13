@@ -452,6 +452,11 @@ const DealDetail = () => {
     quantity: "1",
     price_mode: "per_person" as "per_person" | "per_service",
     price_manually_set: false,
+    // Exchange rate info for display
+    cost_exchange_rate: null as number | null,
+    cost_czk_value: null as number | null,
+    price_exchange_rate: null as number | null,
+    price_czk_value: null as number | null,
   });
   
   // Flight segments state (separate from form to avoid serialization issues)
