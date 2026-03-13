@@ -3459,56 +3459,59 @@ const DealDetail = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <Label>Prodejní cena</Label>
-                        <div className="flex gap-1">
-                          <Input
-                            type="number"
-                            value={serviceForm.price}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setServiceForm(prev => ({ ...prev, price: val, price_manually_set: true, price_czk_value: prev.price_currency === "CZK" && val ? parseFloat(val) : null }));
-                              if (val && serviceForm.price_currency !== "CZK") {
-                                try {
-                                  const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                                    body: { currency: serviceForm.price_currency, amount: parseFloat(val) },
-                                  });
-                                  if (data?.rate && data?.convertedAmount) {
-                                    setServiceForm(prev => ({ ...prev, price_exchange_rate: data.rate, price_czk_value: data.convertedAmount }));
-                                  }
-                                } catch {}
-                              }
-                            }}
-                            placeholder="0"
-                            className="flex-1"
-                          />
-                          <CurrencySelect
-                            value={serviceForm.price_currency}
-                            onChange={async (value) => {
-                              const p = serviceForm.price;
-                              const updates: any = { price_currency: value, price_exchange_rate: null, price_czk_value: value === "CZK" && p ? parseFloat(p) : null };
-                              if (p && value !== "CZK") {
-                                try {
-                                  const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                                    body: { currency: value, amount: parseFloat(p) },
-                                  });
-                                  if (data?.rate && data?.convertedAmount) {
-                                    updates.price_exchange_rate = data.rate;
-                                    updates.price_czk_value = data.convertedAmount;
-                                  }
-                                } catch {}
-                              }
-                              setServiceForm(prev => ({ ...prev, ...updates }));
-                            }}
-                            className="w-24"
-                          />
+                      {/* When room types are defined, selling price is auto-derived — hide the field */}
+                      {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
+                        <div className="flex-1">
+                          <Label>Prodejní cena</Label>
+                          <div className="flex gap-1">
+                            <Input
+                              type="number"
+                              value={serviceForm.price}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setServiceForm(prev => ({ ...prev, price: val, price_manually_set: true, price_czk_value: prev.price_currency === "CZK" && val ? parseFloat(val) : null }));
+                                if (val && serviceForm.price_currency !== "CZK") {
+                                  try {
+                                    const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                      body: { currency: serviceForm.price_currency, amount: parseFloat(val) },
+                                    });
+                                    if (data?.rate && data?.convertedAmount) {
+                                      setServiceForm(prev => ({ ...prev, price_exchange_rate: data.rate, price_czk_value: data.convertedAmount }));
+                                    }
+                                  } catch {}
+                                }
+                              }}
+                              placeholder="0"
+                              className="flex-1"
+                            />
+                            <CurrencySelect
+                              value={serviceForm.price_currency}
+                              onChange={async (value) => {
+                                const p = serviceForm.price;
+                                const updates: any = { price_currency: value, price_exchange_rate: null, price_czk_value: value === "CZK" && p ? parseFloat(p) : null };
+                                if (p && value !== "CZK") {
+                                  try {
+                                    const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                      body: { currency: value, amount: parseFloat(p) },
+                                    });
+                                    if (data?.rate && data?.convertedAmount) {
+                                      updates.price_exchange_rate = data.rate;
+                                      updates.price_czk_value = data.convertedAmount;
+                                    }
+                                  } catch {}
+                                }
+                                setServiceForm(prev => ({ ...prev, ...updates }));
+                              }}
+                              className="w-24"
+                            />
+                          </div>
+                          {serviceForm.price_currency !== "CZK" && serviceForm.price_czk_value != null && serviceForm.price_exchange_rate != null && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ≈ {Math.round(serviceForm.price_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.price_exchange_rate.toFixed(3)} Kč/{serviceForm.price_currency})
+                            </p>
+                          )}
                         </div>
-                        {serviceForm.price_currency !== "CZK" && serviceForm.price_czk_value != null && serviceForm.price_exchange_rate != null && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ≈ {Math.round(serviceForm.price_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.price_exchange_rate.toFixed(3)} Kč/{serviceForm.price_currency})
-                          </p>
-                        )}
-                      </div>
+                      )}
                       <div className="w-32">
                         <Label>Režim</Label>
                         <Select value={serviceForm.price_mode} onValueChange={(v: "per_person" | "per_service") => setServiceForm(prev => ({ ...prev, price_mode: v }))}>
