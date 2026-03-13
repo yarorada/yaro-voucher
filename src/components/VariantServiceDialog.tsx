@@ -83,6 +83,8 @@ export const VariantServiceDialog = ({
   const [supplierId, setSupplierId] = useState("");
   const [priceMode, setPriceMode] = useState<"per_person" | "per_service">("per_person");
   const [priceManuallySet, setPriceManuallySet] = useState(false);
+  type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
+  const [roomTypes, setRoomTypes] = useState<RoomTypeEntry[]>([]);
   // Exchange rate info for display
   const [costExchangeRate, setCostExchangeRate] = useState<number | null>(null);
   const [costCzkValue, setCostCzkValue] = useState<number | null>(null);
