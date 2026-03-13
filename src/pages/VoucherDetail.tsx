@@ -446,11 +446,11 @@ const buildVoucherPdfBlob = (
           xBag = margin;
           y += 5;
         }
-        doc.text(part, xBag, y);
+        doc.text(part, xBag, y, { charSpace: 0 });
         xBag += doc.getTextWidth(part);
         if (i < bagParts.length - 1) {
           doc.setTextColor(100, 116, 139);
-          doc.text(separator, xBag, y);
+          doc.text(separator, xBag, y, { charSpace: 0 });
           xBag += doc.getTextWidth(separator);
           doc.setTextColor(30, 41, 59);
         }
