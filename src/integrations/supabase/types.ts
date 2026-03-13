@@ -770,6 +770,7 @@ export type Database = {
           deal_id: string
           destination_id: string | null
           end_date: string | null
+          hide_price: boolean
           id: string
           is_selected: boolean
           notes: string | null
@@ -784,6 +785,7 @@ export type Database = {
           deal_id: string
           destination_id?: string | null
           end_date?: string | null
+          hide_price?: boolean
           id?: string
           is_selected?: boolean
           notes?: string | null
@@ -798,6 +800,7 @@ export type Database = {
           deal_id?: string
           destination_id?: string | null
           end_date?: string | null
+          hide_price?: boolean
           id?: string
           is_selected?: boolean
           notes?: string | null

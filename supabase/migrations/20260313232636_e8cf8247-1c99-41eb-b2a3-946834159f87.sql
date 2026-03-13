@@ -1,0 +1,1 @@
+ALTER TABLE public.deal_variants ADD COLUMN IF NOT EXISTS hide_price boolean NOT NULL DEFAULT false;
