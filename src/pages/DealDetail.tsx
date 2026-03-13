@@ -3526,13 +3526,22 @@ const DealDetail = () => {
                       </div>
                     </div>
 
-                    {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && (
+                    {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && !(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
                       <p className="text-xs text-muted-foreground -mt-2">
                         Prodejní cena s 15% marží: {Math.round(parseFloat(serviceForm.cost_price) * 1.15).toLocaleString("cs-CZ")} Kč
                       </p>
                     )}
 
-                    {serviceForm.price && (
+                    {serviceForm.service_type === 'hotel' && roomTypes.length > 0 ? (
+                      <div className="bg-muted p-3 rounded-md">
+                        <p className="text-sm font-medium">
+                          Celková cena: {formatPriceCurrency(roomTypes.reduce((s, r) => s + r.price * r.rooms, 0), serviceForm.price_currency || "CZK")}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {roomTypes.reduce((s, r) => s + r.rooms * r.persons_per_room, 0)} osob celkem
+                        </p>
+                      </div>
+                    ) : serviceForm.price ? (
                       <div className="bg-muted p-3 rounded-md">
                         <p className="text-sm font-medium">
                           Celková cena: {formatPriceCurrency(
@@ -3543,7 +3552,7 @@ const DealDetail = () => {
                           )}
                         </p>
                       </div>
-                    )}
+                    ) : null}
 
                     <div className="flex justify-end gap-2 pt-4">
                       <Button variant="outline" onClick={() => setServiceDialogOpen(false)}>
