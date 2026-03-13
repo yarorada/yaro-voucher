@@ -3367,32 +3367,37 @@ const DealDetail = () => {
                           onDateToChange={(date) => setServiceForm(prev => ({ ...prev, end_date: date }))}
                         />
                       </div>
-                      <div className="w-16">
-                        <Label>Osoby</Label>
-                        <Input
-                          id="deal-service-persons"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={serviceForm.person_count}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '') || '';
-                            setServiceForm(prev => ({ ...prev, person_count: val }));
-                          }}
-                          placeholder="1"
-                          className="text-center"
-                        />
-                      </div>
-                      <div className="w-16">
-                        <Label>Počet</Label>
-                        <Input
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={serviceForm.quantity}
-                          onChange={(e) => setServiceForm(prev => ({ ...prev, quantity: e.target.value.replace(/\D/g, '') || '' }))}
-                          placeholder="1"
-                          className="text-center"
-                        />
-                      </div>
+                      {/* Hide persons/quantity when room types are defined - they auto-derive */}
+                      {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
+                        <>
+                          <div className="w-16">
+                            <Label>Osoby</Label>
+                            <Input
+                              id="deal-service-persons"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={serviceForm.person_count}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '') || '';
+                                setServiceForm(prev => ({ ...prev, person_count: val }));
+                              }}
+                              placeholder="1"
+                              className="text-center"
+                            />
+                          </div>
+                          <div className="w-16">
+                            <Label>Počet</Label>
+                            <Input
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={serviceForm.quantity}
+                              onChange={(e) => setServiceForm(prev => ({ ...prev, quantity: e.target.value.replace(/\D/g, '') || '' }))}
+                              placeholder="1"
+                              className="text-center"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
 
                      {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
