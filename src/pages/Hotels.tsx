@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { HotelEditDialog } from "@/components/HotelEditDialog";
 import { HotelStars } from "@/components/HotelStars";
@@ -74,6 +74,8 @@ export default function Hotels() {
   const [saving, setSaving] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newHotelName, setNewHotelName] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHotels();
@@ -139,9 +141,40 @@ export default function Hotels() {
     }
   };
 
-  const filtered = hotels.filter((h) =>
-    removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()))
-  );
+  // Compute unique countries sorted by hotel count
+  const countries = useMemo(() => {
+    const map = new Map<string, { name: string; count: number }>();
+    hotels.forEach((h) => {
+      const c = h.destinations?.countries?.name;
+      if (c) map.set(c, { name: c, count: (map.get(c)?.count ?? 0) + 1 });
+    });
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [hotels]);
+
+  // Compute destinations for selected country
+  const destinationsForCountry = useMemo(() => {
+    if (!selectedCountry) return [];
+    const map = new Map<string, { name: string; count: number }>();
+    hotels.forEach((h) => {
+      if (h.destinations?.countries?.name !== selectedCountry) return;
+      const d = h.destinations?.name;
+      if (d) map.set(d, { name: d, count: (map.get(d)?.count ?? 0) + 1 });
+    });
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [hotels, selectedCountry]);
+
+  const handleSelectCountry = (country: string | null) => {
+    setSelectedCountry(country);
+    setSelectedDestination(null);
+  };
+
+  const filtered = hotels.filter((h) => {
+    const matchesSearch = removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()));
+    if (!matchesSearch) return false;
+    if (selectedCountry && h.destinations?.countries?.name !== selectedCountry) return false;
+    if (selectedDestination && h.destinations?.name !== selectedDestination) return false;
+    return true;
+  });
 
   usePageToolbar(
     <SmartSearchInput
@@ -162,19 +195,94 @@ export default function Hotels() {
       h.image_url_6, h.image_url_7, h.image_url_8, h.image_url_9, h.image_url_10]
       .filter(Boolean).length;
 
+  const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
+
   return (
     <div className="p-4 md:p-6">
-      <div className="container max-w-6xl mx-auto space-y-6">
+      <div className="container max-w-6xl mx-auto space-y-4">
         <div>
           <h1 className="text-heading-1">Hotely</h1>
           <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
         </div>
 
+        {/* Country filter chips */}
+        {!loading && countries.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => handleSelectCountry(null)}
+                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  selectedCountry === null
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                Všechny
+                <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === null ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                  {hotels.length}
+                </span>
+              </button>
+              {countries.map((c) => (
+                <button
+                  key={c.name}
+                  onClick={() => handleSelectCountry(selectedCountry === c.name ? null : c.name)}
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    selectedCountry === c.name
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  {c.name}
+                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === c.name ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                    {c.count}
+                  </span>
+                </button>
+              ))}
+              {hotelsWithoutDestination > 0 && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  + {hotelsWithoutDestination} bez destinace
+                </span>
+              )}
+            </div>
+
+            {/* Destination sub-filter */}
+            {selectedCountry && destinationsForCountry.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap pl-1">
+                <MapPin className="h-3 w-3 text-muted-foreground" />
+                <button
+                  onClick={() => setSelectedDestination(null)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
+                    selectedDestination === null
+                      ? "bg-secondary text-secondary-foreground border-secondary"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  Všechny destinace
+                </button>
+                {destinationsForCountry.map((d) => (
+                  <button
+                    key={d.name}
+                    onClick={() => setSelectedDestination(selectedDestination === d.name ? null : d.name)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
+                      selectedDestination === d.name
+                        ? "bg-secondary text-secondary-foreground border-secondary"
+                        : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                    }`}
+                  >
+                    {d.name}
+                    <span className="ml-0.5 text-[10px] opacity-60">{d.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Načítám hotely...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            {search ? "Žádný hotel nenalezen" : "Zatím nemáte žádné hotely"}
+            {search || selectedCountry ? "Žádný hotel nenalezen" : "Zatím nemáte žádné hotely"}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -257,7 +365,6 @@ export default function Hotels() {
         )}
       </div>
 
-      {/* Edit dialog — uses unified HotelEditDialog with single AI button */}
       {editHotel && (
         <HotelEditDialog
           open={editDialogOpen}
@@ -267,7 +374,6 @@ export default function Hotels() {
         />
       )}
 
-      {/* Create dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -294,7 +400,6 @@ export default function Hotels() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete dialog */}
       <AlertDialog open={!!deleteHotel} onOpenChange={(v) => !v && setDeleteHotel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
