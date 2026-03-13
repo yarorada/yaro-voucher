@@ -421,7 +421,7 @@ const buildVoucherPdfBlob = (
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(71, 85, 105);
-      doc.text("ZAVAZADLA / BAGGAGE", margin, y);
+      doc.text("BAGGAGE", margin, y);
       y += 5;
 
       const bagParts = baggageItems.map(item => {
