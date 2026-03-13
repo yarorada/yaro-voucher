@@ -407,10 +407,10 @@ const buildVoucherPdfBlob = (
   // ── BAGGAGE ALLOWANCE (only if flights exist and baggage data is present) ──
   if (flights.length > 0 && baggage) {
     const baggageItems: { label: string; kg?: number; included?: boolean }[] = [
-      { label: "Taska na palubu", ...(baggage.cabin_bag || {}) },
-      { label: "Palubni zavazadlo", ...(baggage.hand_luggage || {}) },
-      { label: "Odbavene zavazadlo", ...(baggage.checked_luggage || {}) },
-      { label: "Golfovy bag", ...(baggage.golf_bag || {}) },
+      { label: "Personal item", ...(baggage.cabin_bag || {}) },
+      { label: "Cabin bag", ...(baggage.hand_luggage || {}) },
+      { label: "Checked luggage", ...(baggage.checked_luggage || {}) },
+      { label: "Golf bag", ...(baggage.golf_bag || {}) },
     ].filter(item => item.included);
 
     if (baggageItems.length > 0) {
