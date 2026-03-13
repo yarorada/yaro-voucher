@@ -1,4 +1,4 @@
-import { useState, useCallback, ReactNode } from "react";
+import { useState, useCallback, ReactNode, useRef } from "react";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
@@ -21,7 +21,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Check, Eye, EyeOff, Columns2, Rows2 } from "lucide-react";
+import { GripVertical, Pencil, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 
@@ -39,16 +39,6 @@ const DEFAULT_ORDER = [
   "contracts",
 ];
 
-const TILE_LABELS: Record<string, string> = {
-  bank_notifications: "Příchozí platby",
-  tasks: "Úkoly",
-  stats: "Statistiky",
-  overdue: "Nezaplacené",
-  deals: "Obchodní případy",
-  vouchers: "Vouchery",
-  contracts: "Smlouvy",
-};
-
 const TILE_COMPONENTS: Record<string, ReactNode> = {
   bank_notifications: <BankNotificationsCard />,
   tasks: <TasksCard />,
@@ -60,6 +50,10 @@ const TILE_COMPONENTS: Record<string, ReactNode> = {
 };
 
 type TileSize = "1x1" | "2x1" | "1x2" | "2x2";
+
+function clamp(val: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, val));
+}
 
 function loadOrder(): string[] {
   try {
@@ -94,8 +88,7 @@ function saveSizes(sizes: Record<string, TileSize>) {
   localStorage.setItem(SIZES_KEY, JSON.stringify(sizes));
 }
 
-// Returns tailwind col/row span classes
-function getSizeClasses(size: TileSize) {
+function getSizeClasses(size: TileSize): string {
   switch (size) {
     case "2x1": return "md:col-span-2";
     case "1x2": return "md:row-span-2";
@@ -104,21 +97,87 @@ function getSizeClasses(size: TileSize) {
   }
 }
 
-// Cycle through sizes
-const SIZE_CYCLE: TileSize[] = ["1x1", "2x1", "1x2", "2x2"];
+// ──────────────────────────────────────────────────────────
+// Drag-to-resize handle (bottom-right corner)
+// ──────────────────────────────────────────────────────────
+function ResizeHandle({
+  currentSize,
+  onSizeChange,
+  tileRef,
+}: {
+  currentSize: TileSize;
+  onSizeChange: (size: TileSize) => void;
+  tileRef: React.RefObject<HTMLDivElement>;
+}) {
+  const origin = useRef<{
+    startX: number;
+    startY: number;
+    startCols: number;
+    startRows: number;
+    colUnit: number;
+    rowUnit: number;
+  } | null>(null);
 
-function nextSize(current: TileSize): TileSize {
-  const idx = SIZE_CYCLE.indexOf(current);
-  return SIZE_CYCLE[(idx + 1) % SIZE_CYCLE.length];
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!tileRef.current) return;
+    const rect = tileRef.current.getBoundingClientRect();
+    const startCols = currentSize === "2x1" || currentSize === "2x2" ? 2 : 1;
+    const startRows = currentSize === "1x2" || currentSize === "2x2" ? 2 : 1;
+    origin.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startCols,
+      startRows,
+      colUnit: rect.width / startCols,
+      rowUnit: rect.height / startRows,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!origin.current) return;
+    const { startX, startY, startCols, startRows, colUnit, rowUnit } = origin.current;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const targetW = colUnit * startCols + dx;
+    const targetH = rowUnit * startRows + dy;
+    const newCols = clamp(Math.round(targetW / colUnit), 1, 2);
+    const newRows = clamp(Math.round(targetH / rowUnit), 1, 2);
+    const newSize: TileSize =
+      newCols === 2 && newRows === 2 ? "2x2" :
+      newCols === 2 ? "2x1" :
+      newRows === 2 ? "1x2" : "1x1";
+    if (newSize !== currentSize) onSizeChange(newSize);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    origin.current = null;
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  };
+
+  return (
+    <div
+      className="absolute bottom-1.5 right-1.5 w-5 h-5 cursor-se-resize z-20 flex items-center justify-center rounded bg-muted/90 hover:bg-primary/20 border border-border/60 transition-colors select-none"
+      title="Táhněte pro změnu velikosti"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+    >
+      {/* 3-dot resize icon */}
+      <svg width="10" height="10" viewBox="0 0 10 10" className="fill-muted-foreground">
+        <circle cx="8.5" cy="8.5" r="1.3" />
+        <circle cx="4.5" cy="8.5" r="1.3" />
+        <circle cx="8.5" cy="4.5" r="1.3" />
+      </svg>
+    </div>
+  );
 }
 
-const SIZE_LABELS: Record<TileSize, string> = {
-  "1x1": "1×1",
-  "2x1": "2 sloupce",
-  "1x2": "2 řádky",
-  "2x2": "2×2",
-};
-
+// ──────────────────────────────────────────────────────────
+// Sortable tile wrapper
+// ──────────────────────────────────────────────────────────
 function SortableTile({
   id,
   children,
@@ -134,8 +193,10 @@ function SortableTile({
   hidden: boolean;
   size: TileSize;
   onToggleVisibility: () => void;
-  onChangeSize: () => void;
+  onChangeSize: (size: TileSize) => void;
 }) {
+  const tileRef = useRef<HTMLDivElement>(null);
+
   const {
     attributes,
     listeners,
@@ -144,6 +205,12 @@ function SortableTile({
     transition,
     isDragging,
   } = useSortable({ id, disabled: !editing });
+
+  // Combine dnd-kit ref with our tileRef
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+    (tileRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    setNodeRef(node);
+  }, [setNodeRef]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -154,50 +221,44 @@ function SortableTile({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       className={`relative ${getSizeClasses(size)} ${editing ? "ring-2 ring-primary/30 rounded-lg" : ""}`}
     >
       {editing && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-          <button
-            onClick={onChangeSize}
-            className="p-1 rounded-md bg-muted/80 hover:bg-muted transition-colors flex items-center gap-0.5"
-            aria-label="Změnit velikost dlaždice"
-            title={`Velikost: ${SIZE_LABELS[size]} → ${SIZE_LABELS[nextSize(size)]}`}
-          >
-            {(size === "2x1" || size === "2x2") ? (
-              <Columns2 className="h-4 w-4 text-primary" />
-            ) : (
-              <Columns2 className="h-4 w-4 text-muted-foreground" />
-            )}
-            {(size === "1x2" || size === "2x2") ? (
-              <Rows2 className="h-4 w-4 text-primary" />
-            ) : (
-              <Rows2 className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-          <button
-            onClick={onToggleVisibility}
-            className="p-1 rounded-md bg-muted/80 hover:bg-muted transition-colors"
-            aria-label={hidden ? "Zobrazit dlaždici" : "Skrýt dlaždici"}
-          >
-            {hidden ? (
-              <EyeOff className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-1 rounded-md bg-muted/80 cursor-grab active:cursor-grabbing"
-            aria-label="Přesunout dlaždici"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </div>
+        <>
+          {/* Top-right controls: visibility + drag handle */}
+          <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+            <button
+              onClick={onToggleVisibility}
+              className="p-1 rounded-md bg-muted/80 hover:bg-muted transition-colors"
+              aria-label={hidden ? "Zobrazit dlaždici" : "Skrýt dlaždici"}
+            >
+              {hidden ? (
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            <button
+              {...attributes}
+              {...listeners}
+              className="p-1 rounded-md bg-muted/80 cursor-grab active:cursor-grabbing"
+              aria-label="Přesunout dlaždici"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Bottom-right resize handle */}
+          <ResizeHandle
+            currentSize={size}
+            onSizeChange={onChangeSize}
+            tileRef={tileRef}
+          />
+        </>
       )}
+
       {editing && hidden && (
         <div className="absolute inset-0 z-[5] rounded-lg bg-background/60 flex items-center justify-center pointer-events-none">
           <span className="text-sm font-medium text-muted-foreground">Skryto</span>
@@ -208,6 +269,9 @@ function SortableTile({
   );
 }
 
+// ──────────────────────────────────────────────────────────
+// Main dashboard
+// ──────────────────────────────────────────────────────────
 const Index = () => {
   const [order, setOrder] = useState<string[]>(loadOrder);
   const [hiddenTiles, setHiddenTiles] = useState<string[]>(loadHidden);
@@ -236,7 +300,6 @@ const Index = () => {
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
     setOrder((prev) => {
       const oldIndex = prev.indexOf(active.id as string);
       const newIndex = prev.indexOf(over.id as string);
@@ -256,16 +319,14 @@ const Index = () => {
     });
   }, []);
 
-  const changeTileSize = useCallback((tileId: string) => {
+  const changeTileSize = useCallback((tileId: string, size: TileSize) => {
     setTileSizes((prev) => {
-      const current: TileSize = prev[tileId] ?? "1x1";
-      const next = { ...prev, [tileId]: nextSize(current) };
+      const next = { ...prev, [tileId]: size };
       saveSizes(next);
       return next;
     });
   }, []);
 
-  // In edit mode show all tiles; otherwise filter out hidden ones
   const visibleOrder = editing
     ? order
     : order.filter((id) => !hiddenTiles.includes(id));
@@ -273,15 +334,16 @@ const Index = () => {
   return (
     <div className="min-h-full bg-[var(--gradient-subtle)]">
       <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
-
-        {/* Draggable tiles */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={visibleOrder} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+            <div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 grid-flow-dense"
+              style={{ gridAutoRows: "320px" }}
+            >
               {visibleOrder.map((id) => {
                 const size: TileSize = tileSizes[id] ?? "1x1";
                 return (
@@ -292,9 +354,9 @@ const Index = () => {
                     hidden={hiddenTiles.includes(id)}
                     size={size}
                     onToggleVisibility={() => toggleVisibility(id)}
-                    onChangeSize={() => changeTileSize(id)}
+                    onChangeSize={(s) => changeTileSize(id, s)}
                   >
-                    <div className="aspect-square [&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
+                    <div className="h-full [&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
                       {TILE_COMPONENTS[id]}
                     </div>
                   </SortableTile>
