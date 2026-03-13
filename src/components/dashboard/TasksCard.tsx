@@ -132,6 +132,7 @@ const TaskRow = ({
                     selected={editing.due_date ? parseISO(editing.due_date) : undefined}
                     onSelect={(d) => d && onEditChange("due_date", format(d, "yyyy-MM-dd"))}
                     initialFocus
+                    weekStartsOn={1}
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
