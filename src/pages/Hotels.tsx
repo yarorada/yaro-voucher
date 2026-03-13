@@ -209,6 +209,9 @@ export default function Hotels() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold truncate">{hotel.name}</h3>
+                      {hotel.star_category != null && (
+                        <HotelStars stars={hotel.star_category} className="mt-0.5" />
+                      )}
                       {hotel.review_score != null && (
                         <div className="flex items-center gap-1 mt-0.5">
                           <span className="text-yellow-500 text-xs">★</span>
