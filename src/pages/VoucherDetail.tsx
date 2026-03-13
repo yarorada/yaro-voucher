@@ -427,7 +427,6 @@ const buildVoucherPdfBlob = (
       const bagParts = baggageItems.map(item => {
         let part = item.label;
         if (item.kg) part += ` ${item.kg} kg`;
-        else part += " (v cene)";
         return part;
       });
 
