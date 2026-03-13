@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateInput } from "@/components/ui/date-input";
-import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye, ExternalLink } from "lucide-react";
+import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye, ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
@@ -77,6 +77,19 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewFileName, setPreviewFileName] = useState("");
   const [previewIsImage, setPreviewIsImage] = useState(false);
+
+  // Edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<SupplierInvoice | null>(null);
+  const [editData, setEditData] = useState({
+    supplier_name: "",
+    total_amount: "" as string | number,
+    currency: "CZK",
+    issue_date: "",
+    is_paid: false,
+    paid_at: "",
+    payment_method: "moneta",
+  });
 
   // OCR confirmation dialog
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -354,6 +367,55 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     if (!error) fetchInvoices();
   };
 
+  const handleOpenEdit = (invoice: SupplierInvoice) => {
+    setEditingInvoice(invoice);
+    setEditData({
+      supplier_name: invoice.supplier_name || "",
+      total_amount: invoice.total_amount ?? "",
+      currency: invoice.currency || "CZK",
+      issue_date: invoice.issue_date
+        ? (() => { const p = invoice.issue_date!.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; })()
+        : "",
+      is_paid: invoice.is_paid,
+      paid_at: invoice.paid_at || "",
+      payment_method: invoice.payment_method || "moneta",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const parseEditIssueDate = (dateStr: string): string | null => {
+    if (!dateStr) return null;
+    const parts = dateStr.split(".");
+    if (parts.length !== 3) return null;
+    const [d, m, y] = parts;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingInvoice) return;
+    const { error } = await supabase
+      .from("deal_supplier_invoices")
+      .update({
+        supplier_name: editData.supplier_name || null,
+        total_amount: editData.total_amount !== "" ? Number(editData.total_amount) : null,
+        currency: editData.currency || "CZK",
+        issue_date: parseEditIssueDate(editData.issue_date),
+        is_paid: editData.is_paid,
+        paid_at: editData.is_paid ? (editData.paid_at || new Date().toISOString().split("T")[0]) : null,
+        payment_method: editData.is_paid ? editData.payment_method : null,
+      } as any)
+      .eq("id", editingInvoice.id);
+
+    if (error) {
+      toast.error("Uložení se nezdařilo");
+    } else {
+      toast.success("Doklad uložen");
+      setEditDialogOpen(false);
+      setEditingInvoice(null);
+      fetchInvoices();
+    }
+  };
+
   const handleDelete = async (invoice: SupplierInvoice) => {
     if (!confirm("Opravdu smazat tento doklad?")) return;
 
@@ -508,34 +570,19 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                       onCheckedChange={() => handleTogglePaid(inv)}
                     />
                   </TableCell>
-                  <TableCell>
-                    {inv.is_paid && (
-                      <Select
-                        value={inv.payment_method || "moneta"}
-                        onValueChange={(v) => handleUpdatePayment(inv.id, "payment_method", v)}
-                      >
-                        <SelectTrigger className="h-7 w-24 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="moneta">Moneta</SelectItem>
-                          <SelectItem value="amnis">Amnis</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.is_paid ? (inv.payment_method === "amnis" ? "Amnis" : "Moneta") : ""}
                   </TableCell>
-                  <TableCell>
-                    {inv.is_paid && (
-                      <Input
-                        type="date"
-                        value={inv.paid_at || ""}
-                        onChange={(e) => handleUpdatePayment(inv.id, "paid_at", e.target.value || null)}
-                        className="h-7 w-32 text-xs"
-                      />
-                    )}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.is_paid && inv.paid_at
+                      ? (() => { const p = inv.paid_at.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; })()
+                      : ""}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpenEdit(inv)} title="Upravit">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePreview(inv)} title="Náhled">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
@@ -554,6 +601,100 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         ) : (
           <p className="text-sm text-muted-foreground text-center py-2">Zatím žádné doklady</p>
         )}
+
+        {/* Edit Invoice Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) setEditingInvoice(null); setEditDialogOpen(open); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upravit doklad</DialogTitle>
+              <DialogDescription>
+                {editingInvoice?.file_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div>
+                <Label>Dodavatel</Label>
+                <Input
+                  value={editData.supplier_name}
+                  onChange={(e) => setEditData((p) => ({ ...p, supplier_name: e.target.value }))}
+                  placeholder="Název dodavatele"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Částka</Label>
+                  <Input
+                    type="number"
+                    value={editData.total_amount}
+                    onChange={(e) => setEditData((p) => ({ ...p, total_amount: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label>Měna</Label>
+                  <Select value={editData.currency} onValueChange={(v) => setEditData((p) => ({ ...p, currency: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Datum vystavení (DD.MM.YYYY)</Label>
+                <Input
+                  value={editData.issue_date}
+                  onChange={(e) => setEditData((p) => ({ ...p, issue_date: e.target.value }))}
+                  placeholder="01.01.2025"
+                />
+              </div>
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="edit-is-paid"
+                    checked={editData.is_paid}
+                    onCheckedChange={(v) => setEditData((p) => ({ ...p, is_paid: !!v }))}
+                  />
+                  <Label htmlFor="edit-is-paid" className="font-medium">Zaplaceno</Label>
+                </div>
+                {editData.is_paid && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Forma platby</Label>
+                      <Select value={editData.payment_method} onValueChange={(v) => setEditData((p) => ({ ...p, payment_method: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="moneta">Moneta</SelectItem>
+                          <SelectItem value="amnis">Amnis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Datum platby</Label>
+                      <Input
+                        type="date"
+                        value={editData.paid_at}
+                        onChange={(e) => setEditData((p) => ({ ...p, paid_at: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingInvoice(null); }}>
+                Zrušit
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Uložit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* OCR Confirmation Dialog */}
         <Dialog open={confirmDialogOpen} onOpenChange={(open) => {
