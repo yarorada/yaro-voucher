@@ -200,6 +200,10 @@ export const VariantServiceDialog = ({
     setSupplierId("");
     setPriceMode("per_person");
     setPriceManuallySet(false);
+    setCostExchangeRate(null);
+    setCostCzkValue(null);
+    setPriceExchangeRate(null);
+    setPriceCzkValue(null);
     setOutboundSegments([emptySegment()]);
     setReturnSegments([emptySegment()]);
     setIsOneWay(false);
