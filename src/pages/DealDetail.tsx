@@ -1297,6 +1297,16 @@ const DealDetail = () => {
   const handleSaveService = async () => {
     if (!deal) return;
     
+    // Derive price and person_count from room types for hotel services
+    let effectivePrice = serviceForm.price;
+    let effectivePersonCount = serviceForm.person_count;
+    if (serviceForm.service_type === "hotel" && roomTypes.length > 0) {
+      const totalRoomsPrice = roomTypes.reduce((sum, rt) => sum + rt.price * rt.rooms, 0);
+      const totalPersons = roomTypes.reduce((sum, rt) => sum + rt.rooms * rt.persons_per_room, 0);
+      effectivePrice = totalRoomsPrice.toString();
+      effectivePersonCount = totalPersons.toString();
+    }
+    
     // Convert currency if needed
     let costPriceCzk: number | null = null;
     const costPriceOriginal = serviceForm.cost_price_original ? parseFloat(serviceForm.cost_price_original) : null;
