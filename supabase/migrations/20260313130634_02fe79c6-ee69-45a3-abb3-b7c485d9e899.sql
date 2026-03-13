@@ -1,0 +1,1 @@
+ALTER TABLE public.hotel_templates ADD COLUMN star_category integer NULL CHECK (star_category >= 1 AND star_category <= 5);

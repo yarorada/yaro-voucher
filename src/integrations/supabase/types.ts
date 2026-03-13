@@ -1170,6 +1170,7 @@ export type Database = {
           review_score: number | null
           room_types: Json | null
           slug: string | null
+          star_category: number | null
           subtitle: string | null
           updated_at: string
           website_url: string | null
@@ -1201,6 +1202,7 @@ export type Database = {
           review_score?: number | null
           room_types?: Json | null
           slug?: string | null
+          star_category?: number | null
           subtitle?: string | null
           updated_at?: string
           website_url?: string | null
@@ -1232,6 +1234,7 @@ export type Database = {
           review_score?: number | null
           room_types?: Json | null
           slug?: string | null
+          star_category?: number | null
           subtitle?: string | null
           updated_at?: string
           website_url?: string | null
