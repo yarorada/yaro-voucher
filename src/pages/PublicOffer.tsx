@@ -653,31 +653,55 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider pt-2">Cena zahrnuje</h4>
 
         {/* Services */}
-        <div className="space-y-2">
-          {variant.deal_variant_services.map((service) => {
-            const Icon = serviceIcons[service.service_type] || FileText;
-            return (
-              <div key={service.id} className="flex items-start gap-3 text-sm">
-                <Icon className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-slate-700">{service.service_name}</span>
-                  {service.service_type === "hotel" && (service.quantity || 1) > 1 && (
-                    <span className="text-slate-400 ml-1">· {service.quantity}× pokoj</span>
-                  )}
-                  {service.service_type === "golf" && (service.quantity || 1) > 1 && (
-                    <span className="text-slate-400 ml-1">· {service.quantity}× hra</span>
-                  )}
-                  {service.description && (
-                    <span className="text-slate-400 ml-1">· {service.description}</span>
-                  )}
-                  {service.service_type === "flight" && service.details && (
-                    <FlightInfo details={service.details} />
-                  )}
+        {(() => {
+          const services = variant.deal_variant_services;
+          const hotelSvc = services.find(s => s.service_type === "hotel");
+          const totalGreenFees = services.filter(s => s.service_type === "golf").reduce((sum, s) => sum + (s.quantity || 1), 0);
+          const nightsFrom = variant.start_date && variant.end_date
+            ? Math.round((new Date(variant.end_date).getTime() - new Date(variant.start_date).getTime()) / 86400000)
+            : hotelSvc?.start_date && hotelSvc?.end_date
+              ? Math.round((new Date(hotelSvc.end_date).getTime() - new Date(hotelSvc.start_date).getTime()) / 86400000)
+              : null;
+          const otherServices = services.filter(s => s.service_type !== "hotel" && s.service_type !== "golf");
+          const Hotel = serviceIcons["hotel"] || FileText;
+          const Golf = serviceIcons["golf"] || FileText;
+          return (
+            <div className="space-y-2">
+              {hotelSvc && (
+                <div className="flex items-start gap-3 text-sm">
+                  <Hotel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="font-medium text-slate-700">
+                    {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
+                    {hotelSvc.description && `, ${hotelSvc.description}`}
+                  </span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              )}
+              {totalGreenFees > 0 && (
+                <div className="flex items-start gap-3 text-sm">
+                  <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="font-medium text-slate-700">{totalGreenFees}× green fee</span>
+                </div>
+              )}
+              {otherServices.map((service) => {
+                const Icon = serviceIcons[service.service_type] || FileText;
+                return (
+                  <div key={service.id} className="flex items-start gap-3 text-sm">
+                    <Icon className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-slate-700">{service.service_name}</span>
+                      {service.description && (
+                        <span className="text-slate-400 ml-1">· {service.description}</span>
+                      )}
+                      {service.service_type === "flight" && service.details && (
+                        <FlightInfo details={service.details} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Notes */}
         {variant.notes && (
