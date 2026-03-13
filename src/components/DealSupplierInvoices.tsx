@@ -367,6 +367,55 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     if (!error) fetchInvoices();
   };
 
+  const handleOpenEdit = (invoice: SupplierInvoice) => {
+    setEditingInvoice(invoice);
+    setEditData({
+      supplier_name: invoice.supplier_name || "",
+      total_amount: invoice.total_amount ?? "",
+      currency: invoice.currency || "CZK",
+      issue_date: invoice.issue_date
+        ? (() => { const p = invoice.issue_date!.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; })()
+        : "",
+      is_paid: invoice.is_paid,
+      paid_at: invoice.paid_at || "",
+      payment_method: invoice.payment_method || "moneta",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const parseEditIssueDate = (dateStr: string): string | null => {
+    if (!dateStr) return null;
+    const parts = dateStr.split(".");
+    if (parts.length !== 3) return null;
+    const [d, m, y] = parts;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingInvoice) return;
+    const { error } = await supabase
+      .from("deal_supplier_invoices")
+      .update({
+        supplier_name: editData.supplier_name || null,
+        total_amount: editData.total_amount !== "" ? Number(editData.total_amount) : null,
+        currency: editData.currency || "CZK",
+        issue_date: parseEditIssueDate(editData.issue_date),
+        is_paid: editData.is_paid,
+        paid_at: editData.is_paid ? (editData.paid_at || new Date().toISOString().split("T")[0]) : null,
+        payment_method: editData.is_paid ? editData.payment_method : null,
+      } as any)
+      .eq("id", editingInvoice.id);
+
+    if (error) {
+      toast.error("Uložení se nezdařilo");
+    } else {
+      toast.success("Doklad uložen");
+      setEditDialogOpen(false);
+      setEditingInvoice(null);
+      fetchInvoices();
+    }
+  };
+
   const handleDelete = async (invoice: SupplierInvoice) => {
     if (!confirm("Opravdu smazat tento doklad?")) return;
 
