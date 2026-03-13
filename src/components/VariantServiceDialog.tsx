@@ -734,12 +734,32 @@ export const VariantServiceDialog = ({
                 <Input
                   type="number"
                   value={costPriceOriginal || costPrice}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const val = e.target.value;
                     setCostPriceOriginal(val);
                     if (costCurrency === "CZK") {
                       setCostPrice(val);
                       setCostCzkValue(val ? parseFloat(val) : null);
+                      if (!priceManuallySet && val) {
+                        setPrice(Math.round(parseFloat(val) * 1.15).toString());
+                        setPriceCurrency("CZK");
+                      }
+                    } else if (val) {
+                      try {
+                        const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                          body: { currency: costCurrency, amount: parseFloat(val) },
+                        });
+                        if (data?.rate && data?.convertedAmount) {
+                          setCostExchangeRate(data.rate);
+                          setCostCzkValue(data.convertedAmount);
+                          if (!priceManuallySet) {
+                            setPrice(Math.round(data.convertedAmount * 1.15).toString());
+                            setPriceCurrency("CZK");
+                          }
+                        }
+                      } catch {}
+                    } else {
+                      setCostCzkValue(null);
                     }
                   }}
                   placeholder="0"
@@ -780,6 +800,7 @@ export const VariantServiceDialog = ({
               {costCurrency !== "CZK" && costCzkValue != null && costExchangeRate != null && (
                 <p className="text-xs text-muted-foreground mt-1">
                   ≈ {Math.round(costCzkValue).toLocaleString("cs-CZ")} Kč (kurz {costExchangeRate.toFixed(3)} Kč/{costCurrency})
+                  {!priceManuallySet && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(costCzkValue * 1.15).toLocaleString("cs-CZ")} Kč</span>}
                 </p>
               )}
               {costCurrency === "CZK" && costPrice && (
