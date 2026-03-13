@@ -78,6 +78,19 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const [previewFileName, setPreviewFileName] = useState("");
   const [previewIsImage, setPreviewIsImage] = useState(false);
 
+  // Edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<SupplierInvoice | null>(null);
+  const [editData, setEditData] = useState({
+    supplier_name: "",
+    total_amount: "" as string | number,
+    currency: "CZK",
+    issue_date: "",
+    is_paid: false,
+    paid_at: "",
+    payment_method: "moneta",
+  });
+
   // OCR confirmation dialog
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingFileUrl, setPendingFileUrl] = useState("");
