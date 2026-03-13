@@ -433,6 +433,9 @@ const DealDetail = () => {
   const [pendingVoucherSync, setPendingVoucherSync] = useState<Array<{ id: string; voucher_code: string; client_name: string }> | null>(null);
   
   // Service form state
+  // Room type definition for hotel services
+  type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
+
    const [serviceForm, setServiceForm] = useState({
     id: "",
     service_type: "hotel" as DealService["service_type"],
@@ -458,6 +461,8 @@ const DealDetail = () => {
     price_exchange_rate: null as number | null,
     price_czk_value: null as number | null,
   });
+  // Room types for hotel services
+  const [roomTypes, setRoomTypes] = useState<RoomTypeEntry[]>([]);
   
   // Flight segments state (separate from form to avoid serialization issues)
   const [flightFormData, setFlightFormData] = useState<FlightFormData>({
