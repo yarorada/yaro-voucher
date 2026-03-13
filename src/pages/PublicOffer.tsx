@@ -714,7 +714,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         )}
 
         {/* Per-person price recap */}
-        {(() => {
+        {!variant.hide_price && (() => {
           const lines = computePerPersonPrices(variant.deal_variant_services);
           if (lines.length === 0) return null;
           return (
