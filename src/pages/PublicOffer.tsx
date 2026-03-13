@@ -274,7 +274,7 @@ function computePerPersonPrices(services: Array<{
   const lines: PerPersonLine[] = [];
 
   hotels.forEach(h => {
-    const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> =
+    const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
       Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
         ? h.details.room_types
         : null;
