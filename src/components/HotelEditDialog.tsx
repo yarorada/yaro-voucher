@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { HotelImageUpload } from "@/components/HotelImageUpload";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
-import { Plus, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2, Star } from "lucide-react";
 
 interface GolfCourseData {
   name: string;
