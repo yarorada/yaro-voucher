@@ -1963,6 +1963,10 @@ const DealDetail = () => {
       quantity: (service.quantity || 1).toString(),
       price_mode: (service.details as any)?.price_mode || "per_person",
       price_manually_set: true, // Existing service - don't auto-calculate
+      cost_exchange_rate: null,
+      cost_czk_value: null,
+      price_exchange_rate: null,
+      price_czk_value: null,
     });
     setServiceDialogOpen(true);
   };
