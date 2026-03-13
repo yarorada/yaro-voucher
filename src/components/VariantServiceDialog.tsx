@@ -123,12 +123,20 @@ export const VariantServiceDialog = ({
       setPriceCurrency((service as any).price_currency || "CZK");
       const svcCostCurrency = (service as any).cost_currency || "CZK";
       setCostCurrency(svcCostCurrency);
-      setCostPriceOriginal((service as any).cost_price_original?.toString() || "");
+      const origVal = (service as any).cost_price_original;
+      const czkVal = service.cost_price;
+      setCostPriceOriginal(origVal?.toString() || "");
       // Show original-currency value in the input when not CZK
-      if (svcCostCurrency !== "CZK" && (service as any).cost_price_original != null) {
-        setCostPrice((service as any).cost_price_original.toString());
+      if (svcCostCurrency !== "CZK" && origVal != null) {
+        setCostPrice(origVal.toString());
+        // Restore CZK conversion info from stored values
+        if (czkVal != null && origVal != null && origVal !== 0) {
+          setCostCzkValue(czkVal);
+          setCostExchangeRate(czkVal / origVal);
+        }
       } else {
-        setCostPrice(service.cost_price?.toString() || "");
+        setCostPrice(czkVal?.toString() || "");
+        setCostCzkValue(svcCostCurrency === "CZK" && czkVal != null ? czkVal : null);
       }
       setPersonCount(service.person_count?.toString() || "1");
       setPersonCountUnit((service.details as any)?.person_count_unit?.toString() || "");

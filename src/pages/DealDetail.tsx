@@ -1983,10 +1983,20 @@ const DealDetail = () => {
       quantity: (service.quantity || 1).toString(),
       price_mode: (service.details as any)?.price_mode || "per_person",
       price_manually_set: true, // Existing service - don't auto-calculate
-      cost_exchange_rate: null,
-      cost_czk_value: null,
+      // Restore CZK conversion info from stored values
+      cost_czk_value: (() => {
+        const czkVal = service.cost_price;
+        const costCurr = serviceAny.cost_currency || "CZK";
+        return czkVal != null ? czkVal : null;
+      })(),
+      cost_exchange_rate: (() => {
+        const orig = serviceAny.cost_price_original;
+        const czk = service.cost_price;
+        const costCurr = serviceAny.cost_currency || "CZK";
+        return costCurr !== "CZK" && orig && czk ? czk / orig : null;
+      })(),
       price_exchange_rate: null,
-      price_czk_value: null,
+      price_czk_value: service.price_currency && service.price_currency !== "CZK" && service.price ? null : (service.price ? parseFloat(service.price.toString()) : null),
     });
     // Load room types for hotel services
     const existingRoomTypes = (service.details as any)?.room_types;
