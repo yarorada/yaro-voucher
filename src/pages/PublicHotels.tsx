@@ -104,7 +104,7 @@ export default function PublicHotels() {
 
                 {/* Content */}
                 <div className="p-5 space-y-2">
-                  <h2 className="text-lg font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                <h2 className="text-lg font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
                     {hotel.name}
                   </h2>
                   {hotel.subtitle && (
