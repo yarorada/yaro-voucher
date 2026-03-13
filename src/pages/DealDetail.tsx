@@ -1865,6 +1865,10 @@ const DealDetail = () => {
       quantity: "1",
       price_mode: "per_person",
       price_manually_set: false,
+      cost_exchange_rate: null,
+      cost_czk_value: null,
+      price_exchange_rate: null,
+      price_czk_value: null,
     });
     resetFlightForm();
     setOriginalFlightDetails(null);
