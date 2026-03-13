@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Share2, Check, Link, Loader2, Mail } from "lucide-react";
+import { Share2, Check, Link, Loader2, Mail, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -283,6 +283,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
                 />
                 <Button size="sm" variant="outline" onClick={() => copyToClipboard(publicUrl)}>
                   {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, '_blank')}>
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
               <Button
