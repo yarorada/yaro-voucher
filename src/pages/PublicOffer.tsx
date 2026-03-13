@@ -731,7 +731,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         })()}
 
         {/* Price */}
-        {totalPrice > 0 && (
+        {totalPrice > 0 && !variant.hide_price && (
           <div className="border-t pt-4">
             <div className="flex justify-between items-baseline">
               <span className="text-sm text-slate-500">Celková cena</span>

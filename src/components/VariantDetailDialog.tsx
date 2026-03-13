@@ -742,7 +742,21 @@ export const VariantDetailDialog = ({
                   rows={3}
                 />
               </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="hide-price"
+                  checked={hidePrice}
+                  onChange={(e) => setHidePrice(e.target.checked)}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <Label htmlFor="hide-price" className="cursor-pointer font-normal">
+                  Neuváděj celkovou cenu na veřejné nabídce
+                </Label>
+              </div>
             </div>
+          
 
             {variant && (
               <div className="space-y-4">
