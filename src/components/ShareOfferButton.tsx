@@ -284,6 +284,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
                 <Button size="sm" variant="outline" onClick={() => copyToClipboard(publicUrl)}>
                   {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, '_blank')}>
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
               </div>
               <Button
                 size="sm"
