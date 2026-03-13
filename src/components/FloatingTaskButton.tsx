@@ -32,7 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn, formatDateForDB } from "@/lib/utils";
-import { CalendarIcon, ClipboardList, Briefcase } from "lucide-react";
+import { CalendarIcon, ClipboardList, Briefcase, Clock } from "lucide-react";
 import { ClientCombobox } from "@/components/ClientCombobox";
 
 export const FloatingTaskButton = () => {
@@ -43,6 +43,7 @@ export const FloatingTaskButton = () => {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [dueTime, setDueTime] = useState<string>("");
   const [assignedTo, setAssignedTo] = useState<string>("");
   // Deal fields
   const [dealName, setDealName] = useState("");
@@ -89,6 +90,7 @@ export const FloatingTaskButton = () => {
         description: description.trim() || null,
         priority,
         due_date: format(dueDate, "yyyy-MM-dd"),
+        due_time: dueTime || null,
         user_id: assignedTo || currentUser?.id,
       });
       if (error) throw error;
@@ -99,6 +101,7 @@ export const FloatingTaskButton = () => {
       setDescription("");
       setPriority("medium");
       setDueDate(new Date());
+      setDueTime("");
       setAssignedTo(currentUser?.id || "");
       setOpen(false);
       toast({ title: "Úkol vytvořen" });
@@ -219,21 +222,32 @@ export const FloatingTaskButton = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Datum splnění</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "d. MMMM yyyy", { locale: cs }) : "Vyberte datum"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dueDate} onSelect={(d) => d && setDueDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
-                </PopoverContent>
-              </Popover>
+              <label className="text-sm font-medium">Datum a čas splnění</label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("flex-1 justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "d. MMMM yyyy", { locale: cs }) : "Vyberte datum"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dueDate} onSelect={(d) => d && setDueDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+                <div className="flex items-center gap-1.5 border rounded-md px-2 bg-background">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="w-20 text-sm bg-transparent outline-none"
+                  />
+                </div>
+              </div>
             </div>
             <Button className="w-full" onClick={handleSubmit} disabled={!title.trim() || addTaskMutation.isPending}>
               Vytvořit úkol

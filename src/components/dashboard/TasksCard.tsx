@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays, CalendarIcon, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, parseISO } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -28,6 +28,7 @@ interface Task {
   title: string;
   description: string | null;
   due_date: string;
+  due_time: string | null;
   priority: string;
   completed: boolean;
   user_id: string;
@@ -53,6 +54,7 @@ interface EditingState {
   priority: string;
   description: string;
   due_date: string;
+  due_time: string;
 }
 
 const TaskRow = ({
@@ -76,7 +78,7 @@ const TaskRow = ({
   onStartEdit: (task: Task) => void;
   onCancelEdit: () => void;
   onSaveEdit: () => void;
-  onEditChange: (field: "title" | "priority" | "description" | "due_date", value: string) => void;
+  onEditChange: (field: "title" | "priority" | "description" | "due_date" | "due_time", value: string) => void;
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
 }) => {
@@ -95,7 +97,7 @@ const TaskRow = ({
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Input
                 value={editing.title}
                 onChange={(e) => onEditChange("title", e.target.value)}
@@ -103,7 +105,7 @@ const TaskRow = ({
                   if (e.key === "Enter" && !e.shiftKey) onSaveEdit();
                   if (e.key === "Escape") onCancelEdit();
                 }}
-                className="h-7 text-sm"
+                className="h-7 text-sm flex-1 min-w-32"
                 autoFocus
               />
               <Select
@@ -132,11 +134,20 @@ const TaskRow = ({
                     selected={editing.due_date ? parseISO(editing.due_date) : undefined}
                     onSelect={(d) => d && onEditChange("due_date", format(d, "yyyy-MM-dd"))}
                     initialFocus
-                    weekStartsOn={1}
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
+              {/* Time input */}
+              <div className="flex items-center gap-1 h-7">
+                <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                <Input
+                  type="time"
+                  value={editing.due_time}
+                  onChange={(e) => onEditChange("due_time", e.target.value)}
+                  className="h-7 w-24 text-xs px-1"
+                />
+              </div>
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
                 <Check className="h-3.5 w-3.5" />
               </Button>
@@ -161,6 +172,11 @@ const TaskRow = ({
             >
               {task.title}
             </span>
+            {task.due_time && (
+              <span className="text-xs text-muted-foreground ml-1.5 inline-flex items-center gap-0.5">
+                <Clock className="h-3 w-3" />{task.due_time}
+              </span>
+            )}
             {showOwner && task.user_id !== currentUserId && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({profilesMap[task.user_id] || "?"})
@@ -204,7 +220,6 @@ const TaskRow = ({
 export const TasksCard = () => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
-  // "mine" = current user, "all" = everyone, or a specific user_id
   const [viewMode, setViewMode] = useState<string>("mine");
   const [editing, setEditing] = useState<EditingState | null>(null);
   const { toast } = useToast();
@@ -221,7 +236,6 @@ export const TasksCard = () => {
 
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
 
-  // Profiles for admin user selector
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles-list"],
     enabled: isAdmin,
@@ -241,15 +255,13 @@ export const TasksCard = () => {
     return p.name || p.email.split("@")[0].charAt(0).toUpperCase() + p.email.split("@")[0].slice(1);
   };
 
-  // Determine the effective user_id filter
   const filterUserId =
     viewMode === "mine" ? currentUser?.id :
     viewMode === "all" ? undefined :
-    viewMode; // specific user_id
+    viewMode;
 
   const showOwner = viewMode === "all";
 
-  // Today's tasks
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks", today, viewMode],
     queryFn: async () => {
@@ -259,11 +271,10 @@ export const TasksCard = () => {
         .eq("due_date", today)
         .order("completed", { ascending: true })
         .order("priority", { ascending: false })
+        .order("due_time", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
 
-      if (filterUserId) {
-        query = query.eq("user_id", filterUserId);
-      }
+      if (filterUserId) query = query.eq("user_id", filterUserId);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -272,7 +283,6 @@ export const TasksCard = () => {
     enabled: !!currentUser?.id,
   });
 
-  // Upcoming tasks
   const { data: upcomingTasks = [] } = useQuery({
     queryKey: ["tasks-upcoming", today, viewMode],
     queryFn: async () => {
@@ -282,12 +292,11 @@ export const TasksCard = () => {
         .neq("due_date", today)
         .eq("completed", false)
         .order("due_date", { ascending: true })
+        .order("due_time", { ascending: true, nullsFirst: false })
         .order("priority", { ascending: false })
         .limit(20);
 
-      if (filterUserId) {
-        query = query.eq("user_id", filterUserId);
-      }
+      if (filterUserId) query = query.eq("user_id", filterUserId);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -333,10 +342,12 @@ export const TasksCard = () => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, title, priority, description, due_date }: { id: string; title: string; priority: string; description?: string; due_date: string }) => {
+    mutationFn: async ({ id, title, priority, description, due_date, due_time }: {
+      id: string; title: string; priority: string; description?: string; due_date: string; due_time?: string;
+    }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ title, priority, description: description ?? null, due_date })
+        .update({ title, priority, description: description ?? null, due_date, due_time: due_time || null })
         .eq("id", id);
       if (error) throw error;
     },
@@ -366,19 +377,39 @@ export const TasksCard = () => {
   };
 
   const handleStartEdit = (task: Task) => {
-    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "", due_date: task.due_date });
+    setEditing({
+      id: task.id,
+      title: task.title,
+      priority: task.priority,
+      description: task.description || "",
+      due_date: task.due_date,
+      due_time: task.due_time || "",
+    });
   };
 
   const handleSaveEdit = () => {
     if (!editing || !editing.title.trim()) return;
-    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description, due_date: editing.due_date });
+    updateTaskMutation.mutate({
+      id: editing.id,
+      title: editing.title.trim(),
+      priority: editing.priority,
+      description: editing.description,
+      due_date: editing.due_date,
+      due_time: editing.due_time,
+    });
   };
 
-  const handleEditChange = (field: "title" | "priority" | "description" | "due_date", value: string) => {
+  const handleEditChange = (field: "title" | "priority" | "description" | "due_date" | "due_time", value: string) => {
     if (!editing) return;
     if (field === "priority") {
-      // Auto-save priority change immediately
-      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description, due_date: editing.due_date });
+      updateTaskMutation.mutate({
+        id: editing.id,
+        title: editing.title.trim() || editing.title,
+        priority: value,
+        description: editing.description,
+        due_date: editing.due_date,
+        due_time: editing.due_time,
+      });
     } else {
       setEditing({ ...editing, [field]: value });
     }
@@ -414,7 +445,6 @@ export const TasksCard = () => {
     onDelete: (id: string) => deleteTaskMutation.mutate(id),
   };
 
-  // Label for subtitle
   const viewLabel =
     viewMode === "mine" ? "" :
     viewMode === "all" ? " • Všichni uživatelé" :
