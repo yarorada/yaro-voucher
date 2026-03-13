@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays } from "lucide-react";
+import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, parseISO } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -18,6 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
 interface Task {
