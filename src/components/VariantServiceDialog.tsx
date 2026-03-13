@@ -83,6 +83,11 @@ export const VariantServiceDialog = ({
   const [supplierId, setSupplierId] = useState("");
   const [priceMode, setPriceMode] = useState<"per_person" | "per_service">("per_person");
   const [priceManuallySet, setPriceManuallySet] = useState(false);
+  // Exchange rate info for display
+  const [costExchangeRate, setCostExchangeRate] = useState<number | null>(null);
+  const [costCzkValue, setCostCzkValue] = useState<number | null>(null);
+  const [priceExchangeRate, setPriceExchangeRate] = useState<number | null>(null);
+  const [priceCzkValue, setPriceCzkValue] = useState<number | null>(null);
 
   // Flight-specific fields - multi-segment support
   const [outboundSegments, setOutboundSegments] = useState<FlightSegment[]>([emptySegment()]);
