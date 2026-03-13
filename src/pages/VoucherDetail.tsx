@@ -219,12 +219,19 @@ const buildVoucherPdfBlob = (
   if (others.length > 0) {
     doc.setFont("helvetica", "bold");
     doc.text("Others:", margin, y);
+    y += 5;
     doc.setFont("helvetica", "normal");
+    const cols = 3;
+    const colW = contentW / cols;
     others.forEach((n, i) => {
-      doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin + labelColW, y);
-      y += 5;
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = margin + col * colW;
+      const yPos = y + row * 5;
+      doc.text(`${i + 2}. ${removeDiacritics(n)}`, x, yPos);
     });
-    y -= 5; // last line already advanced
+    const rows = Math.ceil(others.length / cols);
+    y += rows * 5 - 1;
   }
   y += 4;
   doc.setDrawColor(203, 213, 225);
