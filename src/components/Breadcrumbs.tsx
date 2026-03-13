@@ -14,6 +14,7 @@ const routeNames: Record<string, string> = {
   "destinations": "Destinace",
   "contracts": "Smlouvy",
   "statistics": "Statistiky",
+  "hotels": "Hotely",
 };
 
 interface Breadcrumb {
