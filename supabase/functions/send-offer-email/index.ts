@@ -420,7 +420,7 @@ Deno.serve(async (req) => {
             ${v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : ''}
             ${descHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-              ${vServices.map((s: any) => renderServiceLine(s)).join('')}
+              ${renderIncludesHtml(vServices, v.start_date, v.end_date)}
             </table>
             ${v.notes ? `<p style="font-size:12px; color:#94a3b8; font-style:italic; border-top:1px solid #e2e8f0; padding-top:12px; margin:12px 0 0;">${escapeHtml(v.notes)}</p>` : ''}
             ${renderPerPersonHtml(vServices)}
