@@ -359,6 +359,30 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                 {ratingNote && <p className="text-xs text-muted-foreground mt-0.5">{ratingNote}</p>}
                 {!ratingNote && <p className="text-xs text-muted-foreground mt-0.5">Průměr z Booking.com, TripAdvisor a Google Reviews</p>}
               </div>
+              <div>
+                <Label>Kategorie (hvězdičky)</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setFormData((f) => ({ ...f, star_category: f.star_category === s ? null : s }))}
+                      className="focus:outline-none transition-transform hover:scale-110"
+                      title={`${s} hvězd${s === 1 ? "a" : s < 5 ? "y" : ""}`}
+                    >
+                      <Star
+                        className="h-6 w-6"
+                        fill={formData.star_category != null && s <= formData.star_category ? "#f59e0b" : "none"}
+                        stroke={formData.star_category != null && s <= formData.star_category ? "#f59e0b" : "#9ca3af"}
+                      />
+                    </button>
+                  ))}
+                  {formData.star_category != null && (
+                    <span className="text-sm text-muted-foreground ml-1">{formData.star_category}★</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Oficiální hvězdičková kategorizace hotelu</p>
+              </div>
 
               {/* Golf courses */}
               <div className="sm:col-span-2 border-t pt-4">
