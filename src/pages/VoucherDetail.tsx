@@ -93,12 +93,20 @@ const fmtDatePdf = (d: string) => {
   return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
 };
 
+interface BaggageAllowance {
+  cabin_bag?: { included?: boolean; kg?: number };
+  hand_luggage?: { included?: boolean; kg?: number };
+  checked_luggage?: { included?: boolean; kg?: number };
+  golf_bag?: { included?: boolean; kg?: number };
+}
+
 const buildVoucherPdfBlob = (
   voucher: any,
   supplierName?: string,
   supplierData?: { contact_person?: string | null; email?: string | null; phone?: string | null; address?: string | null } | null,
   logoInfo?: { base64: string; w: number; h: number },
-  travelers?: VoucherTraveler[]
+  travelers?: VoucherTraveler[],
+  baggage?: BaggageAllowance | null
 ): Blob => {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
@@ -373,6 +381,43 @@ const buildVoucherPdfBlob = (
     // no extra blank line after last segment
   }
 
+  // ── BAGGAGE ALLOWANCE (only if flights exist and baggage data is present) ──
+  if (flights.length > 0 && baggage) {
+    const baggageItems: { label: string; kg?: number; included?: boolean }[] = [
+      { label: "Taška na palubu", ...(baggage.cabin_bag || {}) },
+      { label: "Palubní zavazadlo", ...(baggage.hand_luggage || {}) },
+      { label: "Odbavené zavazadlo", ...(baggage.checked_luggage || {}) },
+      { label: "Golfový bag", ...(baggage.golf_bag || {}) },
+    ].filter(item => item.included);
+
+    if (baggageItems.length > 0) {
+      if (y > 260) { doc.addPage(); y = margin; }
+      doc.setDrawColor(203, 213, 225);
+      doc.line(margin, y, W - margin, y);
+      y += 5;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(71, 85, 105);
+      doc.text("ZAVAZADLA / BAGGAGE", margin, y);
+      y += 5;
+
+      const bagParts = baggageItems.map(item => {
+        let part = item.label;
+        if (item.kg) part += ` ${item.kg} kg`;
+        else part += " (v ceně)";
+        return part;
+      });
+
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 41, 59);
+      const bagLine = bagParts.join("  ·  ");
+      const bagLines = doc.splitTextToSize(bagLine, contentW);
+      doc.text(bagLines, margin, y);
+      y += bagLines.length * 5;
+    }
+  }
+
   // ── CONFIRMED TEE TIMES ──
   const teeTimes = (voucher.tee_times as any[]) || [];
   if (teeTimes.length > 0) {
@@ -481,6 +526,7 @@ const VoucherDetail = () => {
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [baggage, setBaggage] = useState<BaggageAllowance | null>(null);
 
   // Send dialog state
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -535,6 +581,26 @@ const VoucherDetail = () => {
         .order("is_main_client", { ascending: false });
       if (travelersError) throw travelersError;
       setTravelers((travelersData || []) as any);
+
+      // Fetch baggage from deal_services if voucher is linked to a deal
+      if (voucherData?.deal_id) {
+        const { data: flightServices } = await supabase
+          .from("deal_services")
+          .select("details")
+          .eq("deal_id", voucherData.deal_id)
+          .eq("service_type", "flight");
+        if (flightServices && flightServices.length > 0) {
+          // Merge baggage from all flight services (last one with baggage wins)
+          let mergedBaggage: BaggageAllowance | null = null;
+          for (const svc of flightServices) {
+            const d = svc.details as any;
+            if (d?.baggage) {
+              mergedBaggage = { ...(mergedBaggage || {}), ...d.baggage };
+            }
+          }
+          setBaggage(mergedBaggage);
+        }
+      }
     } catch (error) {
       console.error("Error fetching voucher:", error);
       toast.error("Nepodařilo se načíst voucher");
@@ -568,7 +634,7 @@ const VoucherDetail = () => {
     setIsDownloading(true);
     try {
       const logoInfo = await getLogoBase64();
-      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
+      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -636,7 +702,7 @@ const VoucherDetail = () => {
     try {
       // Generate PDF
       const logoInfo = await getLogoBase64();
-      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
+      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
