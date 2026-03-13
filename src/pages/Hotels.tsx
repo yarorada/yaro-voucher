@@ -28,6 +28,7 @@ import {
 import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { HotelEditDialog } from "@/components/HotelEditDialog";
+import { HotelStars } from "@/components/HotelStars";
 
 interface HotelTemplate {
   id: string;
