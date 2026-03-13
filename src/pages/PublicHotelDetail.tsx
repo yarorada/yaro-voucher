@@ -39,6 +39,7 @@ interface HotelDetail {
   highlights: Highlight[] | null;
   website_url: string | null;
   images: string[];
+  star_category: number | null;
 }
 
 function HeroGallery({ images, alt }: { images: string[]; alt: string }) {
