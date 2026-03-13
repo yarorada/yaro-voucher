@@ -3281,15 +3281,28 @@ const DealDetail = () => {
                           <Input
                             type="number"
                             value={serviceForm.cost_price_original || serviceForm.cost_price}
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const val = e.target.value;
                               const updates: any = {
                                 cost_price_original: val,
                                 cost_price: serviceForm.cost_currency === "CZK" ? val : "",
                               };
-                              // Auto-margin 15%
                               if (val && !serviceForm.price_manually_set) {
-                                updates.price = Math.round(parseFloat(val) * 1.15).toString();
+                                if (serviceForm.cost_currency === "CZK") {
+                                  // CZK: apply 15% directly
+                                  updates.price = Math.round(parseFloat(val) * 1.15).toString();
+                                } else {
+                                  // Foreign currency: fetch exchange rate and convert to CZK + 15%
+                                  try {
+                                    const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                      body: { currency: serviceForm.cost_currency, amount: parseFloat(val) },
+                                    });
+                                    if (data?.convertedAmount) {
+                                      updates.price = Math.round(data.convertedAmount * 1.15).toString();
+                                      updates.price_currency = "CZK";
+                                    }
+                                  } catch {}
+                                }
                               }
                               setServiceForm(prev => ({ ...prev, ...updates }));
                             }}
