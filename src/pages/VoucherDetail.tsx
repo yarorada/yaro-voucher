@@ -581,6 +581,26 @@ const VoucherDetail = () => {
         .order("is_main_client", { ascending: false });
       if (travelersError) throw travelersError;
       setTravelers((travelersData || []) as any);
+
+      // Fetch baggage from deal_services if voucher is linked to a deal
+      if (voucherData?.deal_id) {
+        const { data: flightServices } = await supabase
+          .from("deal_services")
+          .select("details")
+          .eq("deal_id", voucherData.deal_id)
+          .eq("service_type", "flight");
+        if (flightServices && flightServices.length > 0) {
+          // Merge baggage from all flight services (last one with baggage wins)
+          let mergedBaggage: BaggageAllowance | null = null;
+          for (const svc of flightServices) {
+            const d = svc.details as any;
+            if (d?.baggage) {
+              mergedBaggage = { ...(mergedBaggage || {}), ...d.baggage };
+            }
+          }
+          setBaggage(mergedBaggage);
+        }
+      }
     } catch (error) {
       console.error("Error fetching voucher:", error);
       toast.error("Nepodařilo se načíst voucher");
