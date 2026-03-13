@@ -315,10 +315,10 @@ export const TasksCard = () => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, title, priority, description }: { id: string; title: string; priority: string; description?: string }) => {
+    mutationFn: async ({ id, title, priority, description, due_date }: { id: string; title: string; priority: string; description?: string; due_date: string }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ title, priority, description: description ?? null })
+        .update({ title, priority, description: description ?? null, due_date })
         .eq("id", id);
       if (error) throw error;
     },
@@ -348,19 +348,19 @@ export const TasksCard = () => {
   };
 
   const handleStartEdit = (task: Task) => {
-    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "" });
+    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "", due_date: task.due_date });
   };
 
   const handleSaveEdit = () => {
     if (!editing || !editing.title.trim()) return;
-    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description });
+    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description, due_date: editing.due_date });
   };
 
-  const handleEditChange = (field: "title" | "priority" | "description", value: string) => {
+  const handleEditChange = (field: "title" | "priority" | "description" | "due_date", value: string) => {
     if (!editing) return;
     if (field === "priority") {
       // Auto-save priority change immediately
-      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description });
+      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description, due_date: editing.due_date });
     } else {
       setEditing({ ...editing, [field]: value });
     }
