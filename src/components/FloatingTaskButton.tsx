@@ -43,6 +43,7 @@ export const FloatingTaskButton = () => {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [dueTime, setDueTime] = useState<string>("");
   const [assignedTo, setAssignedTo] = useState<string>("");
   // Deal fields
   const [dealName, setDealName] = useState("");
@@ -89,6 +90,7 @@ export const FloatingTaskButton = () => {
         description: description.trim() || null,
         priority,
         due_date: format(dueDate, "yyyy-MM-dd"),
+        due_time: dueTime || null,
         user_id: assignedTo || currentUser?.id,
       });
       if (error) throw error;
@@ -99,6 +101,7 @@ export const FloatingTaskButton = () => {
       setDescription("");
       setPriority("medium");
       setDueDate(new Date());
+      setDueTime("");
       setAssignedTo(currentUser?.id || "");
       setOpen(false);
       toast({ title: "Úkol vytvořen" });
