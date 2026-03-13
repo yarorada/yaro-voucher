@@ -278,6 +278,7 @@ export const VariantDetailDialog = ({
             end_date: formatDateForDB(endDate),
             total_price: totalPrice,
             notes: notes || null,
+            hide_price: hidePrice,
           })
           .eq("id", variant.id);
 
@@ -295,6 +296,7 @@ export const VariantDetailDialog = ({
             total_price: totalPrice,
             notes: notes || null,
             is_selected: false,
+            hide_price: hidePrice,
           })
           .select()
           .single();
