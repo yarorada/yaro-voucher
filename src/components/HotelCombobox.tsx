@@ -33,6 +33,7 @@ import { HotelEditDialog } from "@/components/HotelEditDialog";
 interface HotelTemplate {
   id: string;
   name: string;
+  star_category?: number | null;
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
