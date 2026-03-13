@@ -427,7 +427,7 @@ const buildVoucherPdfBlob = (
       const bagParts = baggageItems.map(item => {
         let part = item.label;
         if (item.kg) part += ` ${item.kg} kg`;
-        else part += " (v ceně)";
+        else part += " (v cene)";
         return part;
       });
 
@@ -435,26 +435,9 @@ const buildVoucherPdfBlob = (
       doc.setFont("helvetica", "normal");
       doc.setTextColor(30, 41, 59);
 
-      // Render inline with xCursor (same as flight segments) to avoid jsPDF justify spacing
-      let xBag = margin;
-      const separator = "  ·  ";
-      for (let i = 0; i < bagParts.length; i++) {
-        const part = bagParts[i];
-        // Wrap to new line if needed
-        const neededWidth = doc.getTextWidth(part) + (i < bagParts.length - 1 ? doc.getTextWidth(separator) : 0);
-        if (xBag + neededWidth > W - margin + 2 && xBag > margin) {
-          xBag = margin;
-          y += 5;
-        }
-        doc.text(part, xBag, y, { charSpace: 0 });
-        xBag += doc.getTextWidth(part);
-        if (i < bagParts.length - 1) {
-          doc.setTextColor(100, 116, 139);
-          doc.text(separator, xBag, y, { charSpace: 0 });
-          xBag += doc.getTextWidth(separator);
-          doc.setTextColor(30, 41, 59);
-        }
-      }
+      // Render as single string — same approach as flight lines to avoid jsPDF word-spacing bugs
+      const bagLine = bagParts.join(" · ");
+      doc.text(bagLine, margin, y);
       y += 5;
     }
   }
