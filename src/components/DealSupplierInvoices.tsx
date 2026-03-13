@@ -602,6 +602,100 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
           <p className="text-sm text-muted-foreground text-center py-2">Zatím žádné doklady</p>
         )}
 
+        {/* Edit Invoice Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) setEditingInvoice(null); setEditDialogOpen(open); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upravit doklad</DialogTitle>
+              <DialogDescription>
+                {editingInvoice?.file_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div>
+                <Label>Dodavatel</Label>
+                <Input
+                  value={editData.supplier_name}
+                  onChange={(e) => setEditData((p) => ({ ...p, supplier_name: e.target.value }))}
+                  placeholder="Název dodavatele"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Částka</Label>
+                  <Input
+                    type="number"
+                    value={editData.total_amount}
+                    onChange={(e) => setEditData((p) => ({ ...p, total_amount: e.target.value }))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label>Měna</Label>
+                  <Select value={editData.currency} onValueChange={(v) => setEditData((p) => ({ ...p, currency: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Datum vystavení (DD.MM.YYYY)</Label>
+                <Input
+                  value={editData.issue_date}
+                  onChange={(e) => setEditData((p) => ({ ...p, issue_date: e.target.value }))}
+                  placeholder="01.01.2025"
+                />
+              </div>
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="edit-is-paid"
+                    checked={editData.is_paid}
+                    onCheckedChange={(v) => setEditData((p) => ({ ...p, is_paid: !!v }))}
+                  />
+                  <Label htmlFor="edit-is-paid" className="font-medium">Zaplaceno</Label>
+                </div>
+                {editData.is_paid && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Forma platby</Label>
+                      <Select value={editData.payment_method} onValueChange={(v) => setEditData((p) => ({ ...p, payment_method: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="moneta">Moneta</SelectItem>
+                          <SelectItem value="amnis">Amnis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Datum platby</Label>
+                      <Input
+                        type="date"
+                        value={editData.paid_at}
+                        onChange={(e) => setEditData((p) => ({ ...p, paid_at: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingInvoice(null); }}>
+                Zrušit
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Uložit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* OCR Confirmation Dialog */}
         <Dialog open={confirmDialogOpen} onOpenChange={(open) => {
           if (!open) resetForm();
