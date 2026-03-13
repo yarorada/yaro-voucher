@@ -239,7 +239,23 @@ const buildVoucherPdfBlob = (
   y += 6;
 
   // ── SERVICE OVERVIEW ──
-  const services = (voucher.services as any[]) || [];
+  const rawServices = (voucher.services as any[]) || [];
+
+  // Aggregate duplicate services (same name + dateFrom + dateTo) — sum pax and qty
+  const serviceMap = new Map<string, any>();
+  for (const s of rawServices) {
+    const name = s.name || s.service || "";
+    const key = `${name}||${s.dateFrom || ""}||${s.dateTo || ""}`;
+    if (serviceMap.has(key)) {
+      const existing = serviceMap.get(key);
+      existing.pax = (Number(existing.pax || existing.person_count || 0) + Number(s.pax || s.person_count || 0)) || existing.pax;
+      existing.qty = (Number(existing.qty || 1) + Number(s.qty || 1));
+    } else {
+      serviceMap.set(key, { ...s });
+    }
+  }
+  const services = Array.from(serviceMap.values());
+
   if (services.length > 0) {
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
