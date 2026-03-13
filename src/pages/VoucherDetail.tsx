@@ -673,7 +673,7 @@ const VoucherDetail = () => {
     } finally {
       setIsDownloading(false);
     }
-  }, [voucher, supplier]);
+  }, [voucher, supplier, baggage, travelers]);
 
   const openSendDialog = (mode: "client" | "both" | "supplier") => {
     const mainTraveler = travelers.find(t => t.is_main_client);
