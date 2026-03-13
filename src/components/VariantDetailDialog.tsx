@@ -198,6 +198,7 @@ export const VariantDetailDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
+  const [hidePrice, setHidePrice] = useState(false);
   const [services, setServices] = useState<VariantService[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<VariantService | null>(null);
@@ -211,6 +212,7 @@ export const VariantDetailDialog = ({
       setStartDate(variant.start_date ? new Date(variant.start_date) : undefined);
       setEndDate(variant.end_date ? new Date(variant.end_date) : undefined);
       setNotes(variant.notes || "");
+      setHidePrice(variant.hide_price || false);
       fetchServices(variant.id);
     } else {
       resetForm();
@@ -223,6 +225,7 @@ export const VariantDetailDialog = ({
     setStartDate(dealStartDate ? new Date(dealStartDate) : undefined);
     setEndDate(dealEndDate ? new Date(dealEndDate) : undefined);
     setNotes("");
+    setHidePrice(false);
     setServices([]);
   };
 
@@ -275,6 +278,7 @@ export const VariantDetailDialog = ({
             end_date: formatDateForDB(endDate),
             total_price: totalPrice,
             notes: notes || null,
+            hide_price: hidePrice,
           })
           .eq("id", variant.id);
 
@@ -292,6 +296,7 @@ export const VariantDetailDialog = ({
             total_price: totalPrice,
             notes: notes || null,
             is_selected: false,
+            hide_price: hidePrice,
           })
           .select()
           .single();
@@ -737,7 +742,21 @@ export const VariantDetailDialog = ({
                   rows={3}
                 />
               </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="hide-price"
+                  checked={hidePrice}
+                  onChange={(e) => setHidePrice(e.target.checked)}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <Label htmlFor="hide-price" className="cursor-pointer font-normal">
+                  Neuváděj celkovou cenu na veřejné nabídce
+                </Label>
+              </div>
             </div>
+          
 
             {variant && (
               <div className="space-y-4">

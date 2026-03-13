@@ -26,6 +26,7 @@ interface OfferData {
     end_date: string | null;
     total_price: number | null;
     is_selected: boolean;
+    hide_price: boolean;
     notes: string | null;
     destination: { id: string; name: string; country: { name: string; iso_code: string } } | null;
     deal_variant_services: Array<{
@@ -730,7 +731,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         })()}
 
         {/* Price */}
-        {totalPrice > 0 && (
+        {totalPrice > 0 && !variant.hide_price && (
           <div className="border-t pt-4">
             <div className="flex justify-between items-baseline">
               <span className="text-sm text-slate-500">Celková cena</span>
