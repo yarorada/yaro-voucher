@@ -99,6 +99,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     destination_id: hotel.destination_id || "",
     highlights: (Array.isArray(hotel.highlights) ? hotel.highlights : []) as Array<{ icon: string; title: string; text: string }>,
     review_score: hotel.review_score ?? null as number | null,
+    star_category: hotel.star_category ?? null as number | null,
   });
 
   // Auto-fetch AI data only when hotel has no data yet (first time creation)
