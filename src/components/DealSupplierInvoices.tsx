@@ -570,34 +570,19 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                       onCheckedChange={() => handleTogglePaid(inv)}
                     />
                   </TableCell>
-                  <TableCell>
-                    {inv.is_paid && (
-                      <Select
-                        value={inv.payment_method || "moneta"}
-                        onValueChange={(v) => handleUpdatePayment(inv.id, "payment_method", v)}
-                      >
-                        <SelectTrigger className="h-7 w-24 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="moneta">Moneta</SelectItem>
-                          <SelectItem value="amnis">Amnis</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.is_paid ? (inv.payment_method === "amnis" ? "Amnis" : "Moneta") : ""}
                   </TableCell>
-                  <TableCell>
-                    {inv.is_paid && (
-                      <Input
-                        type="date"
-                        value={inv.paid_at || ""}
-                        onChange={(e) => handleUpdatePayment(inv.id, "paid_at", e.target.value || null)}
-                        className="h-7 w-32 text-xs"
-                      />
-                    )}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {inv.is_paid && inv.paid_at
+                      ? (() => { const p = inv.paid_at.split("-"); return `${p[2]}.${p[1]}.${p[0]}`; })()
+                      : ""}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpenEdit(inv)} title="Upravit">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePreview(inv)} title="Náhled">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
