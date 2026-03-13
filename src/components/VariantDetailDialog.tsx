@@ -225,6 +225,7 @@ export const VariantDetailDialog = ({
     setStartDate(dealStartDate ? new Date(dealStartDate) : undefined);
     setEndDate(dealEndDate ? new Date(dealEndDate) : undefined);
     setNotes("");
+    setHidePrice(false);
     setServices([]);
   };
 
