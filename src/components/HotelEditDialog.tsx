@@ -197,6 +197,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
           destination_id: formData.destination_id || null,
           highlights: formData.highlights.length > 0 ? formData.highlights : null,
           review_score: formData.review_score ?? null,
+          star_category: formData.star_category ?? null,
         })
         .eq("id", currentHotel.id)
         .select()
