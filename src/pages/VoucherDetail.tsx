@@ -381,6 +381,43 @@ const buildVoucherPdfBlob = (
     // no extra blank line after last segment
   }
 
+  // ── BAGGAGE ALLOWANCE (only if flights exist and baggage data is present) ──
+  if (flights.length > 0 && baggage) {
+    const baggageItems: { label: string; kg?: number; included?: boolean }[] = [
+      { label: "Taška na palubu", ...(baggage.cabin_bag || {}) },
+      { label: "Palubní zavazadlo", ...(baggage.hand_luggage || {}) },
+      { label: "Odbavené zavazadlo", ...(baggage.checked_luggage || {}) },
+      { label: "Golfový bag", ...(baggage.golf_bag || {}) },
+    ].filter(item => item.included);
+
+    if (baggageItems.length > 0) {
+      if (y > 260) { doc.addPage(); y = margin; }
+      doc.setDrawColor(203, 213, 225);
+      doc.line(margin, y, W - margin, y);
+      y += 5;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(71, 85, 105);
+      doc.text("ZAVAZADLA / BAGGAGE", margin, y);
+      y += 5;
+
+      const bagParts = baggageItems.map(item => {
+        let part = item.label;
+        if (item.kg) part += ` ${item.kg} kg`;
+        else part += " (v ceně)";
+        return part;
+      });
+
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 41, 59);
+      const bagLine = bagParts.join("  ·  ");
+      const bagLines = doc.splitTextToSize(bagLine, contentW);
+      doc.text(bagLines, margin, y);
+      y += bagLines.length * 5;
+    }
+  }
+
   // ── CONFIRMED TEE TIMES ──
   const teeTimes = (voucher.tee_times as any[]) || [];
   if (teeTimes.length > 0) {
