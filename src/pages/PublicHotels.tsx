@@ -11,6 +11,7 @@ interface Hotel {
   price_label: string | null;
   golf_courses: string | null;
   images: string[];
+  star_category: number | null;
 }
 
 export default function PublicHotels() {
