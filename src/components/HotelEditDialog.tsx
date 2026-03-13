@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { HotelImageUpload } from "@/components/HotelImageUpload";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
-import { Plus, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2, Star } from "lucide-react";
 
 interface GolfCourseData {
   name: string;
@@ -42,6 +42,7 @@ interface HotelTemplate {
   highlights?: any;
   is_published?: boolean | null;
   review_score?: number | null;
+  star_category?: number | null;
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
@@ -98,6 +99,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
     destination_id: hotel.destination_id || "",
     highlights: (Array.isArray(hotel.highlights) ? hotel.highlights : []) as Array<{ icon: string; title: string; text: string }>,
     review_score: hotel.review_score ?? null as number | null,
+    star_category: hotel.star_category ?? null as number | null,
   });
 
   // Auto-fetch AI data only when hotel has no data yet (first time creation)
@@ -195,6 +197,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
           destination_id: formData.destination_id || null,
           highlights: formData.highlights.length > 0 ? formData.highlights : null,
           review_score: formData.review_score ?? null,
+          star_category: formData.star_category ?? null,
         })
         .eq("id", currentHotel.id)
         .select()
@@ -355,6 +358,30 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                 />
                 {ratingNote && <p className="text-xs text-muted-foreground mt-0.5">{ratingNote}</p>}
                 {!ratingNote && <p className="text-xs text-muted-foreground mt-0.5">Průměr z Booking.com, TripAdvisor a Google Reviews</p>}
+              </div>
+              <div>
+                <Label>Kategorie (hvězdičky)</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setFormData((f) => ({ ...f, star_category: f.star_category === s ? null : s }))}
+                      className="focus:outline-none transition-transform hover:scale-110"
+                      title={`${s} hvězd${s === 1 ? "a" : s < 5 ? "y" : ""}`}
+                    >
+                      <Star
+                        className="h-6 w-6"
+                        fill={formData.star_category != null && s <= formData.star_category ? "#f59e0b" : "none"}
+                        stroke={formData.star_category != null && s <= formData.star_category ? "#f59e0b" : "#9ca3af"}
+                      />
+                    </button>
+                  ))}
+                  {formData.star_category != null && (
+                    <span className="text-sm text-muted-foreground ml-1">{formData.star_category}★</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Oficiální hvězdičková kategorizace hotelu</p>
               </div>
 
               {/* Golf courses */}

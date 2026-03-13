@@ -33,6 +33,7 @@ import { HotelEditDialog } from "@/components/HotelEditDialog";
 interface HotelTemplate {
   id: string;
   name: string;
+  star_category?: number | null;
   image_url?: string | null;
   image_url_2?: string | null;
   image_url_3?: string | null;
@@ -230,6 +231,11 @@ export function HotelCombobox({ value, onChange, onSelect }: HotelComboboxProps)
                         )}
                       />
                       <span className="break-words">{hotel.name}</span>
+                      {hotel.star_category != null && (
+                        <span className="ml-1.5 text-xs" style={{ color: "#f59e0b" }}>
+                          {"★".repeat(hotel.star_category)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center shrink-0">
                       <Button

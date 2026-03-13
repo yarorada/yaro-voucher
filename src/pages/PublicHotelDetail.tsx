@@ -39,6 +39,7 @@ interface HotelDetail {
   highlights: Highlight[] | null;
   website_url: string | null;
   images: string[];
+  star_category: number | null;
 }
 
 function HeroGallery({ images, alt }: { images: string[]; alt: string }) {
@@ -221,7 +222,14 @@ export default function PublicHotelDetail() {
 
         {/* Title */}
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-800">{hotel.name}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">{hotel.name}</h1>
+            {hotel.star_category != null && (
+              <span className="text-2xl" style={{ color: "#f59e0b" }}>
+                {"★".repeat(hotel.star_category)}
+              </span>
+            )}
+          </div>
           {hotel.subtitle && <p className="text-lg text-slate-500">{hotel.subtitle}</p>}
         </div>
 
