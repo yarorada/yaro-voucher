@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays } from "lucide-react";
+import { Plus, Trash2, ListTodo, Pencil, Check, X, CalendarDays, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, parseISO } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -18,6 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
 interface Task {
@@ -49,6 +52,7 @@ interface EditingState {
   title: string;
   priority: string;
   description: string;
+  due_date: string;
 }
 
 const TaskRow = ({
@@ -72,7 +76,7 @@ const TaskRow = ({
   onStartEdit: (task: Task) => void;
   onCancelEdit: () => void;
   onSaveEdit: () => void;
-  onEditChange: (field: "title" | "priority" | "description", value: string) => void;
+  onEditChange: (field: "title" | "priority" | "description" | "due_date", value: string) => void;
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
 }) => {
@@ -115,6 +119,23 @@ const TaskRow = ({
                   <SelectItem value="high">Vysoká</SelectItem>
                 </SelectContent>
               </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 shrink-0">
+                    <CalendarIcon className="h-3 w-3" />
+                    {editing.due_date ? format(parseISO(editing.due_date), "d.M.yyyy") : "Datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editing.due_date ? parseISO(editing.due_date) : undefined}
+                    onSelect={(d) => d && onEditChange("due_date", format(d, "yyyy-MM-dd"))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
                 <Check className="h-3.5 w-3.5" />
               </Button>
@@ -311,10 +332,10 @@ export const TasksCard = () => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, title, priority, description }: { id: string; title: string; priority: string; description?: string }) => {
+    mutationFn: async ({ id, title, priority, description, due_date }: { id: string; title: string; priority: string; description?: string; due_date: string }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ title, priority, description: description ?? null })
+        .update({ title, priority, description: description ?? null, due_date })
         .eq("id", id);
       if (error) throw error;
     },
@@ -344,19 +365,19 @@ export const TasksCard = () => {
   };
 
   const handleStartEdit = (task: Task) => {
-    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "" });
+    setEditing({ id: task.id, title: task.title, priority: task.priority, description: task.description || "", due_date: task.due_date });
   };
 
   const handleSaveEdit = () => {
     if (!editing || !editing.title.trim()) return;
-    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description });
+    updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim(), priority: editing.priority, description: editing.description, due_date: editing.due_date });
   };
 
-  const handleEditChange = (field: "title" | "priority" | "description", value: string) => {
+  const handleEditChange = (field: "title" | "priority" | "description" | "due_date", value: string) => {
     if (!editing) return;
     if (field === "priority") {
       // Auto-save priority change immediately
-      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description });
+      updateTaskMutation.mutate({ id: editing.id, title: editing.title.trim() || editing.title, priority: value, description: editing.description, due_date: editing.due_date });
     } else {
       setEditing({ ...editing, [field]: value });
     }
