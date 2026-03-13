@@ -634,7 +634,7 @@ const VoucherDetail = () => {
     setIsDownloading(true);
     try {
       const logoInfo = await getLogoBase64();
-      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
+      const blob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
