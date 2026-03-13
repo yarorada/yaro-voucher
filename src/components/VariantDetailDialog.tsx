@@ -198,6 +198,7 @@ export const VariantDetailDialog = ({
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
+  const [hidePrice, setHidePrice] = useState(false);
   const [services, setServices] = useState<VariantService[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<VariantService | null>(null);
@@ -211,6 +212,7 @@ export const VariantDetailDialog = ({
       setStartDate(variant.start_date ? new Date(variant.start_date) : undefined);
       setEndDate(variant.end_date ? new Date(variant.end_date) : undefined);
       setNotes(variant.notes || "");
+      setHidePrice(variant.hide_price || false);
       fetchServices(variant.id);
     } else {
       resetForm();

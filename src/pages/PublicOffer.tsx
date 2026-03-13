@@ -26,6 +26,7 @@ interface OfferData {
     end_date: string | null;
     total_price: number | null;
     is_selected: boolean;
+    hide_price: boolean;
     notes: string | null;
     destination: { id: string; name: string; country: { name: string; iso_code: string } } | null;
     deal_variant_services: Array<{
