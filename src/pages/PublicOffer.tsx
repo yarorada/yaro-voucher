@@ -681,7 +681,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
 
         {/* Notes */}
         {variant.notes && (
-          <p className="text-xs text-slate-400 italic border-t pt-3">{variant.notes}</p>
+          <ul className="text-xs text-slate-400 italic border-t pt-3 space-y-1 list-disc list-inside">
+            {variant.notes.split('\n').filter(line => line.trim()).map((line, i) => (
+              <li key={i}>{line.trim()}</li>
+            ))}
+          </ul>
         )}
 
         {/* Per-person price recap */}
