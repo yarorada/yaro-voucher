@@ -119,6 +119,23 @@ const TaskRow = ({
                   <SelectItem value="high">Vysoká</SelectItem>
                 </SelectContent>
               </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 shrink-0">
+                    <CalendarIcon className="h-3 w-3" />
+                    {editing.due_date ? format(parseISO(editing.due_date), "d.M.yyyy") : "Datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editing.due_date ? parseISO(editing.due_date) : undefined}
+                    onSelect={(d) => d && onEditChange("due_date", format(d, "yyyy-MM-dd"))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSaveEdit}>
                 <Check className="h-3.5 w-3.5" />
               </Button>
