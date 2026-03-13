@@ -702,7 +702,7 @@ const VoucherDetail = () => {
     try {
       // Generate PDF
       const logoInfo = await getLogoBase64();
-      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers);
+      const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
