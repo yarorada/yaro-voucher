@@ -670,17 +670,6 @@ export const VariantServiceDialog = ({
                   />
                 </div>
               )}
-                <div>
-                  <Label htmlFor="description">Popis</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Podrobnosti o službě..."
-                    rows={3}
-                  />
-                </div>
-              )}
             </>
           )}
 
