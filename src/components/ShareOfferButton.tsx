@@ -34,6 +34,17 @@ interface ShareOfferButtonProps {
   variants: VariantInfo[];
 }
 
+interface ServicePreview {
+  service_type: string;
+  service_name: string;
+  description: string | null;
+  quantity: number;
+  person_count: number | null;
+  price: number | null;
+  price_currency: string | null;
+  order_index: number | null;
+}
+
 interface VariantPreview {
   id: string;
   variant_name: string;
@@ -45,6 +56,8 @@ interface VariantPreview {
   total_price: number | null;
   hide_price: boolean;
   currency: string;
+  services: ServicePreview[];
+  notes: string | null;
 }
 
 function generateToken(length = 12): string {
@@ -168,9 +181,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       const { data: vData } = await supabase
         .from("deal_variants")
         .select(`
-          id, variant_name, start_date, end_date, total_price, hide_price,
+          id, variant_name, start_date, end_date, total_price, hide_price, notes,
           destination:destinations(name, country:countries(name)),
-          deal_variant_services(service_type, service_name, price_currency, image_url)
+          deal_variant_services(service_type, service_name, description, price, price_currency, quantity, person_count, order_index)
         `)
         .in("id", selectedIds);
 
@@ -189,9 +202,21 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       }
 
       const previews: VariantPreview[] = (vData || []).map((v: any) => {
-        const hotelSvc = (v.deal_variant_services || []).find((s: any) => s.service_type === "hotel");
+        const services: ServicePreview[] = (v.deal_variant_services || [])
+          .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+          .map((s: any) => ({
+            service_type: s.service_type,
+            service_name: s.service_name,
+            description: s.description || null,
+            quantity: s.quantity || 1,
+            person_count: s.person_count || null,
+            price: s.price || null,
+            price_currency: s.price_currency || null,
+            order_index: s.order_index,
+          }));
+        const hotelSvc = services.find(s => s.service_type === "hotel");
         const dest = v.destination;
-        const currency = (v.deal_variant_services || []).find((s: any) => s.price_currency)?.price_currency || "CZK";
+        const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
         return {
           id: v.id,
           variant_name: v.variant_name,
@@ -203,6 +228,8 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
           total_price: v.hide_price ? null : v.total_price,
           hide_price: v.hide_price,
           currency,
+          services,
+          notes: v.notes || null,
         };
       });
 
@@ -484,44 +511,121 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
                         </span>
                       </div>
 
+
                       {/* Variant cards */}
-                      {variantPreviews.map((v, idx) => (
-                        <div key={v.id} style={{ marginBottom: 20, borderRadius: 12, overflow: "hidden", background: "#fff", border: "1px solid #e2e8f0" }}>
-                          {v.hotel_image && (
-                            <img
-                              src={v.hotel_image}
-                              alt={v.hotel_name || "Hotel"}
-                              style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }}
-                            />
-                          )}
-                          <div style={{ padding: 16 }}>
-                            {variantPreviews.length > 1 && (
-                              <div style={{ marginBottom: 8 }}>
-                                <span style={{ background: "#f1f5f9", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999 }}>
-                                  {v.variant_name}
-                                </span>
-                              </div>
+                      {variantPreviews.map((v) => {
+                        const hotelSvc = v.services.find(s => s.service_type === "hotel");
+                        const golfSvcs = v.services.filter(s => s.service_type === "golf");
+                        const otherSvcs = v.services.filter(s => s.service_type !== "hotel" && s.service_type !== "golf");
+                        const totalGreenFees = golfSvcs.reduce((sum, s) => sum + (s.quantity || 1), 0);
+                        const golfCourses = golfSvcs.map(s => s.description).filter(Boolean).join(", ");
+
+                        // Nights
+                        const nights = v.start_date && v.end_date
+                          ? Math.round((new Date(v.end_date).getTime() - new Date(v.start_date).getTime()) / 86400000)
+                          : null;
+
+                        // Per-person prices
+                        const hotelSvcs = v.services.filter(s => s.service_type === "hotel");
+                        const sharedSvcs = v.services.filter(s => s.service_type !== "hotel");
+                        const sharedPerPerson = sharedSvcs.reduce((sum, s) => {
+                          const total = (s.price || 0) * (s.quantity || 1);
+                          return sum + total / (s.person_count || 1);
+                        }, 0);
+                        const perPersonLines = hotelSvcs.map(h => {
+                          const persons = h.person_count || 1;
+                          const hotelPP = ((h.price || 0) * (h.quantity || 1)) / persons;
+                          const label = persons === 1 ? "Jednolůžkový pokoj" : persons === 2 ? "Dvoulůžkový pokoj" : `Pokoj pro ${persons} osoby`;
+                          return { label, persons, price: Math.round(hotelPP + sharedPerPerson) };
+                        });
+
+                        const serviceEmoji: Record<string, string> = {
+                          flight: "✈️", hotel: "🏨", golf: "⛳", transfer: "🚗", insurance: "🛡️", other: "📋", meal: "🍽️",
+                        };
+
+                        return (
+                          <div key={v.id} style={{ marginBottom: 20, borderRadius: 12, overflow: "hidden", background: "#fff", border: "1px solid #e2e8f0" }}>
+                            {v.hotel_image && (
+                              <img src={v.hotel_image} alt={v.hotel_name || "Hotel"} style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }} />
                             )}
-                            {v.hotel_name && (
-                              <div style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>{v.hotel_name}</div>
-                            )}
-                            {v.destination && (
-                              <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>{v.destination}</div>
-                            )}
-                            {(v.start_date || v.end_date) && (
-                              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10 }}>
-                                {formatDate(v.start_date)} – {formatDate(v.end_date)}
-                              </div>
-                            )}
-                            {!v.hide_price && v.total_price && v.total_price > 0 && (
-                              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: 13, color: "#64748b" }}>Celková cena</span>
-                                <span style={{ fontSize: 20, fontWeight: 700, color: "#1e293b" }}>{formatPrice(v.total_price, v.currency)}</span>
-                              </div>
-                            )}
+                            <div style={{ padding: 16 }}>
+                              {variantPreviews.length > 1 && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <span style={{ background: "#f1f5f9", color: "#334155", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999 }}>{v.variant_name}</span>
+                                </div>
+                              )}
+                              {v.hotel_name && <div style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>{v.hotel_name}</div>}
+                              {v.destination && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 4 }}>{v.destination}</div>}
+                              {(v.start_date || v.end_date) && (
+                                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>{formatDate(v.start_date)} – {formatDate(v.end_date)}</div>
+                              )}
+
+                              {/* Cena zahrnuje */}
+                              {v.services.length > 0 && (
+                                <div style={{ marginBottom: 12 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Cena zahrnuje</div>
+                                  {hotelSvc && (
+                                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "4px 0", fontSize: 13, color: "#334155" }}>
+                                      <span>🏨</span>
+                                      <span>
+                                        <strong>{nights ? `${nights} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `Ubytování v hotelu ${hotelSvc.service_name}`}</strong>
+                                        {hotelSvc.description && <span style={{ color: "#94a3b8" }}>, {hotelSvc.description}</span>}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {totalGreenFees > 0 && (
+                                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "4px 0", fontSize: 13, color: "#334155" }}>
+                                      <span>⛳</span>
+                                      <span>
+                                        <strong>{totalGreenFees}× green fee</strong>
+                                        {golfCourses && <span style={{ color: "#94a3b8" }}> ({golfCourses})</span>}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {otherSvcs.map((s, i) => (
+                                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "4px 0", fontSize: 13, color: "#334155" }}>
+                                      <span>{serviceEmoji[s.service_type] || "📋"}</span>
+                                      <span>
+                                        <strong>{s.service_name}</strong>
+                                        {s.description && <span style={{ color: "#94a3b8" }}> · {s.description}</span>}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Notes */}
+                              {v.notes && (
+                                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 10, marginTop: 4, marginBottom: 10 }}>
+                                  {v.notes.split("\n").filter(Boolean).map((line, i) => (
+                                    <div key={i} style={{ fontSize: 12, color: "#94a3b8", marginBottom: 3 }}>• {line.trim()}</div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Cena na osobu */}
+                              {perPersonLines.length > 0 && (
+                                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 8 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Cena na osobu</div>
+                                  {perPersonLines.map((l, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                                      <span style={{ color: "#475569" }}>{l.label} <span style={{ color: "#94a3b8" }}>({l.persons} os.)</span></span>
+                                      <strong style={{ color: "#1e293b" }}>{formatPrice(l.price, v.currency)}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {!v.hide_price && v.total_price && v.total_price > 0 && (
+                                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span style={{ fontSize: 13, color: "#64748b" }}>Celková cena</span>
+                                  <span style={{ fontSize: 20, fontWeight: 700, color: "#1e293b" }}>{formatPrice(v.total_price, v.currency)}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       {/* CTA bottom */}
                       <div style={{ textAlign: "center", marginTop: 12 }}>
