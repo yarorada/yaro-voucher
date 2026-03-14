@@ -414,7 +414,7 @@ Deno.serve(async (req) => {
       const hotelSvc = vServices.find((s: any) => s.service_type === 'hotel');
       const images = hotelSvc ? hotelData[hotelSvc.service_name] : null;
       const vDest = v.destination;
-      const vPrice = v.total_price || vServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0);
+      const vPrice = v.hide_price ? 0 : (v.total_price || vServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0));
       const vCurrency = vServices.find((s: any) => s.price_currency)?.price_currency || 'CZK';
 
       let imagesHtml = '';
@@ -436,21 +436,38 @@ Deno.serve(async (req) => {
 
       const descHtml = images && isValidDescription(images.description) ? `<div style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${images.description!}</div>` : '';
 
+      // Hotel name as heading (same hierarchy as PublicOffer)
+      const hotelHeading = hotelSvc ? `<h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#1e293b;">${escapeHtml(hotelSvc.service_name)}</h3>` : '';
+      // Destination as subheading
+      const destSubheading = vDest ? `<p style="margin:0 0 4px; font-size:14px; color:#64748b;">${escapeHtml(vDest.name)}${vDest.country?.name ? ', ' + escapeHtml(vDest.country.name) : ''}</p>` : '';
+      // Variant dates (each variant has its own dates)
+      const variantDates = v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : '';
+
+      // Render notes as bullet list matching PublicOffer
+      const notesHtml = v.notes
+        ? `<div style="border-top:1px solid #e2e8f0; padding-top:12px; margin-top:12px;">
+            ${v.notes.split('\n').filter((l: string) => l.trim()).map((line: string) =>
+              `<p style="font-size:12px; color:#94a3b8; margin:0 0 4px;">• ${escapeHtml(line.trim())}</p>`
+            ).join('')}
+          </div>`
+        : '';
+
       return `
         <div style="margin-bottom:28px; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid #e2e8f0;">
           ${imagesHtml}
           ${!images?.image_url ? badgeHtml : ''}
           <div style="padding:20px;">
             ${images?.image_url && showBadge ? `<div style="margin-bottom:12px;"><span style="background:#f1f5f9; color:#334155; font-size:12px; font-weight:600; padding:4px 12px; border-radius:999px;">${escapeHtml(v.variant_name || 'Varianta')}</span></div>` : ''}
-            ${vDest ? `<h3 style="margin:0 0 4px; font-size:18px; color:#1e293b;">${escapeHtml(vDest.name)}, ${escapeHtml(vDest.country?.name || '')}</h3>` : ''}
-            ${v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : ''}
+            ${hotelHeading}
+            ${destSubheading}
+            ${variantDates}
             ${descHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
               ${renderIncludesHtml(vServices, v.start_date, v.end_date)}
             </table>
-            ${v.notes ? `<p style="font-size:12px; color:#94a3b8; font-style:italic; border-top:1px solid #e2e8f0; padding-top:12px; margin:12px 0 0;">${escapeHtml(v.notes)}</p>` : ''}
+            ${notesHtml}
             ${renderPerPersonHtml(vServices)}
-            ${vPrice > 0 ? `
+            ${!v.hide_price && vPrice > 0 ? `
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr>
                   <td style="font-size:14px; color:#64748b;">Celková cena</td>
