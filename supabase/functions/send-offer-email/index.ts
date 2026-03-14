@@ -522,9 +522,9 @@ Deno.serve(async (req) => {
         </div>`;
     }
 
-    // Date range in long format matching the web
-    const dateRangeLong = deal.start_date && deal.end_date
-      ? `${formatDateLong(deal.start_date)} — ${formatDateLong(deal.end_date)}`
+    // Date range in long format — only show when all variants share the same dates
+    const dateRangeLong = sharedStart && sharedEnd && allSameStart && allSameEnd
+      ? `${formatDateLong(sharedStart)} — ${formatDateLong(sharedEnd)}`
       : '';
 
     const emailHtml = `
