@@ -775,6 +775,29 @@ export const VariantServiceDialog = ({
                 </p>
               )}
             </div>
+            <div className="w-20">
+              <Label>Marže %</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={marginPercent}
+                onChange={(e) => {
+                  const m = e.target.value;
+                  setMarginPercent(m);
+                  const margin = (parseFloat(m) || 0) / 100;
+                  if (!priceManuallySet) {
+                    const base = costCzkValue ?? (costPrice ? parseFloat(costPrice) : null);
+                    if (base) {
+                      setPrice(Math.round(base * (1 + margin)).toString());
+                      setPriceCurrency("CZK");
+                    }
+                  }
+                }}
+                placeholder="15"
+                className="text-center"
+              />
+            </div>
             <div className="flex-1">
               <Label>Prodejní cena</Label>
               <div className="flex gap-1">

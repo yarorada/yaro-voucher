@@ -3416,6 +3416,32 @@ const DealDetail = () => {
                           </p>
                         )}
                       </div>
+                      <div className="w-20">
+                        <Label>Marže %</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={marginPercent}
+                          onChange={(e) => {
+                            const m = e.target.value;
+                            setMarginPercent(m);
+                            const margin = (parseFloat(m) || 0) / 100;
+                            if (!serviceForm.price_manually_set) {
+                              const base = serviceForm.cost_czk_value ?? (serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null);
+                              if (base) {
+                                setServiceForm(prev => ({
+                                  ...prev,
+                                  price: Math.round(base * (1 + margin)).toString(),
+                                  price_currency: "CZK",
+                                }));
+                              }
+                            }
+                          }}
+                          placeholder="15"
+                          className="text-center"
+                        />
+                      </div>
                       {/* When room types are defined, selling price is auto-derived — hide the field */}
                       {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
                         <div className="flex-1">
