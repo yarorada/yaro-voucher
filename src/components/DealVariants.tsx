@@ -34,7 +34,7 @@ interface DealVariant {
   notes: string | null;
   is_selected: boolean;
   hide_price: boolean;
-  order_index: number | null;
+  order_index?: number | null;
   destination?: {
     name: string;
   };
