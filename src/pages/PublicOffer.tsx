@@ -478,7 +478,7 @@ export default function PublicOffer() {
 
         {/* Variants */}
         {variants.length > 0 ? (
-          <div className={`grid gap-6 ${variants.length >= 3 ? "lg:grid-cols-3 md:grid-cols-2" : variants.length > 1 ? "md:grid-cols-2" : ""}`}>
+          <div className={`grid gap-6 ${variants.length >= 3 ? "lg:grid-cols-3 grid-cols-2" : variants.length > 1 ? "grid-cols-2" : ""}`}>
             {variants.map((variant) => (
               <VariantCard
                 key={variant.id}
