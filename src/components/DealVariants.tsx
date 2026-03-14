@@ -647,7 +647,24 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id={`hide-price-${variant.id}`}
+                    checked={variant.hide_price}
+                    onChange={async (e) => {
+                      const checked = e.target.checked;
+                      await supabase.from("deal_variants").update({ hide_price: checked }).eq("id", variant.id);
+                      fetchVariants();
+                    }}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                  <label htmlFor={`hide-price-${variant.id}`} className="text-sm cursor-pointer text-muted-foreground select-none">
+                    Neuváděj celkovou cenu
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
                   <Button
                     onClick={() => handleEditVariant(variant)}
                     size="sm"
