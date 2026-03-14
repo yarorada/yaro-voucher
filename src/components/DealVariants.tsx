@@ -166,10 +166,24 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
           deal_variant_services(price, cost_price, cost_price_original, cost_currency, quantity, person_count, price_currency, details)
         `)
         .eq("deal_id", dealId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setVariants(data || []);
+
+      // Apply saved order from localStorage
+      const raw = data || [];
+      try {
+        const savedOrder: string[] = JSON.parse(localStorage.getItem(orderStorageKey) || "[]");
+        if (savedOrder.length > 0) {
+          const ordered = [
+            ...savedOrder.map(id => raw.find(v => v.id === id)).filter(Boolean) as typeof raw,
+            ...raw.filter(v => !savedOrder.includes(v.id)),
+          ];
+          setVariants(ordered);
+          return;
+        }
+      } catch { /* ignore */ }
+      setVariants(raw);
     } catch (error) {
       console.error("Error fetching variants:", error);
       toast({
