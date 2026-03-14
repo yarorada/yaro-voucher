@@ -324,7 +324,9 @@ Deno.serve(async (req) => {
     // Render "Cena zahrnuje" section with consolidated hotel + green fee lines
     function renderIncludesHtml(services: any[], startDate?: string, endDate?: string): string {
       const hotelSvc = services.find((s: any) => s.service_type === 'hotel');
-      const totalGreenFees = services.filter((s: any) => s.service_type === 'golf').reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
+      const golfServices = services.filter((s: any) => s.service_type === 'golf');
+      const totalGreenFees = golfServices.reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
+      const golfCourseNames = golfServices.map((s: any) => s.description).filter(Boolean).join(', ');
       const otherServices = services.filter((s: any) => s.service_type !== 'hotel' && s.service_type !== 'golf');
 
       const nightsSrc = { start: startDate || hotelSvc?.start_date, end: endDate || hotelSvc?.end_date };
@@ -349,12 +351,13 @@ Deno.serve(async (req) => {
       }
 
       if (totalGreenFees > 0) {
+        const coursesLabel = golfCourseNames ? ` (${golfCourseNames})` : '';
         rows += `
           <tr><td style="padding:5px 0; vertical-align:top;">
             <table cellpadding="0" cellspacing="0" border="0"><tr>
               <td style="vertical-align:top; padding-right:10px; font-size:14px; line-height:20px;">⛳</td>
               <td style="vertical-align:top; font-size:14px; line-height:20px;">
-                <strong style="color:#334155;">${totalGreenFees}× green fee</strong>
+                <strong style="color:#334155;">${totalGreenFees}× green fee</strong><span style="color:#94a3b8;">${escapeHtml(coursesLabel)}</span>
               </td>
             </tr></table>
           </td></tr>`;
@@ -364,11 +367,19 @@ Deno.serve(async (req) => {
       return rows;
     }
 
+    // Room label matching PublicOffer.tsx
+    function roomLabel(persons: number): string {
+      if (persons === 1) return 'Jednolůžkový pokoj';
+      if (persons === 2) return 'Dvoulůžkový pokoj';
+      return `Pokoj pro ${persons} osoby`;
+    }
+
     // Per-person price lines
-    function computePerPersonLines(services: any[]): Array<{label: string; personCount: number; pricePerPerson: number}> {
+    function computePerPersonLines(services: any[]): Array<{label: string; personCount: number; pricePerPerson: number; currency: string}> {
       const hotels = services.filter((s: any) => s.service_type === 'hotel');
       const shared = services.filter((s: any) => s.service_type !== 'hotel');
       if (hotels.length === 0) return [];
+      const currency = services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
       let sharedPerPerson = 0;
       shared.forEach((s: any) => {
         const total = (s.price || 0) * (s.quantity || 1);
@@ -377,14 +388,14 @@ Deno.serve(async (req) => {
       return hotels.map((h: any) => {
         const persons = h.person_count || 1;
         const hotelPerPerson = ((h.price || 0) * (h.quantity || 1)) / persons;
-        return { label: h.description || h.service_name, personCount: persons, pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson) };
+        return { label: roomLabel(persons), personCount: persons, pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson), currency };
       });
     }
 
     function renderPerPersonHtml(services: any[]): string {
       const lines = computePerPersonLines(services);
       if (lines.length === 0) return '';
-      const cur = services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
+      const cur = lines[0]?.currency || services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
       return `
         <div style="border-top:1px solid #e2e8f0; padding-top:12px; margin-top:4px;">
           <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Cena na osobu</div>
