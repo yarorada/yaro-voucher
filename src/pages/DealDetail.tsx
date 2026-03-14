@@ -435,6 +435,7 @@ const DealDetail = () => {
   // Service form state
   // Room type definition for hotel services
   type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
+  const [marginPercent, setMarginPercent] = useState("15");
 
    const [serviceForm, setServiceForm] = useState({
     id: "",
