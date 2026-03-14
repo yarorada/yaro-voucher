@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     const { data: variants } = await supabase
       .from('deal_variants')
       .select(`
-        id, variant_name, start_date, end_date, total_price, is_selected, notes,
+        id, variant_name, start_date, end_date, total_price, is_selected, notes, hide_price,
         destination:destinations(name, country:countries(name)),
         deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, order_index, details)
       `)
@@ -173,7 +173,17 @@ Deno.serve(async (req) => {
       .order('order_index', { ascending: true });
 
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    const displayVariants = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
+    let displayVariants: any[] = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
+
+    // Apply caller-supplied variant order (matches the user's drag-sorted order)
+    if (variantIds && Array.isArray(variantIds) && variantIds.length > 0) {
+      const ordered = variantIds
+        .map((id: string) => displayVariants.find((v: any) => v.id === id))
+        .filter(Boolean);
+      // Append any variants not in variantIds (shouldn't happen, but safety)
+      const rest = displayVariants.filter((v: any) => !variantIds.includes(v.id));
+      displayVariants = [...ordered, ...rest];
+    }
 
     // Collect hotel names for images and descriptions
     const hotelNames = new Set<string>();
@@ -200,8 +210,13 @@ Deno.serve(async (req) => {
     // Destination info
     const dest = deal.destination as any;
     const destText = dest ? `${dest.name}, ${dest.country?.name}` : '';
-    const dateRange = deal.start_date && deal.end_date
-      ? `${formatDate(deal.start_date)} – ${formatDate(deal.end_date)}`
+    // Only show date range when there is a single variant with dates, or all variants share same dates
+    const allSameStart = displayVariants.length > 0 && displayVariants.every((v: any) => v.start_date === displayVariants[0].start_date);
+    const allSameEnd = displayVariants.length > 0 && displayVariants.every((v: any) => v.end_date === displayVariants[0].end_date);
+    const sharedStart = allSameStart ? displayVariants[0]?.start_date : deal.start_date;
+    const sharedEnd = allSameEnd ? displayVariants[0]?.end_date : deal.end_date;
+    const dateRange = sharedStart && sharedEnd && allSameStart && allSameEnd
+      ? `${formatDate(sharedStart)} – ${formatDate(sharedEnd)}`
       : '';
 
     // Decline name to accusative for the title
@@ -309,7 +324,9 @@ Deno.serve(async (req) => {
     // Render "Cena zahrnuje" section with consolidated hotel + green fee lines
     function renderIncludesHtml(services: any[], startDate?: string, endDate?: string): string {
       const hotelSvc = services.find((s: any) => s.service_type === 'hotel');
-      const totalGreenFees = services.filter((s: any) => s.service_type === 'golf').reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
+      const golfServices = services.filter((s: any) => s.service_type === 'golf');
+      const totalGreenFees = golfServices.reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
+      const golfCourseNames = golfServices.map((s: any) => s.description).filter(Boolean).join(', ');
       const otherServices = services.filter((s: any) => s.service_type !== 'hotel' && s.service_type !== 'golf');
 
       const nightsSrc = { start: startDate || hotelSvc?.start_date, end: endDate || hotelSvc?.end_date };
@@ -334,12 +351,13 @@ Deno.serve(async (req) => {
       }
 
       if (totalGreenFees > 0) {
+        const coursesLabel = golfCourseNames ? ` (${golfCourseNames})` : '';
         rows += `
           <tr><td style="padding:5px 0; vertical-align:top;">
             <table cellpadding="0" cellspacing="0" border="0"><tr>
               <td style="vertical-align:top; padding-right:10px; font-size:14px; line-height:20px;">⛳</td>
               <td style="vertical-align:top; font-size:14px; line-height:20px;">
-                <strong style="color:#334155;">${totalGreenFees}× green fee</strong>
+                <strong style="color:#334155;">${totalGreenFees}× green fee</strong><span style="color:#94a3b8;">${escapeHtml(coursesLabel)}</span>
               </td>
             </tr></table>
           </td></tr>`;
@@ -349,11 +367,19 @@ Deno.serve(async (req) => {
       return rows;
     }
 
+    // Room label matching PublicOffer.tsx
+    function roomLabel(persons: number): string {
+      if (persons === 1) return 'Jednolůžkový pokoj';
+      if (persons === 2) return 'Dvoulůžkový pokoj';
+      return `Pokoj pro ${persons} osoby`;
+    }
+
     // Per-person price lines
-    function computePerPersonLines(services: any[]): Array<{label: string; personCount: number; pricePerPerson: number}> {
+    function computePerPersonLines(services: any[]): Array<{label: string; personCount: number; pricePerPerson: number; currency: string}> {
       const hotels = services.filter((s: any) => s.service_type === 'hotel');
       const shared = services.filter((s: any) => s.service_type !== 'hotel');
       if (hotels.length === 0) return [];
+      const currency = services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
       let sharedPerPerson = 0;
       shared.forEach((s: any) => {
         const total = (s.price || 0) * (s.quantity || 1);
@@ -362,14 +388,14 @@ Deno.serve(async (req) => {
       return hotels.map((h: any) => {
         const persons = h.person_count || 1;
         const hotelPerPerson = ((h.price || 0) * (h.quantity || 1)) / persons;
-        return { label: h.description || h.service_name, personCount: persons, pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson) };
+        return { label: roomLabel(persons), personCount: persons, pricePerPerson: Math.round(hotelPerPerson + sharedPerPerson), currency };
       });
     }
 
     function renderPerPersonHtml(services: any[]): string {
       const lines = computePerPersonLines(services);
       if (lines.length === 0) return '';
-      const cur = services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
+      const cur = lines[0]?.currency || services.find((s: any) => s.price_currency)?.price_currency || 'CZK';
       return `
         <div style="border-top:1px solid #e2e8f0; padding-top:12px; margin-top:4px;">
           <div style="font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Cena na osobu</div>
@@ -388,7 +414,7 @@ Deno.serve(async (req) => {
       const hotelSvc = vServices.find((s: any) => s.service_type === 'hotel');
       const images = hotelSvc ? hotelData[hotelSvc.service_name] : null;
       const vDest = v.destination;
-      const vPrice = v.total_price || vServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0);
+      const vPrice = v.hide_price ? 0 : (v.total_price || vServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0));
       const vCurrency = vServices.find((s: any) => s.price_currency)?.price_currency || 'CZK';
 
       let imagesHtml = '';
@@ -410,21 +436,38 @@ Deno.serve(async (req) => {
 
       const descHtml = images && isValidDescription(images.description) ? `<div style="font-size:14px; color:#64748b; line-height:1.6; margin:0 0 8px;">${images.description!}</div>` : '';
 
+      // Hotel name as heading (same hierarchy as PublicOffer)
+      const hotelHeading = hotelSvc ? `<h3 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#1e293b;">${escapeHtml(hotelSvc.service_name)}</h3>` : '';
+      // Destination as subheading
+      const destSubheading = vDest ? `<p style="margin:0 0 4px; font-size:14px; color:#64748b;">${escapeHtml(vDest.name)}${vDest.country?.name ? ', ' + escapeHtml(vDest.country.name) : ''}</p>` : '';
+      // Variant dates (each variant has its own dates)
+      const variantDates = v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : '';
+
+      // Render notes as bullet list matching PublicOffer
+      const notesHtml = v.notes
+        ? `<div style="border-top:1px solid #e2e8f0; padding-top:12px; margin-top:12px;">
+            ${v.notes.split('\n').filter((l: string) => l.trim()).map((line: string) =>
+              `<p style="font-size:12px; color:#94a3b8; margin:0 0 4px;">• ${escapeHtml(line.trim())}</p>`
+            ).join('')}
+          </div>`
+        : '';
+
       return `
         <div style="margin-bottom:28px; border-radius:16px; overflow:hidden; background:#ffffff; border:1px solid #e2e8f0;">
           ${imagesHtml}
           ${!images?.image_url ? badgeHtml : ''}
           <div style="padding:20px;">
             ${images?.image_url && showBadge ? `<div style="margin-bottom:12px;"><span style="background:#f1f5f9; color:#334155; font-size:12px; font-weight:600; padding:4px 12px; border-radius:999px;">${escapeHtml(v.variant_name || 'Varianta')}</span></div>` : ''}
-            ${vDest ? `<h3 style="margin:0 0 4px; font-size:18px; color:#1e293b;">${escapeHtml(vDest.name)}, ${escapeHtml(vDest.country?.name || '')}</h3>` : ''}
-            ${v.start_date ? `<p style="margin:0 0 12px; color:#94a3b8; font-size:13px;">${formatDate(v.start_date)} – ${formatDate(v.end_date || '')}</p>` : ''}
+            ${hotelHeading}
+            ${destSubheading}
+            ${variantDates}
             ${descHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
               ${renderIncludesHtml(vServices, v.start_date, v.end_date)}
             </table>
-            ${v.notes ? `<p style="font-size:12px; color:#94a3b8; font-style:italic; border-top:1px solid #e2e8f0; padding-top:12px; margin:12px 0 0;">${escapeHtml(v.notes)}</p>` : ''}
+            ${notesHtml}
             ${renderPerPersonHtml(vServices)}
-            ${vPrice > 0 ? `
+            ${!v.hide_price && vPrice > 0 ? `
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
                 <table cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr>
                   <td style="font-size:14px; color:#64748b;">Celková cena</td>
@@ -479,9 +522,9 @@ Deno.serve(async (req) => {
         </div>`;
     }
 
-    // Date range in long format matching the web
-    const dateRangeLong = deal.start_date && deal.end_date
-      ? `${formatDateLong(deal.start_date)} — ${formatDateLong(deal.end_date)}`
+    // Date range in long format — only show when all variants share the same dates
+    const dateRangeLong = sharedStart && sharedEnd && allSameStart && allSameEnd
+      ? `${formatDateLong(sharedStart)} — ${formatDateLong(sharedEnd)}`
       : '';
 
     const emailHtml = `

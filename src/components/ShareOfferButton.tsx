@@ -164,7 +164,10 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
         body: {
           dealId,
           allVariants: false,
-          variantIds: hasMultipleVariants ? Array.from(selectedVariantIds) : undefined,
+          // Pass variant IDs in display order (respects drag-sorted order from parent)
+          variantIds: variants
+            .filter(v => selectedVariantIds.has(v.id))
+            .map(v => v.id),
           customMessage: customMessage.trim() || undefined,
         },
       });
