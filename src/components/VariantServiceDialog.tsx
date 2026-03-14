@@ -625,7 +625,7 @@ export const VariantServiceDialog = ({
                   />
                 )}
               </div>
-              {serviceType === 'hotel' ? (
+              {serviceType === 'hotel' && (
                 <div>
                   <Label htmlFor="description">Typ pokoje</Label>
                   <Input
@@ -635,7 +635,16 @@ export const VariantServiceDialog = ({
                     placeholder="např. Double Room, Single Room..."
                   />
                 </div>
-              ) : null}
+              )}
+              <div>
+                <Label htmlFor="notes-field">Poznámka</Label>
+                <Input
+                  id="notes-field"
+                  value={serviceType !== 'hotel' ? description : ''}
+                  onChange={(e) => { if (serviceType !== 'hotel') setDescription(e.target.value); }}
+                  placeholder="Interní poznámka ke službě..."
+                />
+              </div>
             </>
           )}
 
