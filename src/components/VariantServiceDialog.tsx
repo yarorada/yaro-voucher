@@ -83,6 +83,7 @@ export const VariantServiceDialog = ({
   const [supplierId, setSupplierId] = useState("");
   const [priceMode, setPriceMode] = useState<"per_person" | "per_service">("per_person");
   const [priceManuallySet, setPriceManuallySet] = useState(false);
+  const [marginPercent, setMarginPercent] = useState("15");
   type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
   const [roomTypes, setRoomTypes] = useState<RoomTypeEntry[]>([]);
   // Exchange rate info for display
@@ -689,7 +690,7 @@ export const VariantServiceDialog = ({
             </div>
           </div>
 
-          {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
+          {/* Row 2: Cost Price + Currency | Margin | Sale Price + Currency | Price Mode */}
           <div className="flex gap-2 items-start">
             <div className="flex-1">
               <Label>Nákupní cena</Label>
@@ -699,12 +700,13 @@ export const VariantServiceDialog = ({
                   value={costPriceOriginal || costPrice}
                   onChange={async (e) => {
                     const val = e.target.value;
+                    const margin = (parseFloat(marginPercent) || 0) / 100;
                     setCostPriceOriginal(val);
                     if (costCurrency === "CZK") {
                       setCostPrice(val);
                       setCostCzkValue(val ? parseFloat(val) : null);
                       if (!priceManuallySet && val) {
-                        setPrice(Math.round(parseFloat(val) * 1.15).toString());
+                        setPrice(Math.round(parseFloat(val) * (1 + margin)).toString());
                         setPriceCurrency("CZK");
                       }
                     } else if (val) {
@@ -716,7 +718,7 @@ export const VariantServiceDialog = ({
                           setCostExchangeRate(data.rate);
                           setCostCzkValue(data.convertedAmount);
                           if (!priceManuallySet) {
-                            setPrice(Math.round(data.convertedAmount * 1.15).toString());
+                            setPrice(Math.round(data.convertedAmount * (1 + margin)).toString());
                             setPriceCurrency("CZK");
                           }
                         }
@@ -731,6 +733,7 @@ export const VariantServiceDialog = ({
                 <CurrencySelect
                   value={costCurrency}
                   onChange={async (v) => {
+                    const margin = (parseFloat(marginPercent) || 0) / 100;
                     setCostCurrency(v);
                     setCostExchangeRate(null);
                     setCostCzkValue(null);
@@ -739,7 +742,7 @@ export const VariantServiceDialog = ({
                       const orig = costPriceOriginal;
                       if (orig) {
                         setCostCzkValue(parseFloat(orig));
-                        if (!priceManuallySet) setPrice(Math.round(parseFloat(orig) * 1.15).toString());
+                        if (!priceManuallySet) setPrice(Math.round(parseFloat(orig) * (1 + margin)).toString());
                       }
                     } else if (costPriceOriginal) {
                       try {
@@ -750,7 +753,7 @@ export const VariantServiceDialog = ({
                           setCostExchangeRate(data.rate);
                           setCostCzkValue(data.convertedAmount);
                           if (!priceManuallySet) {
-                            setPrice(Math.round(data.convertedAmount * 1.15).toString());
+                            setPrice(Math.round(data.convertedAmount * (1 + margin)).toString());
                             setPriceCurrency("CZK");
                           }
                         }
@@ -763,14 +766,37 @@ export const VariantServiceDialog = ({
               {costCurrency !== "CZK" && costCzkValue != null && costExchangeRate != null && (
                 <p className="text-xs text-muted-foreground mt-1">
                   ≈ {Math.round(costCzkValue).toLocaleString("cs-CZ")} Kč (kurz {costExchangeRate.toFixed(3)} Kč/{costCurrency})
-                  {!priceManuallySet && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(costCzkValue * 1.15).toLocaleString("cs-CZ")} Kč</span>}
+                  {!priceManuallySet && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(costCzkValue * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč</span>}
                 </p>
               )}
               {costCurrency === "CZK" && costPrice && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Prodejní s 15% marží: {Math.round(parseFloat(costPrice) * 1.15).toLocaleString("cs-CZ")} Kč
+                  Prodejní s {marginPercent}% marží: {Math.round(parseFloat(costPrice) * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč
                 </p>
               )}
+            </div>
+            <div className="w-20">
+              <Label>Marže %</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={marginPercent}
+                onChange={(e) => {
+                  const m = e.target.value;
+                  setMarginPercent(m);
+                  const margin = (parseFloat(m) || 0) / 100;
+                  if (!priceManuallySet) {
+                    const base = costCzkValue ?? (costPrice ? parseFloat(costPrice) : null);
+                    if (base) {
+                      setPrice(Math.round(base * (1 + margin)).toString());
+                      setPriceCurrency("CZK");
+                    }
+                  }
+                }}
+                placeholder="15"
+                className="text-center"
+              />
             </div>
             <div className="flex-1">
               <Label>Prodejní cena</Label>

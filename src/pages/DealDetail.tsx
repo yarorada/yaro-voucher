@@ -435,6 +435,7 @@ const DealDetail = () => {
   // Service form state
   // Room type definition for hotel services
   type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
+  const [marginPercent, setMarginPercent] = useState("15");
 
    const [serviceForm, setServiceForm] = useState({
     id: "",
@@ -3342,6 +3343,7 @@ const DealDetail = () => {
                             value={serviceForm.cost_price_original || serviceForm.cost_price}
                             onChange={async (e) => {
                               const val = e.target.value;
+                              const margin = (parseFloat(marginPercent) || 0) / 100;
                               const updates: any = {
                                 cost_price_original: val,
                                 cost_price: serviceForm.cost_currency === "CZK" ? val : "",
@@ -3349,7 +3351,7 @@ const DealDetail = () => {
                               };
                               if (serviceForm.cost_currency === "CZK") {
                                 if (val && !serviceForm.price_manually_set) {
-                                  updates.price = Math.round(parseFloat(val) * 1.15).toString();
+                                  updates.price = Math.round(parseFloat(val) * (1 + margin)).toString();
                                   updates.price_currency = "CZK";
                                 }
                               } else if (val) {
@@ -3361,7 +3363,7 @@ const DealDetail = () => {
                                     updates.cost_exchange_rate = data.rate;
                                     updates.cost_czk_value = data.convertedAmount;
                                     if (!serviceForm.price_manually_set) {
-                                      updates.price = Math.round(data.convertedAmount * 1.15).toString();
+                                      updates.price = Math.round(data.convertedAmount * (1 + margin)).toString();
                                       updates.price_currency = "CZK";
                                     }
                                   }
@@ -3378,6 +3380,7 @@ const DealDetail = () => {
                           <CurrencySelect
                             value={serviceForm.cost_currency}
                             onChange={async (value) => {
+                              const margin = (parseFloat(marginPercent) || 0) / 100;
                               const orig = serviceForm.cost_price_original;
                               const updates: any = {
                                 cost_currency: value,
@@ -3396,12 +3399,12 @@ const DealDetail = () => {
                                     updates.cost_exchange_rate = data.rate;
                                     updates.cost_czk_value = data.convertedAmount;
                                     if (!serviceForm.price_manually_set) {
-                                      updates.price = Math.round(data.convertedAmount * 1.15).toString();
+                                      updates.price = Math.round(data.convertedAmount * (1 + margin)).toString();
                                     }
                                   }
                                 } catch {}
                               } else if (orig && value === "CZK" && !serviceForm.price_manually_set) {
-                                updates.price = Math.round(parseFloat(orig) * 1.15).toString();
+                                updates.price = Math.round(parseFloat(orig) * (1 + margin)).toString();
                               }
                               setServiceForm(prev => ({ ...prev, ...updates }));
                             }}
@@ -3411,9 +3414,35 @@ const DealDetail = () => {
                         {serviceForm.cost_currency !== "CZK" && serviceForm.cost_czk_value != null && serviceForm.cost_exchange_rate != null && (
                           <p className="text-xs text-muted-foreground mt-1">
                             ≈ {Math.round(serviceForm.cost_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.cost_exchange_rate.toFixed(3)} Kč/{serviceForm.cost_currency})
-                            {!serviceForm.price_manually_set && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(serviceForm.cost_czk_value * 1.15).toLocaleString("cs-CZ")} Kč</span>}
+                            {!serviceForm.price_manually_set && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(serviceForm.cost_czk_value * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč</span>}
                           </p>
                         )}
+                      </div>
+                      <div className="w-20">
+                        <Label>Marže %</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={marginPercent}
+                          onChange={(e) => {
+                            const m = e.target.value;
+                            setMarginPercent(m);
+                            const margin = (parseFloat(m) || 0) / 100;
+                            if (!serviceForm.price_manually_set) {
+                              const base = serviceForm.cost_czk_value ?? (serviceForm.cost_price ? parseFloat(serviceForm.cost_price) : null);
+                              if (base) {
+                                setServiceForm(prev => ({
+                                  ...prev,
+                                  price: Math.round(base * (1 + margin)).toString(),
+                                  price_currency: "CZK",
+                                }));
+                              }
+                            }
+                          }}
+                          placeholder="15"
+                          className="text-center"
+                        />
                       </div>
                       {/* When room types are defined, selling price is auto-derived — hide the field */}
                       {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
@@ -3484,7 +3513,7 @@ const DealDetail = () => {
 
                     {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && !(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
                       <p className="text-xs text-muted-foreground -mt-2">
-                        Prodejní cena s 15% marží: {Math.round(parseFloat(serviceForm.cost_price) * 1.15).toLocaleString("cs-CZ")} Kč
+                        Prodejní cena s {marginPercent}% marží: {Math.round(parseFloat(serviceForm.cost_price) * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč
                       </p>
                     )}
 
