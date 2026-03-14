@@ -3450,8 +3450,7 @@ const DealDetail = () => {
                               }
                             }
                           }}
-                          onBlur={async (e) => {
-                            if (serviceForm.price_manually_set) return;
+                           onBlur={async (e) => {
                             const margin = (parseFloat(e.target.value) || 0) / 100;
                             if (serviceForm.cost_currency !== "CZK" && serviceForm.cost_price_original) {
                               try {
