@@ -819,7 +819,23 @@ const DealDetail = () => {
         .select("id, variant_name, is_selected")
         .eq("deal_id", id)
         .order("created_at", { ascending: true });
-      setDealVariants(variantsData || []);
+
+      // Apply drag-sorted order from localStorage (same key as DealVariants component)
+      const raw = variantsData || [];
+      try {
+        const savedOrder: string[] = JSON.parse(localStorage.getItem(`yaro-variant-order-${id}`) || "[]");
+        if (savedOrder.length > 0) {
+          const ordered = [
+            ...savedOrder.map((vid: string) => raw.find(v => v.id === vid)).filter(Boolean) as typeof raw,
+            ...raw.filter(v => !savedOrder.includes(v.id)),
+          ];
+          setDealVariants(ordered);
+        } else {
+          setDealVariants(raw);
+        }
+      } catch {
+        setDealVariants(raw);
+      }
     } catch (error) {
       console.error("Error fetching deal:", error);
       toast({
