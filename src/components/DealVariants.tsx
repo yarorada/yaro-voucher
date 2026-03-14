@@ -55,6 +55,37 @@ interface DealVariantsProps {
   onVariantSelected?: () => void;
 }
 
+// ──────────────────────────────────────────────────────────
+// Sortable card wrapper
+// ──────────────────────────────────────────────────────────
+function SortableVariantCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0.8 : 1,
+      }}
+      className="relative"
+    >
+      {/* Drag handle — top-left corner */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute top-3 left-3 z-10 p-1 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        title="Přesunout variantu"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      {children}
+    </div>
+  );
+}
+
 export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) => {
   const { toast } = useToast();
   const [variants, setVariants] = useState<DealVariant[]>([]);
@@ -66,6 +97,24 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
     end_date: null 
   });
   const [travelerCount, setTravelerCount] = useState(1);
+
+  const orderStorageKey = `yaro-variant-order-${dealId}`;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setVariants((prev) => {
+      const oldIndex = prev.findIndex(v => v.id === active.id);
+      const newIndex = prev.findIndex(v => v.id === over.id);
+      const next = arrayMove(prev, oldIndex, newIndex);
+      localStorage.setItem(orderStorageKey, JSON.stringify(next.map(v => v.id)));
+      return next;
+    });
+  }, [orderStorageKey]);
 
   useEffect(() => {
     fetchVariants();
