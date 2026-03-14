@@ -761,7 +761,19 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
 
         {/* Per-person price recap */}
         {(() => {
-          const lines = computePerPersonPrices(variant.deal_variant_services);
+          let lines = computePerPersonPrices(variant.deal_variant_services);
+
+          // Fallback: if no room_types prices but variant has total_price, derive per-person from total
+          if (lines.length === 0 && totalPrice > 0) {
+            const persons = variant.deal_variant_services.find(s => s.person_count && s.person_count > 0)?.person_count || 1;
+            lines = [{
+              label: "Celkem na osobu",
+              personCount: persons,
+              pricePerPerson: Math.round(totalPrice / persons),
+              currency,
+            }];
+          }
+
           if (lines.length === 0) return null;
           return (
             <div className="border-t pt-3 space-y-1">
@@ -769,19 +781,19 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
               {lines.map((line, i) => (
                 <div key={i} className="flex items-baseline justify-between text-sm">
                   <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
-                   <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
+                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
                 </div>
               ))}
             </div>
           );
         })()}
 
-        {/* Price */}
+        {/* Price — only when hide_price is false */}
         {totalPrice > 0 && !variant.hide_price && (
           <div className="border-t pt-4">
             <div className="flex justify-between items-baseline">
               <span className="text-sm text-slate-500">Celková cena</span>
-               <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
+              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
             </div>
           </div>
         )}
