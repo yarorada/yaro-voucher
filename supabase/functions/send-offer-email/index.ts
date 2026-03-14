@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     const { data: variants } = await supabase
       .from('deal_variants')
       .select(`
-        id, variant_name, start_date, end_date, total_price, is_selected, notes,
+        id, variant_name, start_date, end_date, total_price, is_selected, notes, hide_price,
         destination:destinations(name, country:countries(name)),
         deal_variant_services(id, service_type, service_name, description, start_date, end_date, price, price_currency, person_count, quantity, order_index, details)
       `)
@@ -173,7 +173,17 @@ Deno.serve(async (req) => {
       .order('order_index', { ascending: true });
 
     const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    const displayVariants = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
+    let displayVariants: any[] = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
+
+    // Apply caller-supplied variant order (matches the user's drag-sorted order)
+    if (variantIds && Array.isArray(variantIds) && variantIds.length > 0) {
+      const ordered = variantIds
+        .map((id: string) => displayVariants.find((v: any) => v.id === id))
+        .filter(Boolean);
+      // Append any variants not in variantIds (shouldn't happen, but safety)
+      const rest = displayVariants.filter((v: any) => !variantIds.includes(v.id));
+      displayVariants = [...ordered, ...rest];
+    }
 
     // Collect hotel names for images and descriptions
     const hotelNames = new Set<string>();
@@ -200,8 +210,13 @@ Deno.serve(async (req) => {
     // Destination info
     const dest = deal.destination as any;
     const destText = dest ? `${dest.name}, ${dest.country?.name}` : '';
-    const dateRange = deal.start_date && deal.end_date
-      ? `${formatDate(deal.start_date)} – ${formatDate(deal.end_date)}`
+    // Only show date range when there is a single variant with dates, or all variants share same dates
+    const allSameStart = displayVariants.length > 0 && displayVariants.every((v: any) => v.start_date === displayVariants[0].start_date);
+    const allSameEnd = displayVariants.length > 0 && displayVariants.every((v: any) => v.end_date === displayVariants[0].end_date);
+    const sharedStart = allSameStart ? displayVariants[0]?.start_date : deal.start_date;
+    const sharedEnd = allSameEnd ? displayVariants[0]?.end_date : deal.end_date;
+    const dateRange = sharedStart && sharedEnd && allSameStart && allSameEnd
+      ? `${formatDate(sharedStart)} – ${formatDate(sharedEnd)}`
       : '';
 
     // Decline name to accusative for the title
