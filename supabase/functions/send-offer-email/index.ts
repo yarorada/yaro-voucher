@@ -569,6 +569,13 @@ Deno.serve(async (req) => {
         .join('')}
     </div>
 
+    <!-- CTA button top -->
+    <div style="text-align:center; margin-bottom:28px;">
+      <a href="${escapeHtml(publicUrl)}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 32px; border-radius:8px; font-size:15px; font-weight:600;">
+        Zobrazit nabídku online
+      </a>
+    </div>
+
     ${variantsHtml}
 
     ${directServicesHtml}
