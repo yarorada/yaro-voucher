@@ -3450,6 +3450,32 @@ const DealDetail = () => {
                               }
                             }
                           }}
+                          onBlur={async (e) => {
+                            if (serviceForm.price_manually_set) return;
+                            const margin = (parseFloat(e.target.value) || 0) / 100;
+                            if (serviceForm.cost_currency !== "CZK" && serviceForm.cost_price_original) {
+                              try {
+                                const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                                  body: { currency: serviceForm.cost_currency, amount: parseFloat(serviceForm.cost_price_original) },
+                                });
+                                if (data?.rate && data?.convertedAmount) {
+                                  setServiceForm(prev => ({
+                                    ...prev,
+                                    cost_exchange_rate: data.rate,
+                                    cost_czk_value: data.convertedAmount,
+                                    price: Math.round(data.convertedAmount * (1 + margin)).toString(),
+                                    price_currency: "CZK",
+                                  }));
+                                }
+                              } catch {}
+                            } else if (serviceForm.cost_currency === "CZK" && serviceForm.cost_price) {
+                              setServiceForm(prev => ({
+                                ...prev,
+                                price: Math.round(parseFloat(serviceForm.cost_price) * (1 + margin)).toString(),
+                                price_currency: "CZK",
+                              }));
+                            }
+                          }}
                           placeholder="15"
                           className="text-center"
                         />

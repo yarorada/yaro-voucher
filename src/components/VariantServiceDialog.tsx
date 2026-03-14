@@ -792,6 +792,26 @@ export const VariantServiceDialog = ({
                     }
                   }
                 }}
+                onBlur={async (e) => {
+                  if (priceManuallySet) return;
+                  const margin = (parseFloat(e.target.value) || 0) / 100;
+                  if (costCurrency !== "CZK" && costPriceOriginal) {
+                    try {
+                      const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                        body: { currency: costCurrency, amount: parseFloat(costPriceOriginal) },
+                      });
+                      if (data?.rate && data?.convertedAmount) {
+                        setCostExchangeRate(data.rate);
+                        setCostCzkValue(data.convertedAmount);
+                        setPrice(Math.round(data.convertedAmount * (1 + margin)).toString());
+                        setPriceCurrency("CZK");
+                      }
+                    } catch {}
+                  } else if (costCurrency === "CZK" && costPrice) {
+                    setPrice(Math.round(parseFloat(costPrice) * (1 + margin)).toString());
+                    setPriceCurrency("CZK");
+                  }
+                }}
                 placeholder="15"
                 className="text-center"
               />
