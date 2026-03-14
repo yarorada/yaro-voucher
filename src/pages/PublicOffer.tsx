@@ -279,18 +279,20 @@ function computePerPersonPrices(services: Array<{
         ? h.details.room_types
         : null;
 
+    const roomLabel = (persons: number) =>
+      persons === 1 ? "Jednolůžkový pokoj" : persons === 2 ? "Dvoulůžkový pokoj" : `Pokoj pro ${persons} osoby`;
+
     if (roomTypes) {
       // Generate one line per room type
       roomTypes.forEach(rt => {
         if (!rt.price || rt.price <= 0) return;
         const personsInRoom = rt.persons_per_room || 1;
-        // Shared (non-hotel) services cost per person for this room type's person count
         let sharedCost = 0;
         nonHotels.forEach(s => { sharedCost += calcNonHotelPerPerson(s, personsInRoom); });
         const pricePerPerson = Math.round(rt.price / personsInRoom + sharedCost);
         if (pricePerPerson > 0) {
           lines.push({
-            label: rt.name || (h.description || h.service_name),
+            label: roomLabel(personsInRoom),
             personCount: personsInRoom,
             pricePerPerson,
             currency,
@@ -309,7 +311,7 @@ function computePerPersonPrices(services: Array<{
       const pricePerPerson = Math.round(hotelPerPerson + sharedCost);
       if (pricePerPerson > 0) {
         lines.push({
-          label: h.description || h.service_name,
+          label: roomLabel(persons),
           personCount: persons,
           pricePerPerson,
           currency,
