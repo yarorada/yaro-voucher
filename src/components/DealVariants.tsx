@@ -18,6 +18,7 @@ interface DealVariant {
   total_price: number | null;
   notes: string | null;
   is_selected: boolean;
+  hide_price: boolean;
   destination?: {
     name: string;
   };
