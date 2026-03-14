@@ -3275,6 +3275,16 @@ const DealDetail = () => {
                             />
                           </div>
                         )}
+                        {serviceForm.service_type === 'golf' && (
+                          <div>
+                            <Label>Poznámka</Label>
+                            <Input
+                              value={serviceForm.description}
+                              onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                              placeholder="Interní poznámka ke službě..."
+                            />
+                          </div>
+                        )}
                       </>
                     )}
 

@@ -625,17 +625,15 @@ export const VariantServiceDialog = ({
                   />
                 )}
               </div>
-              {serviceType === 'hotel' ? (
-                <div>
-                  <Label htmlFor="description">Typ pokoje</Label>
-                  <Input
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="např. Double Room, Single Room..."
-                  />
-                </div>
-              ) : null}
+              <div>
+                <Label htmlFor="description">{serviceType === 'hotel' ? 'Typ pokoje' : 'Poznámka'}</Label>
+                <Input
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={serviceType === 'hotel' ? 'např. Double Room, Single Room...' : 'Interní poznámka ke službě...'}
+                />
+              </div>
             </>
           )}
 
