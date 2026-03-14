@@ -451,7 +451,7 @@ export default function PublicOffer() {
         </div>
       </header>
 
-      <main className={`mx-auto px-4 py-8 space-y-8 ${variants.length >= 3 ? "max-w-7xl" : "max-w-5xl"}`}>
+      <main className="mx-auto px-4 py-8 space-y-8 max-w-5xl">
         {/* Deal header */}
         <div className="text-center space-y-1">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
