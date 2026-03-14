@@ -3343,6 +3343,7 @@ const DealDetail = () => {
                             value={serviceForm.cost_price_original || serviceForm.cost_price}
                             onChange={async (e) => {
                               const val = e.target.value;
+                              const margin = (parseFloat(marginPercent) || 0) / 100;
                               const updates: any = {
                                 cost_price_original: val,
                                 cost_price: serviceForm.cost_currency === "CZK" ? val : "",
@@ -3350,7 +3351,7 @@ const DealDetail = () => {
                               };
                               if (serviceForm.cost_currency === "CZK") {
                                 if (val && !serviceForm.price_manually_set) {
-                                  updates.price = Math.round(parseFloat(val) * 1.15).toString();
+                                  updates.price = Math.round(parseFloat(val) * (1 + margin)).toString();
                                   updates.price_currency = "CZK";
                                 }
                               } else if (val) {
@@ -3362,7 +3363,7 @@ const DealDetail = () => {
                                     updates.cost_exchange_rate = data.rate;
                                     updates.cost_czk_value = data.convertedAmount;
                                     if (!serviceForm.price_manually_set) {
-                                      updates.price = Math.round(data.convertedAmount * 1.15).toString();
+                                      updates.price = Math.round(data.convertedAmount * (1 + margin)).toString();
                                       updates.price_currency = "CZK";
                                     }
                                   }
@@ -3379,6 +3380,7 @@ const DealDetail = () => {
                           <CurrencySelect
                             value={serviceForm.cost_currency}
                             onChange={async (value) => {
+                              const margin = (parseFloat(marginPercent) || 0) / 100;
                               const orig = serviceForm.cost_price_original;
                               const updates: any = {
                                 cost_currency: value,
@@ -3397,12 +3399,12 @@ const DealDetail = () => {
                                     updates.cost_exchange_rate = data.rate;
                                     updates.cost_czk_value = data.convertedAmount;
                                     if (!serviceForm.price_manually_set) {
-                                      updates.price = Math.round(data.convertedAmount * 1.15).toString();
+                                      updates.price = Math.round(data.convertedAmount * (1 + margin)).toString();
                                     }
                                   }
                                 } catch {}
                               } else if (orig && value === "CZK" && !serviceForm.price_manually_set) {
-                                updates.price = Math.round(parseFloat(orig) * 1.15).toString();
+                                updates.price = Math.round(parseFloat(orig) * (1 + margin)).toString();
                               }
                               setServiceForm(prev => ({ ...prev, ...updates }));
                             }}
@@ -3412,7 +3414,7 @@ const DealDetail = () => {
                         {serviceForm.cost_currency !== "CZK" && serviceForm.cost_czk_value != null && serviceForm.cost_exchange_rate != null && (
                           <p className="text-xs text-muted-foreground mt-1">
                             ≈ {Math.round(serviceForm.cost_czk_value).toLocaleString("cs-CZ")} Kč (kurz {serviceForm.cost_exchange_rate.toFixed(3)} Kč/{serviceForm.cost_currency})
-                            {!serviceForm.price_manually_set && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(serviceForm.cost_czk_value * 1.15).toLocaleString("cs-CZ")} Kč</span>}
+                            {!serviceForm.price_manually_set && <span className="text-primary ml-1">→ prodejní s marží: {Math.round(serviceForm.cost_czk_value * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč</span>}
                           </p>
                         )}
                       </div>
