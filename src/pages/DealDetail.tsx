@@ -3513,7 +3513,7 @@ const DealDetail = () => {
 
                     {serviceForm.cost_currency === "CZK" && serviceForm.cost_price && !(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
                       <p className="text-xs text-muted-foreground -mt-2">
-                        Prodejní cena s 15% marží: {Math.round(parseFloat(serviceForm.cost_price) * 1.15).toLocaleString("cs-CZ")} Kč
+                        Prodejní cena s {marginPercent}% marží: {Math.round(parseFloat(serviceForm.cost_price) * (1 + (parseFloat(marginPercent) || 0) / 100)).toLocaleString("cs-CZ")} Kč
                       </p>
                     )}
 
