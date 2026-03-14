@@ -634,7 +634,7 @@ export const VariantServiceDialog = ({
                     placeholder="např. Double Room, Single Room..."
                   />
                 </div>
-              )}
+              ) : null}
             </>
           )}
 
