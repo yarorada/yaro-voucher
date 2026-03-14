@@ -34,6 +34,17 @@ interface ShareOfferButtonProps {
   variants: VariantInfo[];
 }
 
+interface ServicePreview {
+  service_type: string;
+  service_name: string;
+  description: string | null;
+  quantity: number;
+  person_count: number | null;
+  price: number | null;
+  price_currency: string | null;
+  order_index: number | null;
+}
+
 interface VariantPreview {
   id: string;
   variant_name: string;
@@ -45,6 +56,8 @@ interface VariantPreview {
   total_price: number | null;
   hide_price: boolean;
   currency: string;
+  services: ServicePreview[];
+  notes: string | null;
 }
 
 function generateToken(length = 12): string {
