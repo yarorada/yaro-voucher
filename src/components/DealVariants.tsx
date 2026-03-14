@@ -621,158 +621,164 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {variants.map((variant) => (
-            <Card key={variant.id} className={variant.is_selected ? "border-primary" : ""}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {variant.variant_name}
-                      {variant.is_selected && (
-                        <Badge variant="default" className="ml-2">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Vybraná
-                        </Badge>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={variants.map(v => v.id)} strategy={rectSortingStrategy}>
+            <div className="grid gap-4 md:grid-cols-2">
+              {variants.map((variant) => (
+                <SortableVariantCard key={variant.id} id={variant.id}>
+                  <Card className={variant.is_selected ? "border-primary" : ""}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between pl-6">
+                        <div className="space-y-1">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            {variant.variant_name}
+                            {variant.is_selected && (
+                              <Badge variant="default" className="ml-2">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Vybraná
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          {variant.destination && (
+                            <CardDescription>{variant.destination.name}</CardDescription>
+                          )}
+                        </div>
+                        {!variant.is_selected ? (
+                          <Button
+                            onClick={() => handleSelectVariant(variant.id)}
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Vybrat jako finální
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => handleUnselectVariant(variant.id)}
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive border-destructive hover:bg-destructive/10 shrink-0"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Zrušit výběr
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Datum od</p>
+                          <p className="font-medium">{formatDate(variant.start_date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Datum do</p>
+                          <p className="font-medium">{formatDate(variant.end_date)}</p>
+                        </div>
+                      </div>
+                      
+                      {(() => {
+                        const services = variant.deal_variant_services || [];
+                        const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
+                        const revenue = services.reduce((sum, s) => sum + getServiceTotal(s), 0);
+
+                        // Convert cost prices to selling currency
+                        const costs = services.reduce((sum, s) => {
+                          const mult = s.details?.price_mode === "per_person" ? (s.person_count || 1) : (s.quantity || 1);
+                          const costCur = s.cost_currency || "CZK";
+                          if (costCur === currency) {
+                            const costVal = s.cost_price_original != null ? s.cost_price_original : (s.cost_price || 0);
+                            return sum + costVal * mult;
+                          }
+                          if (currency === "CZK") {
+                            return sum + (s.cost_price || 0) * mult;
+                          }
+                          const rateService = services.find(rs => rs.cost_price_original && rs.cost_price_original > 0 && rs.cost_price && rs.cost_price > 0 && rs.cost_currency === currency);
+                          if (rateService) {
+                            const rate = rateService.cost_price! / rateService.cost_price_original!;
+                            return sum + ((s.cost_price || 0) / rate) * mult;
+                          }
+                          return sum + (s.cost_price || 0) * mult;
+                        }, 0);
+
+                        const profit = revenue - costs;
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Prodejní cena</p>
+                              <p className="font-semibold">{formatPrice(revenue || variant.total_price, true, currency)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Nákupní cena</p>
+                              <p className="font-semibold">{formatPrice(costs || null, true, currency)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Zisk</p>
+                              <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
+                                {services.length > 0 ? formatPrice(profit, true, currency) : '-'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {variant.notes && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Poznámka</p>
+                          <p className="text-sm">{variant.notes}</p>
+                        </div>
                       )}
-                    </CardTitle>
-                    {variant.destination && (
-                      <CardDescription>{variant.destination.name}</CardDescription>
-                    )}
-                  </div>
-                  {!variant.is_selected ? (
-                    <Button
-                      onClick={() => handleSelectVariant(variant.id)}
-                      size="sm"
-                      className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Vybrat jako finální
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => handleUnselectVariant(variant.id)}
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Zrušit výběr
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Datum od</p>
-                    <p className="font-medium">{formatDate(variant.start_date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Datum do</p>
-                    <p className="font-medium">{formatDate(variant.end_date)}</p>
-                  </div>
-                </div>
-                
-                {(() => {
-                  const services = variant.deal_variant_services || [];
-                  const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
-                  const revenue = services.reduce((sum, s) => sum + getServiceTotal(s), 0);
 
-                  // Convert cost prices to selling currency
-                  const costs = services.reduce((sum, s) => {
-                    const mult = s.details?.price_mode === "per_person" ? (s.person_count || 1) : (s.quantity || 1);
-                    const costCur = s.cost_currency || "CZK";
-                    if (costCur === currency) {
-                      const costVal = s.cost_price_original != null ? s.cost_price_original : (s.cost_price || 0);
-                      return sum + costVal * mult;
-                    }
-                    if (currency === "CZK") {
-                      return sum + (s.cost_price || 0) * mult;
-                    }
-                    const rateService = services.find(rs => rs.cost_price_original && rs.cost_price_original > 0 && rs.cost_price && rs.cost_price > 0 && rs.cost_currency === currency);
-                    if (rateService) {
-                      const rate = rateService.cost_price! / rateService.cost_price_original!;
-                      return sum + ((s.cost_price || 0) / rate) * mult;
-                    }
-                    return sum + (s.cost_price || 0) * mult;
-                  }, 0);
-
-                  const profit = revenue - costs;
-                  return (
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                         <p className="text-muted-foreground">Prodejní cena</p>
-                         <p className="font-semibold">{formatPrice(revenue || variant.total_price, true, currency)}</p>
-                       </div>
-                       <div>
-                         <p className="text-muted-foreground">Nákupní cena</p>
-                         <p className="font-semibold">{formatPrice(costs || null, true, currency)}</p>
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id={`hide-price-${variant.id}`}
+                          checked={variant.hide_price}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            await supabase.from("deal_variants").update({ hide_price: checked }).eq("id", variant.id);
+                            fetchVariants();
+                          }}
+                          className="h-4 w-4 rounded border-border accent-primary"
+                        />
+                        <label htmlFor={`hide-price-${variant.id}`} className="text-sm cursor-pointer text-muted-foreground select-none">
+                          Neuváděj celkovou cenu
+                        </label>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Zisk</p>
-                        <p className={`font-semibold ${profit > 0 ? 'text-green-600 dark:text-green-400' : profit < 0 ? 'text-destructive' : ''}`}>
-                          {services.length > 0 ? formatPrice(profit, true, currency) : '-'}
-                        </p>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                          onClick={() => handleEditVariant(variant)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Upravit
+                        </Button>
+                        <Button
+                          onClick={() => handleDuplicateVariant(variant)}
+                          size="sm"
+                          variant="ghost"
+                          title="Duplikovat variantu"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteVariant(variant.id, variant.is_selected)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-                  );
-                })()}
-
-                {variant.notes && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Poznámka</p>
-                    <p className="text-sm">{variant.notes}</p>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id={`hide-price-${variant.id}`}
-                    checked={variant.hide_price}
-                    onChange={async (e) => {
-                      const checked = e.target.checked;
-                      await supabase.from("deal_variants").update({ hide_price: checked }).eq("id", variant.id);
-                      fetchVariants();
-                    }}
-                    className="h-4 w-4 rounded border-border accent-primary"
-                  />
-                  <label htmlFor={`hide-price-${variant.id}`} className="text-sm cursor-pointer text-muted-foreground select-none">
-                    Neuváděj celkovou cenu
-                  </label>
-                </div>
-
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button
-                    onClick={() => handleEditVariant(variant)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Upravit
-                  </Button>
-                  <Button
-                    onClick={() => handleDuplicateVariant(variant)}
-                    size="sm"
-                    variant="ghost"
-                    title="Duplikovat variantu"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleDeleteVariant(variant.id, variant.is_selected)}
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    </CardContent>
+                  </Card>
+                </SortableVariantCard>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       <VariantDetailDialog
