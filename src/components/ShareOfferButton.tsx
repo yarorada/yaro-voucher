@@ -181,9 +181,9 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       const { data: vData } = await supabase
         .from("deal_variants")
         .select(`
-          id, variant_name, start_date, end_date, total_price, hide_price,
+          id, variant_name, start_date, end_date, total_price, hide_price, notes,
           destination:destinations(name, country:countries(name)),
-          deal_variant_services(service_type, service_name, price_currency, image_url)
+          deal_variant_services(service_type, service_name, description, price, price_currency, quantity, person_count, order_index)
         `)
         .in("id", selectedIds);
 
@@ -202,9 +202,21 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       }
 
       const previews: VariantPreview[] = (vData || []).map((v: any) => {
-        const hotelSvc = (v.deal_variant_services || []).find((s: any) => s.service_type === "hotel");
+        const services: ServicePreview[] = (v.deal_variant_services || [])
+          .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+          .map((s: any) => ({
+            service_type: s.service_type,
+            service_name: s.service_name,
+            description: s.description || null,
+            quantity: s.quantity || 1,
+            person_count: s.person_count || null,
+            price: s.price || null,
+            price_currency: s.price_currency || null,
+            order_index: s.order_index,
+          }));
+        const hotelSvc = services.find(s => s.service_type === "hotel");
         const dest = v.destination;
-        const currency = (v.deal_variant_services || []).find((s: any) => s.price_currency)?.price_currency || "CZK";
+        const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
         return {
           id: v.id,
           variant_name: v.variant_name,
@@ -216,6 +228,8 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
           total_price: v.hide_price ? null : v.total_price,
           hide_price: v.hide_price,
           currency,
+          services,
+          notes: v.notes || null,
         };
       });
 
