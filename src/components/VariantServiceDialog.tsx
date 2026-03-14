@@ -793,7 +793,6 @@ export const VariantServiceDialog = ({
                   }
                 }}
                 onBlur={async (e) => {
-                  if (priceManuallySet) return;
                   const margin = (parseFloat(e.target.value) || 0) / 100;
                   if (costCurrency !== "CZK" && costPriceOriginal) {
                     try {
