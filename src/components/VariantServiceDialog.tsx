@@ -625,61 +625,16 @@ export const VariantServiceDialog = ({
                 )}
               </div>
               {serviceType === 'hotel' ? (
-                <>
-                  {/* Room Types Editor */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Typy pokojů</Label>
-                      <button
-                        type="button"
-                        className="text-xs border rounded px-2 py-1 hover:bg-muted"
-                        onClick={() => setRoomTypes(prev => [...prev, { name: "Double", rooms: 1, persons_per_room: 2, price: 0 }])}
-                      >
-                        + Přidat typ pokoje
-                      </button>
-                    </div>
-                    {roomTypes.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic">Klikněte na "Přidat typ pokoje" pro zadání cen dle typu pokoje</p>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-[1fr_55px_55px_90px_70px_28px] gap-1 text-xs text-muted-foreground px-1">
-                          <span>Typ pokoje</span><span className="text-center">Pokojů</span><span className="text-center">Os./pok.</span><span className="text-right">Cena/pokoj</span><span className="text-right">Celkem</span><span></span>
-                        </div>
-                        {roomTypes.map((rt, idx) => (
-                          <div key={idx} className="grid grid-cols-[1fr_55px_55px_90px_70px_28px] gap-1 items-center">
-                            <Input value={rt.name} onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, name: e.target.value } : r))} placeholder="Double" className="h-8 text-xs" />
-                            <Input type="number" min={1} value={rt.rooms} onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, rooms: parseInt(e.target.value) || 1 } : r))} className="h-8 text-xs text-center" />
-                            <Input type="number" min={1} value={rt.persons_per_room} onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, persons_per_room: parseInt(e.target.value) || 1 } : r))} className="h-8 text-xs text-center" />
-                            <Input type="number" min={0} value={rt.price || ""} onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, price: parseFloat(e.target.value) || 0 } : r))} placeholder="0" className="h-8 text-xs text-right" />
-                            <div className="text-xs text-right text-muted-foreground font-medium pr-1">{(rt.price * rt.rooms).toLocaleString("cs-CZ")}</div>
-                            <button type="button" className="h-7 w-7 flex items-center justify-center hover:bg-muted rounded" onClick={() => setRoomTypes(prev => prev.filter((_, i) => i !== idx))}>
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                        <div className="flex justify-between text-xs font-semibold border-t pt-2 px-1">
-                          <span className="text-muted-foreground">Celkem osob: {roomTypes.reduce((s, r) => s + r.rooms * r.persons_per_room, 0)}</span>
-                          <span className="text-primary">Celkem: {roomTypes.reduce((s, r) => s + r.price * r.rooms, 0).toLocaleString("cs-CZ")} {priceCurrency}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Popis / Stravování</Label>
-                    <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="např. All Inclusive, HB..." />
-                  </div>
-                </>
-              ) : (
                 <div>
-                  <Label htmlFor="description">Název a Typ pokoje</Label>
+                  <Label htmlFor="description">Typ pokoje</Label>
                   <Input
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="např. Deluxe Double Room"
+                    placeholder="např. Double Room, Single Room..."
                   />
                 </div>
-              )}
+              ) : null}
             </>
           )}
 

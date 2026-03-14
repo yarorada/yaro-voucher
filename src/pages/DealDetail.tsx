@@ -3243,93 +3243,15 @@ const DealDetail = () => {
                         </div>
 
                         {serviceForm.service_type === 'hotel' ? (
-                          <>
-                            {/* Room Types Editor */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label>Typy pokojů</Label>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  onClick={() => setRoomTypes(prev => [...prev, { name: "Double", rooms: 1, persons_per_room: 2, price: 0 }])}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" /> Přidat typ pokoje
-                                </Button>
-                              </div>
-                              {roomTypes.length === 0 ? (
-                                <p className="text-xs text-muted-foreground italic">Klikněte na "Přidat typ pokoje" pro zadání cen dle typu pokoje</p>
-                              ) : (
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-[1fr_60px_60px_100px_80px_32px] gap-1 text-xs text-muted-foreground px-1">
-                                    <span>Typ pokoje</span><span className="text-center">Pokojů</span><span className="text-center">Os./pokoj</span><span className="text-right">Cena/pokoj</span><span className="text-right">Celkem</span><span></span>
-                                  </div>
-                                  {roomTypes.map((rt, idx) => (
-                                    <div key={idx} className="grid grid-cols-[1fr_60px_60px_100px_80px_32px] gap-1 items-center">
-                                      <Input
-                                        value={rt.name}
-                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, name: e.target.value } : r))}
-                                        placeholder="Double"
-                                        className="h-8 text-xs"
-                                      />
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        value={rt.rooms}
-                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, rooms: parseInt(e.target.value) || 1 } : r))}
-                                        className="h-8 text-xs text-center"
-                                      />
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        value={rt.persons_per_room}
-                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, persons_per_room: parseInt(e.target.value) || 1 } : r))}
-                                        className="h-8 text-xs text-center"
-                                      />
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        value={rt.price || ""}
-                                        onChange={(e) => setRoomTypes(prev => prev.map((r, i) => i === idx ? { ...r, price: parseFloat(e.target.value) || 0 } : r))}
-                                        placeholder="0"
-                                        className="h-8 text-xs text-right"
-                                      />
-                                      <div className="text-xs text-right text-muted-foreground font-medium pr-1">
-                                        {(rt.price * rt.rooms).toLocaleString("cs-CZ")}
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setRoomTypes(prev => prev.filter((_, i) => i !== idx))}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                  <div className="flex justify-between text-xs font-semibold border-t pt-2 px-1">
-                                    <span className="text-muted-foreground">
-                                      Celkem osob: {roomTypes.reduce((s, r) => s + r.rooms * r.persons_per_room, 0)}
-                                    </span>
-                                    <span className="text-primary">
-                                      Celkem: {roomTypes.reduce((s, r) => s + r.price * r.rooms, 0).toLocaleString("cs-CZ")} {serviceForm.price_currency}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <Label>Popis / Stravování</Label>
-                              <Input
-                                id="deal-service-description"
-                                value={serviceForm.description}
-                                onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
-                                placeholder="např. All Inclusive, HB..."
-                              />
-                            </div>
-                          </>
+                          <div>
+                            <Label>Typ pokoje</Label>
+                            <Input
+                              id="deal-service-description"
+                              value={serviceForm.description}
+                              onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                              placeholder="např. Double Room, Single Room..."
+                            />
+                          </div>
                         ) : serviceForm.service_type === 'golf' ? (
                           <div>
                             <Label>Čas tee time</Label>
