@@ -295,9 +295,22 @@ const ContractDetail = () => {
             <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
             {getStatusBadge(contract.status, true)}
           </div>
-          <p className="text-muted-foreground">
-            Obchodní případ: {contract.deal?.name || contract.deal?.destination?.name || contract.deal?.deal_number}
-          </p>
+          {(() => {
+            const parts: string[] = [];
+            const client = (contract as any).client;
+            if (client) parts.push(`${client.first_name} ${client.last_name}`);
+            const iso = contract.deal?.destination?.countries?.iso_code || (contract.deal?.destination as any)?.country?.iso_code;
+            if (iso) parts.push(iso);
+            const hotel = (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
+            if (hotel) parts.push(hotel.service_name);
+            const depDate = contract.deal?.start_date;
+            if (depDate) {
+              const d = new Date(depDate + "T00:00:00");
+              parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+            }
+            const displayName = parts.join(" • ");
+            return displayName ? <p className="text-muted-foreground">{displayName}</p> : null;
+          })()}
         </div>
 
 
