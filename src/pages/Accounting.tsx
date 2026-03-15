@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -147,6 +148,7 @@ export default function Accounting() {
 
           return {
             contractId: c.id,
+            dealId: deal?.id || null,
             contractNumber: c.contract_number,
             clientName: client ? `${client.first_name} ${client.last_name}` : "",
             country: countryName,
@@ -418,7 +420,18 @@ export default function Accounting() {
                           : ""
                       }
                     >
-                      <TableCell className="whitespace-nowrap font-medium">{r.contractNumber}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">
+                        {r.dealId ? (
+                          <Link
+                            to={`/deals/${r.dealId}`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            {r.contractNumber}
+                          </Link>
+                        ) : (
+                          r.contractNumber
+                        )}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{r.clientName}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.country}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.destination}</TableCell>
