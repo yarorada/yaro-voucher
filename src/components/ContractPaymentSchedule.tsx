@@ -368,6 +368,12 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
             Platební kalendář
           </CardTitle>
           <div className="flex gap-2">
+            {dealId && (
+              <Button variant="outline" size="sm" onClick={handleSyncFromDeal} disabled={syncing}>
+                {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Synchronizovat z obchodního případu
+              </Button>
+            )}
             <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Přidat platbu
