@@ -103,28 +103,28 @@ const ContractDetail = () => {
   }, [contract]);
 
 
-  const statusOptions: { value: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }[] = [
-    { value: "draft", variant: "secondary", label: "Koncept" },
-    { value: "sent", variant: "default", label: "Odesláno" },
-    { value: "signed", variant: "outline", label: "Podepsáno" },
-    { value: "cancelled", variant: "destructive", label: "Zrušeno" },
-  ];
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
+    sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
+    signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
+    cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
+  };
 
   const getStatusBadge = (status: string, interactive = false) => {
-    const config = statusOptions.find((s) => s.value === status) || statusOptions[0];
-    const badge = <Badge variant={config.variant} className={interactive ? "cursor-pointer" : ""}>{config.label}{interactive && <ChevronDown className="h-3 w-3 ml-1" />}</Badge>;
+    const config = statusConfig[status] || statusConfig["draft"];
+    const badge = <Badge className={`text-xs shrink-0 ${config.className}${interactive ? " cursor-pointer" : ""}`}>{config.label}{interactive && <ChevronDown className="h-3 w-3 ml-1" />}</Badge>;
     if (!interactive) return badge;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>{badge}</DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {statusOptions.map((opt) => (
+          {Object.entries(statusConfig).map(([value, cfg]) => (
             <DropdownMenuItem
-              key={opt.value}
-              onClick={() => handleStatusChange(opt.value)}
-              className={opt.value === status ? "font-bold" : ""}
+              key={value}
+              onClick={() => handleStatusChange(value)}
+              className={value === status ? "font-bold" : ""}
             >
-              <Badge variant={opt.variant} className="mr-2">{opt.label}</Badge>
+              <Badge className={`mr-2 text-xs shrink-0 ${cfg.className}`}>{cfg.label}</Badge>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -140,7 +140,7 @@ const ContractDetail = () => {
     if (error) {
       toast.error("Nepodařilo se změnit status");
     } else {
-      toast.success(`Status změněn na "${statusOptions.find(s => s.value === newStatus)?.label}"`);
+      toast.success(`Status změněn na "${statusConfig[newStatus]?.label}"`);
       refetch();
     }
   };
@@ -293,7 +293,7 @@ const ContractDetail = () => {
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {getStatusBadge(contract.status, true)}
-            <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
+            <span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
             {(() => {
               const parts: string[] = [];
               const client = (contract as any).client;

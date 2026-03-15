@@ -1,93 +1,102 @@
 
-## Sjednocení formátování názvů — přehled vs. detail
+# Plán: Správa úrovní přístupu a přepínač rozsahu dat
 
-### Cílový formát (identický na všech stránkách)
-```
-[Barevný status badge]  [BOLD číslo]  [normální font – popis]
-```
+## Co bude přidáno
 
-### Co je správně a co potřebuje úpravu
+### 1. Přepínač "Rozsah dat" per uživatel
+Každý uživatel bude mít nové nastavení:
+- **Všechna data** — vidí záznamy všech kolegů (výchozí pro Admin a "Bez role")
+- **Pouze vlastní data** — vidí pouze záznamy, které sám vložil (výchozí pro Prodejce)
 
-| Stránka | Stav |
-|---|---|
-| Přehled OP (`Deals.tsx`) | ✅ OK |
-| Přehled smluv (`Contracts.tsx`) | ✅ OK |
-| Přehled voucherů (`VouchersList.tsx`) | ❌ kód, klient, hotel, datum jsou v jednom `font-medium` span bez bold oddělení |
-| Detail OP (`DealDetail.tsx`) | ❌ `h1` zobrazuje jen `dealName` nebo destinaci, číslo OP není separátně bold |
-| Detail smlouvy (`ContractDetail.tsx`) | ✅ skoro OK, ale badge používá `variant=secondary/default/outline` místo barevné konfigurace |
-| Detail voucheru (`VoucherDetail.tsx`) | ❌ `h1` je kód voucheru, badge je za ním, popis je samostatný `<p>` |
+Toto nastavení bude uloženo v nové tabulce `user_data_scope` a správce ho může u každého uživatele přepnout v rozhraní `/admin/roles`.
 
----
+### 2. Rozšíření sekce oprávnění v UI
+V rozbalitelné části každého uživatele přibude nová vizuální sekce **"Rozsah přístupu k datům"** s přepínačem, oddělenou od přepínačů sekcí.
 
-### Plán změn
-
-#### 1. `src/pages/VouchersList.tsx` — řádek ~492-494
-V přehledu voucherů nahradit jeden `font-medium` span za tři oddělené elementy:
-```tsx
-{/* před: */}
-<span className="text-foreground font-medium truncate">
-  {[voucher.voucher_code, displayName, hotelName, firstServiceDate ...].join(" ")}
-</span>
-
-{/* po: */}
-<span className="font-bold text-foreground">{voucher.voucher_code}</span>
-{(displayName || hotelName || firstServiceDate) && (
-  <span className="text-foreground truncate">
-    {[displayName, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
-  </span>
-)}
-```
-
-#### 2. `src/pages/DealDetail.tsx` — řádky 2679-2730 (header)
-Přidat separátní deal number jako bold span před `dealName`:
-```tsx
-{/* Nový formát: [Badge] [BOLD D-XXXXXX] [normal popis] [pencil] */}
-<DealStatusBadge status={deal.status} />
-<span className="font-bold text-foreground text-heading-1">
-  {deal.deal_number.match(/^D-\d{6}/)?.[0] || deal.deal_number}
-</span>
-{isEditingName ? (
-  <Input ... />  // editace popisu
-) : (
-  <>
-    {dealName && <span className="text-foreground">{dealName.replace(/^D-\d{6,}\s*/, "").trim()}</span>}
-    <Button pencil ... />
-  </>
-)}
-```
-
-#### 3. `src/pages/ContractDetail.tsx` — řádky 293-313 (header)
-Status badge nahradit za barevný badge (stejná konfigurace jako v `Contracts.tsx`):
-```tsx
-{/* Místo getStatusBadge() s variant= použít barevnou konfiguraci */}
-<Badge className={`text-xs shrink-0 ${statusConfig[contract.status].className}`}>
-  {statusConfig[contract.status].label}
-</Badge>
-<span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
-<span className="text-foreground">{displayName}</span>
-```
-Přidat `statusConfig` (stejný objekt jako v `Contracts.tsx`) do `ContractDetail.tsx`.
-
-#### 4. `src/pages/VoucherDetail.tsx` — řádky 869-900 (header)
-Přeuspořádat header: badge první, pak bold kód, pak normální popis:
-```tsx
-{/* před: h1(kód) → Badge → p(popis) */}
-{/* po: [Badge] [BOLD kód] [normal popis] — vše na jednom řádku */}
-<div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
-  {voucher.sent_at ? (
-    <Badge className="... bg-emerald-600 ...">Odesláno</Badge>
-  ) : (
-    <Badge className="... bg-gray-500 ...">Neodesláno</Badge>
-  )}
-  <span className="font-bold text-heading-1 text-foreground">{voucher.voucher_code}</span>
-  {popis && <span className="text-foreground">{popis}</span>}
-</div>
-```
+### 3. Vynucení rozsahu dat v kódu (hook)
+Nový hook `useDataScope` vrátí aktuálnímu přihlášenému uživateli jeho nastavení (`own` nebo `all`). Tento hook bude použit na místech, kde se data filtrují — primárně v komponentách se seznamy (Deals, Clients, Vouchers, Contracts).
 
 ---
 
-### Souhrn souborů ke změně
-- `src/pages/VouchersList.tsx` — opravit přehled voucherů
-- `src/pages/DealDetail.tsx` — opravit header detailu OP
-- `src/pages/ContractDetail.tsx` — sjednotit badge barvy + font
-- `src/pages/VoucherDetail.tsx` — přeuspořádat header
+## Technické změny
+
+### Databáze (migrace)
+Nová tabulka `user_data_scope`:
+```sql
+CREATE TABLE public.user_data_scope (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  scope text NOT NULL DEFAULT 'all', -- 'all' | 'own'
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id)
+);
+
+ALTER TABLE public.user_data_scope ENABLE ROW LEVEL SECURITY;
+
+-- Admins can manage all
+CREATE POLICY "Admins can manage data scope"
+  ON public.user_data_scope FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+
+-- Users can read own scope
+CREATE POLICY "Users can view own scope"
+  ON public.user_data_scope FOR SELECT
+  USING (auth.uid() = user_id);
+```
+
+### Nový hook: `src/hooks/useDataScope.tsx`
+- Načte záznam z `user_data_scope` pro aktuálního uživatele
+- Vrátí `scope: 'all' | 'own'`
+- Prodejce bez záznamu = defaultně `'own'`, ostatní = `'all'`
+
+### Rozšíření `useUserPermissionsForUser`
+- Přidání metod `getDataScope()` a `setDataScope(scope)` pro admin UI
+
+### Úprava `src/pages/AdminRoles.tsx`
+V rozbalitelné části každého uživatele přibude sekce:
+
+```
+┌─────────────────────────────────────────────┐
+│ Rozsah přístupu k datům                     │
+│                                             │
+│ ○ Všechna data   ● Pouze vlastní data       │
+│                                             │
+│ [popis aktuálního nastavení]                │
+└─────────────────────────────────────────────┘
+```
+
+### Vynucení v seznamech dat
+Hook `useDataScope` bude použit na těchto stránkách:
+- `src/pages/Deals.tsx` — filtr deals
+- `src/pages/Clients.tsx` — filtr klientů
+- `src/pages/VouchersList.tsx` — filtr voucherů
+- `src/pages/Contracts.tsx` — filtr smluv
+
+Když `scope === 'own'`, do Supabase dotazů bude přidán filtr `.eq('user_id', user.id)`. Když `scope === 'all'`, filtr se neaplikuje.
+
+---
+
+## Výchozí hodnoty dle role
+
+| Role | Výchozí rozsah dat |
+|------|-------------------|
+| admin | Všechna data |
+| prodejce | Pouze vlastní data |
+| bez role | Všechna data |
+
+Pokud v tabulce `user_data_scope` není záznam pro daného uživatele, aplikuje se výchozí hodnota dle role.
+
+---
+
+## Souhrn souborů ke změně / vytvoření
+
+- `supabase/migrations/...` — nová tabulka `user_data_scope`
+- `src/hooks/useDataScope.tsx` — nový hook
+- `src/hooks/useUserPermissions.tsx` — rozšíření `useUserPermissionsForUser` o data scope
+- `src/pages/AdminRoles.tsx` — UI přepínač rozsahu dat
+- `src/pages/Deals.tsx` — aplikace data scope filtru
+- `src/pages/Clients.tsx` — aplikace data scope filtru
+- `src/pages/VouchersList.tsx` — aplikace data scope filtru
+- `src/pages/Contracts.tsx` — aplikace data scope filtru
