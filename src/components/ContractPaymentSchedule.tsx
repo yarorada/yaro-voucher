@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode, Mail } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode, Mail, RefreshCw, Loader2 } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";
@@ -53,6 +53,7 @@ interface ScheduleItem {
 
 interface ContractPaymentScheduleProps {
   contractId: string;
+  dealId?: string | null;
   totalPrice?: number;
   departureDate?: string;
   contractNumber?: string;
@@ -60,10 +61,11 @@ interface ContractPaymentScheduleProps {
   currency?: string;
 }
 
-export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [emailMatchOpen, setEmailMatchOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -98,6 +100,42 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
       console.error("Error fetching payments:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncFromDeal = async () => {
+    if (!dealId) return;
+    setSyncing(true);
+    try {
+      const { data: dealPayments, error: dpError } = await supabase
+        .from("deal_payments")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("due_date", { ascending: true });
+      if (dpError) throw dpError;
+      if (!dealPayments || dealPayments.length === 0) {
+        toast({ title: "Žádné platby", description: "Obchodní případ nemá žádný platební kalendář." });
+        return;
+      }
+      await supabase.from("contract_payments").delete().eq("contract_id", contractId);
+      const inserts = dealPayments.map((dp: any) => ({
+        contract_id: contractId,
+        payment_type: dp.payment_type,
+        amount: dp.amount,
+        due_date: dp.due_date,
+        notes: dp.notes,
+        paid: dp.paid,
+        paid_at: dp.paid_at,
+      }));
+      const { error: insErr } = await supabase.from("contract_payments").insert(inserts);
+      if (insErr) throw insErr;
+      toast({ title: "Synchronizováno", description: `Zkopírováno ${inserts.length} plateb z obchodního případu.` });
+      fetchPayments();
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Chyba", description: "Nepodařilo se synchronizovat platby.", variant: "destructive" });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -330,6 +368,12 @@ export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureD
             Platební kalendář
           </CardTitle>
           <div className="flex gap-2">
+            {dealId && (
+              <Button variant="outline" size="sm" onClick={handleSyncFromDeal} disabled={syncing}>
+                {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Synchronizovat z obchodního případu
+              </Button>
+            )}
             <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Přidat platbu
