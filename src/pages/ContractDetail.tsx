@@ -103,16 +103,16 @@ const ContractDetail = () => {
   }, [contract]);
 
 
-  const statusOptions: { value: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }[] = [
-    { value: "draft", variant: "secondary", label: "Koncept" },
-    { value: "sent", variant: "default", label: "Odesláno" },
-    { value: "signed", variant: "outline", label: "Podepsáno" },
-    { value: "cancelled", variant: "destructive", label: "Zrušeno" },
-  ];
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
+    sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
+    signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
+    cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
+  };
 
   const getStatusBadge = (status: string, interactive = false) => {
-    const config = statusOptions.find((s) => s.value === status) || statusOptions[0];
-    const badge = <Badge variant={config.variant} className={interactive ? "cursor-pointer" : ""}>{config.label}{interactive && <ChevronDown className="h-3 w-3 ml-1" />}</Badge>;
+    const config = statusConfig[status] || statusConfig["draft"];
+    const badge = <Badge className={`text-xs shrink-0 ${config.className}${interactive ? " cursor-pointer" : ""}`}>{config.label}{interactive && <ChevronDown className="h-3 w-3 ml-1" />}</Badge>;
     if (!interactive) return badge;
     return (
       <DropdownMenu>
