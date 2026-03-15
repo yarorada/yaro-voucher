@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
 
         const vatDeposit = Math.round(profitDeposit * vatRate);
         const vatFinal = isPastTrip ? Math.round(profitFinal * vatRate) : 0;
-        const vatDiff = vatFinal - vatDeposit;
+        const vatDiff = isPastTrip ? vatFinal - vatDeposit : 0;
 
         const firstPaidAt = (paymentsMap.get(c.id) || [])
           .filter((p: any) => p.paid && p.paid_at)
