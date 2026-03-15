@@ -119,14 +119,21 @@ export default function Accounting() {
 
           const sellDeposit = totalRevenue;
           const buyDeposit = totalCosts;
-          const sellFinal = totalRevenue;
+
+          // Vyúčtování columns: show real values only if end date is in the past
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const isPastTrip = endDate ? new Date(endDate) < today : false;
+
+          const sellFinal = isPastTrip ? totalRevenue : 0;
           // Use override if set, otherwise use calculated costs
           const buyFinalOverride = (c as any).accounting_buy_final_override;
-          const buyFinal = buyFinalOverride != null ? Number(buyFinalOverride) : totalCosts;
+          const buyFinalCalc = buyFinalOverride != null ? Number(buyFinalOverride) : totalCosts;
+          const buyFinal = isPastTrip ? buyFinalCalc : 0;
           const hasOverride = buyFinalOverride != null;
 
           const profitDeposit = sellDeposit - buyDeposit;
-          const profitFinal = sellFinal - buyFinal;
+          const profitFinal = isPastTrip ? sellFinal - buyFinal : 0;
 
           const isEU = EU_COUNTRIES.includes(countryName);
           const isCanary = CANARY_EXCEPTIONS.some((ex) =>
@@ -135,7 +142,7 @@ export default function Accounting() {
           const vatRate = isEU && !isCanary ? 0.21 : 0;
 
           const vatDeposit = Math.round(profitDeposit * vatRate);
-          const vatFinal = Math.round(profitFinal * vatRate);
+          const vatFinal = isPastTrip ? Math.round(profitFinal * vatRate) : 0;
           const vatDiff = vatFinal - vatDeposit;
 
           const firstPaidAt = payments
