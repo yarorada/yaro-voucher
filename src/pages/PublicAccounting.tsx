@@ -123,7 +123,7 @@ export default function PublicAccounting() {
                           r.highlightRed
                             ? "bg-red-200 dark:bg-red-800/60"
                             : r.highlightBlue
-                            ? "bg-blue-50 dark:bg-blue-950/30"
+                            ? "bg-blue-200 dark:bg-blue-800/60"
                             : ""
                         }
                       >
