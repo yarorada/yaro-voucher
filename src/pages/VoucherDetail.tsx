@@ -581,7 +581,7 @@ const VoucherDetail = () => {
     try {
       const { data, error } = await supabase
         .from("vouchers")
-        .select("*, clients(first_name, last_name)")
+        .select("*, clients(first_name, last_name), deals:deal_id(destinations:destination_id(name, countries:country_id(iso_code)))")
         .eq("id", id)
         .single();
       if (error) throw error;
