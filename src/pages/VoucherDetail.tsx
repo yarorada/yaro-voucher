@@ -883,7 +883,18 @@ const VoucherDetail = () => {
                 : voucher.client_name;
               const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || null;
               const hotelName = voucher.hotel_name ||
-                (Array.isArray(voucher.services) ? voucher.services.find((s: any) => s.service_type === "hotel")?.service_name : null);
+                (() => {
+                  const servs = Array.isArray(voucher.services) ? voucher.services : [];
+                  const hotelSvc = servs.find((s: any) =>
+                    s.service_type === "hotel" ||
+                    s.type === "hotel" ||
+                    (typeof (s.service_name || s.name) === "string" && (s.service_name || s.name || "").toLowerCase().includes("accommodation"))
+                  );
+                  if (!hotelSvc) return null;
+                  const raw = hotelSvc.service_name || hotelSvc.name || "";
+                  const match = raw.match(/accommodation in .+ in (.+)/i);
+                  return match ? match[1].trim() : raw || null;
+                })();
               const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
               const firstDate = servicesArr
                 .map((s: any) => s.dateFrom || s.start_date)
