@@ -103,6 +103,42 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
     }
   };
 
+  const handleSyncFromDeal = async () => {
+    if (!dealId) return;
+    setSyncing(true);
+    try {
+      const { data: dealPayments, error: dpError } = await supabase
+        .from("deal_payments")
+        .select("*")
+        .eq("deal_id", dealId)
+        .order("due_date", { ascending: true });
+      if (dpError) throw dpError;
+      if (!dealPayments || dealPayments.length === 0) {
+        toast({ title: "Žádné platby", description: "Obchodní případ nemá žádný platební kalendář." });
+        return;
+      }
+      await supabase.from("contract_payments").delete().eq("contract_id", contractId);
+      const inserts = dealPayments.map((dp: any) => ({
+        contract_id: contractId,
+        payment_type: dp.payment_type,
+        amount: dp.amount,
+        due_date: dp.due_date,
+        notes: dp.notes,
+        paid: dp.paid,
+        paid_at: dp.paid_at,
+      }));
+      const { error: insErr } = await supabase.from("contract_payments").insert(inserts);
+      if (insErr) throw insErr;
+      toast({ title: "Synchronizováno", description: `Zkopírováno ${inserts.length} plateb z obchodního případu.` });
+      fetchPayments();
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Chyba", description: "Nepodařilo se synchronizovat platby.", variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   useEffect(() => {
     fetchPayments();
   }, [contractId]);
