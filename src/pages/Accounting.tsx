@@ -420,7 +420,18 @@ export default function Accounting() {
                           : ""
                       }
                     >
-                      <TableCell className="whitespace-nowrap font-medium">{r.contractNumber}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">
+                        {r.dealId ? (
+                          <Link
+                            to={`/deals/${r.dealId}`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            {r.contractNumber}
+                          </Link>
+                        ) : (
+                          r.contractNumber
+                        )}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{r.clientName}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.country}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.destination}</TableCell>
