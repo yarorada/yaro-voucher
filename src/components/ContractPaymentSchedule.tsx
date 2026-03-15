@@ -65,6 +65,7 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [emailMatchOpen, setEmailMatchOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
