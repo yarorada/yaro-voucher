@@ -118,13 +118,13 @@ const ContractDetail = () => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>{badge}</DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {statusOptions.map((opt) => (
+          {Object.entries(statusConfig).map(([value, cfg]) => (
             <DropdownMenuItem
-              key={opt.value}
-              onClick={() => handleStatusChange(opt.value)}
-              className={opt.value === status ? "font-bold" : ""}
+              key={value}
+              onClick={() => handleStatusChange(value)}
+              className={value === status ? "font-bold" : ""}
             >
-              <Badge variant={opt.variant} className="mr-2">{opt.label}</Badge>
+              <Badge className={`mr-2 text-xs shrink-0 ${cfg.className}`}>{cfg.label}</Badge>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -140,7 +140,7 @@ const ContractDetail = () => {
     if (error) {
       toast.error("Nepodařilo se změnit status");
     } else {
-      toast.success(`Status změněn na "${statusOptions.find(s => s.value === newStatus)?.label}"`);
+      toast.success(`Status změněn na "${statusConfig[newStatus]?.label}"`);
       refetch();
     }
   };
