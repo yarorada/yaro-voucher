@@ -148,6 +148,7 @@ export default function Accounting() {
 
           return {
             contractId: c.id,
+            dealId: deal?.id || null,
             contractNumber: c.contract_number,
             clientName: client ? `${client.first_name} ${client.last_name}` : "",
             country: countryName,
