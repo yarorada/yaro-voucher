@@ -489,9 +489,12 @@ const VouchersList = () => {
                           ) : (
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
-                          <span className="text-foreground font-medium truncate">
-                            {[voucher.voucher_code, displayName, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" ")}
-                          </span>
+                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
+                          {(displayName || hotelName || firstServiceDate) && (
+                            <span className="text-foreground truncate">
+                              {[displayName, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
+                            </span>
+                          )}
                         </div>
                         {/* Line 2: Details */}
                         <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">

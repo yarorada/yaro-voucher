@@ -293,7 +293,7 @@ const ContractDetail = () => {
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {getStatusBadge(contract.status, true)}
-            <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
+            <span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
             {(() => {
               const parts: string[] = [];
               const client = (contract as any).client;

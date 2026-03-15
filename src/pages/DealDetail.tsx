@@ -2710,9 +2710,17 @@ const DealDetail = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-heading-1 text-foreground">
-                    {dealName || deal.destination?.name || deal.deal_number}
-                  </h1>
+                  <span className="font-bold text-heading-1 text-foreground">
+                    {deal.deal_number}
+                  </span>
+                  {(() => {
+                    const descPart = dealName
+                      ? dealName.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim()
+                      : (deal.destination?.name || "");
+                    return descPart ? (
+                      <span className="text-foreground">{descPart}</span>
+                    ) : null;
+                  })()}
                   <Button
                     variant="ghost"
                     size="icon"
