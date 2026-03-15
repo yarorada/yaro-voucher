@@ -528,16 +528,10 @@ const Deals = () => {
                   .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
                   .join(", ");
 
-                // Use deal.name if available (generated on save in DealDetail) — it's always correct
-                // Strip leading deal number prefix (e.g. "D-260023 ") if present, then replace plain spaces
-                // between tokens with bullet separators for display
+                // Use deal.name if available but always compute display description from live data
+                // to ensure bullet separators are correct regardless of how name was stored.
                 let displayDesc = "";
-                if (deal.name) {
-                  const stripped = deal.name.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim();
-                  // If the name already contains bullets, use as-is; otherwise keep plain
-                  displayDesc = stripped;
-                } else {
-                  // Fallback: compute from joined data
+                {
                   const iso = deal.destinations?.countries?.iso_code;
                   const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
                   const ordererClients = ordererInTravelers?.clients;
@@ -553,6 +547,11 @@ const Deals = () => {
                   if (!ordererInTravelers && leadClientJoin) {
                     displayDesc += ` (${leadClientJoin.first_name} ${leadClientJoin.last_name})`;
                   }
+                  // Fallback to stored name if no parts could be computed
+                  if (!displayDesc && deal.name) {
+                    displayDesc = deal.name.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim();
+                  }
+                }
                 }
 
                 const getBaseNumber = (dn: string) => {
