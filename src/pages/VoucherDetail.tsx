@@ -881,6 +881,7 @@ const VoucherDetail = () => {
               const clientName = mainT
                 ? `${mainT.clients.first_name} ${mainT.clients.last_name}`
                 : voucher.client_name;
+              const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || null;
               const hotelName = voucher.hotel_name ||
                 (Array.isArray(voucher.services) ? voucher.services.find((s: any) => s.service_type === "hotel")?.service_name : null);
               const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
@@ -892,7 +893,7 @@ const VoucherDetail = () => {
                 const dt = new Date(d + (d.includes("T") ? "" : "T00:00:00"));
                 return `${String(dt.getDate()).padStart(2,"0")}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getFullYear()).slice(-2)}`;
               };
-              const parts = [clientName, hotelName, firstDate ? formatD(firstDate) : null].filter(Boolean);
+              const parts = [clientName, countryIso, hotelName, firstDate ? formatD(firstDate) : null].filter(Boolean);
               return parts.length > 0 ? <span className="text-foreground">{parts.join(" • ")}</span> : null;
             })()}
           </div>
