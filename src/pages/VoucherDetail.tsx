@@ -877,6 +877,25 @@ const VoucherDetail = () => {
               <Badge variant="secondary">Neodesláno</Badge>
             )}
           </div>
+          {(() => {
+            const mainT = travelers.find(t => t.is_main_client) || travelers[0];
+            const clientName = mainT
+              ? `${mainT.clients.first_name} ${mainT.clients.last_name}`
+              : voucher.client_name;
+            const hotelName = voucher.hotel_name ||
+              (Array.isArray(voucher.services) ? voucher.services.find((s: any) => s.service_type === "hotel")?.service_name : null);
+            const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
+            const firstDate = servicesArr
+              .map((s: any) => s.dateFrom || s.start_date)
+              .filter(Boolean)
+              .sort()[0];
+            const formatD = (d: string) => {
+              const dt = new Date(d + (d.includes("T") ? "" : "T00:00:00"));
+              return `${String(dt.getDate()).padStart(2,"0")}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getFullYear()).slice(-2)}`;
+            };
+            const parts = [clientName, hotelName, firstDate ? formatD(firstDate) : null].filter(Boolean);
+            return parts.length > 0 ? <p className="text-muted-foreground">{parts.join(" • ")}</p> : null;
+          })()}
           <p className="text-muted-foreground">
             Vydáno: {formatDate(voucher.issue_date)}
             {voucher.expiration_date && ` · Platnost do: ${formatDate(voucher.expiration_date)}`}
