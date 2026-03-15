@@ -53,6 +53,7 @@ interface ScheduleItem {
 
 interface ContractPaymentScheduleProps {
   contractId: string;
+  dealId?: string | null;
   totalPrice?: number;
   departureDate?: string;
   contractNumber?: string;
@@ -60,7 +61,7 @@ interface ContractPaymentScheduleProps {
   currency?: string;
 }
 
-export function ContractPaymentSchedule({ contractId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
