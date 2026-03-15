@@ -490,9 +490,9 @@ const VouchersList = () => {
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
                           <span className="font-bold text-foreground">{voucher.voucher_code}</span>
-                          {(displayName || hotelName || firstServiceDate) && (
+                          {(displayName || countryIso || hotelName || firstServiceDate) && (
                             <span className="text-foreground truncate">
-                              {[displayName, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
+                              {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
                             </span>
                           )}
                         </div>
