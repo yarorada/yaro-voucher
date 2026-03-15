@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode, Mail } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, QrCode, Mail, RefreshCw, Loader2 } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";

@@ -575,7 +575,8 @@ const ContractDetail = () => {
 
           {/* Platební kalendář */}
           <ContractPaymentSchedule 
-            contractId={contract.id} 
+            contractId={contract.id}
+            dealId={(contract as any).deal_id || contract.deal?.id}
             totalPrice={contract.deal?.total_price}
             departureDate={contract.deal?.start_date}
             contractNumber={contract.contract_number}
