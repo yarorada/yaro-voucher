@@ -291,26 +291,26 @@ const ContractDetail = () => {
     <div className="min-h-screen bg-background">
       <div className="container max-w-5xl mx-auto py-8 px-4">
         <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
-            <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {getStatusBadge(contract.status, true)}
+            <h1 className="text-heading-1 text-foreground">{contract.contract_number}</h1>
+            {(() => {
+              const parts: string[] = [];
+              const client = (contract as any).client;
+              if (client) parts.push(`${client.first_name} ${client.last_name}`);
+              const iso = (contract.deal?.destination as any)?.country?.iso_code || (contract.deal?.destination as any)?.countries?.iso_code;
+              if (iso) parts.push(iso);
+              const hotel = (contract.deal as any)?.services?.find((s: any) => s.service_type === "hotel") || (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
+              if (hotel) parts.push(hotel.service_name);
+              const depDate = (contract.deal as any)?.start_date;
+              if (depDate) {
+                const d = new Date(depDate + "T00:00:00");
+                parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+              }
+              const displayName = parts.join(" • ");
+              return displayName ? <span className="text-foreground">{displayName}</span> : null;
+            })()}
           </div>
-          {(() => {
-            const parts: string[] = [];
-            const client = (contract as any).client;
-            if (client) parts.push(`${client.first_name} ${client.last_name}`);
-            const iso = contract.deal?.destination?.countries?.iso_code || (contract.deal?.destination as any)?.country?.iso_code;
-            if (iso) parts.push(iso);
-            const hotel = (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
-            if (hotel) parts.push(hotel.service_name);
-            const depDate = contract.deal?.start_date;
-            if (depDate) {
-              const d = new Date(depDate + "T00:00:00");
-              parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
-            }
-            const displayName = parts.join(" • ");
-            return displayName ? <p className="text-muted-foreground">{displayName}</p> : null;
-          })()}
         </div>
 
 
