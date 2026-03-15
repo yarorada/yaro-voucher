@@ -529,10 +529,13 @@ const Deals = () => {
                   .join(", ");
 
                 // Use deal.name if available (generated on save in DealDetail) — it's always correct
-                // Strip leading deal number prefix (e.g. "D-260023 ") if present
+                // Strip leading deal number prefix (e.g. "D-260023 ") if present, then replace plain spaces
+                // between tokens with bullet separators for display
                 let displayDesc = "";
                 if (deal.name) {
-                  displayDesc = deal.name.replace(/^D-\d{6,}\s*/, "").trim();
+                  const stripped = deal.name.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim();
+                  // If the name already contains bullets, use as-is; otherwise keep plain
+                  displayDesc = stripped;
                 } else {
                   // Fallback: compute from joined data
                   const iso = deal.destinations?.countries?.iso_code;
