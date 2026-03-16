@@ -1407,51 +1407,25 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           </DialogContent>
         </Dialog>
 
-        {/* Send all dialog */}
-        <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        {/* Client send dialog */}
+        <Dialog open={clientSendDialogOpen} onOpenChange={setClientSendDialogOpen}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Odeslat dokumenty</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Odeslat dokumenty klientovi
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {/* Mode selector */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Příjemce</Label>
-                <div className="grid grid-cols-1 gap-2">
-                  <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "client" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("client")}>
-                    <input type="radio" name="send-mode" checked={sendMode === "client"} onChange={() => setSendMode("client")} className="accent-primary" />
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div className="text-sm">
-                      <span className="font-medium">Pouze klientovi</span>
-                      {clientEmail && <span className="text-muted-foreground ml-2 text-xs">{clientEmail}</span>}
-                    </div>
-                  </label>
-                  {supplierEmails.length > 0 && (
-                    <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "both" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("both")}>
-                      <input type="radio" name="send-mode" checked={sendMode === "both"} onChange={() => setSendMode("both")} className="accent-primary" />
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-sm">
-                        <span className="font-medium">Klientovi a dodavateli</span>
-                        <span className="text-muted-foreground ml-2 text-xs">{supplierEmails.join(", ")}</span>
-                      </div>
-                    </label>
-                  )}
-                  {supplierEmails.length > 0 && (
-                    <label className={`flex items-center gap-2 p-2 rounded-md cursor-pointer border ${sendMode === "supplier" ? "border-primary bg-primary/5" : "border-border"}`} onClick={() => setSendMode("supplier")}>
-                      <input type="radio" name="send-mode" checked={sendMode === "supplier"} onChange={() => setSendMode("supplier")} className="accent-primary" />
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-sm">
-                        <span className="font-medium">Pouze dodavateli</span>
-                        <span className="text-muted-foreground ml-2 text-xs">{supplierEmails.join(", ")}</span>
-                      </div>
-                    </label>
-                  )}
-                </div>
+              {/* Recipient */}
+              <div className="rounded-md border p-3 bg-muted/30 text-sm">
+                <span className="font-medium">Příjemce: </span>
+                <span className="text-muted-foreground">{clientEmail || "—"}</span>
               </div>
 
               {/* Extra recipients */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Další příjemci</Label>
+                <Label className="text-sm font-medium">Další příjemci (nepovinné)</Label>
                 {extraEmails.map((em, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <Input value={em} readOnly className="h-7 text-sm flex-1" />
@@ -1461,86 +1435,111 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                   </div>
                 ))}
                 <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    placeholder="Přidat e-mail..."
-                    value={newExtraEmail}
+                  <Input type="email" placeholder="Přidat e-mail..." value={newExtraEmail}
                     onChange={(e) => setNewExtraEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newExtraEmail.trim()) {
-                        setExtraEmails(prev => [...prev, newExtraEmail.trim()]);
-                        setNewExtraEmail("");
-                      }
-                    }}
-                    className="h-8 text-sm"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8"
-                    onClick={() => {
-                      if (newExtraEmail.trim()) {
-                        setExtraEmails(prev => [...prev, newExtraEmail.trim()]);
-                        setNewExtraEmail("");
-                      }
-                    }}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Přidat
+                    onKeyDown={(e) => { if (e.key === "Enter" && newExtraEmail.trim()) { setExtraEmails(prev => [...prev, newExtraEmail.trim()]); setNewExtraEmail(""); } }}
+                    className="h-8 text-sm" />
+                  <Button size="sm" variant="outline" className="h-8" onClick={() => { if (newExtraEmail.trim()) { setExtraEmails(prev => [...prev, newExtraEmail.trim()]); setNewExtraEmail(""); } }}>
+                    <Plus className="h-3 w-3 mr-1" />Přidat
                   </Button>
                 </div>
               </div>
 
-              {/* Selected documents summary */}
+              {/* Selected documents */}
               <div className="space-y-1">
-                <Label className="text-sm font-medium">Vybrané dokumenty ({selectedDocIds.size + selectedVoucherIds.size})</Label>
-                <div className="rounded-md border p-2 max-h-28 overflow-y-auto space-y-1">
-                  {vouchers.filter(v => selectedVoucherIds.has(v.id)).map(v => (
-                    <div key={v.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Label className="text-sm font-medium">Dokumenty ({selectedDocIds.size + selectedVoucherIds.size})</Label>
+                <div className="rounded-md border p-2 max-h-32 overflow-y-auto space-y-1">
+                  {vouchers.map(v => (
+                    <label key={v.id} className="flex items-center gap-2 cursor-pointer text-xs">
+                      <Checkbox checked={selectedVoucherIds.has(v.id)} onCheckedChange={(ch) => setSelectedVoucherIds(prev => { const n = new Set(prev); ch ? n.add(v.id) : n.delete(v.id); return n; })} />
                       <FileText className="h-3 w-3 text-primary shrink-0" />
                       Voucher {v.voucher_code} – {v.client_name}
-                    </div>
+                    </label>
                   ))}
-                  {documents.filter(d => selectedDocIds.has(d.id)).map(d => (
-                    <div key={d.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {documents.map(d => (
+                    <label key={d.id} className="flex items-center gap-2 cursor-pointer text-xs">
+                      <Checkbox checked={selectedDocIds.has(d.id)} onCheckedChange={(ch) => setSelectedDocIds(prev => { const n = new Set(prev); ch ? n.add(d.id) : n.delete(d.id); return n; })} />
                       <FileText className="h-3 w-3 shrink-0" />
                       {d.file_name}
-                    </div>
+                    </label>
                   ))}
-                  {selectedDocIds.size + selectedVoucherIds.size === 0 && (
-                    <p className="text-xs text-muted-foreground italic">Žádné dokumenty vybrány</p>
-                  )}
                 </div>
               </div>
 
-              {/* Subject */}
               <div>
                 <Label>Předmět</Label>
-                <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="mt-1" />
+                <Input value={clientEmailSubject} onChange={(e) => setClientEmailSubject(e.target.value)} className="mt-1" />
               </div>
-
-              {/* Body */}
               <div>
-                <Label>Text e-mailu</Label>
-                <Textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={7} className="mt-1" />
+                <Label>Text e-mailu (česky)</Label>
+                <Textarea value={clientEmailBody} onChange={(e) => setClientEmailBody(e.target.value)} rows={7} className="mt-1" />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSendDialogOpen(false)} disabled={sending}>
-                Zrušit
+              <Button variant="outline" onClick={() => setClientSendDialogOpen(false)} disabled={sendingClient}>Zrušit</Button>
+              <Button onClick={handleSendToClient} disabled={sendingClient || (selectedDocIds.size + selectedVoucherIds.size === 0)}>
+                {sendingClient ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Odesílám...</> : <><Send className="h-4 w-4 mr-1" />Odeslat klientovi</>}
               </Button>
-              <Button onClick={handleSendAll} disabled={sending || (selectedDocIds.size + selectedVoucherIds.size === 0)}>
-                {sending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    Odesílám...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-1" />
-                    Odeslat
-                  </>
-                )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Supplier send dialog */}
+        <Dialog open={supplierSendDialogOpen} onOpenChange={setSupplierSendDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Odeslat vouchery dodavatelům
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {uniqueSupplierIds.map(supplierId => {
+                const supplierVouchers = vouchersWithSupplier.filter(v => v.supplier_id === supplierId);
+                const supplierInfo = supplierVouchers[0]?.suppliers;
+                const selectedIds = supplierVoucherSelection[supplierId] || new Set<string>();
+                return (
+                  <div key={supplierId} className="rounded-md border p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="text-sm">
+                        <span className="font-medium">{supplierInfo?.name || "—"}</span>
+                        {supplierInfo?.email && <span className="text-muted-foreground ml-2 text-xs">{supplierInfo.email}</span>}
+                      </div>
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {supplierVouchers.map(v => (
+                        <label key={v.id} className="flex items-center gap-2 cursor-pointer text-xs">
+                          <Checkbox
+                            checked={selectedIds.has(v.id)}
+                            onCheckedChange={(ch) => setSupplierVoucherSelection(prev => {
+                              const cur = new Set(prev[supplierId] || []);
+                              ch ? cur.add(v.id) : cur.delete(v.id);
+                              return { ...prev, [supplierId]: cur };
+                            })}
+                          />
+                          <FileText className="h-3 w-3 text-primary shrink-0" />
+                          Voucher {v.voucher_code} – {v.client_name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div>
+                <Label>Předmět (EN)</Label>
+                <Input value={supplierEmailSubject} onChange={(e) => setSupplierEmailSubject(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label>Text e-mailu (anglicky)</Label>
+                <Textarea value={supplierEmailBody} onChange={(e) => setSupplierEmailBody(e.target.value)} rows={6} className="mt-1" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSupplierSendDialogOpen(false)} disabled={sendingSuppliers}>Zrušit</Button>
+              <Button onClick={handleSendToSuppliers} disabled={sendingSuppliers}>
+                {sendingSuppliers ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Odesílám...</> : <><Send className="h-4 w-4 mr-1" />Odeslat všem dodavatelům</>}
               </Button>
             </DialogFooter>
           </DialogContent>
