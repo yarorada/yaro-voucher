@@ -145,13 +145,12 @@ export default function Accounting() {
           const vatFinal = isPastTrip ? Math.round(profitFinal * vatRate) : 0;
           const vatDiff = isPastTrip ? vatFinal - vatDeposit : 0;
 
-          const firstPaidAt = payments
-            .filter((p) => p.paid && p.paid_at)
-            .map((p) => p.paid_at!)
-            .sort()[0] || null;
+          const paidPayments = payments.filter((p) => p.paid && p.paid_at);
+          const firstPaidAt = paidPayments.map((p) => p.paid_at!).sort()[0] || null;
 
           const highlightRed = isInPreviousMonth(endDate);
-          const highlightBlue = isInPreviousMonth(firstPaidAt);
+          // Modře pouze pokud je zaplacena právě jedna platba a ta je z minulého měsíce
+          const highlightBlue = paidPayments.length === 1 && isInPreviousMonth(firstPaidAt);
 
           return {
             contractId: c.id,
