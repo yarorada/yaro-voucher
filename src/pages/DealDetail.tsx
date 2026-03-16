@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -433,6 +433,9 @@ const DealDetail = () => {
   const [linkedVouchers, setLinkedVouchers] = useState<Array<{ id: string; voucher_code: string; client_name: string }>>([]);
   const [syncingVoucher, setSyncingVoucher] = useState(false);
   const [pendingVoucherSync, setPendingVoucherSync] = useState<Array<{ id: string; voucher_code: string; client_name: string }> | null>(null);
+  // Leave-page sync dialog state
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const blockerProceedRef = useRef<(() => void) | null>(null);
   
   // Service form state
   // Room type definition for hotel services
@@ -752,6 +755,18 @@ const DealDetail = () => {
     onSave: silentSave,
     enabled: !!deal && !loading,
   });
+
+  // Block navigation and offer contract/voucher sync
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    return !!deal && !loading && currentLocation.pathname !== nextLocation.pathname;
+  });
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      blockerProceedRef.current = blocker.proceed;
+      setLeaveConfirmOpen(true);
+    }
+  }, [blocker.state]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -3930,6 +3945,52 @@ const DealDetail = () => {
               if (leadTraveler) await doCreateContract(leadTraveler.client_id);
             }}>
               Vytvořit novou smlouvu
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Leave-page sync confirmation dialog */}
+      <AlertDialog open={leaveConfirmOpen} onOpenChange={(open) => {
+        if (!open) {
+          setLeaveConfirmOpen(false);
+          if (blocker.state === "blocked") blocker.reset?.();
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Aktualizovat smlouvy a vouchery?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Přejete si přenést změny z tohoto obchodního případu do propojených smluv a voucherů před odchodem?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setLeaveConfirmOpen(false);
+              if (blocker.state === "blocked") blocker.reset?.();
+            }}>
+              Zůstat
+            </AlertDialogCancel>
+            <Button variant="outline" onClick={() => {
+              setLeaveConfirmOpen(false);
+              const proceed = blockerProceedRef.current;
+              blockerProceedRef.current = null;
+              proceed?.();
+            }}>
+              Odejít bez aktualizace
+            </Button>
+            <AlertDialogAction onClick={async () => {
+              setLeaveConfirmOpen(false);
+              const proceed = blockerProceedRef.current;
+              blockerProceedRef.current = null;
+              await checkAndOfferContractSync();
+              await checkAndOfferVoucherSync();
+              proceed?.();
+            }}>
+              Aktualizovat a odejít
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
