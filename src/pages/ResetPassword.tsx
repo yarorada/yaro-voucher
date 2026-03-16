@@ -23,6 +23,7 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [passwordChanged, setPasswordChanged] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
