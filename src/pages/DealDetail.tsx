@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate, useBlocker } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -756,17 +756,25 @@ const DealDetail = () => {
     enabled: !!deal && !loading,
   });
 
-  // Block navigation and offer contract/voucher sync
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    return !!deal && !loading && currentLocation.pathname !== nextLocation.pathname;
-  });
-
+  // Intercept in-app navigation via history.pushState (works with BrowserRouter)
   useEffect(() => {
-    if (blocker.state === "blocked") {
-      blockerProceedRef.current = blocker.proceed;
+    if (!deal || loading) return;
+
+    const originalPushState = window.history.pushState.bind(window.history);
+
+    window.history.pushState = (state: unknown, title: string, url?: string | URL | null) => {
+      // Store the deferred navigation and show confirm dialog
+      blockerProceedRef.current = () => {
+        window.history.pushState = originalPushState;
+        originalPushState(state, title, url);
+      };
       setLeaveConfirmOpen(true);
-    }
-  }, [blocker.state]);
+    };
+
+    return () => {
+      window.history.pushState = originalPushState;
+    };
+  }, [deal, loading]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -3953,8 +3961,9 @@ const DealDetail = () => {
       {/* Leave-page sync confirmation dialog */}
       <AlertDialog open={leaveConfirmOpen} onOpenChange={(open) => {
         if (!open) {
+          // User dismissed dialog — cancel navigation by not calling proceed
           setLeaveConfirmOpen(false);
-          if (blocker.state === "blocked") blocker.reset?.();
+          blockerProceedRef.current = null;
         }
       }}>
         <AlertDialogContent>
@@ -3970,7 +3979,7 @@ const DealDetail = () => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setLeaveConfirmOpen(false);
-              if (blocker.state === "blocked") blocker.reset?.();
+              blockerProceedRef.current = null;
             }}>
               Zůstat
             </AlertDialogCancel>
