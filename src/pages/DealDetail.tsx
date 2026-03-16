@@ -698,8 +698,14 @@ const DealDetail = () => {
   }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
-  // Track whether any changes were auto-saved — only offer sync if true
+  // Track whether the user actually changed any deal field (compared to loaded state)
   const dealChangedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasUnsavedChanges()) {
+      dealChangedRef.current = true;
+    }
+  }, [dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const autoSaveData = deal ? {
     name: dealName,
