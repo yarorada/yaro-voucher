@@ -843,73 +843,67 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
   };
 
-  const handleSendAll = async () => {
-    // Determine recipient emails based on mode
-    const toEmails: string[] = [];
-    if (sendMode === "client" || sendMode === "both") {
-      if (!clientEmail) {
-        toast.error("Klient nemá zadaný e-mail");
-        return;
+  // Generate PDF blob for a voucher (for inline attachment)
+  const generateVoucherPdfBase64 = async (v: DealVoucher, logoBase64?: string): Promise<string | null> => {
+    try {
+      const { data: fullVoucher } = await supabase.from("vouchers").select("*").eq("id", v.id).single();
+      if (!fullVoucher) return null;
+      let supplierData: any = null;
+      if (fullVoucher.supplier_id) {
+        const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
+        supplierData = sd;
       }
-      toEmails.push(clientEmail);
+      const { data: vTravelers } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", v.id);
+      const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64, (vTravelers || []) as any);
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+      return btoa(binary);
+    } catch (err) {
+      console.error("Error generating voucher PDF:", err);
+      return null;
     }
-    if (sendMode === "supplier" || sendMode === "both") {
-      toEmails.push(...supplierEmails);
-    }
+  };
+
+  // Send to client (CZ language, all selected docs + vouchers)
+  const handleSendToClient = async () => {
+    const toEmails: string[] = [];
+    if (clientEmail) toEmails.push(clientEmail);
     toEmails.push(...extraEmails.filter(Boolean));
 
     if (toEmails.length === 0) {
-      toast.error("Zadejte alespoň jednoho příjemce");
+      toast.error("Klient nemá zadaný e-mail");
       return;
     }
 
-    setSending(true);
+    setSendingClient(true);
     try {
-      // Generate PDFs for selected vouchers directly in memory (no storage upload)
       const vouchersToSend = vouchers.filter(v => selectedVoucherIds.has(v.id));
       const inlineAttachments: { filename: string; base64: string }[] = [];
 
       if (vouchersToSend.length > 0) {
         const logoBase64 = await getLogoBase64();
         for (const v of vouchersToSend) {
-          try {
-            const { data: fullVoucher } = await supabase.from("vouchers").select("*").eq("id", v.id).single();
-            if (fullVoucher) {
-              // Load full supplier data including address/phone/contact
-              let supplierData: any = null;
-              if (fullVoucher.supplier_id) {
-                const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
-                supplierData = sd;
-              }
-              const { data: vTravelers } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", v.id);
-              const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64, (vTravelers || []) as any);
-              const arrayBuffer = await pdfBlob.arrayBuffer();
-              const uint8 = new Uint8Array(arrayBuffer);
-              let binary = "";
-              for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-              inlineAttachments.push({ filename: `Voucher ${v.voucher_code}.pdf`, base64: btoa(binary) });
-            }
-          } catch (err) {
-            console.error("Error generating voucher PDF:", err);
-          }
+          const b64 = await generateVoucherPdfBase64(v, logoBase64);
+          if (b64) inlineAttachments.push({ filename: `Voucher ${v.voucher_code}.pdf`, base64: b64 });
         }
       }
 
       const docIdsToSend = Array.from(selectedDocIds);
-
       if (docIdsToSend.length === 0 && inlineAttachments.length === 0) {
         toast.error("Vyberte alespoň jeden dokument k odeslání");
-        setSending(false);
+        setSendingClient(false);
         return;
       }
 
       const { data, error } = await supabase.functions.invoke("send-deal-documents", {
         body: {
           dealId,
-          clientEmail: toEmails[0],
+          recipientEmail: toEmails[0],
           clientName: clientName || "",
-          emailSubject,
-          emailBody,
+          emailSubject: clientEmailSubject,
+          emailBody: clientEmailBody,
           ccEmails: toEmails.slice(1),
           documentIds: docIdsToSend,
           inlineAttachments,
@@ -919,30 +913,82 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
 
-      toast.success(`E-mail odeslán na: ${toEmails.join(", ")} (${data.attachmentCount} příloh)`);
+      toast.success(`E-mail odeslán klientovi (${data.attachmentCount} příloh)`);
 
-      // Mark sent vouchers as sent_at in vouchers table
       const sentVoucherIds = Array.from(selectedVoucherIds);
       if (sentVoucherIds.length > 0) {
-        await supabase
-          .from("vouchers")
-          .update({ sent_at: new Date().toISOString() })
-          .in("id", sentVoucherIds);
-        // Refresh local vouchers state to show sent_at indicator
-        setVouchers(prev => prev.map(v =>
-          sentVoucherIds.includes(v.id) ? { ...v, sent_at: new Date().toISOString() } : v
-        ));
+        await supabase.from("vouchers").update({ sent_at: new Date().toISOString() }).in("id", sentVoucherIds);
+        setVouchers(prev => prev.map(v => sentVoucherIds.includes(v.id) ? { ...v, sent_at: new Date().toISOString() } : v));
       }
 
-      setSendDialogOpen(false);
+      setClientSendDialogOpen(false);
       setSelectedDocIds(new Set());
       setSelectedVoucherIds(new Set());
     } catch (err: any) {
       console.error("Send error:", err);
       toast.error(err.message || "Nepodařilo se odeslat dokumenty");
     } finally {
-      setSending(false);
+      setSendingClient(false);
     }
+  };
+
+  // Send to suppliers (EN language, each supplier gets only their vouchers)
+  const handleSendToSuppliers = async () => {
+    setSendingSuppliers(true);
+    const logoBase64 = await getLogoBase64();
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const supplierId of uniqueSupplierIds) {
+      const supplierVouchers = vouchersWithSupplier.filter(v => v.supplier_id === supplierId);
+      const supplierEmail = supplierVouchers[0]?.suppliers?.email;
+      const supplierName = supplierVouchers[0]?.suppliers?.name || "";
+      if (!supplierEmail) continue;
+
+      const selectedIds = supplierVoucherSelection[supplierId] || new Set();
+      const vouchersToSend = supplierVouchers.filter(v => selectedIds.has(v.id));
+      if (vouchersToSend.length === 0) continue;
+
+      const inlineAttachments: { filename: string; base64: string }[] = [];
+      for (const v of vouchersToSend) {
+        const b64 = await generateVoucherPdfBase64(v, logoBase64);
+        if (b64) inlineAttachments.push({ filename: `Voucher ${v.voucher_code}.pdf`, base64: b64 });
+      }
+
+      if (inlineAttachments.length === 0) continue;
+
+      const personalizedBody = supplierEmailBody.replace("[supplier name]", supplierName).replace("Dear Partner", `Dear ${supplierName}`);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("send-deal-documents", {
+          body: {
+            dealId,
+            recipientEmail: supplierEmail,
+            clientName: supplierName,
+            emailSubject: supplierEmailSubject,
+            emailBody: personalizedBody,
+            documentIds: [],
+            inlineAttachments,
+          },
+        });
+
+        if (error || !data?.success) throw new Error(data?.error || "Chyba");
+
+        // Mark vouchers as sent
+        const sentIds = vouchersToSend.map(v => v.id);
+        await supabase.from("vouchers").update({ sent_at: new Date().toISOString() }).in("id", sentIds);
+        setVouchers(prev => prev.map(v => sentIds.includes(v.id) ? { ...v, sent_at: new Date().toISOString() } : v));
+        successCount++;
+      } catch (err: any) {
+        console.error(`Send error for supplier ${supplierName}:`, err);
+        errorCount++;
+      }
+    }
+
+    setSendingSuppliers(false);
+    if (successCount > 0) toast.success(`Vouchery odeslány ${successCount} dodavateli`);
+    if (errorCount > 0) toast.error(`${errorCount} dodavatelů se nepodařilo odeslat`);
+    if (successCount > 0) setSupplierSendDialogOpen(false);
   };
 
   const handleDeleteVoucher = async (voucher: DealVoucher) => {
