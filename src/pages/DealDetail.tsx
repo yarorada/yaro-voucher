@@ -724,7 +724,7 @@ const DealDetail = () => {
   const { isSaving: isAutoSaving } = useAutoSave({
     data: autoSaveData,
     saveFn: async () => {
-      if (!deal || saving || !autoSaveData) return;
+      if (!deal || !autoSaveData) return;
       setIsSaving(true);
       try {
         await supabase
