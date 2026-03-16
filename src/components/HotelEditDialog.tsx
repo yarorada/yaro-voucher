@@ -660,11 +660,18 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
           </div>
         </div>
 
-        <div className="flex justify-end border-t pt-4 shrink-0 gap-2">
+        <div className="flex justify-end border-t pt-4 shrink-0 gap-3 items-center">
+          {autoSaveStatus === 'saving' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <SpinIcon className="h-3 w-3 animate-spin" />Ukládám…
+            </span>
+          )}
+          {autoSaveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-emerald-500" />Uloženo
+            </span>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Zavřít</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Ukládám..." : "Uložit údaje"}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
