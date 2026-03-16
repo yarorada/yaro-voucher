@@ -1409,39 +1409,54 @@ export type Database = {
       suppliers: {
         Row: {
           address: string | null
+          city: string | null
           contact_person: string | null
+          country_name: string | null
           created_at: string
           email: string | null
           id: string
           name: string
           notes: string | null
           phone: string | null
+          postal_code: string | null
+          street: string | null
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           contact_person?: string | null
+          country_name?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
+          street?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           contact_person?: string | null
+          country_name?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name?: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
+          street?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Relationships: []
       }
