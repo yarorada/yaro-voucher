@@ -70,9 +70,8 @@ const ResetPassword = () => {
         } else if (event === 'SIGNED_IN' && session) {
           setIsValidToken(true);
           setChecking(false);
-        } else if (event === 'SIGNED_OUT') {
-          navigate("/auth");
         }
+        // Do NOT redirect on SIGNED_OUT — we handle navigation manually after password change
       });
       unsubscribe = () => subscription.unsubscribe();
 
