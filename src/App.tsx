@@ -141,9 +141,10 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
 );
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+    <GlobalHistoryProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
