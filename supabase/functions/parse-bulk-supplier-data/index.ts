@@ -12,11 +12,9 @@ serve(async (req: Request) => {
 
   try {
     const { text } = await req.json();
-    
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     console.log("Processing bulk supplier data with AI...");
 
@@ -31,11 +29,17 @@ serve(async (req: Request) => {
         messages: [
           {
             role: "system",
-            content: "Jsi expert na extrakci strukturovaných dat o dodavatelích/firmách z různých formátů textu. Extrahuj co nejvíce informací o každém dodavateli."
+            content: `Jsi expert na extrakci strukturovaných dat o dodavatelích/firmách z různých formátů textu.
+Extrahuj co nejvíce informací o každém dodavateli.
+Adresu vždy rozděl na: ulice+č.p. (street), PSČ (postal_code), město (city), stát (country_name).
+Pokud stát není uveden a PSČ odpovídá ČR (5 číslic nebo formát NNN NN), doplň country_name = "Česká republika".
+Pokud stát není uveden a PSČ odpovídá SK, doplň country_name = "Slovensko".
+Telefon uložit v mezinárodním formátu, pokud je to možné.
+Pokud v textu nalezneš webovou adresu (URL), ulož ji do pole website.`
           },
           {
             role: "user",
-            content: `Extrahuj informace o dodavatelích z následujícího textu. Pro každého dodavatele najdi: název firmy/dodavatele, kontaktní osobu, email, telefon, adresu a případné poznámky:\n\n${text}`
+            content: `Extrahuj informace o dodavatelích z následujícího textu. Pro každého dodavatele najdi: název, kontaktní osobu, email, telefon, adresu (rozdělenou na části), web a případné poznámky:\n\n${text}`
           }
         ],
         tools: [
@@ -52,30 +56,16 @@ serve(async (req: Request) => {
                     items: {
                       type: "object",
                       properties: {
-                        name: { 
-                          type: "string", 
-                          description: "Název firmy nebo dodavatele"
-                        },
-                        contact_person: { 
-                          type: "string", 
-                          description: "Jméno kontaktní osoby (pokud je uvedeno)" 
-                        },
-                        email: { 
-                          type: "string", 
-                          description: "Emailová adresa (pokud je uvedena)" 
-                        },
-                        phone: { 
-                          type: "string", 
-                          description: "Telefonní číslo (pokud je uvedeno)" 
-                        },
-                        address: { 
-                          type: "string", 
-                          description: "Adresa firmy (pokud je uvedena)" 
-                        },
-                        notes: { 
-                          type: "string", 
-                          description: "Další poznámky nebo informace o dodavateli" 
-                        }
+                        name: { type: "string", description: "Název firmy nebo dodavatele" },
+                        contact_person: { type: "string", description: "Jméno kontaktní osoby" },
+                        email: { type: "string", description: "Emailová adresa" },
+                        phone: { type: "string", description: "Telefonní číslo v mezinárodním formátu" },
+                        street: { type: "string", description: "Ulice a číslo popisné/orientační" },
+                        postal_code: { type: "string", description: "PSČ" },
+                        city: { type: "string", description: "Město" },
+                        country_name: { type: "string", description: "Stát (např. Česká republika, Slovensko, Španělsko)" },
+                        website: { type: "string", description: "Webová adresa (URL)" },
+                        notes: { type: "string", description: "Další poznámky nebo informace o dodavateli" }
                       },
                       required: ["name"],
                       additionalProperties: false
@@ -94,14 +84,12 @@ serve(async (req: Request) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        console.error("Rate limit exceeded");
         return new Response(
           JSON.stringify({ error: "Překročen limit požadavků. Zkuste to prosím později." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
-        console.error("Payment required");
         return new Response(
           JSON.stringify({ error: "Nedostatek kreditů. Přidejte prosím kredity do vašeho účtu." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -114,16 +102,11 @@ serve(async (req: Request) => {
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    
-    if (!toolCall) {
-      console.error("No tool call in AI response");
-      throw new Error("No tool call in AI response");
-    }
+    if (!toolCall) throw new Error("No tool call in AI response");
 
     const parsedData = JSON.parse(toolCall.function.arguments);
-    
     console.log(`Successfully parsed ${parsedData.suppliers.length} suppliers`);
-    
+
     return new Response(
       JSON.stringify({ success: true, suppliers: parsedData.suppliers }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -131,9 +114,8 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error("Error parsing bulk supplier data:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
