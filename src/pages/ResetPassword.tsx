@@ -22,16 +22,37 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check URL hash for recovery token first (Supabase puts tokens in hash)
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const type = params.get('type');
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+
+    // If we have recovery tokens in the URL, set the session manually
+    if (type === 'recovery' && accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
+        setIsValidToken(true);
+        setChecking(false);
+      });
+      return;
+    }
+
     // Listen for password recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidToken(true);
+        setChecking(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        // Could be a recovery sign-in
+        setIsValidToken(true);
+        setChecking(false);
       } else if (event === 'SIGNED_OUT') {
-        // After password reset, user is signed out
         navigate("/auth");
       }
     });
@@ -41,6 +62,7 @@ const ResetPassword = () => {
       if (session) {
         setIsValidToken(true);
       }
+      setChecking(false);
     });
 
     return () => {
@@ -95,8 +117,35 @@ const ResetPassword = () => {
     }
   };
 
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <div className="text-muted-foreground">Načítám...</div>
+      </div>
+    );
+  }
+
   if (!isValidToken) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <img src={yaroLogo} alt="YARO Travel" className="h-16" />
+            </div>
+            <CardTitle className="text-2xl text-center">Neplatný odkaz</CardTitle>
+            <CardDescription className="text-center">
+              Odkaz pro reset hesla je neplatný nebo vypršel. Požádejte o nový.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => navigate("/auth")}>
+              Zpět na přihlášení
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
