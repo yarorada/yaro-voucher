@@ -117,8 +117,35 @@ const ResetPassword = () => {
     }
   };
 
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <div className="text-muted-foreground">Načítám...</div>
+      </div>
+    );
+  }
+
   if (!isValidToken) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <img src={yaroLogo} alt="YARO Travel" className="h-16" />
+            </div>
+            <CardTitle className="text-2xl text-center">Neplatný odkaz</CardTitle>
+            <CardDescription className="text-center">
+              Odkaz pro reset hesla je neplatný nebo vypršel. Požádejte o nový.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => navigate("/auth")}>
+              Zpět na přihlášení
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
