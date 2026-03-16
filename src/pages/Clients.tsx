@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,9 @@ import { BulkClientUpload } from "@/components/BulkClientUpload";
 import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
 import { DiacriticsChecker } from "@/components/DiacriticsChecker";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
+import { Check, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -104,6 +107,8 @@ const Clients = () => {
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [searchText, setSearchText] = useState("");
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -122,6 +127,49 @@ const Clients = () => {
     ico: "",
     dic: "",
     company_as_orderer: false,
+  });
+
+  // Auto-save for editing existing client
+  useAutoSave({
+    data: editingClient && isDialogOpen ? formData : null,
+    saveFn: async (data) => {
+      if (!editingClient || !data) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        await supabase
+          .from("clients")
+          .update({
+            title: data.title || null,
+            first_name: data.first_name.trim(),
+            last_name: data.last_name.trim(),
+            email: data.email.trim() || null,
+            phone: data.phone.trim() || null,
+            address: data.address.trim() || null,
+            notes: data.notes.trim() || null,
+            date_of_birth: formatDateForDB(data.date_of_birth),
+            passport_number: data.passport_number.trim() || null,
+            passport_expiry: formatDateForDB(data.passport_expiry),
+            id_card_number: data.id_card_number.trim() || null,
+            id_card_expiry: formatDateForDB(data.id_card_expiry),
+            company_name: data.company_name.trim() || null,
+            ico: data.ico.trim() || null,
+            dic: data.dic.trim() || null,
+            company_as_orderer: data.company_as_orderer,
+          } as any)
+          .eq("id", editingClient.id);
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+        fetchClients();
+      } catch (e) {
+        console.error("Auto-save client error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: !!editingClient && isDialogOpen,
   });
 
   useEffect(() => {
@@ -835,17 +883,25 @@ const Clients = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex gap-2 justify-end items-center">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={handleDialogClose}
                       >
-                        Zrušit
+                        {editingClient ? "Zavřít" : "Zrušit"}
                       </Button>
-                      <Button type="submit">
-                        {editingClient ? "Uložit" : "Přidat"}
-                      </Button>
+                      {editingClient ? (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {autoSaveStatus === 'saving' ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" />Ukládám…</>
+                          ) : autoSaveStatus === 'saved' ? (
+                            <><Check className="h-3 w-3 text-emerald-500" />Uloženo</>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <Button type="submit">Přidat</Button>
+                      )}
                     </div>
                   </form>
                 </DialogContent>

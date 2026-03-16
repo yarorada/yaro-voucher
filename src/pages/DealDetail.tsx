@@ -95,6 +95,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
@@ -691,6 +693,59 @@ const DealDetail = () => {
       console.error("Auto-save failed:", e);
     }
   }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+
+  const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
+
+  const autoSaveData = deal ? {
+    name: dealName,
+    status,
+    destinationId,
+    startDate: formatDateForDB(startDate),
+    endDate: formatDateForDB(endDate),
+    totalPrice,
+    depositAmount,
+    depositPaid,
+    notes,
+    discountAmount,
+    adjustmentAmount,
+    discountNote,
+    adjustmentNote,
+  } : null;
+
+  const { isSaving: isAutoSaving } = useAutoSave({
+    data: autoSaveData,
+    saveFn: async () => {
+      if (!deal || saving || !autoSaveData) return;
+      setIsSaving(true);
+      try {
+        await supabase
+          .from("deals")
+          .update({
+            name: dealName || null,
+            status,
+            destination_id: destinationId || null,
+            start_date: formatDateForDB(startDate),
+            end_date: formatDateForDB(endDate),
+            total_price: totalPrice ? parseFloat(totalPrice) : null,
+            deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
+            deposit_paid: depositPaid,
+            notes: notes || null,
+            discount_amount: discountAmount ? parseFloat(discountAmount) : 0,
+            adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
+            discount_note: discountNote || null,
+            adjustment_note: adjustmentNote || null,
+          })
+          .eq("id", deal.id);
+        setLastSaved(new Date());
+      } catch (e) {
+        console.error("Auto-save error:", e);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: !!deal && !loading,
+  });
 
   useAutoSaveOnLeave({
     hasUnsavedChanges,

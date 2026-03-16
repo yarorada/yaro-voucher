@@ -9,7 +9,11 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingTaskButton } from "@/components/FloatingTaskButton";
 import { PageToolbarProvider, usePageToolbarContent } from "@/hooks/usePageToolbar";
-import { Menu } from "lucide-react";
+import { GlobalHistoryProvider, useGlobalHistory } from "@/hooks/useGlobalHistory";
+import { Menu, Undo2, Redo2, Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
 import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
@@ -44,6 +48,55 @@ import AdminRoles from "./pages/AdminRoles";
 
 const queryClient = new QueryClient();
 
+const SaveIndicator = () => {
+  const { isSaving, lastSaved } = useGlobalHistory();
+  if (isSaving) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Ukládám…
+      </span>
+    );
+  }
+  if (lastSaved) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Check className="h-3 w-3 text-emerald-500" />
+        {format(lastSaved, "HH:mm:ss", { locale: cs })}
+      </span>
+    );
+  }
+  return null;
+};
+
+const UndoRedoButtons = () => {
+  const { canUndo, canRedo, undo, redo } = useGlobalHistory();
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        disabled={!canUndo}
+        onClick={undo}
+        title="Zpět (Ctrl+Z)"
+      >
+        <Undo2 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        disabled={!canRedo}
+        onClick={redo}
+        title="Vpřed (Ctrl+Y)"
+      >
+        <Redo2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
   return (
@@ -56,6 +109,8 @@ const LayoutHeader = () => {
             </SidebarTrigger>
             <Breadcrumbs />
             <NotificationBell />
+            <UndoRedoButtons />
+            <SaveIndicator />
           </div>
           {toolbarContent && (
             <div className="flex flex-wrap items-center gap-2">
@@ -86,9 +141,10 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => (
 );
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+    <GlobalHistoryProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
@@ -304,6 +360,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </GlobalHistoryProvider>
   </QueryClientProvider>
 );
 

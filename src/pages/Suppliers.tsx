@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit, MoreHorizontal, AlertTriangle } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
 import { checkSupplierDuplicates, DuplicateSupplier } from "@/lib/supplierDuplicates";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +83,45 @@ const Suppliers = () => {
   const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
   const [dupDialogOpen, setDupDialogOpen] = useState(false);
   const [dupResults, setDupResults] = useState<{ duplicates: DuplicateSupplier[]; hasSameName: boolean; hasSameEmail: boolean; hasSamePhone: boolean } | null>(null);
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
+
+  // Auto-save for editing existing supplier
+  const autoSavePayload = editingSupplier && isDialogOpen ? formData : null;
+  useAutoSave({
+    data: autoSavePayload,
+    saveFn: async (data) => {
+      if (!editingSupplier || !data) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        const payload = {
+          name: data.name.trim(),
+          contact_person: data.contact_person.trim() || null,
+          email: data.email.trim() || null,
+          phone: data.phone.trim() ? formatPhone(data.phone.trim()) : null,
+          street: data.street.trim() || null,
+          postal_code: data.postal_code.trim() || null,
+          city: data.city.trim() || null,
+          country_name: data.country_name.trim() || null,
+          website: data.website.trim() || null,
+          notes: data.notes.trim() || null,
+        };
+        await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+        fetchSuppliers();
+      } catch (e) {
+        console.error("Auto-save supplier error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: !!editingSupplier && isDialogOpen,
+  });
 
   useEffect(() => { fetchSuppliers(); }, []);
 
@@ -298,9 +339,21 @@ const Suppliers = () => {
                 <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3} />
               </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={handleDialogClose}>Zrušit</Button>
-                <Button type="submit">{editingSupplier ? "Uložit" : "Přidat"}</Button>
+              <div className="flex gap-2 justify-end items-center">
+                <Button type="button" variant="outline" onClick={handleDialogClose}>
+                  {editingSupplier ? "Zavřít" : "Zrušit"}
+                </Button>
+                {editingSupplier ? (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {autoSaveStatus === 'saving' ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" />Ukládám…</>
+                    ) : autoSaveStatus === 'saved' ? (
+                      <><Check className="h-3 w-3 text-emerald-500" />Uloženo</>
+                    ) : null}
+                  </span>
+                ) : (
+                  <Button type="submit">Přidat</Button>
+                )}
               </div>
             </form>
           </DialogContent>

@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { HotelImageUpload } from "@/components/HotelImageUpload";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
-import { Plus, Trash2, Sparkles, Loader2, Star } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2 as SpinIcon, Star } from "lucide-react";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 
 interface GolfCourseData {
   name: string;
@@ -69,6 +72,8 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
   const [fetchingAll, setFetchingAll] = useState(false);
   const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [currentHotel, setCurrentHotel] = useState<HotelTemplate>(hotel);
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [aiSuggestion, setAiSuggestion] = useState<{
     destination: string;
     country: string;
@@ -104,6 +109,52 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
 
   // Auto-fetch AI data only when hotel has no data yet (first time creation)
   const hotelIsNew = !hotel.image_url && !hotel.review_score && !hotel.description && !hotel.subtitle;
+
+  // Auto-save on form changes (debounced, only when dialog is open)
+  useAutoSave({
+    data: open ? formData : null,
+    saveFn: async (data) => {
+      if (!data || !open) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        const { data: saved, error } = await supabase
+          .from("hotel_templates")
+          .update({
+            name: data.name.trim(),
+            slug: data.slug.trim() || null,
+            subtitle: data.subtitle.trim() || null,
+            nights: data.nights.trim() || null,
+            green_fees: data.green_fees.trim() || null,
+            price_label: data.price_label.trim() || null,
+            golf_courses: data.golf_courses.trim() || null,
+            golf_courses_data: data.golf_courses_data.length > 0 ? (data.golf_courses_data as any) : null,
+            website_url: data.website_url.trim() || null,
+            is_published: data.is_published,
+            destination_id: data.destination_id || null,
+            highlights: data.highlights.length > 0 ? data.highlights : null,
+            review_score: data.review_score ?? null,
+            star_category: data.star_category ?? null,
+          })
+          .eq("id", currentHotel.id)
+          .select()
+          .single();
+        if (!error && saved) {
+          setCurrentHotel(saved as HotelTemplate);
+          onSaved?.(saved as HotelTemplate);
+        }
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+      } catch (e) {
+        console.error("Auto-save hotel error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: open && !!currentHotel.id,
+  });
 
   useEffect(() => {
     if (open && hotel.id && hotelIsNew && autoFetchDone.current !== hotel.id) {
@@ -609,11 +660,18 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
           </div>
         </div>
 
-        <div className="flex justify-end border-t pt-4 shrink-0 gap-2">
+        <div className="flex justify-end border-t pt-4 shrink-0 gap-3 items-center">
+          {autoSaveStatus === 'saving' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <SpinIcon className="h-3 w-3 animate-spin" />Ukládám…
+            </span>
+          )}
+          {autoSaveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-emerald-500" />Uloženo
+            </span>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Zavřít</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Ukládám..." : "Uložit údaje"}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
