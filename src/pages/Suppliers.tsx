@@ -339,9 +339,21 @@ const Suppliers = () => {
                 <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3} />
               </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={handleDialogClose}>Zrušit</Button>
-                <Button type="submit">{editingSupplier ? "Uložit" : "Přidat"}</Button>
+              <div className="flex gap-2 justify-end items-center">
+                <Button type="button" variant="outline" onClick={handleDialogClose}>
+                  {editingSupplier ? "Zavřít" : "Zrušit"}
+                </Button>
+                {editingSupplier ? (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {autoSaveStatus === 'saving' ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" />Ukládám…</>
+                    ) : autoSaveStatus === 'saved' ? (
+                      <><Check className="h-3 w-3 text-emerald-500" />Uloženo</>
+                    ) : null}
+                  </span>
+                ) : (
+                  <Button type="submit">Přidat</Button>
+                )}
               </div>
             </form>
           </DialogContent>
