@@ -320,7 +320,7 @@ const Suppliers = () => {
             </DialogHeader>
             <div className="space-y-3">
               {dupResults && (
-                <Alert variant="default" className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                <Alert className="border-amber-200/50 bg-amber-50/50 dark:bg-amber-950/20">
                   <AlertDescription className="text-sm space-y-0.5">
                     {dupResults.hasSameName && <div>• Stejný název</div>}
                     {dupResults.hasSameEmail && <div>• Stejný e-mail</div>}
