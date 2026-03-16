@@ -3961,8 +3961,9 @@ const DealDetail = () => {
       {/* Leave-page sync confirmation dialog */}
       <AlertDialog open={leaveConfirmOpen} onOpenChange={(open) => {
         if (!open) {
+          // User dismissed dialog — cancel navigation by not calling proceed
           setLeaveConfirmOpen(false);
-          if (blocker.state === "blocked") blocker.reset?.();
+          blockerProceedRef.current = null;
         }
       }}>
         <AlertDialogContent>
@@ -3978,7 +3979,7 @@ const DealDetail = () => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setLeaveConfirmOpen(false);
-              if (blocker.state === "blocked") blocker.reset?.();
+              blockerProceedRef.current = null;
             }}>
               Zůstat
             </AlertDialogCancel>
