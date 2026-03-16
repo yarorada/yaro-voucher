@@ -163,8 +163,11 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Always use the published URL for password reset redirect so Supabase
+      // doesn't ignore it due to allowlist restrictions
+      const publishedOrigin = "https://yarogolf-crm.lovable.app";
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${publishedOrigin}/reset-password`,
       });
 
       if (error) {
