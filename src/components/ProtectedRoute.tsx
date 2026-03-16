@@ -38,7 +38,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         }
 
         // Check current AAL level
-        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+        if (aalError) {
+          // Invalid/expired session (e.g. recovery token after password reset) — sign out and redirect
+          console.error("AAL check error, signing out:", aalError);
+          await supabase.auth.signOut({ scope: 'local' });
+          navigate("/auth");
+          return;
+        }
         
         if (aalData?.currentLevel === 'aal2') {
           // MFA is verified
@@ -48,7 +56,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         }
 
         // Check if user has MFA enrolled
-        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+
+        if (factorsError) {
+          // Invalid token (e.g. "missing sub claim") — sign out and redirect
+          console.error("Factors check error, signing out:", factorsError);
+          await supabase.auth.signOut({ scope: 'local' });
+          navigate("/auth");
+          return;
+        }
         
         if (!factors?.totp || factors.totp.length === 0) {
           // No MFA enrolled, redirect to setup
@@ -67,7 +83,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         navigate("/mfa-verify");
       } catch (error) {
         console.error("Error checking MFA:", error);
-        setMfaChecking(false);
+        await supabase.auth.signOut({ scope: 'local' });
+        navigate("/auth");
       }
     };
 
