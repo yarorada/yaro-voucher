@@ -883,17 +883,25 @@ const Clients = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex gap-2 justify-end items-center">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={handleDialogClose}
                       >
-                        Zrušit
+                        {editingClient ? "Zavřít" : "Zrušit"}
                       </Button>
-                      <Button type="submit">
-                        {editingClient ? "Uložit" : "Přidat"}
-                      </Button>
+                      {editingClient ? (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {autoSaveStatus === 'saving' ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" />Ukládám…</>
+                          ) : autoSaveStatus === 'saved' ? (
+                            <><Check className="h-3 w-3 text-emerald-500" />Uloženo</>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <Button type="submit">Přidat</Button>
+                      )}
                     </div>
                   </form>
                 </DialogContent>
