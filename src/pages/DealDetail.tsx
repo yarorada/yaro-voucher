@@ -3237,7 +3237,6 @@ const DealDetail = () => {
                         </Button>
                         {lastDraftSave && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            <Save className="h-3 w-3 inline mr-1" />
                             uloženo
                           </span>
                         )}
