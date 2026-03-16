@@ -48,6 +48,55 @@ import AdminRoles from "./pages/AdminRoles";
 
 const queryClient = new QueryClient();
 
+const SaveIndicator = () => {
+  const { isSaving, lastSaved } = useGlobalHistory();
+  if (isSaving) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Ukládám…
+      </span>
+    );
+  }
+  if (lastSaved) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Check className="h-3 w-3 text-green-500" />
+        {format(lastSaved, "HH:mm:ss", { locale: cs })}
+      </span>
+    );
+  }
+  return null;
+};
+
+const UndoRedoButtons = () => {
+  const { canUndo, canRedo, undo, redo } = useGlobalHistory();
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        disabled={!canUndo}
+        onClick={undo}
+        title="Zpět (Ctrl+Z)"
+      >
+        <Undo2 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        disabled={!canRedo}
+        onClick={redo}
+        title="Vpřed (Ctrl+Y)"
+      >
+        <Redo2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
   return (
@@ -60,6 +109,8 @@ const LayoutHeader = () => {
             </SidebarTrigger>
             <Breadcrumbs />
             <NotificationBell />
+            <UndoRedoButtons />
+            <SaveIndicator />
           </div>
           {toolbarContent && (
             <div className="flex flex-wrap items-center gap-2">
