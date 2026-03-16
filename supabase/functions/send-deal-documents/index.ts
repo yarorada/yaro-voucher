@@ -74,10 +74,11 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { dealId, clientEmail, clientName, emailBody, emailSubject, ccEmails, documentIds, inlineAttachments }: SendRequest = await req.json();
+    const { dealId, recipientEmail: reqRecipientEmail, clientEmail: reqClientEmail, clientName, emailBody, emailSubject, ccEmails, documentIds, inlineAttachments }: SendRequest = await req.json();
+    const recipientEmail = reqRecipientEmail || reqClientEmail;
 
-    if (!dealId || !clientEmail) {
-      return new Response(JSON.stringify({ error: "Missing dealId or clientEmail" }), {
+    if (!dealId || !recipientEmail) {
+      return new Response(JSON.stringify({ error: "Missing dealId or recipient email" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
