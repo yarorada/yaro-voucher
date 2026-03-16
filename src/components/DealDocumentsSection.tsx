@@ -1237,6 +1237,50 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7"
+                    title="Náhled voucheru"
+                    onClick={async () => {
+                      const logoBase64 = await getLogoBase64();
+                      const b64 = await generateVoucherPdfBase64(v, logoBase64);
+                      if (!b64) { toast.error("Nepodařilo se vygenerovat náhled"); return; }
+                      const dataUrl = `data:application/pdf;base64,${b64}`;
+                      setPreviewUrl(dataUrl);
+                      setPreviewFileType("application/pdf");
+                      setPreviewDataUrl(dataUrl);
+                      setPreviewBlobUrl(null);
+                      setPreviewLoading(false);
+                    }}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title="Stáhnout voucher PDF"
+                    onClick={async () => {
+                      const logoBase64 = await getLogoBase64();
+                      const b64 = await generateVoucherPdfBase64(v, logoBase64);
+                      if (!b64) { toast.error("Nepodařilo se stáhnout voucher"); return; }
+                      const byteChars = atob(b64);
+                      const byteArr = new Uint8Array(byteChars.length);
+                      for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+                      const blob = new Blob([byteArr], { type: "application/pdf" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `Voucher ${v.voucher_code}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }}
+                  >
+                    <Download className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
                     onClick={() => navigate(`/vouchers/${v.id}`)}
                     title="Otevřít voucher"
                   >
