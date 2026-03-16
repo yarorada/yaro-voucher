@@ -402,7 +402,6 @@ const DealDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [deal, setDeal] = useState<Deal | null>(null);
   const [services, setServices] = useState<DealService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
