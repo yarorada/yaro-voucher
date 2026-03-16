@@ -56,6 +56,20 @@ const emptyForm = {
   notes: "",
 };
 
+
+type SupplierPayload = {
+  name: string;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country_name: string | null;
+  website: string | null;
+  notes: string | null;
+};
+
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
