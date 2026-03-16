@@ -705,6 +705,79 @@ const DealDetail = () => {
     }
   }, [dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
+  // Snapshot mechanism for global Cmd+Z undo
+  type DealSnapshot = {
+    dealName: string; status: string; destinationId: string;
+    startDate: Date | undefined; endDate: Date | undefined;
+    totalPrice: string; depositAmount: string; depositPaid: boolean;
+    notes: string; discountAmount: string; adjustmentAmount: string;
+    discountNote: string; adjustmentNote: string;
+  };
+  const dealSnapshotRef = useRef<DealSnapshot | null>(null);
+  const dealSnapshotTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!deal || loading) return;
+    const current: DealSnapshot = { dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote };
+    if (!dealSnapshotRef.current) {
+      dealSnapshotRef.current = current;
+      return;
+    }
+    const prev = dealSnapshotRef.current;
+    const changed =
+      current.dealName !== prev.dealName ||
+      current.status !== prev.status ||
+      current.destinationId !== prev.destinationId ||
+      current.startDate?.getTime() !== prev.startDate?.getTime() ||
+      current.endDate?.getTime() !== prev.endDate?.getTime() ||
+      current.totalPrice !== prev.totalPrice ||
+      current.depositAmount !== prev.depositAmount ||
+      current.depositPaid !== prev.depositPaid ||
+      current.notes !== prev.notes ||
+      current.discountAmount !== prev.discountAmount ||
+      current.adjustmentAmount !== prev.adjustmentAmount ||
+      current.discountNote !== prev.discountNote ||
+      current.adjustmentNote !== prev.adjustmentNote;
+    if (!changed) return;
+
+    const snapPrev = { ...prev };
+    const dealId = deal.id;
+    if (dealSnapshotTimerRef.current) clearTimeout(dealSnapshotTimerRef.current);
+    dealSnapshotTimerRef.current = setTimeout(() => {
+      pushSnapshot("Změna obchodního případu", async () => {
+        setDealName(snapPrev.dealName);
+        setStatus(snapPrev.status as typeof status);
+        setDestinationId(snapPrev.destinationId);
+        setStartDate(snapPrev.startDate);
+        setEndDate(snapPrev.endDate);
+        setTotalPrice(snapPrev.totalPrice);
+        setDepositAmount(snapPrev.depositAmount);
+        setDepositPaid(snapPrev.depositPaid);
+        setNotes(snapPrev.notes);
+        setDiscountAmount(snapPrev.discountAmount);
+        setAdjustmentAmount(snapPrev.adjustmentAmount);
+        setDiscountNote(snapPrev.discountNote);
+        setAdjustmentNote(snapPrev.adjustmentNote);
+        await supabase.from("deals").update({
+          name: snapPrev.dealName || null,
+          status: snapPrev.status as any,
+          destination_id: snapPrev.destinationId || null,
+          start_date: formatDateForDB(snapPrev.startDate),
+          end_date: formatDateForDB(snapPrev.endDate),
+          total_price: snapPrev.totalPrice ? parseFloat(snapPrev.totalPrice) : null,
+          deposit_amount: snapPrev.depositAmount ? parseFloat(snapPrev.depositAmount) : null,
+          deposit_paid: snapPrev.depositPaid,
+          notes: snapPrev.notes || null,
+          discount_amount: snapPrev.discountAmount ? parseFloat(snapPrev.discountAmount) : 0,
+          adjustment_amount: snapPrev.adjustmentAmount ? parseFloat(snapPrev.adjustmentAmount) : 0,
+          discount_note: snapPrev.discountNote || null,
+          adjustment_note: snapPrev.adjustmentNote || null,
+        }).eq("id", dealId);
+      });
+      dealSnapshotRef.current = { ...current };
+    }, 1000);
+  }, [dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote, deal, loading]);
+
   const autoSaveData = deal ? {
     name: dealName,
     status,
