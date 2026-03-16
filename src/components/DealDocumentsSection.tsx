@@ -1112,37 +1112,18 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
               <Badge variant="secondary">{totalItems} položek</Badge>
             )}
             {(documents.length > 0 || vouchers.length > 0) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="default">
-                    <Send className="h-4 w-4 mr-1" />
-                    Odeslat
-                    <ChevronDown className="h-3 w-3 ml-1" />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="default" onClick={openClientDialog}>
+                  <User className="h-4 w-4 mr-1" />
+                  Klientovi
+                </Button>
+                {uniqueSupplierIds.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={openSupplierDialog}>
+                    <Building2 className="h-4 w-4 mr-1" />
+                    Dodavatelům
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => openSendDialog("client")}>
-                    <User className="h-4 w-4 mr-2" />
-                    Odeslat klientovi
-                  </DropdownMenuItem>
-                  {supplierEmails.length > 0 && (
-                    <DropdownMenuItem onClick={() => openSendDialog("both")}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Odeslat klientovi a dodavateli
-                    </DropdownMenuItem>
-                  )}
-                  {supplierEmails.length > 0 && (
-                    <DropdownMenuItem onClick={() => openSendDialog("supplier")}>
-                      <Building2 className="h-4 w-4 mr-2" />
-                      Odeslat pouze dodavateli
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => openSendDialog("client")}>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Odeslat na jiný e-mail
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+              </div>
             )}
           </div>
         </div>
