@@ -27,46 +27,66 @@ const ResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check URL hash for recovery token first (Supabase puts tokens in hash)
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const type = params.get('type');
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
+    let unsubscribe: (() => void) | null = null;
 
-    // If we have recovery tokens in the URL, set the session manually
-    if (type === 'recovery' && accessToken && refreshToken) {
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
-        setIsValidToken(true);
-        setChecking(false);
-      });
-      return;
-    }
-
-    // Listen for password recovery event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsValidToken(true);
-        setChecking(false);
-      } else if (event === 'SIGNED_IN' && session) {
-        // Could be a recovery sign-in
-        setIsValidToken(true);
-        setChecking(false);
-      } else if (event === 'SIGNED_OUT') {
-        navigate("/auth");
+    const init = async () => {
+      // 1) PKCE flow: Supabase sends ?code= in query params (newer versions)
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get('code');
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          setIsValidToken(true);
+          setChecking(false);
+          // Clean up URL
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
       }
-    });
 
-    // Also check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+      // 2) Legacy implicit flow: tokens in URL hash
+      const hash = window.location.hash;
+      const hashParams = new URLSearchParams(hash.replace('#', ''));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (type === 'recovery' && accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        if (!error) {
+          setIsValidToken(true);
+          setChecking(false);
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
+      }
+
+      // 3) Listen for PASSWORD_RECOVERY event (email client may follow the link and trigger it)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsValidToken(true);
+          setChecking(false);
+        } else if (event === 'SIGNED_IN' && session) {
+          setIsValidToken(true);
+          setChecking(false);
+        } else if (event === 'SIGNED_OUT') {
+          navigate("/auth");
+        }
+      });
+      unsubscribe = () => subscription.unsubscribe();
+
+      // 4) Check if there's already a valid session
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsValidToken(true);
       }
       setChecking(false);
-    });
+    };
+
+    init();
 
     return () => {
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, [navigate]);
 
