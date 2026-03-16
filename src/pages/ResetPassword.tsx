@@ -133,13 +133,15 @@ const ResetPassword = () => {
           variant: "destructive",
         });
       } else {
+        setPasswordChanged(true);
+        // Clear local session immediately before showing toast to prevent
+        // auth listeners from redirecting to MFA verify screen
+        await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: "Heslo změněno",
           description: "Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.",
         });
-        // Use scope: 'local' to always clear local session even if server-side session expired
-        await supabase.auth.signOut({ scope: 'local' });
-        setTimeout(() => navigate("/auth"), 1500);
+        navigate("/auth");
       }
     } catch (error) {
       toast({
