@@ -4,12 +4,18 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -180,10 +186,6 @@ const Suppliers = () => {
     [searchText, filteredSuppliers.length, loading]
   );
 
-  const formatAddress = (s: Supplier) => {
-    const parts = [s.street, [s.postal_code, s.city].filter(Boolean).join(" "), s.country_name].filter(Boolean);
-    return parts.join(", ");
-  };
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
@@ -286,10 +288,7 @@ const Suppliers = () => {
                     <th className="text-left px-4 py-3 font-medium text-primary">Název dodavatele</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Adresa</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Web</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -304,28 +303,27 @@ const Suppliers = () => {
                           ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
                           : <span className="text-muted-foreground/40">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {supplier.phone
-                          ? <a href={`tel:${supplier.phone.replace(/\s/g, "")}`} className="hover:text-primary transition-colors">{supplier.phone}</a>
-                          : <span className="text-muted-foreground/40">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {formatAddress(supplier) || <span className="text-muted-foreground/40">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {supplier.website
-                          ? <a href={supplier.website.startsWith("http") ? supplier.website : `https://${supplier.website}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors truncate max-w-[140px] block">{supplier.website.replace(/^https?:\/\//, "")}</a>
-                          : <span className="text-muted-foreground/40">—</span>}
-                      </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(supplier)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(supplier.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(supplier)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Upravit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(supplier.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Smazat
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}
