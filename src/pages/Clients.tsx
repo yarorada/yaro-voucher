@@ -129,6 +129,49 @@ const Clients = () => {
     company_as_orderer: false,
   });
 
+  // Auto-save for editing existing client
+  useAutoSave({
+    data: editingClient && isDialogOpen ? formData : null,
+    saveFn: async (data) => {
+      if (!editingClient || !data) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        await supabase
+          .from("clients")
+          .update({
+            title: data.title || null,
+            first_name: data.first_name.trim(),
+            last_name: data.last_name.trim(),
+            email: data.email.trim() || null,
+            phone: data.phone.trim() || null,
+            address: data.address.trim() || null,
+            notes: data.notes.trim() || null,
+            date_of_birth: formatDateForDB(data.date_of_birth),
+            passport_number: data.passport_number.trim() || null,
+            passport_expiry: formatDateForDB(data.passport_expiry),
+            id_card_number: data.id_card_number.trim() || null,
+            id_card_expiry: formatDateForDB(data.id_card_expiry),
+            company_name: data.company_name.trim() || null,
+            ico: data.ico.trim() || null,
+            dic: data.dic.trim() || null,
+            company_as_orderer: data.company_as_orderer,
+          } as any)
+          .eq("id", editingClient.id);
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+        fetchClients();
+      } catch (e) {
+        console.error("Auto-save client error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: !!editingClient && isDialogOpen,
+  });
+
   useEffect(() => {
     fetchClients();
   }, [scope, user?.id]);
