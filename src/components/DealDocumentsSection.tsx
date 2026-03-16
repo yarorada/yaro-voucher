@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail, ChevronDown, User, Users, Building2, Plus, X } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Mail, User, Users, Building2, Plus, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
