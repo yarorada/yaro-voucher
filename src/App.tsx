@@ -360,6 +360,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </GlobalHistoryProvider>
   </QueryClientProvider>
 );
 
