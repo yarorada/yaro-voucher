@@ -37,7 +37,13 @@ const MfaSetup = () => {
       }
       
       // Check if user already has MFA enrolled
-      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) {
+        // Invalid session (e.g. recovery token) — sign out and redirect to login
+        await supabase.auth.signOut({ scope: 'local' });
+        navigate("/auth");
+        return;
+      }
       
       if (factors?.totp && factors.totp.length > 0) {
         const verifiedFactor = factors.totp.find(f => f.status === 'verified');
