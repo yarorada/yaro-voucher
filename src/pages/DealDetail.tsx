@@ -698,6 +698,8 @@ const DealDetail = () => {
   }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
+  // Track whether any changes were auto-saved — only offer sync if true
+  const dealChangedRef = useRef(false);
 
   const autoSaveData = deal ? {
     name: dealName,
@@ -740,6 +742,7 @@ const DealDetail = () => {
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
+        dealChangedRef.current = true;
       } catch (e) {
         console.error("Auto-save error:", e);
       } finally {
