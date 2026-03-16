@@ -110,6 +110,52 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
   // Auto-fetch AI data only when hotel has no data yet (first time creation)
   const hotelIsNew = !hotel.image_url && !hotel.review_score && !hotel.description && !hotel.subtitle;
 
+  // Auto-save on form changes (debounced, only when dialog is open)
+  useAutoSave({
+    data: open ? formData : null,
+    saveFn: async (data) => {
+      if (!data || !open) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        const { data: saved, error } = await supabase
+          .from("hotel_templates")
+          .update({
+            name: data.name.trim(),
+            slug: data.slug.trim() || null,
+            subtitle: data.subtitle.trim() || null,
+            nights: data.nights.trim() || null,
+            green_fees: data.green_fees.trim() || null,
+            price_label: data.price_label.trim() || null,
+            golf_courses: data.golf_courses.trim() || null,
+            golf_courses_data: data.golf_courses_data.length > 0 ? (data.golf_courses_data as any) : null,
+            website_url: data.website_url.trim() || null,
+            is_published: data.is_published,
+            destination_id: data.destination_id || null,
+            highlights: data.highlights.length > 0 ? data.highlights : null,
+            review_score: data.review_score ?? null,
+            star_category: data.star_category ?? null,
+          })
+          .eq("id", currentHotel.id)
+          .select()
+          .single();
+        if (!error && saved) {
+          setCurrentHotel(saved as HotelTemplate);
+          onSaved?.(saved as HotelTemplate);
+        }
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+      } catch (e) {
+        console.error("Auto-save hotel error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: open && !!currentHotel.id,
+  });
+
   useEffect(() => {
     if (open && hotel.id && hotelIsNew && autoFetchDone.current !== hotel.id) {
       autoFetchDone.current = hotel.id;
