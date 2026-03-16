@@ -299,36 +299,6 @@ const Contracts = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {/* Filters row */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative w-48 md:w-64">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 pr-7 h-8 text-xs"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-              <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
-                  <ArrowUpDown className="h-3 w-3 mr-1 text-muted-foreground" />
-                  <SelectValue placeholder="Řazení" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="number_desc">Číslo ↓</SelectItem>
-                  <SelectItem value="number_asc">Číslo ↑</SelectItem>
-                  <SelectItem value="departure_desc">Odjezd ↓</SelectItem>
-                  <SelectItem value="departure_asc">Odjezd ↑</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             {/* Status tabs */}
             <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
               {([
