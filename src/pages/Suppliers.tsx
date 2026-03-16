@@ -4,10 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit, MoreHorizontal } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
+import { checkSupplierDuplicates, DuplicateSupplier } from "@/lib/supplierDuplicates";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
@@ -22,7 +23,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BulkSupplierUpload } from "@/components/BulkSupplierUpload";
 import { SmartSearchInput } from "@/components/SmartSearchInput";
 
@@ -53,6 +56,20 @@ const emptyForm = {
   notes: "",
 };
 
+
+type SupplierPayload = {
+  name: string;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country_name: string | null;
+  website: string | null;
+  notes: string | null;
+};
+
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +77,10 @@ const Suppliers = () => {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [searchText, setSearchText] = useState("");
   const [formData, setFormData] = useState(emptyForm);
+  // Duplicate check state
+  const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
+  const [dupDialogOpen, setDupDialogOpen] = useState(false);
+  const [dupResults, setDupResults] = useState<{ duplicates: DuplicateSupplier[]; hasSameName: boolean; hasSameEmail: boolean; hasSamePhone: boolean } | null>(null);
 
   useEffect(() => { fetchSuppliers(); }, []);
 
@@ -84,6 +105,25 @@ const Suppliers = () => {
     }
   };
 
+  const saveSupplier = async (payload: SupplierPayload) => {
+    try {
+      if (editingSupplier) {
+        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        if (error) throw error;
+        toast.success("Dodavatel byl aktualizován");
+      } else {
+        const { error } = await supabase.from("suppliers").insert(payload);
+        if (error) throw error;
+        toast.success("Dodavatel byl přidán");
+      }
+      handleDialogClose();
+      fetchSuppliers();
+    } catch (error: any) {
+      if (error.code === "23505") toast.error("Dodavatel s tímto názvem již existuje");
+      else toast.error("Chyba při ukládání dodavatele");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) { toast.error("Název dodavatele je povinný"); return; }
@@ -101,21 +141,21 @@ const Suppliers = () => {
       notes: formData.notes.trim() || null,
     };
 
-    try {
-      if (editingSupplier) {
-        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
-        if (error) throw error;
-        toast.success("Dodavatel byl aktualizován");
-      } else {
-        const { error } = await supabase.from("suppliers").insert(payload);
-        if (error) throw error;
-        toast.success("Dodavatel byl přidán");
-      }
-      handleDialogClose();
-      fetchSuppliers();
-    } catch (error: any) {
-      if (error.code === "23505") toast.error("Dodavatel s tímto názvem již existuje");
-      else toast.error("Chyba při ukládání dodavatele");
+    // Skip duplicate check when editing
+    if (editingSupplier) { await saveSupplier(payload); return; }
+
+    const result = await checkSupplierDuplicates(
+      formData.name,
+      formData.email,
+      formData.phone,
+    );
+
+    if (result.duplicates.length > 0) {
+      setPendingPayload(payload);
+      setDupResults(result);
+      setDupDialogOpen(true);
+    } else {
+      await saveSupplier(payload);
     }
   };
 
@@ -263,6 +303,61 @@ const Suppliers = () => {
                 <Button type="submit">{editingSupplier ? "Uložit" : "Přidat"}</Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Duplicate warning dialog */}
+        <Dialog open={dupDialogOpen} onOpenChange={setDupDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Možná duplicita dodavatele
+              </DialogTitle>
+              <DialogDescription>
+                V databázi existují podobní dodavatelé. Chcete přesto přidat nového?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              {dupResults && (
+                <Alert className="border-amber-200/50 bg-amber-50/50 dark:bg-amber-950/20">
+                  <AlertDescription className="text-sm space-y-0.5">
+                    {dupResults.hasSameName && <div>• Stejný název</div>}
+                    {dupResults.hasSameEmail && <div>• Stejný e-mail</div>}
+                    {dupResults.hasSamePhone && <div>• Stejný telefon</div>}
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                {dupResults?.duplicates.map((d) => (
+                  <Card key={d.id} className="p-3">
+                    <div className="font-medium text-sm">{d.name}</div>
+                    <div className="text-xs text-muted-foreground space-x-3">
+                      {d.email && <span>{d.email}</span>}
+                      {d.phone && <span>{d.phone}</span>}
+                      {d.city && <span>{d.city}</span>}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDupDialogOpen(false)}>
+                Zpět k úpravám
+              </Button>
+              <Button
+                variant="default"
+                onClick={async () => {
+                  if (pendingPayload) {
+                    setDupDialogOpen(false);
+                    await saveSupplier(pendingPayload);
+                    setPendingPayload(null);
+                  }
+                }}
+              >
+                Přesto přidat
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
