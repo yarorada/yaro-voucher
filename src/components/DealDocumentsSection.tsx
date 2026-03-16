@@ -1233,42 +1233,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs gap-1"
-                        disabled={sendingVoucherId === v.id}
-                      >
-                        {sendingVoucherId === v.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Mail className="h-3 w-3" />
-                        )}
-                        {v.sent_at ? "Znovu" : "Odeslat"}
-                        <ChevronDown className="h-3 w-3 ml-0.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem onClick={() => handleSendVoucher(v, "client")}>
-                        <User className="h-4 w-4 mr-2" />
-                        Odeslat klientovi
-                      </DropdownMenuItem>
-                      {v.suppliers?.email && (
-                        <DropdownMenuItem onClick={() => handleSendVoucher(v, "both")}>
-                          <Users className="h-4 w-4 mr-2" />
-                          Odeslat klientovi a dodavateli
-                        </DropdownMenuItem>
-                      )}
-                      {v.suppliers?.email && (
-                        <DropdownMenuItem onClick={() => handleSendVoucher(v, "supplier")}>
-                          <Building2 className="h-4 w-4 mr-2" />
-                          Odeslat pouze dodavateli
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                   <Button
                     size="icon"
                     variant="ghost"
