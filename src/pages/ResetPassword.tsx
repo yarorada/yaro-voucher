@@ -134,14 +134,17 @@ const ResetPassword = () => {
         });
       } else {
         setPasswordChanged(true);
-        // Clear local session immediately before showing toast to prevent
-        // auth listeners from redirecting to MFA verify screen
+        // Clear local session first
         await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: "Heslo změněno",
           description: "Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.",
         });
-        navigate("/auth");
+        // Hard redirect to completely reset all JS/Supabase client state
+        // so no stale recovery session can trigger MFA screen
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 1500);
       }
     } catch (error) {
       toast({
