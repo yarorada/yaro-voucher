@@ -756,6 +756,18 @@ const DealDetail = () => {
     enabled: !!deal && !loading,
   });
 
+  // Block navigation and offer contract/voucher sync
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    return !!deal && !loading && currentLocation.pathname !== nextLocation.pathname;
+  });
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      blockerProceedRef.current = blocker.proceed;
+      setLeaveConfirmOpen(true);
+    }
+  }, [blocker.state]);
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
