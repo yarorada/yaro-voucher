@@ -306,6 +306,61 @@ const Suppliers = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Duplicate warning dialog */}
+        <Dialog open={dupDialogOpen} onOpenChange={setDupDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Možná duplicita dodavatele
+              </DialogTitle>
+              <DialogDescription>
+                V databázi existují podobní dodavatelé. Chcete přesto přidat nového?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              {dupResults && (
+                <Alert variant="default" className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                  <AlertDescription className="text-sm space-y-0.5">
+                    {dupResults.hasSameName && <div>• Stejný název</div>}
+                    {dupResults.hasSameEmail && <div>• Stejný e-mail</div>}
+                    {dupResults.hasSamePhone && <div>• Stejný telefon</div>}
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                {dupResults?.duplicates.map((d) => (
+                  <Card key={d.id} className="p-3">
+                    <div className="font-medium text-sm">{d.name}</div>
+                    <div className="text-xs text-muted-foreground space-x-3">
+                      {d.email && <span>{d.email}</span>}
+                      {d.phone && <span>{d.phone}</span>}
+                      {d.city && <span>{d.city}</span>}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDupDialogOpen(false)}>
+                Zpět k úpravám
+              </Button>
+              <Button
+                variant="default"
+                onClick={async () => {
+                  if (pendingPayload) {
+                    setDupDialogOpen(false);
+                    await saveSupplier(pendingPayload);
+                    setPendingPayload(null);
+                  }
+                }}
+              >
+                Přesto přidat
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám dodavatele...</p>
