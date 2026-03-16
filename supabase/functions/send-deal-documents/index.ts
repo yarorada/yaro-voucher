@@ -8,7 +8,8 @@ const corsHeaders = {
 
 interface SendRequest {
   dealId: string;
-  clientEmail: string;
+  recipientEmail?: string;
+  clientEmail?: string; // legacy alias
   clientName: string;
   emailBody: string;
   emailSubject: string;
@@ -73,15 +74,16 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { dealId, clientEmail, clientName, emailBody, emailSubject, ccEmails, documentIds, inlineAttachments }: SendRequest = await req.json();
+    const { dealId, recipientEmail: reqRecipientEmail, clientEmail: reqClientEmail, clientName, emailBody, emailSubject, ccEmails, documentIds, inlineAttachments }: SendRequest = await req.json();
+    const recipientEmail = reqRecipientEmail || reqClientEmail;
 
-    if (!dealId || !clientEmail) {
-      return new Response(JSON.stringify({ error: "Missing dealId or clientEmail" }), {
+    if (!dealId || !recipientEmail) {
+      return new Response(JSON.stringify({ error: "Missing dealId or recipient email" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Sending deal documents for deal:", dealId, "to:", clientEmail);
+    console.log("Sending deal documents for deal:", dealId, "to:", recipientEmail);
 
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -161,11 +163,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const bccList = ["zajezdy@yarotravel.cz"];
-    const ccList = (ccEmails || []).filter((e) => e && e !== clientEmail);
+    const ccList = (ccEmails || []).filter((e) => e && e !== recipientEmail);
 
     const emailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
-      to: [clientEmail],
+      to: [recipientEmail],
       bcc: bccList,
       subject: finalSubject,
       text: finalBody,
@@ -184,14 +186,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "failed" });
+      await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: recipientEmail, status: "failed" });
       return new Response(JSON.stringify({ error: "Failed to send email", details: errorData }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const result = await response.json();
-    await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "sent" });
+    await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: recipientEmail, status: "sent" });
 
     return new Response(JSON.stringify({
       success: true, emailId: result.id, attachmentCount: attachments.length,
