@@ -552,7 +552,6 @@ const Deals = () => {
                     displayDesc = deal.name.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim();
                   }
                 }
-                }
 
                 const getBaseNumber = (dn: string) => {
                   const match = dn.match(/^D-\d{6}/);
