@@ -2668,10 +2668,6 @@ const DealDetail = () => {
   usePageToolbar(
     deal ? (
       <>
-        <Button variant="outline" size="sm" onClick={() => handleSaveRef.current?.()} disabled={saving} className={toolbarButtonClass}>
-          <Save className="h-4 w-4" />
-          <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
-        </Button>
         <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
           <DialogTrigger asChild>
             <Button 
