@@ -698,6 +698,8 @@ const DealDetail = () => {
   }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
+  // Track whether any changes were auto-saved — only offer sync if true
+  const dealChangedRef = useRef(false);
 
   const autoSaveData = deal ? {
     name: dealName,
@@ -740,6 +742,7 @@ const DealDetail = () => {
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
+        dealChangedRef.current = true;
       } catch (e) {
         console.error("Auto-save error:", e);
       } finally {
@@ -763,7 +766,13 @@ const DealDetail = () => {
     const originalPushState = window.history.pushState.bind(window.history);
 
     window.history.pushState = (state: unknown, title: string, url?: string | URL | null) => {
-      // Store the deferred navigation and show confirm dialog
+      if (!dealChangedRef.current) {
+        // No changes were made — navigate silently
+        window.history.pushState = originalPushState;
+        originalPushState(state, title, url);
+        return;
+      }
+      // Changes detected — intercept and show sync dialog
       blockerProceedRef.current = () => {
         window.history.pushState = originalPushState;
         originalPushState(state, title, url);
