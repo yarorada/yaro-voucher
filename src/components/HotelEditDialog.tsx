@@ -72,6 +72,8 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
   const [fetchingAll, setFetchingAll] = useState(false);
   const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [currentHotel, setCurrentHotel] = useState<HotelTemplate>(hotel);
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [aiSuggestion, setAiSuggestion] = useState<{
     destination: string;
     country: string;
