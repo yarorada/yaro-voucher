@@ -2711,15 +2711,25 @@ const DealDetail = () => {
               ) : (
                 <>
                   <span className="font-bold text-heading-1 text-foreground">
-                    {deal.deal_number}
+                    {deal.deal_number.match(/^D-\d{6}/)?.[0] || deal.deal_number}
                   </span>
                   {(() => {
-                    const descPart = dealName
-                      ? dealName.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim()
-                      : (deal.destination?.name || "");
-                    return descPart ? (
-                      <span className="text-foreground">{descPart}</span>
-                    ) : null;
+                    // Always compute description from live data for correct bullets and correct client
+                    const sortedT = [...(deal.deal_travelers || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+                    const orderer = (deal.deal_travelers || []).find(t => t.is_lead_traveler) || sortedT[0];
+                    const primaryName = orderer?.clients ? `${orderer.clients.first_name} ${orderer.clients.last_name}` : "";
+                    const iso = (deal as any).destination?.countries?.iso_code || (deal as any).destinations?.countries?.iso_code || "";
+                    const hotel = (deal.deal_services || []).find((s: any) => s.service_type === "hotel");
+                    const parts: string[] = [];
+                    if (primaryName) parts.push(primaryName);
+                    if (iso) parts.push(iso);
+                    if (hotel?.service_name) parts.push(hotel.service_name);
+                    if (deal.start_date) {
+                      const d = new Date(deal.start_date + "T00:00:00");
+                      parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+                    }
+                    const desc = parts.join(" • ");
+                    return desc ? <span className="text-foreground">{desc}</span> : null;
                   })()}
                   <Button
                     variant="ghost"
