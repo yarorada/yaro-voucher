@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download } from "lucide-react";
+import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, BookOpen } from "lucide-react";
 import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
@@ -402,7 +402,6 @@ const DealDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [deal, setDeal] = useState<Deal | null>(null);
   const [services, setServices] = useState<DealService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
@@ -622,7 +621,6 @@ const DealDetail = () => {
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
-  const handleSaveRef = useRef<() => Promise<void>>();
   const [status, setStatus] = useState<"inquiry" | "quote" | "approved" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -671,7 +669,7 @@ const DealDetail = () => {
   }, [deal, dealName, status, destinationId, startDate, endDate, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const silentSave = useCallback(async () => {
-    if (!deal || saving) return;
+    if (!deal) return;
     try {
       await supabase
         .from("deals")
@@ -695,7 +693,7 @@ const DealDetail = () => {
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
-  }, [deal, saving, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
   // Track whether the user actually changed any deal field (compared to loaded state)
@@ -726,7 +724,7 @@ const DealDetail = () => {
   const { isSaving: isAutoSaving } = useAutoSave({
     data: autoSaveData,
     saveFn: async () => {
-      if (!deal || saving || !autoSaveData) return;
+      if (!deal || !autoSaveData) return;
       setIsSaving(true);
       try {
         await supabase
@@ -2141,168 +2139,6 @@ const DealDetail = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!deal) return;
-
-    setSaving(true);
-    try {
-      // Build auto-generated deal name
-      // Format: D-RRNNNN [první cestující] ISO Hotel DD-MM-YY (objednatel)
-      const baseNumber = deal.deal_number.match(/^D-\d{6}/)?.[0] || "";
-      let autoName = baseNumber;
-
-      // First traveler (lowest order_index)
-      const sortedTravelers = [...deal.deal_travelers].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-      const firstTraveler = sortedTravelers[0];
-
-      // Find orderer: prefer traveler with is_lead_traveler, fallback to leadTravelerId
-      const ordererFromTravelers = deal.deal_travelers.find(t => t.is_lead_traveler)
-        || deal.deal_travelers.find(t => t.client_id === leadTravelerId);
-
-      // If orderer is not among travelers, fetch their name from clients table
-      let ordererName: string | null = null;
-      if (ordererFromTravelers?.clients) {
-        ordererName = `${ordererFromTravelers.clients.first_name} ${ordererFromTravelers.clients.last_name}`;
-      } else if (leadTravelerId && !leadTravelerIsFirstPassenger) {
-        const { data: ordererClient } = await supabase
-          .from("clients")
-          .select("first_name, last_name")
-          .eq("id", leadTravelerId)
-          .single();
-        if (ordererClient) {
-          ordererName = `${ordererClient.first_name} ${ordererClient.last_name}`;
-        }
-      }
-
-      // First traveler name right after base number
-      if (firstTraveler?.clients) {
-        autoName += ` ${firstTraveler.clients.first_name} ${firstTraveler.clients.last_name}`;
-      }
-
-      // Country code from destination
-      if (destinationId) {
-        const { data: destData } = await supabase
-          .from("destinations")
-          .select("country_id, countries(iso_code)")
-          .eq("id", destinationId)
-          .single();
-        if (destData?.countries) {
-          const cc = (destData.countries as any).iso_code;
-          if (cc) autoName += ` • ${cc}`;
-        }
-      }
-
-      // Hotel name from services
-      const hotelService = services.find(s => s.service_type === "hotel");
-      if (hotelService?.service_name) {
-        autoName += ` • ${hotelService.service_name}`;
-      }
-
-      // Start date in DD-MM-YY format
-      if (startDate) {
-        autoName += ` • ${format(startDate, "dd-MM-yy")}`;
-      }
-
-      // Orderer in parentheses after date (only if different from first traveler)
-      const ordererClientId = ordererFromTravelers?.client_id || leadTravelerId;
-      const firstTravelerClientId = firstTraveler?.client_id;
-      if (ordererName && ordererClientId !== firstTravelerClientId) {
-        autoName += ` (${ordererName})`;
-      }
-
-      const finalName = autoName.trim() || dealName || null;
-      setDealName(finalName || "");
-
-      // Update deal
-      const { error: dealError } = await supabase
-        .from("deals")
-        .update({
-          name: finalName,
-          status,
-          destination_id: destinationId || null,
-          start_date: formatDateForDB(startDate),
-          end_date: formatDateForDB(endDate),
-          total_price: totalPrice ? parseFloat(totalPrice) : null,
-          deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
-          deposit_paid: depositPaid,
-          notes: notes || null,
-          discount_amount: discountAmount ? parseFloat(discountAmount) : 0,
-          adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
-          discount_note: discountNote || null,
-          adjustment_note: adjustmentNote || null,
-          lead_client_id: leadTravelerId || null,
-        } as any)
-        .eq("id", deal.id);
-
-      if (dealError) throw dealError;
-
-      // Update lead traveler if changed
-      if (leadTravelerId) {
-        // Remove old lead traveler status from ALL travelers
-        await supabase
-          .from("deal_travelers")
-          .update({ is_lead_traveler: false })
-          .eq("deal_id", deal.id);
-
-        // Check if lead traveler already exists in travelers list
-        const { data: existingTraveler } = await supabase
-          .from("deal_travelers")
-          .select()
-          .eq("deal_id", deal.id)
-          .eq("client_id", leadTravelerId)
-          .maybeSingle();
-
-        if (leadTravelerIsFirstPassenger) {
-          // Add or update as lead traveler in the list
-          if (existingTraveler) {
-            await supabase
-              .from("deal_travelers")
-              .update({ is_lead_traveler: true })
-              .eq("deal_id", deal.id)
-              .eq("client_id", leadTravelerId);
-          } else {
-            await supabase
-              .from("deal_travelers")
-              .insert({
-                deal_id: deal.id,
-                client_id: leadTravelerId,
-                is_lead_traveler: true,
-                order_index: 0,
-              });
-          }
-        } else {
-          // Not a traveler – remove from list if present
-          if (existingTraveler) {
-            await supabase
-              .from("deal_travelers")
-              .delete()
-              .eq("deal_id", deal.id)
-              .eq("client_id", leadTravelerId);
-          }
-        }
-      }
-
-      toast({
-        title: "Úspěch",
-        description: "Obchodní případ byl aktualizován",
-      });
-
-      fetchDeal();
-      
-      // Check for linked contracts and offer sync
-      await checkAndOfferContractSync();
-    } catch (error) {
-      console.error("Error updating deal:", error);
-      toast({
-        title: "Chyba",
-        description: "Nepodařilo se aktualizovat obchodní případ",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const checkAndOfferVoucherSync = async () => {
     if (!deal) return;
     try {
@@ -2352,9 +2188,6 @@ const DealDetail = () => {
       setVoucherSyncDialogOpen(false);
     }
   };
-
-  // Keep ref updated so toolbar always calls latest version
-  handleSaveRef.current = handleSave;
 
   const checkAndOfferContractSync = async () => {
     if (!deal) return;
@@ -2668,10 +2501,6 @@ const DealDetail = () => {
   usePageToolbar(
     deal ? (
       <>
-        <Button variant="outline" size="sm" onClick={() => handleSaveRef.current?.()} disabled={saving} className={toolbarButtonClass}>
-          <Save className="h-4 w-4" />
-          <span className="hidden sm:inline">{saving ? "Ukládám..." : "Uložit"}</span>
-        </Button>
         <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
           <DialogTrigger asChild>
             <Button 
@@ -2745,7 +2574,7 @@ const DealDetail = () => {
         </Button>
       </>
     ) : null,
-    [deal, saving, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants]
+    [deal, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants]
   );
 
   if (loading) {
@@ -3241,7 +3070,6 @@ const DealDetail = () => {
                         </Button>
                         {lastDraftSave && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            <Save className="h-3 w-3 inline mr-1" />
                             uloženo
                           </span>
                         )}
