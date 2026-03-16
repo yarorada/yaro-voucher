@@ -748,7 +748,6 @@ const DealDetail = () => {
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
-        dealChangedRef.current = true;
       } catch (e) {
         console.error("Auto-save error:", e);
       } finally {
