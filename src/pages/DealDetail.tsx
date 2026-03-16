@@ -3949,6 +3949,52 @@ const DealDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Leave-page sync confirmation dialog */}
+      <AlertDialog open={leaveConfirmOpen} onOpenChange={(open) => {
+        if (!open) {
+          setLeaveConfirmOpen(false);
+          if (blocker.state === "blocked") blocker.reset?.();
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Aktualizovat smlouvy a vouchery?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Přejete si přenést změny z tohoto obchodního případu do propojených smluv a voucherů před odchodem?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setLeaveConfirmOpen(false);
+              if (blocker.state === "blocked") blocker.reset?.();
+            }}>
+              Zůstat
+            </AlertDialogCancel>
+            <Button variant="outline" onClick={() => {
+              setLeaveConfirmOpen(false);
+              const proceed = blockerProceedRef.current;
+              blockerProceedRef.current = null;
+              proceed?.();
+            }}>
+              Odejít bez aktualizace
+            </Button>
+            <AlertDialogAction onClick={async () => {
+              setLeaveConfirmOpen(false);
+              const proceed = blockerProceedRef.current;
+              blockerProceedRef.current = null;
+              await checkAndOfferContractSync();
+              await checkAndOfferVoucherSync();
+              proceed?.();
+            }}>
+              Aktualizovat a odejít
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
