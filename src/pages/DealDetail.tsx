@@ -433,6 +433,9 @@ const DealDetail = () => {
   const [linkedVouchers, setLinkedVouchers] = useState<Array<{ id: string; voucher_code: string; client_name: string }>>([]);
   const [syncingVoucher, setSyncingVoucher] = useState(false);
   const [pendingVoucherSync, setPendingVoucherSync] = useState<Array<{ id: string; voucher_code: string; client_name: string }> | null>(null);
+  // Leave-page sync dialog state
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const blockerProceedRef = useRef<(() => void) | null>(null);
   
   // Service form state
   // Room type definition for hotel services
