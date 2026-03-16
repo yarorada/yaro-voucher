@@ -43,8 +43,8 @@ const Auth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Don't redirect if this is a password recovery flow
-      if (session && event !== 'PASSWORD_RECOVERY') {
+      // Don't redirect if this is a password recovery flow or if we just signed out
+      if (session && event !== 'PASSWORD_RECOVERY' && event !== 'SIGNED_OUT') {
         navigate("/");
       }
     });

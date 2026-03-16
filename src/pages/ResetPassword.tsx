@@ -23,6 +23,7 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [passwordChanged, setPasswordChanged] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,9 +70,8 @@ const ResetPassword = () => {
         } else if (event === 'SIGNED_IN' && session) {
           setIsValidToken(true);
           setChecking(false);
-        } else if (event === 'SIGNED_OUT') {
-          navigate("/auth");
         }
+        // Do NOT redirect on SIGNED_OUT — we handle navigation manually after password change
       });
       unsubscribe = () => subscription.unsubscribe();
 
@@ -133,13 +133,15 @@ const ResetPassword = () => {
           variant: "destructive",
         });
       } else {
+        setPasswordChanged(true);
+        // Clear local session immediately before showing toast to prevent
+        // auth listeners from redirecting to MFA verify screen
+        await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: "Heslo změněno",
           description: "Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.",
         });
-        // Use scope: 'local' to always clear local session even if server-side session expired
-        await supabase.auth.signOut({ scope: 'local' });
-        setTimeout(() => navigate("/auth"), 1500);
+        navigate("/auth");
       }
     } catch (error) {
       toast({
