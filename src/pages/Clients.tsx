@@ -107,6 +107,8 @@ const Clients = () => {
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [searchText, setSearchText] = useState("");
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
 
   const [formData, setFormData] = useState({
     title: "",
