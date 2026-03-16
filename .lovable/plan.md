@@ -1,102 +1,143 @@
 
-# Plán: Správa úrovní přístupu a přepínač rozsahu dat
+## Analýza rozsahu
 
-## Co bude přidáno
+Systém má dva typy formulářů, které je potřeba pokrýt:
 
-### 1. Přepínač "Rozsah dat" per uživatel
-Každý uživatel bude mít nové nastavení:
-- **Všechna data** — vidí záznamy všech kolegů (výchozí pro Admin a "Bez role")
-- **Pouze vlastní data** — vidí pouze záznamy, které sám vložil (výchozí pro Prodejce)
+**A) Detail stránky (inline editing) – data existují v DB, jsou editována na stránce:**
+- `DealDetail.tsx` – hlavní pole dealu (status, destination, dates, notes, discount…) – **ALREADY HAS** `silentSave` + `useAutoSaveOnLeave`, ale ukládá jen při opuštění stránky, NE průběžně
+- `ContractDetail.tsx` – upravuje se přes `EditContractDialog`
+- `VoucherDetail.tsx` – existující voucher
 
-Toto nastavení bude uloženo v nové tabulce `user_data_scope` a správce ho může u každého uživatele přepnout v rozhraní `/admin/roles`.
-
-### 2. Rozšíření sekce oprávnění v UI
-V rozbalitelné části každého uživatele přibude nová vizuální sekce **"Rozsah přístupu k datům"** s přepínačem, oddělenou od přepínačů sekcí.
-
-### 3. Vynucení rozsahu dat v kódu (hook)
-Nový hook `useDataScope` vrátí aktuálnímu přihlášenému uživateli jeho nastavení (`own` nebo `all`). Tento hook bude použit na místech, kde se data filtrují — primárně v komponentách se seznamy (Deals, Clients, Vouchers, Contracts).
-
----
-
-## Technické změny
-
-### Databáze (migrace)
-Nová tabulka `user_data_scope`:
-```sql
-CREATE TABLE public.user_data_scope (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  scope text NOT NULL DEFAULT 'all', -- 'all' | 'own'
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id)
-);
-
-ALTER TABLE public.user_data_scope ENABLE ROW LEVEL SECURITY;
-
--- Admins can manage all
-CREATE POLICY "Admins can manage data scope"
-  ON public.user_data_scope FOR ALL
-  USING (has_role(auth.uid(), 'admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-
--- Users can read own scope
-CREATE POLICY "Users can view own scope"
-  ON public.user_data_scope FOR SELECT
-  USING (auth.uid() = user_id);
-```
-
-### Nový hook: `src/hooks/useDataScope.tsx`
-- Načte záznam z `user_data_scope` pro aktuálního uživatele
-- Vrátí `scope: 'all' | 'own'`
-- Prodejce bez záznamu = defaultně `'own'`, ostatní = `'all'`
-
-### Rozšíření `useUserPermissionsForUser`
-- Přidání metod `getDataScope()` a `setDataScope(scope)` pro admin UI
-
-### Úprava `src/pages/AdminRoles.tsx`
-V rozbalitelné části každého uživatele přibude sekce:
-
-```
-┌─────────────────────────────────────────────┐
-│ Rozsah přístupu k datům                     │
-│                                             │
-│ ○ Všechna data   ● Pouze vlastní data       │
-│                                             │
-│ [popis aktuálního nastavení]                │
-└─────────────────────────────────────────────┘
-```
-
-### Vynucení v seznamech dat
-Hook `useDataScope` bude použit na těchto stránkách:
-- `src/pages/Deals.tsx` — filtr deals
-- `src/pages/Clients.tsx` — filtr klientů
-- `src/pages/VouchersList.tsx` — filtr voucherů
-- `src/pages/Contracts.tsx` — filtr smluv
-
-Když `scope === 'own'`, do Supabase dotazů bude přidán filtr `.eq('user_id', user.id)`. Když `scope === 'all'`, filtr se neaplikuje.
+**B) Dialogy (Create/Edit) – formulář v modálním okně:**
+- `Clients.tsx` – dialog pro přidání/edit klienta (manual submit)
+- `Suppliers.tsx` – dialog pro přidání/edit dodavatele (manual submit)
+- `Hotels.tsx` + `HotelEditDialog.tsx` – dialog pro edit hotelu (manual submit)
+- `Destinations.tsx` – dialog pro destinace (manual submit)
+- `DealDetail.tsx` – dialog pro přidání služby (manual submit)
+- `VoucherForm.tsx` – formulář pro voucher (manual submit)
+- `CreateDeal.tsx`, `CreateContract.tsx` – nové záznamy
 
 ---
 
-## Výchozí hodnoty dle role
+## Realistické hodnocení požadavku
 
-| Role | Výchozí rozsah dat |
-|------|-------------------|
-| admin | Všechna data |
-| prodejce | Pouze vlastní data |
-| bez role | Všechna data |
+Požadavek „automatické uložení ÚPLNĚ VŠEHO" je technicky velice komplexní a musím být upřímný v tom, co je proveditelné:
 
-Pokud v tabulce `user_data_scope` není záznam pro daného uživatele, aplikuje se výchozí hodnota dle role.
+**Hlavní problém**: Dialogy pro vytváření NOVÝCH záznamů (nový klient, nový dodavatel) nemohou průběžně ukládat do DB, protože záznam ještě neexistuje – musel by se vytvořit „prázdný draft" při každém otevření formuláře, což by způsobovalo znečištění dat.
+
+**Co je proveditelné a smysluplné:**
+
+### 1. Existující záznamy → auto-save při každé změně (debounced)
+Pole na detail stránkách se uloží automaticky 1–2 sekundy po poslední změně. V hlavičce se zobrazí indikátor „Ukládání..." / „Uloženo".
+
+### 2. Dialogy pro EDIT existujících záznamů → auto-save
+Klient/Dodavatel/Hotel – když editujeme EXISTUJÍCÍ záznam v dialogu, každá změna se po debounce (1s) uloží. Tlačítko „Uložit" se změní na indikátor stavu.
+
+### 3. Dialogy pro NOVÉ záznamy → draft v localStorage + auto-uložení při submit
+Nový klient/dodavatel/hotel se uloží při „potvrzení" (submit) – ale draft se průběžně ukládá do localStorage, aby se formulář neztratil při náhodném zavření.
+
+### 4. Globální undo/redo v menu
+Pro detailové stránky (DealDetail) – kde probíhá inline editing – přidáme globální Undo/Redo tlačítka do header toolbar. Pro dialogy (client/supplier/hotel) bude Ctrl+Z/Ctrl+Y fungovat lokálně uvnitř dialogu.
 
 ---
 
-## Souhrn souborů ke změně / vytvoření
+## Plán implementace
 
-- `supabase/migrations/...` — nová tabulka `user_data_scope`
-- `src/hooks/useDataScope.tsx` — nový hook
-- `src/hooks/useUserPermissions.tsx` — rozšíření `useUserPermissionsForUser` o data scope
-- `src/pages/AdminRoles.tsx` — UI přepínač rozsahu dat
-- `src/pages/Deals.tsx` — aplikace data scope filtru
-- `src/pages/Clients.tsx` — aplikace data scope filtru
-- `src/pages/VouchersList.tsx` — aplikace data scope filtru
-- `src/pages/Contracts.tsx` — aplikace data scope filtru
+### Fáze 1: Nový hook `useAutoSave`
+
+Nový soubor `src/hooks/useAutoSave.ts`:
+
+```text
+useAutoSave<T>({
+  data: T,                    // sledovaná data
+  saveFn: (data: T) => Promise<void>,  // funkce ukládání
+  debounceMs: number,         // debounce (default 1000ms)
+  enabled: boolean,           // zapnout/vypnout
+  onSaveStart?: () => void,
+  onSaveEnd?: () => void,
+})
+→ { isSaving, lastSaved }
+```
+
+### Fáze 2: Globální stavová indikace v headeru
+
+V `App.tsx` / `LayoutHeader` přidat:
+- Malý indikátor „Ukládám..." (spinner + text) / „Uloženo ✓" (check + čas)
+- Undo/Redo tlačítka – propojené přes nový `AutoSaveContext`
+
+### Fáze 3: DealDetail – průběžné auto-save
+
+Aktuálně má `silentSave` + `useAutoSaveOnLeave` (ukládá jen při opuštění).
+
+Změna: Přidat `useAutoSave` hook, který sleduje všechna hlavní pole a uloží po 1.5s nečinnosti. **Odebrat** tlačítko `Save` z toolbar (nebo ho přejmenovat na vizuální indikátor).
+
+### Fáze 4: Clients, Suppliers dialogy
+
+**EDIT existujícího záznamu:**
+- Při `formData` change → debounce 1.5s → uložit do DB bez zavření dialogu
+- Tlačítko „Uložit" → nahradit textem „Uloženo" s ikonou check
+
+**NOVÝ záznam:**
+- Zachovat submit button (musíme potvrdit akci)
+- Přidat draft recovery z localStorage
+
+### Fáze 5: Hotel edit dialog
+
+Stejný princip jako Clients/Suppliers edit – průběžné auto-save pro editaci.
+
+### Fáze 6: Undo/redo v header toolbaru
+
+`src/hooks/useAutoSaveContext.tsx` (nový globální context):
+```text
+- undoStack: snapshot[] (max 30 snapshotů)
+- redo stack
+- pushSnapshot(label, revertFn)  ← volá se PŘED každou akcí
+- undo() / redo()
+```
+
+Tlačítka Undo/Redo v `LayoutHeader` (viditelná vždy).
+
+---
+
+## Přehled souborů ke změně
+
+| Soubor | Změna |
+|---|---|
+| `src/hooks/useAutoSave.ts` | NOVÝ – debounced auto-save hook |
+| `src/hooks/useGlobalHistory.tsx` | NOVÝ – globální undo/redo context |
+| `src/App.tsx` | Přidat undo/redo tlačítka do LayoutHeader |
+| `src/pages/DealDetail.tsx` | Nahradit auto-save on leave → průběžný auto-save, integrovat undo/redo |
+| `src/pages/Clients.tsx` | Auto-save při editaci existujícího klienta |
+| `src/pages/Suppliers.tsx` | Auto-save při editaci existujícího dodavatele |
+| `src/components/HotelEditDialog.tsx` | Auto-save při editaci hotelu |
+
+---
+
+## Undo/redo – realistický scope
+
+**Co lze globálně undovat:**
+- Změna pole v DealDetail (status, dates, notes…)
+- Smazání služby z dealu
+- Smazání cestujícího z dealu
+
+**Co nelze snadno globálně undovat** (příliš komplexní revert logic):
+- Vytvoření nového klienta/dodavatele (to by znamenalo smazání záznamu)
+- Změny v dialogu klienta (zachováme lokální Ctrl+Z v textovém poli)
+
+**UI undo/redo v headeru:**
+```text
+[← Zpět]  [Vpřed →]  Uloženo 14:23
+```
+Tlačítka jsou aktivní pouze tehdy, kdy je dostupná odpovídající history.
+
+---
+
+## Shrnutí přístupu
+
+- **DealDetail** – průběžný auto-save každé pole po 1.5s, globální undo/redo v header
+- **Klienti (edit)** – auto-save při editaci, zachovat submit pro nové
+- **Dodavatelé (edit)** – auto-save při editaci, zachovat submit pro nové
+- **Hotely (edit)** – auto-save při editaci hotelu
+- **Vouchery** – zachovat současný flow (komplexní, mnoho vazeb)
+- **Destinace** – jednoduché pole, průběžné uložení při editaci
+- Žádné nové záznamy se neukládají automaticky bez potvrzení (bezpečné chování)
