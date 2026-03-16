@@ -91,7 +91,7 @@ const Suppliers = () => {
     }
   };
 
-  const saveSupplier = async (payload: Record<string, any>) => {
+  const saveSupplier = async (payload: typeof emptyForm & { contact_person?: string | null; email?: string | null; phone?: string | null; street?: string | null; postal_code?: string | null; city?: string | null; country_name?: string | null; website?: string | null; notes?: string | null }) => {
     try {
       if (editingSupplier) {
         const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
