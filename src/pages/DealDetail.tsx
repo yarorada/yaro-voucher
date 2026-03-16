@@ -2189,9 +2189,6 @@ const DealDetail = () => {
     }
   };
 
-  // Keep ref updated so toolbar always calls latest version
-  handleSaveRef.current = handleSave;
-
   const checkAndOfferContractSync = async () => {
     if (!deal) return;
     try {
