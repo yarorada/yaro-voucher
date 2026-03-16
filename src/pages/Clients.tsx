@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,9 @@ import { BulkClientUpload } from "@/components/BulkClientUpload";
 import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
 import { DiacriticsChecker } from "@/components/DiacriticsChecker";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
+import { Check, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
