@@ -63,6 +63,10 @@ const Suppliers = () => {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [searchText, setSearchText] = useState("");
   const [formData, setFormData] = useState(emptyForm);
+  // Duplicate check state
+  const [pendingPayload, setPendingPayload] = useState<Record<string, any> | null>(null);
+  const [dupDialogOpen, setDupDialogOpen] = useState(false);
+  const [dupResults, setDupResults] = useState<{ duplicates: DuplicateSupplier[]; hasSameName: boolean; hasSameEmail: boolean; hasSamePhone: boolean } | null>(null);
 
   useEffect(() => { fetchSuppliers(); }, []);
 
@@ -87,6 +91,25 @@ const Suppliers = () => {
     }
   };
 
+  const saveSupplier = async (payload: Record<string, any>) => {
+    try {
+      if (editingSupplier) {
+        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        if (error) throw error;
+        toast.success("Dodavatel byl aktualizován");
+      } else {
+        const { error } = await supabase.from("suppliers").insert(payload);
+        if (error) throw error;
+        toast.success("Dodavatel byl přidán");
+      }
+      handleDialogClose();
+      fetchSuppliers();
+    } catch (error: any) {
+      if (error.code === "23505") toast.error("Dodavatel s tímto názvem již existuje");
+      else toast.error("Chyba při ukládání dodavatele");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) { toast.error("Název dodavatele je povinný"); return; }
@@ -104,21 +127,21 @@ const Suppliers = () => {
       notes: formData.notes.trim() || null,
     };
 
-    try {
-      if (editingSupplier) {
-        const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
-        if (error) throw error;
-        toast.success("Dodavatel byl aktualizován");
-      } else {
-        const { error } = await supabase.from("suppliers").insert(payload);
-        if (error) throw error;
-        toast.success("Dodavatel byl přidán");
-      }
-      handleDialogClose();
-      fetchSuppliers();
-    } catch (error: any) {
-      if (error.code === "23505") toast.error("Dodavatel s tímto názvem již existuje");
-      else toast.error("Chyba při ukládání dodavatele");
+    // Skip duplicate check when editing
+    if (editingSupplier) { await saveSupplier(payload); return; }
+
+    const result = await checkSupplierDuplicates(
+      formData.name,
+      formData.email,
+      formData.phone,
+    );
+
+    if (result.duplicates.length > 0) {
+      setPendingPayload(payload);
+      setDupResults(result);
+      setDupDialogOpen(true);
+    } else {
+      await saveSupplier(payload);
     }
   };
 
