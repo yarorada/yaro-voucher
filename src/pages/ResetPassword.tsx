@@ -137,7 +137,8 @@ const ResetPassword = () => {
           title: "Heslo změněno",
           description: "Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.",
         });
-        await supabase.auth.signOut();
+        // Use scope: 'local' to always clear local session even if server-side session expired
+        await supabase.auth.signOut({ scope: 'local' });
         setTimeout(() => navigate("/auth"), 1500);
       }
     } catch (error) {
