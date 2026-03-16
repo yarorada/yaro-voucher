@@ -163,11 +163,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const bccList = ["zajezdy@yarotravel.cz"];
-    const ccList = (ccEmails || []).filter((e) => e && e !== clientEmail);
+    const ccList = (ccEmails || []).filter((e) => e && e !== recipientEmail);
 
     const emailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
-      to: [clientEmail],
+      to: [recipientEmail],
       bcc: bccList,
       subject: finalSubject,
       text: finalBody,
@@ -186,14 +186,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "failed" });
+      await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: recipientEmail, status: "failed" });
       return new Response(JSON.stringify({ error: "Failed to send email", details: errorData }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const result = await response.json();
-    await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: clientEmail, status: "sent" });
+    await logEmail(supabase, { template_id: templateId, deal_id: dealId, recipient_email: recipientEmail, status: "sent" });
 
     return new Response(JSON.stringify({
       success: true, emailId: result.id, attachmentCount: attachments.length,
