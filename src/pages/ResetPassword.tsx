@@ -22,16 +22,37 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check URL hash for recovery token first (Supabase puts tokens in hash)
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const type = params.get('type');
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+
+    // If we have recovery tokens in the URL, set the session manually
+    if (type === 'recovery' && accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
+        setIsValidToken(true);
+        setChecking(false);
+      });
+      return;
+    }
+
     // Listen for password recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidToken(true);
+        setChecking(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        // Could be a recovery sign-in
+        setIsValidToken(true);
+        setChecking(false);
       } else if (event === 'SIGNED_OUT') {
-        // After password reset, user is signed out
         navigate("/auth");
       }
     });
@@ -41,6 +62,7 @@ const ResetPassword = () => {
       if (session) {
         setIsValidToken(true);
       }
+      setChecking(false);
     });
 
     return () => {
