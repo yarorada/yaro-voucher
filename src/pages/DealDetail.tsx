@@ -2096,19 +2096,19 @@ const DealDetail = () => {
           .single();
         if (destData?.countries) {
           const cc = (destData.countries as any).iso_code;
-          if (cc) autoName += ` ${cc}`;
+          if (cc) autoName += ` • ${cc}`;
         }
       }
 
       // Hotel name from services
       const hotelService = services.find(s => s.service_type === "hotel");
       if (hotelService?.service_name) {
-        autoName += ` ${hotelService.service_name}`;
+        autoName += ` • ${hotelService.service_name}`;
       }
 
       // Start date in DD-MM-YY format
       if (startDate) {
-        autoName += ` ${format(startDate, "dd-MM-yy")}`;
+        autoName += ` • ${format(startDate, "dd-MM-yy")}`;
       }
 
       // Orderer in parentheses after date (only if different from first traveler)
