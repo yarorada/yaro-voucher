@@ -621,7 +621,6 @@ const DealDetail = () => {
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
-  const handleSaveRef = useRef<() => Promise<void>>();
   const [status, setStatus] = useState<"inquiry" | "quote" | "approved" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
