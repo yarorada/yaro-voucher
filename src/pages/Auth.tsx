@@ -168,9 +168,12 @@ const Auth = () => {
       });
 
       if (error) {
+        const isRateLimit = error.message?.toLowerCase().includes("rate limit") || error.status === 429;
         toast({
           title: "Chyba",
-          description: error.message,
+          description: isRateLimit
+            ? "Příliš mnoho pokusů o reset hesla. Počkejte prosím přibližně hodinu a zkuste to znovu."
+            : error.message,
           variant: "destructive",
         });
       } else {
