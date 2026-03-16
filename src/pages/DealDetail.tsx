@@ -2719,7 +2719,7 @@ const DealDetail = () => {
                     const orderer = (deal.deal_travelers || []).find(t => t.is_lead_traveler) || sortedT[0];
                     const primaryName = orderer?.clients ? `${orderer.clients.first_name} ${orderer.clients.last_name}` : "";
                     const iso = (deal as any).destination?.countries?.iso_code || (deal as any).destinations?.countries?.iso_code || "";
-                    const hotel = (deal.deal_services || []).find((s: any) => s.service_type === "hotel");
+                    const hotel = services.find((s: any) => s.service_type === "hotel");
                     const parts: string[] = [];
                     if (primaryName) parts.push(primaryName);
                     if (iso) parts.push(iso);
