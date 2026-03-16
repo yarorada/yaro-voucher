@@ -107,14 +107,29 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
+      // Get current session token (may be AAL1 from recovery link)
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        toast({
+          title: "Chyba session",
+          description: "Platnost odkazu vypršela. Požádejte o nový reset odkaz.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Use edge function to bypass AAL2 requirement when MFA is enabled
+      const { data: funcData, error: funcError } = await supabase.functions.invoke("reset-password", {
+        body: { password },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (error) {
+      if (funcError || funcData?.error) {
         toast({
           title: "Reset hesla selhal",
-          description: error.message,
+          description: funcData?.error || funcError?.message || "Nastala chyba.",
           variant: "destructive",
         });
       } else {
@@ -122,7 +137,6 @@ const ResetPassword = () => {
           title: "Heslo změněno",
           description: "Vaše heslo bylo úspěšně změněno. Nyní se můžete přihlásit.",
         });
-        // Sign out and redirect to login
         await supabase.auth.signOut();
         setTimeout(() => navigate("/auth"), 1500);
       }
