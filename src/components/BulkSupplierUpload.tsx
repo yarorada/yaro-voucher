@@ -11,8 +11,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload, Loader2, CheckCircle, XCircle, Edit2, Trash2 } from "lucide-react";
+import { Upload, Loader2, CheckCircle, Edit2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatPhone } from "@/lib/phoneFormat";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,7 +23,11 @@ interface ExtractedSupplier {
   contact_person?: string;
   email?: string;
   phone?: string;
-  address?: string;
+  street?: string;
+  postal_code?: string;
+  city?: string;
+  country_name?: string;
+  website?: string;
   notes?: string;
 }
 
@@ -39,102 +44,73 @@ export const BulkSupplierUpload = ({ onComplete }: BulkSupplierUploadProps) => {
   const [isImporting, setIsImporting] = useState(false);
 
   const handleExtract = async () => {
-    if (!inputText.trim()) {
-      toast.error("Vložte text s daty dodavatelů");
-      return;
-    }
-
+    if (!inputText.trim()) { toast.error("Vložte text s daty dodavatelů"); return; }
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke("parse-bulk-supplier-data", {
         body: { text: inputText },
       });
-
       if (error) throw error;
-
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      if (data.suppliers && data.suppliers.length > 0) {
-        setExtractedSuppliers(data.suppliers);
-        toast.success(`Nalezeno ${data.suppliers.length} dodavatelů`);
+      if (data.error) { toast.error(data.error); return; }
+      if (data.suppliers?.length > 0) {
+        // auto-format phones
+        const formatted = data.suppliers.map((s: ExtractedSupplier) => ({
+          ...s,
+          phone: s.phone ? formatPhone(s.phone) : s.phone,
+        }));
+        setExtractedSuppliers(formatted);
+        toast.success(`Nalezeno ${formatted.length} dodavatelů`);
       } else {
         toast.warning("Nepodařilo se najít žádné dodavatele v textu");
       }
     } catch (error: any) {
-      console.error("Error extracting suppliers:", error);
       toast.error("Chyba při zpracování dat: " + (error.message || "Neznámá chyba"));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleUpdateSupplier = (index: number, field: keyof ExtractedSupplier, value: string) => {
-    setExtractedSuppliers((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
-    );
+  const handleUpdate = (index: number, field: keyof ExtractedSupplier, value: string) => {
+    setExtractedSuppliers((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
   };
 
-  const handleRemoveSupplier = (index: number) => {
+  const handlePhoneBlur = (index: number, value: string) => {
+    if (value.trim()) handleUpdate(index, "phone", formatPhone(value));
+  };
+
+  const handleRemove = (index: number) => {
     setExtractedSuppliers((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleImport = async () => {
-    if (extractedSuppliers.length === 0) {
-      toast.error("Není co importovat");
-      return;
-    }
-
-    const validSuppliers = extractedSuppliers.filter((s) => s.name?.trim());
-    if (validSuppliers.length === 0) {
-      toast.error("Všichni dodavatelé musí mít název");
-      return;
-    }
-
+    const valid = extractedSuppliers.filter((s) => s.name?.trim());
+    if (valid.length === 0) { toast.error("Není co importovat"); return; }
     setIsImporting(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const supplier of validSuppliers) {
+    let ok = 0, fail = 0;
+    for (const s of valid) {
       try {
         const { error } = await supabase.from("suppliers").insert({
-          name: supplier.name.trim(),
-          contact_person: supplier.contact_person?.trim() || null,
-          email: supplier.email?.trim() || null,
-          phone: supplier.phone?.trim() || null,
-          address: supplier.address?.trim() || null,
-          notes: supplier.notes?.trim() || null,
+          name: s.name.trim(),
+          contact_person: s.contact_person?.trim() || null,
+          email: s.email?.trim() || null,
+          phone: s.phone?.trim() || null,
+          street: s.street?.trim() || null,
+          postal_code: s.postal_code?.trim() || null,
+          city: s.city?.trim() || null,
+          country_name: s.country_name?.trim() || null,
+          website: s.website?.trim() || null,
+          notes: s.notes?.trim() || null,
         });
-
         if (error) {
-          if (error.code === "23505") {
-            toast.warning(`Dodavatel "${supplier.name}" již existuje`);
-          } else {
-            throw error;
-          }
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      } catch (error) {
-        console.error("Error importing supplier:", error);
-        errorCount++;
-      }
+          if (error.code === "23505") toast.warning(`Dodavatel "${s.name}" již existuje`);
+          else throw error;
+          fail++;
+        } else ok++;
+      } catch { fail++; }
     }
-
     setIsImporting(false);
-
-    if (successCount > 0) {
-      toast.success(`Úspěšně importováno ${successCount} dodavatelů`);
-      onComplete();
-      handleClose();
-    }
-
-    if (errorCount > 0 && successCount === 0) {
-      toast.error("Import se nezdařil");
-    }
+    if (ok > 0) { toast.success(`Úspěšně importováno ${ok} dodavatelů`); onComplete(); handleClose(); }
+    if (fail > 0 && ok === 0) toast.error("Import se nezdařil");
   };
 
   const handleClose = () => {
@@ -144,11 +120,13 @@ export const BulkSupplierUpload = ({ onComplete }: BulkSupplierUploadProps) => {
     setEditingIndex(null);
   };
 
+  const formatAddressPreview = (s: ExtractedSupplier) => {
+    const parts = [s.street, [s.postal_code, s.city].filter(Boolean).join(" "), s.country_name].filter(Boolean);
+    return parts.join(", ");
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) handleClose();
-      else setIsOpen(true);
-    }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); else setIsOpen(true); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Upload className="h-4 w-4" />
@@ -158,9 +136,7 @@ export const BulkSupplierUpload = ({ onComplete }: BulkSupplierUploadProps) => {
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Hromadný import dodavatelů</DialogTitle>
-          <DialogDescription>
-            Vložte text s údaji o dodavatelích a AI automaticky extrahuje data
-          </DialogDescription>
+          <DialogDescription>Vložte text s údaji o dodavatelích — AI automaticky extrahuje a rozčlení data</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
@@ -177,28 +153,20 @@ Hotel Paradise
 Kontakt: Jan Novák
 Email: jan@paradise.cz
 Tel: +420 123 456 789
-Adresa: Hlavní 123, Praha
+Adresa: Hlavní 123, 301 00 Praha, ČR
+Web: www.paradise.cz
 
 Golf Resort Karlovy Vary
-Email: info@golfkv.cz
-Telefon: 777 888 999`}
+info@golfkv.cz / 777 888 999
+Nám. Republiky 5, Karlovy Vary`}
                   rows={12}
                   className="font-mono text-sm"
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleClose}>
-                  Zrušit
-                </Button>
+                <Button variant="outline" onClick={handleClose}>Zrušit</Button>
                 <Button onClick={handleExtract} disabled={isProcessing}>
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Zpracovávám...
-                    </>
-                  ) : (
-                    "Extrahovat data"
-                  )}
+                  {isProcessing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Zpracovávám...</> : "Extrahovat data"}
                 </Button>
               </div>
             </>
@@ -209,105 +177,73 @@ Telefon: 777 888 999`}
               </div>
               <ScrollArea className="flex-1 max-h-[400px] pr-4">
                 <div className="space-y-3">
-                  {extractedSuppliers.map((supplier, index) => (
+                  {extractedSuppliers.map((s, index) => (
                     <Card key={index} className="p-4">
                       {editingIndex === index ? (
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <Label className="text-xs">Název *</Label>
-                              <Input
-                                value={supplier.name || ""}
-                                onChange={(e) => handleUpdateSupplier(index, "name", e.target.value)}
-                                className="h-8 text-sm"
-                              />
+                              <Input value={s.name || ""} onChange={(e) => handleUpdate(index, "name", e.target.value)} className="h-8 text-sm" />
                             </div>
                             <div>
                               <Label className="text-xs">Kontaktní osoba</Label>
-                              <Input
-                                value={supplier.contact_person || ""}
-                                onChange={(e) => handleUpdateSupplier(index, "contact_person", e.target.value)}
-                                className="h-8 text-sm"
-                              />
+                              <Input value={s.contact_person || ""} onChange={(e) => handleUpdate(index, "contact_person", e.target.value)} className="h-8 text-sm" />
                             </div>
                             <div>
                               <Label className="text-xs">Email</Label>
-                              <Input
-                                value={supplier.email || ""}
-                                onChange={(e) => handleUpdateSupplier(index, "email", e.target.value)}
-                                className="h-8 text-sm"
-                              />
+                              <Input value={s.email || ""} onChange={(e) => handleUpdate(index, "email", e.target.value)} className="h-8 text-sm" />
                             </div>
                             <div>
                               <Label className="text-xs">Telefon</Label>
                               <Input
-                                value={supplier.phone || ""}
-                                onChange={(e) => handleUpdateSupplier(index, "phone", e.target.value)}
+                                value={s.phone || ""}
+                                onChange={(e) => handleUpdate(index, "phone", e.target.value)}
+                                onBlur={(e) => handlePhoneBlur(index, e.target.value)}
                                 className="h-8 text-sm"
                               />
                             </div>
+                            <div className="col-span-2">
+                              <Label className="text-xs">Webová stránka</Label>
+                              <Input value={s.website || ""} onChange={(e) => handleUpdate(index, "website", e.target.value)} className="h-8 text-sm" placeholder="https://..." />
+                            </div>
                           </div>
-                          <div>
-                            <Label className="text-xs">Adresa</Label>
-                            <Input
-                              value={supplier.address || ""}
-                              onChange={(e) => handleUpdateSupplier(index, "address", e.target.value)}
-                              className="h-8 text-sm"
-                            />
+
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium">Adresa</Label>
+                            <Input value={s.street || ""} onChange={(e) => handleUpdate(index, "street", e.target.value)} className="h-8 text-sm" placeholder="Ulice a č.p." />
+                            <div className="grid grid-cols-3 gap-2">
+                              <Input value={s.postal_code || ""} onChange={(e) => handleUpdate(index, "postal_code", e.target.value)} className="h-8 text-sm" placeholder="PSČ" />
+                              <Input className="col-span-2 h-8 text-sm" value={s.city || ""} onChange={(e) => handleUpdate(index, "city", e.target.value)} placeholder="Město" />
+                            </div>
+                            <Input value={s.country_name || ""} onChange={(e) => handleUpdate(index, "country_name", e.target.value)} className="h-8 text-sm" placeholder="Stát" />
                           </div>
+
                           <div>
                             <Label className="text-xs">Poznámky</Label>
-                            <Textarea
-                              value={supplier.notes || ""}
-                              onChange={(e) => handleUpdateSupplier(index, "notes", e.target.value)}
-                              rows={2}
-                              className="text-sm"
-                            />
+                            <Textarea value={s.notes || ""} onChange={(e) => handleUpdate(index, "notes", e.target.value)} rows={2} className="text-sm" />
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingIndex(null)}
-                          >
-                            Hotovo
-                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingIndex(null)}>Hotovo</Button>
                         </div>
                       ) : (
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-foreground truncate">
-                              {supplier.name || <span className="text-destructive">Chybí název</span>}
+                              {s.name || <span className="text-destructive">Chybí název</span>}
                             </div>
                             <div className="text-sm text-muted-foreground space-y-0.5 mt-1">
-                              {supplier.contact_person && (
-                                <div className="truncate">Kontakt: {supplier.contact_person}</div>
-                              )}
-                              {supplier.email && (
-                                <div className="truncate">Email: {supplier.email}</div>
-                              )}
-                              {supplier.phone && (
-                                <div className="truncate">Tel: {supplier.phone}</div>
-                              )}
-                              {supplier.address && (
-                                <div className="truncate">Adresa: {supplier.address}</div>
-                              )}
+                              {s.contact_person && <div className="truncate">Kontakt: {s.contact_person}</div>}
+                              {s.email && <div className="truncate">Email: {s.email}</div>}
+                              {s.phone && <div className="truncate">Tel: {s.phone}</div>}
+                              {formatAddressPreview(s) && <div className="truncate">Adresa: {formatAddressPreview(s)}</div>}
+                              {s.website && <div className="truncate text-primary/80">Web: {s.website}</div>}
                             </div>
                           </div>
                           <div className="flex gap-1 ml-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                              onClick={() => setEditingIndex(index)}
-                            >
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingIndex(index)}>
                               <Edit2 className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleRemoveSupplier(index)}
-                            >
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleRemove(index)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -318,31 +254,13 @@ Telefon: 777 888 999`}
                 </div>
               </ScrollArea>
               <div className="flex justify-between gap-2 pt-2 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setExtractedSuppliers([]);
-                    setEditingIndex(null);
-                  }}
-                >
-                  Zpět na zadání
-                </Button>
+                <Button variant="outline" onClick={() => { setExtractedSuppliers([]); setEditingIndex(null); }}>Zpět na zadání</Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleClose}>
-                    Zrušit
-                  </Button>
+                  <Button variant="outline" onClick={handleClose}>Zrušit</Button>
                   <Button onClick={handleImport} disabled={isImporting}>
-                    {isImporting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Importuji...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Importovat {extractedSuppliers.length} dodavatelů
-                      </>
-                    )}
+                    {isImporting
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importuji...</>
+                      : <><CheckCircle className="h-4 w-4 mr-2" />Importovat {extractedSuppliers.length} dodavatelů</>}
                   </Button>
                 </div>
               </div>
