@@ -95,6 +95,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAutoSaveOnLeave } from "@/hooks/useAutoSaveOnLeave";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
