@@ -76,21 +76,26 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFileType, setPreviewFileType] = useState<string | null>(null);
-  const [sendDialogOpen, setSendDialogOpen] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sendingVoucherId, setSendingVoucherId] = useState<string | null>(null);
-  const [emailSubject, setEmailSubject] = useState("");
-  const [emailBody, setEmailBody] = useState("");
-  const [ccSuppliers, setCcSuppliers] = useState(true);
-  const [ocrProcessing, setOcrProcessing] = useState(false);
-  // Selection state
+  // Client send dialog
+  const [clientSendDialogOpen, setClientSendDialogOpen] = useState(false);
+  const [sendingClient, setSendingClient] = useState(false);
+  const [clientEmailSubject, setClientEmailSubject] = useState("");
+  const [clientEmailBody, setClientEmailBody] = useState("");
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
   const [selectedVoucherIds, setSelectedVoucherIds] = useState<Set<string>>(new Set());
-  // Send mode: "client" | "both" | "supplier"
-  const [sendMode, setSendMode] = useState<"client" | "both" | "supplier">("client");
-  // Extra recipients
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
   const [newExtraEmail, setNewExtraEmail] = useState("");
+
+  // Supplier send dialog
+  const [supplierSendDialogOpen, setSupplierSendDialogOpen] = useState(false);
+  const [sendingSuppliers, setSendingSuppliers] = useState(false);
+  const [supplierEmailSubject, setSupplierEmailSubject] = useState("");
+  const [supplierEmailBody, setSupplierEmailBody] = useState("");
+  // Map of supplierId → Set of selected voucherIds
+  const [supplierVoucherSelection, setSupplierVoucherSelection] = useState<Record<string, Set<string>>>({});
+
+  const [sendingVoucherId, setSendingVoucherId] = useState<string | null>(null);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = useCallback(async () => {
