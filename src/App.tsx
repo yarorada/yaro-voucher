@@ -61,7 +61,7 @@ const SaveIndicator = () => {
   if (lastSaved) {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Check className="h-3 w-3 text-green-500" />
+        <Check className="h-3 w-3 text-emerald-500" />
         {format(lastSaved, "HH:mm:ss", { locale: cs })}
       </span>
     );
