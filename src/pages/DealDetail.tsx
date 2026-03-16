@@ -766,7 +766,13 @@ const DealDetail = () => {
     const originalPushState = window.history.pushState.bind(window.history);
 
     window.history.pushState = (state: unknown, title: string, url?: string | URL | null) => {
-      // Store the deferred navigation and show confirm dialog
+      if (!dealChangedRef.current) {
+        // No changes were made — navigate silently
+        window.history.pushState = originalPushState;
+        originalPushState(state, title, url);
+        return;
+      }
+      // Changes detected — intercept and show sync dialog
       blockerProceedRef.current = () => {
         window.history.pushState = originalPushState;
         originalPushState(state, title, url);
