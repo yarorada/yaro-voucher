@@ -8,7 +8,8 @@ const corsHeaders = {
 
 interface SendRequest {
   dealId: string;
-  clientEmail: string;
+  recipientEmail?: string;
+  clientEmail?: string; // legacy alias
   clientName: string;
   emailBody: string;
   emailSubject: string;
