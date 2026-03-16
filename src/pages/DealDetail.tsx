@@ -2574,7 +2574,7 @@ const DealDetail = () => {
         </Button>
       </>
     ) : null,
-    [deal, saving, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants]
+    [deal, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants]
   );
 
   if (loading) {
