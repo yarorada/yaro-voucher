@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -71,6 +72,30 @@ const SaveIndicator = () => {
 
 const UndoRedoButtons = () => {
   const { canUndo, canRedo, undo, redo } = useGlobalHistory();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const target = e.target as HTMLElement;
+      const isEditable =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+      if (isEditable) return; // necháme nativní undo v polích
+      if (e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      }
+      if (e.key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
   return (
     <div className="flex items-center gap-0.5">
       <Button
@@ -89,7 +114,7 @@ const UndoRedoButtons = () => {
         className="h-8 w-8"
         disabled={!canRedo}
         onClick={redo}
-        title="Vpřed (Ctrl+Y)"
+        title="Vpřed (Ctrl+Shift+Z)"
       >
         <Redo2 className="h-4 w-4" />
       </Button>
