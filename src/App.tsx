@@ -72,7 +72,7 @@ const SaveIndicator = () => {
 const UndoRedoButtons = () => {
   const { canUndo, canRedo, undo, redo } = useGlobalHistory();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const target = e.target as HTMLElement;
