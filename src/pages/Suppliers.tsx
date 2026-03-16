@@ -186,10 +186,6 @@ const Suppliers = () => {
     [searchText, filteredSuppliers.length, loading]
   );
 
-  const formatAddress = (s: Supplier) => {
-    const parts = [s.street, [s.postal_code, s.city].filter(Boolean).join(" "), s.country_name].filter(Boolean);
-    return parts.join(", ");
-  };
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
