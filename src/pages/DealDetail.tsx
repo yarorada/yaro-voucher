@@ -669,7 +669,7 @@ const DealDetail = () => {
   }, [deal, dealName, status, destinationId, startDate, endDate, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
 
   const silentSave = useCallback(async () => {
-    if (!deal || saving) return;
+    if (!deal) return;
     try {
       await supabase
         .from("deals")
