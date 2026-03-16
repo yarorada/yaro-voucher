@@ -83,6 +83,45 @@ const Suppliers = () => {
   const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
   const [dupDialogOpen, setDupDialogOpen] = useState(false);
   const [dupResults, setDupResults] = useState<{ duplicates: DuplicateSupplier[]; hasSameName: boolean; hasSameEmail: boolean; hasSamePhone: boolean } | null>(null);
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const { setIsSaving, setLastSaved } = useGlobalHistory();
+
+  // Auto-save for editing existing supplier
+  const autoSavePayload = editingSupplier && isDialogOpen ? formData : null;
+  useAutoSave({
+    data: autoSavePayload,
+    saveFn: async (data) => {
+      if (!editingSupplier || !data) return;
+      setIsSaving(true);
+      setAutoSaveStatus('saving');
+      try {
+        const payload = {
+          name: data.name.trim(),
+          contact_person: data.contact_person.trim() || null,
+          email: data.email.trim() || null,
+          phone: data.phone.trim() ? formatPhone(data.phone.trim()) : null,
+          street: data.street.trim() || null,
+          postal_code: data.postal_code.trim() || null,
+          city: data.city.trim() || null,
+          country_name: data.country_name.trim() || null,
+          website: data.website.trim() || null,
+          notes: data.notes.trim() || null,
+        };
+        await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
+        setLastSaved(new Date());
+        setAutoSaveStatus('saved');
+        fetchSuppliers();
+      } catch (e) {
+        console.error("Auto-save supplier error:", e);
+        setAutoSaveStatus('idle');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    debounceMs: 1500,
+    enabled: !!editingSupplier && isDialogOpen,
+  });
 
   useEffect(() => { fetchSuppliers(); }, []);
 
