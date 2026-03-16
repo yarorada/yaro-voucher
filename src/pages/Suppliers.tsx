@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit, MoreHorizontal, AlertTriangle } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
 import { checkSupplierDuplicates, DuplicateSupplier } from "@/lib/supplierDuplicates";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { HotelImageUpload } from "@/components/HotelImageUpload";
 import { DestinationCombobox } from "@/components/DestinationCombobox";
-import { Plus, Trash2, Sparkles, Loader2, Star } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2 as SpinIcon, Star } from "lucide-react";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 
 interface GolfCourseData {
   name: string;
