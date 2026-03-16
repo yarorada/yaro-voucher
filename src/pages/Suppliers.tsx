@@ -78,7 +78,7 @@ const Suppliers = () => {
   const [searchText, setSearchText] = useState("");
   const [formData, setFormData] = useState(emptyForm);
   // Duplicate check state
-  const [pendingPayload, setPendingPayload] = useState<Record<string, any> | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
   const [dupDialogOpen, setDupDialogOpen] = useState(false);
   const [dupResults, setDupResults] = useState<{ duplicates: DuplicateSupplier[]; hasSameName: boolean; hasSameEmail: boolean; hasSamePhone: boolean } | null>(null);
 
