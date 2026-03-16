@@ -756,17 +756,25 @@ const DealDetail = () => {
     enabled: !!deal && !loading,
   });
 
-  // Block navigation and offer contract/voucher sync
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    return !!deal && !loading && currentLocation.pathname !== nextLocation.pathname;
-  });
-
+  // Intercept in-app navigation via history.pushState (works with BrowserRouter)
   useEffect(() => {
-    if (blocker.state === "blocked") {
-      blockerProceedRef.current = blocker.proceed;
+    if (!deal || loading) return;
+
+    const originalPushState = window.history.pushState.bind(window.history);
+
+    window.history.pushState = (state: unknown, title: string, url?: string | URL | null) => {
+      // Store the deferred navigation and show confirm dialog
+      blockerProceedRef.current = () => {
+        window.history.pushState = originalPushState;
+        originalPushState(state, title, url);
+      };
       setLeaveConfirmOpen(true);
-    }
-  }, [blocker.state]);
+    };
+
+    return () => {
+      window.history.pushState = originalPushState;
+    };
+  }, [deal, loading]);
 
   // Drag and drop sensors
   const sensors = useSensors(
