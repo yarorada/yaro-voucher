@@ -447,30 +447,37 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
 
   const totalItems = documents.length + vouchers.length;
 
-  // Get unique supplier emails from vouchers
-  const supplierEmails = Array.from(
-    new Set(
-      vouchers
-        .filter((v) => v.suppliers?.email)
-        .map((v) => v.suppliers!.email!)
-    )
-  );
+  // Suppliers with vouchers that have an email
+  const vouchersWithSupplier = vouchers.filter(v => v.supplier_id && v.suppliers?.email);
+  const uniqueSupplierIds = Array.from(new Set(vouchersWithSupplier.map(v => v.supplier_id!)));
 
-  const openSendDialog = (mode: "client" | "both" | "supplier" = "client") => {
+  // Open client send dialog
+  const openClientDialog = () => {
     const name = clientName || "klient";
-    setEmailSubject(`Cestovní dokumenty - YARO Travel`);
-    setEmailBody(
+    setClientEmailSubject("Cestovní dokumenty - YARO Travel");
+    setClientEmailBody(
       `Vážený ${name},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
     );
-    setSendMode(mode);
     setExtraEmails([]);
     setNewExtraEmail("");
-    // If nothing selected, select all
-    if (selectedDocIds.size === 0 && selectedVoucherIds.size === 0) {
-      setSelectedDocIds(new Set(documents.map((d) => d.id)));
-      setSelectedVoucherIds(new Set(vouchers.map((v) => v.id)));
+    setSelectedDocIds(new Set(documents.map(d => d.id)));
+    setSelectedVoucherIds(new Set(vouchers.map(v => v.id)));
+    setClientSendDialogOpen(true);
+  };
+
+  // Open supplier send dialog
+  const openSupplierDialog = () => {
+    setSupplierEmailSubject("Travel Documents – YARO Travel");
+    setSupplierEmailBody(
+      `Dear Partner,\n\nplease find attached the travel voucher(s) for your records.\n\nKind regards,\nYARO Travel\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
+    );
+    // Default: all vouchers per supplier selected
+    const initSelection: Record<string, Set<string>> = {};
+    for (const suppId of uniqueSupplierIds) {
+      initSelection[suppId] = new Set(vouchersWithSupplier.filter(v => v.supplier_id === suppId).map(v => v.id));
     }
-    setSendDialogOpen(true);
+    setSupplierVoucherSelection(initSelection);
+    setSupplierSendDialogOpen(true);
   };
 
   const getLogoBase64 = useCallback(async (): Promise<string | undefined> => {
