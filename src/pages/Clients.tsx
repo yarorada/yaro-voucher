@@ -559,13 +559,13 @@ const Clients = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-background p-1">
           <DropdownMenuItem asChild>
-            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => setBulkDocumentUploadOpen(true)}>
+            <Button variant="ghost" className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal" onClick={() => setBulkDocumentUploadOpen(true)}>
               <FileUp className="h-4 w-4 mr-2" />
               Skenovat doklad
             </Button>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => setBulkImportOpen(true)}>
+            <Button variant="ghost" className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal" onClick={() => setBulkImportOpen(true)}>
               <FileText className="h-4 w-4 mr-2" />
               Import z textu
             </Button>
@@ -573,7 +573,7 @@ const Clients = () => {
           <DuplicateClientChecker onComplete={fetchClients} />
           <Button
             variant="ghost"
-            className="w-full justify-start text-sm"
+            className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal"
             onClick={async () => {
               if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
               try {
