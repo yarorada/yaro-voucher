@@ -531,35 +531,6 @@ const Clients = () => {
   usePageToolbar(
     <div className="flex flex-wrap items-center gap-2">
       <ClientFilterBar conditions={filterConditions} onChange={setFilterConditions} />
-          const parts = text.trim().split(/\s+/);
-          const first = parts[0] || "";
-          const last = parts.slice(1).join(" ") || "";
-          setFormData(prev => ({
-            ...prev,
-            first_name: first,
-            last_name: last,
-            title: "",
-            email: "",
-            phone: "",
-            address: "",
-            notes: "",
-            date_of_birth: undefined,
-            passport_number: "",
-            passport_expiry: undefined,
-            id_card_number: "",
-            id_card_expiry: undefined,
-            company_name: "",
-            ico: "",
-            dic: "",
-            company_as_orderer: false,
-          }));
-          setEditingClient(null);
-          setIsDialogOpen(true);
-        }}
-        placeholder="Vyhledat zákazníka..."
-        className="w-44 md:w-56"
-        inputClassName="h-8 text-xs"
-      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
@@ -605,7 +576,7 @@ const Clients = () => {
         Import z textu
       </Button>
     </div>,
-    [searchText, filteredClients.length, loading]
+    [filterConditions, filteredClients.length, loading]
   );
 
   // Extract city from address
