@@ -86,10 +86,12 @@ export function DocumentUpload({
         continue;
       }
 
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(`${file.name}: Nepodporovaný formát. Použijte JPG, PNG, WEBP nebo PDF.`);
+      // Validate file type (including HEIC/HEIF from iPhone)
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf", "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const isHeic = ext === "heic" || ext === "heif";
+      if (!allowedTypes.includes(file.type) && !isHeic) {
+        toast.error(`${file.name}: Nepodporovaný formát. Použijte JPG, PNG, WEBP, HEIC nebo PDF.`);
         continue;
       }
 
