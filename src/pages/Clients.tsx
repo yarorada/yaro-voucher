@@ -570,37 +570,31 @@ const Clients = () => {
               Import z textu
             </Button>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <DuplicateClientChecker onComplete={fetchClients} />
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-sm"
-              onClick={async () => {
-                if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
-                try {
-                  const { data, error } = await supabase.functions.invoke('assign-client-titles');
-                  if (error) throw error;
-                  if (data?.success) {
-                    toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
-                    if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
-                    fetchClients();
-                  } else {
-                    throw new Error(data?.error || 'Unknown error');
-                  }
-                } catch (error: any) {
-                  toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+          <DuplicateClientChecker onComplete={fetchClients} />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-sm"
+            onClick={async () => {
+              if (!confirm("Automaticky přiřadit tituly podle jména?")) return;
+              try {
+                const { data, error } = await supabase.functions.invoke('assign-client-titles');
+                if (error) throw error;
+                if (data?.success) {
+                  toast.success(`Úspěšně přiřazeno: ${data.updated} klientů`);
+                  if (data.errors > 0) toast.warning(`${data.errors} klientů se nepodařilo zpracovat`);
+                  fetchClients();
+                } else {
+                  throw new Error(data?.error || 'Unknown error');
                 }
-              }}
-            >
-              <User className="h-4 w-4 mr-2" />
-              Přiřadit tituly
-            </Button>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <DiacriticsChecker onComplete={fetchClients} />
-          </DropdownMenuItem>
+              } catch (error: any) {
+                toast.error(`Chyba při přiřazování titulů: ${error.message}`);
+              }
+            }}
+          >
+            <User className="h-4 w-4 mr-2" />
+            Přiřadit tituly
+          </Button>
+          <DiacriticsChecker onComplete={fetchClients} />
         </DropdownMenuContent>
       </DropdownMenu>
     </div>,
