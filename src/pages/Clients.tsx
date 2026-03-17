@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Edit, User, Users, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/components/ClientFilterBar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
