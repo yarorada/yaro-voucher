@@ -1,16 +1,10 @@
 import { useState } from "react";
-import { FileText, Download, Trash2, Eye } from "lucide-react";
+import { FileText, Download, Trash2, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createPortal } from "react-dom";
 
 interface Document {
   url: string;
@@ -27,18 +21,23 @@ interface DocumentsListProps {
 type MimeHint = "image" | "pdf" | "other";
 
 function getMimeHint(url: string): MimeHint {
-  // Strip query params for cleaner extension matching
   const path = url.split("?")[0].toLowerCase();
   if (path.endsWith(".jpg") || path.endsWith(".jpeg") || path.endsWith(".png") || path.endsWith(".webp") || path.endsWith(".gif") || path.endsWith(".heic") || path.endsWith(".heif")) return "image";
   if (path.endsWith(".pdf")) return "pdf";
-  // Fallback: check anywhere in path
   if (path.includes(".jpg") || path.includes(".jpeg") || path.includes(".png") || path.includes(".webp") || path.includes(".heic") || path.includes(".heif")) return "image";
   if (path.includes(".pdf")) return "pdf";
   return "other";
 }
 
+function getDocumentTypeLabel(type: string) {
+  switch (type) {
+    case "passport": return "Cestovní pas";
+    case "id_card": return "Občanský průkaz";
+    default: return "Jiný dokument";
+  }
+}
+
 export function DocumentsList({ clientId, documents, onDelete }: DocumentsListProps) {
-  // Hooks must always be called before any conditional returns
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>("");
   const [previewMime, setPreviewMime] = useState<MimeHint>("other");
@@ -78,20 +77,11 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
     }
   };
 
-  const getDocumentTypeLabel = (type: string) => {
-    switch (type) {
-      case "passport": return "Cestovní pas";
-      case "id_card": return "Občanský průkaz";
-      default: return "Jiný dokument";
-    }
-  };
-
   const handlePreview = async (doc: Document) => {
-    // Determine mime from original URL *before* creating blob
     const mime = getMimeHint(doc.url);
     setPreviewMime(mime);
     setPreviewType(doc.type);
-    setPreviewUrl(doc.url); // show dialog immediately
+    setPreviewUrl(doc.url);
 
     const parts = doc.url.split("/client-documents/");
     if (parts.length >= 2) {
@@ -131,6 +121,55 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
     }
     window.open(doc.url, "_blank");
   };
+
+  // Render preview as a portal outside of any dialog stack to avoid Radix focus-trap conflicts
+  const previewPortal = previewUrl ? createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80"
+      onClick={closePreview}
+    >
+      <div
+        className="relative bg-background rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">{getDocumentTypeLabel(previewType)}</h2>
+          <button
+            onClick={closePreview}
+            className="rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <X className="h-5 w-5" />
+            <span className="sr-only">Zavřít</span>
+          </button>
+        </div>
+        <div className="flex items-center justify-center">
+          {previewMime === "image" ? (
+            <img
+              src={previewUrl}
+              alt={getDocumentTypeLabel(previewType)}
+              className="max-w-full max-h-[70vh] object-contain rounded-lg"
+            />
+          ) : previewMime === "pdf" ? (
+            <iframe
+              src={previewUrl}
+              className="w-full h-[70vh] rounded-lg"
+              title={getDocumentTypeLabel(previewType)}
+            />
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">Náhled není dostupný pro tento typ souboru</p>
+              <Button onClick={() => window.open(previewUrl!, "_blank")}>
+                <Download className="h-4 w-4 mr-2" />
+                Otevřít v novém okně
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
 
   return (
     <>
@@ -181,40 +220,7 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
         </div>
       </div>
 
-      <Dialog open={!!previewUrl} onOpenChange={closePreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>{getDocumentTypeLabel(previewType)}</DialogTitle>
-            <DialogDescription>Náhled dokumentu klienta</DialogDescription>
-          </DialogHeader>
-          {previewUrl && (
-            <div className="flex items-center justify-center">
-              {previewMime === "image" ? (
-                <img
-                  src={previewUrl}
-                  alt={getDocumentTypeLabel(previewType)}
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                />
-              ) : previewMime === "pdf" ? (
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-[70vh] rounded-lg"
-                  title={getDocumentTypeLabel(previewType)}
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">Náhled není dostupný pro tento typ souboru</p>
-                  <Button onClick={() => window.open(previewUrl!, "_blank")}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Otevřít v novém okně
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {previewPortal}
     </>
   );
 }
