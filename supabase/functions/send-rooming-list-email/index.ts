@@ -40,7 +40,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { dealId, pdfPath, supplierEmail, supplierName, hotelName, dealNumber, dateFrom, dateTo } = await req.json();
+    const { dealId, pdfPath, supplierEmail, supplierName, hotelName, dealNumber, dateFrom, dateTo, customMessage } = await req.json();
 
     if (!supplierEmail || !pdfPath) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
