@@ -46,6 +46,8 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     const [calendarMonth, setCalendarMonth] = React.useState<Date | undefined>(value);
     // True while the user is actively editing (incomplete value) — blocks external sync
     const isTypingRef = React.useRef(false);
+    // Tracks previous digit count to detect paste vs single-key typing
+    const prevDigitsLenRef = React.useRef(0);
 
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
