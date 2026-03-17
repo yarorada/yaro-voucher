@@ -27,6 +27,8 @@ interface DocumentsListProps {
 export function DocumentsList({ clientId, documents, onDelete }: DocumentsListProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>("");
+  // Keep original URL's mime hint separately — blob URLs have no extension
+  const [previewMime, setPreviewMime] = useState<"image" | "pdf" | "other">("other");
 
   if (!documents || documents.length === 0) {
     return null;
