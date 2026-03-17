@@ -542,7 +542,14 @@ const Clients = () => {
 
   usePageToolbar(
     <div className="flex flex-wrap items-center gap-2">
-      <ClientFilterBar conditions={filterConditions} onChange={setFilterConditions} />
+      <ClientFilterBar
+          conditions={filterConditions}
+          onChange={setFilterConditions}
+          quickSearch={quickSearch}
+          onQuickSearchChange={setQuickSearch}
+          noResults={clients.length > 0 && filteredClients.length === 0}
+          onAddNew={handleAddNewFromSearch}
+        />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
