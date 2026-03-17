@@ -387,6 +387,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
           dealNumber: dealInfo?.deal_number || "",
           dateFrom: dealInfo?.start_date || "",
           dateTo: dealInfo?.end_date || "",
+          customMessage: customMessage.trim() || undefined,
         },
       });
 
