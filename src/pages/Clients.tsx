@@ -988,7 +988,7 @@ const Clients = () => {
                     <th className="text-left px-4 py-3 font-medium text-primary cursor-pointer select-none">Jméno ↑</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Město</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Datum narození</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
                   </tr>
                 </thead>
