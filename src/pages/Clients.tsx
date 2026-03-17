@@ -932,8 +932,8 @@ const Clients = () => {
           </Card>
         ) : filteredClients.length === 0 ? (
           <Card className="p-8 text-center shadow-[var(--shadow-medium)]">
-            <p className="text-muted-foreground">Pro "{searchText}" nebyl nalezen žádný klient</p>
-            <Button variant="outline" className="mt-3" onClick={() => setSearchText("")}>Zrušit filtr</Button>
+            <p className="text-muted-foreground">Žádný klient nevyhovuje nastaveným filtrům</p>
+            <Button variant="outline" className="mt-3" onClick={() => setFilterConditions([])}>Zrušit filtry</Button>
           </Card>
         ) : (
           <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
