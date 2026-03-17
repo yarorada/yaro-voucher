@@ -206,18 +206,7 @@ const Clients = () => {
       .replace(/[\u0300-\u036f]/g, '');
   };
 
-  const filteredClients = clients.filter((client) => {
-    if (!searchText.trim()) return true;
-    
-    const normalizedSearch = removeDiacritics(searchText.toLowerCase());
-    const normalizedFirstName = removeDiacritics(client.first_name.toLowerCase());
-    const normalizedLastName = removeDiacritics(client.last_name.toLowerCase());
-    const normalizedFullName = `${normalizedFirstName} ${normalizedLastName}`;
-    const normalizedEmail = client.email ? removeDiacritics(client.email.toLowerCase()) : '';
-    
-    return normalizedFullName.includes(normalizedSearch) || 
-           normalizedEmail.includes(normalizedSearch);
-  });
+  const filteredClients = applyClientFilters(clients, filterConditions);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
