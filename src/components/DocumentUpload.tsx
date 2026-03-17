@@ -448,7 +448,7 @@ export function DocumentUpload({
       <Input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,application/pdf"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.heic,.heif"
         onChange={handleFileSelect}
         multiple={allowMultiple}
         className="hidden"
