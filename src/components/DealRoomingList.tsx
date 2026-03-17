@@ -119,6 +119,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [sending, setSending] = useState(false);
   const [hotelSupplier, setHotelSupplier] = useState<{ name: string; email: string | null } | null>(null);
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
+  const [customMessage, setCustomMessage] = useState("");
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -386,6 +387,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
           dealNumber: dealInfo?.deal_number || "",
           dateFrom: dealInfo?.start_date || "",
           dateTo: dealInfo?.end_date || "",
+          customMessage: customMessage.trim() || undefined,
         },
       });
 
@@ -443,7 +445,29 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSendDialogOpen(true)}
+                    onClick={() => {
+                      const formatD = (d: string | null) => {
+                        if (!d) return "";
+                        const dt = new Date(d);
+                        return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
+                      };
+                      const dateRange = dealInfo?.start_date && dealInfo?.end_date
+                        ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
+                        : "";
+                      setCustomMessage(
+`Dear ${hotelSupplier?.name || "partner"},
+
+Please find attached the rooming list for ${dealInfo?.hotel_name || "the hotel"}${dateRange ? ` for the period ${dateRange}` : ""}.
+
+If you have any questions, please do not hesitate to contact us.
+
+Best regards,
+YARO Travel
+Tel.: +420 602 102 108
+zajezdy@yarotravel.cz`
+                      );
+                      setSendDialogOpen(true);
+                    }}
                     disabled={!hotelSupplier?.email}
                     title={!hotelSupplier?.email ? "Dodavatel ubytování nemá e-mail" : `Odeslat na ${hotelSupplier.email}`}
                   >
@@ -665,7 +689,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
 
       {/* Send Dialog */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
-        <DialogContent className="max-w-md bg-background">
+        <DialogContent className="max-w-lg bg-background">
           <DialogHeader>
             <DialogTitle>Odeslat rooming list dodavateli</DialogTitle>
           </DialogHeader>
@@ -682,8 +706,18 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                 <p className="text-sm">{dealInfo.hotel_name}</p>
               </div>
             )}
+            <div className="space-y-1">
+              <Label htmlFor="customMessage" className="text-sm">Text zprávy</Label>
+              <textarea
+                id="customMessage"
+                rows={10}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 resize-y"
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              Rooming list bude odeslán jako PDF příloha.
+              Rooming list bude přiložen jako PDF příloha.
             </p>
           </div>
           <div className="flex justify-end gap-2 mt-4">
