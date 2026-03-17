@@ -595,7 +595,7 @@ const Clients = () => {
         Import z textu
       </Button>
     </div>,
-    [filterConditions, filteredClients.length, loading]
+    [filterConditions, quickSearch, filteredClients.length, loading]
   );
 
   // Extract city from address
