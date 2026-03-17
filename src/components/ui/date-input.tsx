@@ -173,8 +173,9 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           }
         }
 
-        // Also try 2-digit year DD.MM.YY (6 digits)
-        if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted)) {
+        // Also try 2-digit year DD.MM.YY (6 digits) — only on paste, not while typing
+        // to avoid early commit when user is typing a 4-digit year
+        if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted) && isPaste) {
           const parsedDate = parse(formatted, "dd.MM.yy", new Date());
           if (isValid(parsedDate)) {
             isTypingRef.current = false;
