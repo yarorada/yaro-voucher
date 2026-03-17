@@ -136,7 +136,7 @@ const LayoutHeader = () => {
           <UndoRedoButtons />
           <SaveIndicator />
           {toolbarContent && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
               {toolbarContent}
             </div>
           )}
