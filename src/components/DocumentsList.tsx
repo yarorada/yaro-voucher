@@ -127,6 +127,8 @@ export function DocumentsList({ clientId, documents, onDelete }: DocumentsListPr
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80"
       onClick={closePreview}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div
         className="relative bg-background rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto p-6"
