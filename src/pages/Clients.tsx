@@ -1028,7 +1028,7 @@ const Clients = () => {
                       <td className="px-4 py-3 text-muted-foreground">{client.email || ""}</td>
                       <td className="px-4 py-3 text-muted-foreground">{client.phone || ""}</td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {client.address ? extractCity(client.address) : "–"}
+                        {client.date_of_birth ? (() => { const d = parseDateSafe(client.date_of_birth); return d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}` : "–"; })() : "–"}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
