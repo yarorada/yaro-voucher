@@ -529,13 +529,8 @@ const Clients = () => {
   };
 
   usePageToolbar(
-    <div className="flex items-center gap-2">
-      <SmartSearchInput
-        value={searchText}
-        onChange={setSearchText}
-        noResults={filteredClients.length === 0 && !loading && clients.length > 0}
-        addLabel={`klienta „{text}"`}
-        onAddNew={(text) => {
+    <div className="flex flex-wrap items-center gap-2">
+      <ClientFilterBar conditions={filterConditions} onChange={setFilterConditions} />
           const parts = text.trim().split(/\s+/);
           const first = parts[0] || "";
           const last = parts.slice(1).join(" ") || "";
