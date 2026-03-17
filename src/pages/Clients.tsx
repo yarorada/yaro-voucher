@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Edit, User, Users, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/components/ClientFilterBar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -105,7 +106,7 @@ const Clients = () => {
   const [bulkImportText, setBulkImportText] = useState("");
   const [bulkDocumentUploadOpen, setBulkDocumentUploadOpen] = useState(false);
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
-  const [searchText, setSearchText] = useState("");
+  const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const { setIsSaving, setLastSaved } = useGlobalHistory();
@@ -205,18 +206,7 @@ const Clients = () => {
       .replace(/[\u0300-\u036f]/g, '');
   };
 
-  const filteredClients = clients.filter((client) => {
-    if (!searchText.trim()) return true;
-    
-    const normalizedSearch = removeDiacritics(searchText.toLowerCase());
-    const normalizedFirstName = removeDiacritics(client.first_name.toLowerCase());
-    const normalizedLastName = removeDiacritics(client.last_name.toLowerCase());
-    const normalizedFullName = `${normalizedFirstName} ${normalizedLastName}`;
-    const normalizedEmail = client.email ? removeDiacritics(client.email.toLowerCase()) : '';
-    
-    return normalizedFullName.includes(normalizedSearch) || 
-           normalizedEmail.includes(normalizedSearch);
-  });
+  const filteredClients = applyClientFilters(clients, filterConditions);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -539,42 +529,8 @@ const Clients = () => {
   };
 
   usePageToolbar(
-    <div className="flex items-center gap-2">
-      <SmartSearchInput
-        value={searchText}
-        onChange={setSearchText}
-        noResults={filteredClients.length === 0 && !loading && clients.length > 0}
-        addLabel={`klienta „{text}"`}
-        onAddNew={(text) => {
-          const parts = text.trim().split(/\s+/);
-          const first = parts[0] || "";
-          const last = parts.slice(1).join(" ") || "";
-          setFormData(prev => ({
-            ...prev,
-            first_name: first,
-            last_name: last,
-            title: "",
-            email: "",
-            phone: "",
-            address: "",
-            notes: "",
-            date_of_birth: undefined,
-            passport_number: "",
-            passport_expiry: undefined,
-            id_card_number: "",
-            id_card_expiry: undefined,
-            company_name: "",
-            ico: "",
-            dic: "",
-            company_as_orderer: false,
-          }));
-          setEditingClient(null);
-          setIsDialogOpen(true);
-        }}
-        placeholder="Vyhledat zákazníka..."
-        className="w-44 md:w-56"
-        inputClassName="h-8 text-xs"
-      />
+    <div className="flex flex-wrap items-center gap-2">
+      <ClientFilterBar conditions={filterConditions} onChange={setFilterConditions} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
@@ -620,7 +576,7 @@ const Clients = () => {
         Import z textu
       </Button>
     </div>,
-    [searchText, filteredClients.length, loading]
+    [filterConditions, filteredClients.length, loading]
   );
 
   // Extract city from address
@@ -976,8 +932,8 @@ const Clients = () => {
           </Card>
         ) : filteredClients.length === 0 ? (
           <Card className="p-8 text-center shadow-[var(--shadow-medium)]">
-            <p className="text-muted-foreground">Pro "{searchText}" nebyl nalezen žádný klient</p>
-            <Button variant="outline" className="mt-3" onClick={() => setSearchText("")}>Zrušit filtr</Button>
+            <p className="text-muted-foreground">Žádný klient nevyhovuje nastaveným filtrům</p>
+            <Button variant="outline" className="mt-3" onClick={() => setFilterConditions([])}>Zrušit filtry</Button>
           </Card>
         ) : (
           <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
