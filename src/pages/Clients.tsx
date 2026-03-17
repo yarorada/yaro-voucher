@@ -988,7 +988,7 @@ const Clients = () => {
                     <th className="text-left px-4 py-3 font-medium text-primary cursor-pointer select-none">Jméno ↑</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Město</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Datum narození</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
                   </tr>
                 </thead>
@@ -1028,7 +1028,7 @@ const Clients = () => {
                       <td className="px-4 py-3 text-muted-foreground">{client.email || ""}</td>
                       <td className="px-4 py-3 text-muted-foreground">{client.phone || ""}</td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {client.address ? extractCity(client.address) : "–"}
+                        {client.date_of_birth ? (() => { const d = parseDateSafe(client.date_of_birth); return d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}` : "–"; })() : "–"}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
