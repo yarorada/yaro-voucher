@@ -87,9 +87,18 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       }
     };
 
+    const typingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
       const digitsOnly = newValue.replace(/\D/g, "");
+
+      // Mark as typing so the value-sync effect doesn't overwrite the input
+      isTypingRef.current = true;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        isTypingRef.current = false;
+      }, 1500);
 
       if (digitsOnly.length > 0) {
         let formatted = digitsOnly;
@@ -120,6 +129,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
           const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
           if (isValid(parsedDate)) {
+            isTypingRef.current = false;
             onChange(parsedDate);
             onTextInput?.(parsedDate);
             return;
@@ -130,6 +140,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted)) {
           const parsedDate = parse(formatted, "dd.MM.yy", new Date());
           if (isValid(parsedDate)) {
+            isTypingRef.current = false;
             onChange(parsedDate);
             onTextInput?.(parsedDate);
             return;
@@ -137,6 +148,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         }
       } else {
         setInputValue("");
+        isTypingRef.current = false;
         onChange(undefined);
       }
     };
