@@ -73,7 +73,7 @@ serve(async (req: Request) => {
 
     const subject = `Rooming List${hotelName ? ` - ${hotelName}` : ""}${dateRange ? ` (${dateRange})` : ""} - YARO Travel`;
 
-    const emailText = `Dear ${supplierName || "partner"},
+    const emailText = customMessage || `Dear ${supplierName || "partner"},
 
 Please find attached the rooming list for ${hotelName || "the hotel"}${dateRange ? ` for the period ${dateRange}` : ""}.
 
