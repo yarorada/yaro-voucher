@@ -44,7 +44,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     const [inputValue, setInputValue] = React.useState("");
     const [internalOpen, setInternalOpen] = React.useState(false);
     const [calendarMonth, setCalendarMonth] = React.useState<Date | undefined>(value);
-    // Tracks whether the user is actively typing so we don't overwrite their input
+    // True while the user is actively editing (incomplete value) — blocks external sync
     const isTypingRef = React.useRef(false);
 
     const isControlled = controlledOpen !== undefined;
@@ -59,7 +59,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           setInternalOpen(v);
         };
 
-    // Update input value when date prop changes from outside (not from typing)
+    // Sync value → inputValue only when not actively editing
     React.useEffect(() => {
       if (isTypingRef.current) return;
       if (value) {
@@ -87,18 +87,21 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       }
     };
 
-    const typingTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    // On blur: if user left an incomplete value, restore from last valid value (or clear)
+    const handleBlur = () => {
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        if (value) {
+          setInputValue(format(value, "dd.MM.yyyy"));
+        } else {
+          setInputValue("");
+        }
+      }
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
       const digitsOnly = newValue.replace(/\D/g, "");
-
-      // Mark as typing so the value-sync effect doesn't overwrite the input
-      isTypingRef.current = true;
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {
-        isTypingRef.current = false;
-      }, 1500);
 
       if (digitsOnly.length > 0) {
         let formatted = digitsOnly;
@@ -129,7 +132,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
           const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
           if (isValid(parsedDate)) {
-            isTypingRef.current = false;
+            isTypingRef.current = false; // complete — allow external sync again
             onChange(parsedDate);
             onTextInput?.(parsedDate);
             return;
@@ -146,14 +149,18 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
             return;
           }
         }
+
+        // Incomplete date — block external sync until user finishes or blurs
+        isTypingRef.current = true;
       } else {
         setInputValue("");
-        isTypingRef.current = false;
+        isTypingRef.current = false; // cleared — allow external sync
         onChange(undefined);
       }
     };
 
     const handleCalendarSelect = (date: Date | undefined) => {
+      isTypingRef.current = false;
       onChange(date);
       setOpen(false);
       if (date) {
@@ -168,6 +175,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder={placeholder}
           className="flex-1"
         />
