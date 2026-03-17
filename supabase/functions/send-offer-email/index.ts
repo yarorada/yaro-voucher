@@ -151,8 +151,13 @@ Deno.serve(async (req) => {
     const salutation = isFemale ? 'paní' : 'pane';
     const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
 
-    // Build public URL
-    const publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}${allVariants ? '?all=1' : ''}`;
+    // Build public URL — include variant filter so the link shows only selected variants
+    let publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}`;
+    if (allVariants) {
+      publicUrl += '?all=1';
+    } else if (variantIds && Array.isArray(variantIds) && variantIds.length > 0) {
+      publicUrl += `?variants=${variantIds.join(',')}`;
+    }
 
     // Fetch variants with services for the email body
     const { data: variants } = await supabase
@@ -172,17 +177,24 @@ Deno.serve(async (req) => {
       .eq('deal_id', dealId)
       .order('order_index', { ascending: true });
 
-    const selectedVariant = (variants || []).find((v: any) => v.is_selected);
-    let displayVariants: any[] = (allVariants || !selectedVariant) ? (variants || []) : [selectedVariant];
-
-    // Apply caller-supplied variant order (matches the user's drag-sorted order)
-    if (variantIds && Array.isArray(variantIds) && variantIds.length > 0) {
-      const ordered = variantIds
-        .map((id: string) => displayVariants.find((v: any) => v.id === id))
+    let displayVariants: any[];
+    if (allVariants) {
+      // Show all variants
+      displayVariants = variants || [];
+    } else if (variantIds && Array.isArray(variantIds) && variantIds.length > 0) {
+      // Filter to exactly the caller-supplied variant IDs (preserving their order)
+      displayVariants = variantIds
+        .map((id: string) => (variants || []).find((v: any) => v.id === id))
         .filter(Boolean);
-      // Append any variants not in variantIds (shouldn't happen, but safety)
-      const rest = displayVariants.filter((v: any) => !variantIds.includes(v.id));
-      displayVariants = [...ordered, ...rest];
+      // Fallback: if none matched, show selected or all
+      if (displayVariants.length === 0) {
+        const selectedVariant = (variants || []).find((v: any) => v.is_selected);
+        displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
+      }
+    } else {
+      // No explicit IDs and not allVariants — show selected variant only
+      const selectedVariant = (variants || []).find((v: any) => v.is_selected);
+      displayVariants = selectedVariant ? [selectedVariant] : (variants || []);
     }
 
     // Collect hotel names for images and descriptions
