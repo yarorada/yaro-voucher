@@ -207,7 +207,18 @@ const Clients = () => {
       .replace(/[\u0300-\u036f]/g, '');
   };
 
-  const filteredClients = applyClientFilters(clients, filterConditions);
+  const filteredClients = applyClientFilters(clients, filterConditions, quickSearch);
+
+  const handleAddNewFromSearch = (text: string) => {
+    const parts = text.trim().split(/\s+/);
+    setFormData((prev) => ({
+      ...prev,
+      first_name: parts[0] || "",
+      last_name: parts.slice(1).join(" ") || "",
+    }));
+    setEditingClient(null);
+    setIsDialogOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
