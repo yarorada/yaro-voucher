@@ -444,7 +444,29 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSendDialogOpen(true)}
+                    onClick={() => {
+                      const formatD = (d: string | null) => {
+                        if (!d) return "";
+                        const dt = new Date(d);
+                        return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
+                      };
+                      const dateRange = dealInfo?.start_date && dealInfo?.end_date
+                        ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
+                        : "";
+                      setCustomMessage(
+`Dear ${hotelSupplier?.name || "partner"},
+
+Please find attached the rooming list for ${dealInfo?.hotel_name || "the hotel"}${dateRange ? ` for the period ${dateRange}` : ""}.
+
+If you have any questions, please do not hesitate to contact us.
+
+Best regards,
+YARO Travel
+Tel.: +420 602 102 108
+zajezdy@yarotravel.cz`
+                      );
+                      setSendDialogOpen(true);
+                    }}
                     disabled={!hotelSupplier?.email}
                     title={!hotelSupplier?.email ? "Dodavatel ubytování nemá e-mail" : `Odeslat na ${hotelSupplier.email}`}
                   >
