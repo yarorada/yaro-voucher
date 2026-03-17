@@ -201,7 +201,7 @@ export function DuplicateClientChecker({ onComplete }: DuplicateClientCheckerPro
     <>
       <Button
         variant="ghost"
-        className="w-full justify-start text-sm"
+        className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal"
         onClick={checkForDuplicates}
         disabled={loading}
       >
