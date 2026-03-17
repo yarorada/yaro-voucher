@@ -689,7 +689,7 @@ zajezdy@yarotravel.cz`
 
       {/* Send Dialog */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
-        <DialogContent className="max-w-md bg-background">
+        <DialogContent className="max-w-lg bg-background">
           <DialogHeader>
             <DialogTitle>Odeslat rooming list dodavateli</DialogTitle>
           </DialogHeader>
@@ -706,8 +706,18 @@ zajezdy@yarotravel.cz`
                 <p className="text-sm">{dealInfo.hotel_name}</p>
               </div>
             )}
+            <div className="space-y-1">
+              <Label htmlFor="customMessage" className="text-sm">Text zprávy</Label>
+              <textarea
+                id="customMessage"
+                rows={10}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 resize-y"
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              Rooming list bude odeslán jako PDF příloha.
+              Rooming list bude přiložen jako PDF příloha.
             </p>
           </div>
           <div className="flex justify-end gap-2 mt-4">
