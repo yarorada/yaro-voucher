@@ -624,7 +624,11 @@ const Clients = () => {
                 if (!open) handleDialogClose();
               }}
             >
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+                <DialogContent
+                  className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background"
+                  onFocusOutside={(e) => e.preventDefault()}
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <DialogHeader>
                     <DialogTitle>
                       {editingClient ? "Upravit klienta" : "Nový klient"}
