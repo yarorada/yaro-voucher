@@ -27,16 +27,20 @@ interface DocumentsListProps {
 type MimeHint = "image" | "pdf" | "other";
 
 function getMimeHint(url: string): MimeHint {
-  const lower = url.toLowerCase();
-  if (lower.includes(".jpg") || lower.includes(".jpeg") || lower.includes(".png") || lower.includes(".webp") || lower.includes(".gif")) return "image";
-  if (lower.includes(".pdf")) return "pdf";
+  // Strip query params for cleaner extension matching
+  const path = url.split("?")[0].toLowerCase();
+  if (path.endsWith(".jpg") || path.endsWith(".jpeg") || path.endsWith(".png") || path.endsWith(".webp") || path.endsWith(".gif") || path.endsWith(".heic") || path.endsWith(".heif")) return "image";
+  if (path.endsWith(".pdf")) return "pdf";
+  // Fallback: check anywhere in path
+  if (path.includes(".jpg") || path.includes(".jpeg") || path.includes(".png") || path.includes(".webp") || path.includes(".heic") || path.includes(".heif")) return "image";
+  if (path.includes(".pdf")) return "pdf";
   return "other";
 }
 
 export function DocumentsList({ clientId, documents, onDelete }: DocumentsListProps) {
+  // Hooks must always be called before any conditional returns
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>("");
-  // Derived from the *original* URL before download — blob URLs have no extension
   const [previewMime, setPreviewMime] = useState<MimeHint>("other");
 
   if (!documents || documents.length === 0) {
