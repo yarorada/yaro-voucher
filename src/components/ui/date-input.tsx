@@ -44,6 +44,8 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     const [inputValue, setInputValue] = React.useState("");
     const [internalOpen, setInternalOpen] = React.useState(false);
     const [calendarMonth, setCalendarMonth] = React.useState<Date | undefined>(value);
+    // Tracks whether the user is actively typing so we don't overwrite their input
+    const isTypingRef = React.useRef(false);
 
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
@@ -57,8 +59,9 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           setInternalOpen(v);
         };
 
-    // Update input value when date prop changes
+    // Update input value when date prop changes from outside (not from typing)
     React.useEffect(() => {
+      if (isTypingRef.current) return;
       if (value) {
         setInputValue(format(value, "dd.MM.yyyy"));
       } else {
