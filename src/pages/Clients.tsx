@@ -107,6 +107,7 @@ const Clients = () => {
   const [bulkDocumentUploadOpen, setBulkDocumentUploadOpen] = useState(false);
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
+  const [quickSearch, setQuickSearch] = useState("");
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const { setIsSaving, setLastSaved } = useGlobalHistory();
