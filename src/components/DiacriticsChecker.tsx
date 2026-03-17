@@ -180,7 +180,7 @@ export function DiacriticsChecker({ onComplete }: DiacriticsCheckerProps) {
 
   return (
     <>
-      <Button variant="ghost" className="w-full justify-start text-sm" onClick={findChanges} disabled={loading}>
+      <Button variant="ghost" className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal" onClick={findChanges} disabled={loading}>
         {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
         Oprava diakritiky
       </Button>
