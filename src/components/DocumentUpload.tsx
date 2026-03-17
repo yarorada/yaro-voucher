@@ -436,7 +436,7 @@ export function DocumentUpload({
           nebo klikněte pro výběr souborů
         </p>
         <p className="text-xs text-muted-foreground">
-          Podporované formáty: JPG, PNG, WEBP, PDF (max 20MB)
+          Podporované formáty: JPG, PNG, WEBP, HEIC, PDF (max 20MB)
         </p>
         {documentType !== "other" && (
           <p className="text-xs text-muted-foreground mt-2">
