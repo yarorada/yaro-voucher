@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,9 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Filter } from "lucide-react";
-import { removeDiacritics } from "@/lib/utils";
-import { parseDateSafe } from "@/lib/utils";
+import { Plus, X, Filter, Search, SlidersHorizontal } from "lucide-react";
+import { removeDiacritics, parseDateSafe } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export type FilterField =
   | "name"
@@ -95,7 +95,6 @@ function matchCondition(client: Client, condition: FilterCondition): boolean {
         const d = parseDateSafe(client.date_of_birth);
         return d ? d.getFullYear().toString() === value.trim() : false;
       }
-      // format to DD.MM.YYYY for contains matching
       const d = parseDateSafe(client.date_of_birth);
       if (!d) return false;
       haystack = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
@@ -115,12 +114,25 @@ function matchCondition(client: Client, condition: FilterCondition): boolean {
   }
 }
 
-export function applyClientFilters<T extends Client>(clients: T[], conditions: FilterCondition[]): T[] {
+export function applyClientFilters<T extends Client>(clients: T[], conditions: FilterCondition[], quickSearch?: string): T[] {
+  let result = clients;
+
+  // Quick full-text search
+  if (quickSearch && quickSearch.trim()) {
+    const q = removeDiacritics(quickSearch.toLowerCase().trim());
+    result = result.filter((c) => {
+      const name = removeDiacritics(`${c.first_name} ${c.last_name}`.toLowerCase());
+      const email = removeDiacritics((c.email || "").toLowerCase());
+      const phone = (c.phone || "").replace(/\s/g, "");
+      const address = removeDiacritics((c.address || "").toLowerCase());
+      return name.includes(q) || email.includes(q) || phone.includes(q) || address.includes(q);
+    });
+  }
+
+  // Advanced filter conditions
   const active = conditions.filter((c) => c.value.trim() !== "");
-  if (active.length === 0) return clients;
-  return clients.filter((client) =>
-    active.every((cond) => matchCondition(client, cond))
-  );
+  if (active.length === 0) return result;
+  return result.filter((client) => active.every((cond) => matchCondition(client, cond)));
 }
 
 let conditionCounter = 0;
@@ -131,10 +143,39 @@ function newConditionId() {
 interface ClientFilterBarProps {
   conditions: FilterCondition[];
   onChange: (conditions: FilterCondition[]) => void;
+  quickSearch: string;
+  onQuickSearchChange: (v: string) => void;
+  noResults: boolean;
+  onAddNew: (text: string) => void;
 }
 
-export function ClientFilterBar({ conditions, onChange }: ClientFilterBarProps) {
+export function ClientFilterBar({
+  conditions,
+  onChange,
+  quickSearch,
+  onQuickSearchChange,
+  noResults,
+  onAddNew,
+}: ClientFilterBarProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const showSuggestion = quickSearch.trim().length > 0 && noResults && focused;
+  const activeConditions = conditions.filter((c) => c.value.trim()).length;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const addCondition = () => {
+    setShowAdvanced(true);
     onChange([
       ...conditions,
       { id: newConditionId(), field: "name", operator: "contains", value: "" },
@@ -142,7 +183,9 @@ export function ClientFilterBar({ conditions, onChange }: ClientFilterBarProps) 
   };
 
   const removeCondition = (id: string) => {
-    onChange(conditions.filter((c) => c.id !== id));
+    const next = conditions.filter((c) => c.id !== id);
+    onChange(next);
+    if (next.length === 0) setShowAdvanced(false);
   };
 
   const updateCondition = (id: string, patch: Partial<FilterCondition>) => {
@@ -150,7 +193,6 @@ export function ClientFilterBar({ conditions, onChange }: ClientFilterBarProps) 
       conditions.map((c) => {
         if (c.id !== id) return c;
         const updated = { ...c, ...patch };
-        // reset operator if field changes and operator not valid
         if (patch.field) {
           const validOps = getOperatorsForField(patch.field as FilterField);
           if (!validOps.includes(updated.operator)) updated.operator = validOps[0];
@@ -160,101 +202,147 @@ export function ClientFilterBar({ conditions, onChange }: ClientFilterBarProps) 
     );
   };
 
-  const activeCount = conditions.filter((c) => c.value.trim()).length;
+  const handleAdd = () => {
+    const text = quickSearch.trim();
+    onAddNew(text);
+    setFocused(false);
+  };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {conditions.map((cond, i) => (
-        <div
-          key={cond.id}
-          className="flex items-center gap-1.5 bg-muted/50 border border-border rounded-lg px-2 py-1"
-        >
-          {i > 0 && (
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-0.5">
-              A
-            </span>
-          )}
-          {/* Field selector */}
-          <Select
-            value={cond.field}
-            onValueChange={(v) => updateCondition(cond.id, { field: v as FilterField })}
-          >
-            <SelectTrigger className="h-7 text-xs w-[120px] border-0 bg-transparent px-1 focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background">
-              {(Object.keys(FIELD_LABELS) as FilterField[]).map((f) => (
-                <SelectItem key={f} value={f} className="text-xs">
-                  {FIELD_LABELS[f]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Operator selector */}
-          <Select
-            value={cond.operator}
-            onValueChange={(v) => updateCondition(cond.id, { operator: v as FilterOperator })}
-          >
-            <SelectTrigger className="h-7 text-xs w-[100px] border-0 bg-transparent px-1 focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background">
-              {getOperatorsForField(cond.field).map((op) => (
-                <SelectItem key={op} value={op} className="text-xs">
-                  {OPERATOR_LABELS[op]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Value input */}
-          <Input
-            value={cond.value}
-            onChange={(e) => updateCondition(cond.id, { value: e.target.value })}
-            placeholder={cond.field === "date_of_birth" && cond.operator === "year" ? "2000" : "Hodnota…"}
-            className="h-7 text-xs w-28 border-0 bg-transparent px-1 focus-visible:ring-0"
-          />
-
-          {/* Remove */}
+    <div ref={containerRef} className="flex flex-wrap items-center gap-2">
+      {/* Quick search input with dropdown suggestion */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+        <Input
+          placeholder="Hledat klienta..."
+          value={quickSearch}
+          onChange={(e) => onQuickSearchChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          className="h-8 text-xs pl-8 pr-7 w-52"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && showSuggestion) { e.preventDefault(); handleAdd(); }
+            if (e.key === "Escape") setFocused(false);
+          }}
+        />
+        {quickSearch && (
           <button
-            onClick={() => removeCondition(cond.id)}
-            className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
+            type="button"
+            onClick={() => { onQuickSearchChange(""); setFocused(false); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
-        </div>
-      ))}
-
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 text-xs gap-1.5"
-        onClick={addCondition}
-      >
-        {conditions.length === 0 ? (
-          <>
-            <Filter className="h-3.5 w-3.5" />
-            Filtrovat
-          </>
-        ) : (
-          <>
-            <Plus className="h-3.5 w-3.5" />
-            Přidat podmínku
-          </>
         )}
+
+        {showSuggestion && (
+          <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-md border border-border bg-popover shadow-md min-w-[220px]">
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); handleAdd(); }}
+              className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-left hover:bg-accent rounded-md transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Přidat klienta <strong>„{quickSearch.trim()}"</strong></span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Toggle advanced filters */}
+      <Button
+        variant={showAdvanced || activeConditions > 0 ? "secondary" : "outline"}
+        size="sm"
+        className={cn("h-8 text-xs gap-1.5", activeConditions > 0 && "border-primary/50")}
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        title="Pokročilý filtr"
+      >
+        <SlidersHorizontal className="h-3.5 w-3.5" />
+        {activeConditions > 0 ? `Filtr (${activeConditions})` : "Filtr"}
       </Button>
 
-      {activeCount > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-xs text-muted-foreground gap-1"
-          onClick={() => onChange([])}
-        >
-          <X className="h-3 w-3" />
-          Zrušit vše
-        </Button>
+      {/* Advanced conditions */}
+      {showAdvanced && (
+        <>
+          {conditions.map((cond, i) => (
+            <div
+              key={cond.id}
+              className="flex items-center gap-1.5 bg-muted/50 border border-border rounded-lg px-2 py-1"
+            >
+              {i > 0 && (
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-0.5">
+                  A
+                </span>
+              )}
+              <Select
+                value={cond.field}
+                onValueChange={(v) => updateCondition(cond.id, { field: v as FilterField })}
+              >
+                <SelectTrigger className="h-7 text-xs w-[120px] border-0 bg-transparent px-1 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  {(Object.keys(FIELD_LABELS) as FilterField[]).map((f) => (
+                    <SelectItem key={f} value={f} className="text-xs">
+                      {FIELD_LABELS[f]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={cond.operator}
+                onValueChange={(v) => updateCondition(cond.id, { operator: v as FilterOperator })}
+              >
+                <SelectTrigger className="h-7 text-xs w-[100px] border-0 bg-transparent px-1 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  {getOperatorsForField(cond.field).map((op) => (
+                    <SelectItem key={op} value={op} className="text-xs">
+                      {OPERATOR_LABELS[op]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Input
+                value={cond.value}
+                onChange={(e) => updateCondition(cond.id, { value: e.target.value })}
+                placeholder={cond.field === "date_of_birth" && cond.operator === "year" ? "2000" : "Hodnota…"}
+                className="h-7 text-xs w-28 border-0 bg-transparent px-1 focus-visible:ring-0"
+              />
+
+              <button
+                onClick={() => removeCondition(cond.id)}
+                className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={addCondition}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {conditions.length === 0 ? "Přidat podmínku" : "Další podmínka"}
+          </Button>
+
+          {(conditions.length > 0 || activeConditions > 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-muted-foreground gap-1"
+              onClick={() => { onChange([]); setShowAdvanced(false); }}
+            >
+              <X className="h-3 w-3" />
+              Zrušit
+            </Button>
+          )}
+        </>
       )}
     </div>
   );

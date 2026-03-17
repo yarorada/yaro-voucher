@@ -107,6 +107,7 @@ const Clients = () => {
   const [bulkDocumentUploadOpen, setBulkDocumentUploadOpen] = useState(false);
   const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
+  const [quickSearch, setQuickSearch] = useState("");
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const { setIsSaving, setLastSaved } = useGlobalHistory();
@@ -206,7 +207,18 @@ const Clients = () => {
       .replace(/[\u0300-\u036f]/g, '');
   };
 
-  const filteredClients = applyClientFilters(clients, filterConditions);
+  const filteredClients = applyClientFilters(clients, filterConditions, quickSearch);
+
+  const handleAddNewFromSearch = (text: string) => {
+    const parts = text.trim().split(/\s+/);
+    setFormData((prev) => ({
+      ...prev,
+      first_name: parts[0] || "",
+      last_name: parts.slice(1).join(" ") || "",
+    }));
+    setEditingClient(null);
+    setIsDialogOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -530,7 +542,14 @@ const Clients = () => {
 
   usePageToolbar(
     <div className="flex flex-wrap items-center gap-2">
-      <ClientFilterBar conditions={filterConditions} onChange={setFilterConditions} />
+      <ClientFilterBar
+          conditions={filterConditions}
+          onChange={setFilterConditions}
+          quickSearch={quickSearch}
+          onQuickSearchChange={setQuickSearch}
+          noResults={clients.length > 0 && filteredClients.length === 0}
+          onAddNew={handleAddNewFromSearch}
+        />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
@@ -576,7 +595,7 @@ const Clients = () => {
         Import z textu
       </Button>
     </div>,
-    [filterConditions, filteredClients.length, loading]
+    [filterConditions, quickSearch, filteredClients.length, loading]
   );
 
   // Extract city from address
