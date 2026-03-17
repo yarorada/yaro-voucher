@@ -104,6 +104,32 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       const digitsOnly = newValue.replace(/\D/g, "");
 
       if (digitsOnly.length > 0) {
+        // Fast path: pure digit strings DDMMRRRR (8) or DDMMRR (6) — parse directly
+        if (digitsOnly === newValue) {
+          if (digitsOnly.length === 8) {
+            const formatted = digitsOnly.slice(0, 2) + "." + digitsOnly.slice(2, 4) + "." + digitsOnly.slice(4);
+            const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
+            if (isValid(parsedDate)) {
+              setInputValue(formatted);
+              isTypingRef.current = false;
+              onChange(parsedDate);
+              onTextInput?.(parsedDate);
+              return;
+            }
+          }
+          if (digitsOnly.length === 6) {
+            const formatted = digitsOnly.slice(0, 2) + "." + digitsOnly.slice(2, 4) + "." + digitsOnly.slice(4);
+            const parsedDate = parse(formatted, "dd.MM.yy", new Date());
+            if (isValid(parsedDate)) {
+              setInputValue(formatted);
+              isTypingRef.current = false;
+              onChange(parsedDate);
+              onTextInput?.(parsedDate);
+              return;
+            }
+          }
+        }
+
         let formatted = digitsOnly;
 
         // Add first dot after day (2 digits)
@@ -132,7 +158,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
         if (/^\d{2}\.\d{2}\.\d{4}$/.test(formatted)) {
           const parsedDate = parse(formatted, "dd.MM.yyyy", new Date());
           if (isValid(parsedDate)) {
-            isTypingRef.current = false; // complete — allow external sync again
+            isTypingRef.current = false;
             onChange(parsedDate);
             onTextInput?.(parsedDate);
             return;
