@@ -553,12 +553,23 @@ const Clients = () => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
-            <Users className="h-3.5 w-3.5" />
-            Duplicity
             <ChevronDown className="h-3 w-3" />
+            Hromadné operace
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+          <DropdownMenuItem asChild>
+            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => setBulkDocumentUploadOpen(true)}>
+              <FileUp className="h-4 w-4 mr-2" />
+              Skenovat doklad
+            </Button>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Button variant="ghost" className="w-full justify-start text-sm" onClick={() => setBulkImportOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Import z textu
+            </Button>
+          </DropdownMenuItem>
           <DuplicateClientChecker onComplete={fetchClients} />
           <Button
             variant="ghost"
@@ -586,14 +597,6 @@ const Clients = () => {
           <DiacriticsChecker onComplete={fetchClients} />
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkDocumentUploadOpen(true)}>
-        <FileUp className="h-3.5 w-3.5" />
-        Skenovat doklad
-      </Button>
-      <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setBulkImportOpen(true)}>
-        <FileText className="h-3.5 w-3.5" />
-        Import z textu
-      </Button>
     </div>,
     [filterConditions, quickSearch, filteredClients.length, loading]
   );
