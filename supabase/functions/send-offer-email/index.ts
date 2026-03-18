@@ -109,9 +109,13 @@ Deno.serve(async (req) => {
     const clientFirstName = client.first_name || '';
     const clientLastName = client.last_name || '';
     const clientFullName = `${clientFirstName} ${clientLastName}`.trim();
+    const clientTitle = client.title || '';
 
-    // Decline name to accusative using AI
-    let declinedName = clientFullName;
+    // Build "title + last name" string for greeting (without first name)
+    const titleLastName = clientTitle ? `${clientTitle} ${clientLastName}`.trim() : clientLastName;
+
+    // Decline title+last name to 5th case (vokativ) using AI
+    let declinedName = titleLastName;
     try {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (LOVABLE_API_KEY) {
@@ -126,9 +130,9 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: "Převeď české jméno a příjmení do 5. pádu (vokativu). Vrať POUZE skloňované jméno, nic jiného. Pokud jméno nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Jan Novák → Jane Nováku, Petra Svobodová → Petro Svobodová, Jaroslav Rokos → Jaroslave Rokosi, Martin Dvořák → Martine Dvořáku.",
+                content: "Převeď české příjmení (případně s titulem) do 5. pádu (vokativu). Vrať POUZE skloňované příjmení (s titulem pokud byl uveden), nic jiného. Titul neskloňuj. Pokud příjmení nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Novák → Nováku, Svobodová → Svobodová, Dvořák → Dvořáku, pan Novák → pane Nováku, paní Svobodová → paní Svobodová.",
               },
-              { role: "user", content: clientFullName },
+              { role: "user", content: titleLastName },
             ],
           }),
         });
