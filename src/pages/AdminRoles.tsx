@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, User, ChevronDown, ChevronUp, Database } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ShieldCheck, User, ChevronDown, ChevronUp, Database, Pencil, Check, X } from "lucide-react";
 import { ALL_SECTIONS, useUserPermissionsForUser, SectionKey } from "@/hooks/useUserPermissions";
 
 interface Profile {
@@ -22,14 +23,38 @@ interface UserRoleRow {
   role: string;
 }
 
-function UserPermissionRow({ profile, currentRole, onRoleChange, assigning }: {
+function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, assigning }: {
   profile: Profile;
   currentRole: string | null;
   onRoleChange: (userId: string, role: string) => void;
+  onNameChange: (userId: string, name: string) => void;
   assigning: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(profile.name ?? "");
+  const [savingName, setSavingName] = useState(false);
   const { loading, getEffective, setOverride, defaults, overrides, getDataScope, setDataScope, dataScopeLoading } = useUserPermissionsForUser(profile.id);
+
+  const handleSaveName = async () => {
+    setSavingName(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ name: nameValue || null }).eq("id", profile.id);
+      if (error) throw error;
+      onNameChange(profile.id, nameValue);
+      toast.success("Jméno uloženo");
+      setEditingName(false);
+    } catch (e: any) {
+      toast.error("Chyba při ukládání jména: " + e.message);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleCancelName = () => {
+    setNameValue(profile.name ?? "");
+    setEditingName(false);
+  };
 
   return (
     <div className="rounded-lg border border-border bg-muted/20">
@@ -38,7 +63,31 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, assigning }: {
           <User className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{profile.email}</p>
-            {profile.name && <p className="text-xs text-muted-foreground">{profile.name}</p>}
+            {editingName ? (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Input
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  className="h-6 text-xs px-1.5 w-36"
+                  placeholder="Celé jméno"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") handleCancelName(); }}
+                  autoFocus
+                />
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveName} disabled={savingName}>
+                  <Check className="h-3 w-3 text-green-600" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleCancelName}>
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <p className="text-xs text-muted-foreground">{profile.name || <span className="italic">bez jména</span>}</p>
+                <Button size="icon" variant="ghost" className="h-4 w-4 p-0 opacity-50 hover:opacity-100" onClick={() => setEditingName(true)} title="Změnit jméno">
+                  <Pencil className="h-2.5 w-2.5" />
+                </Button>
+              </div>
+            )}
           </div>
           {currentRole && (
             <Badge variant={currentRole === "admin" ? "default" : "secondary"}>
