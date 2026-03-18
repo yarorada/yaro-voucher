@@ -578,7 +578,7 @@ Deno.serve(async (req) => {
 
     <!-- Greeting -->
     <div style="margin-bottom:24px;">
-      ${(customMessage || `${vazenySalutation} ${salutation} ${escapeHtml(declinedName)},\n\nzasíláme Vám nabídku podle Vašich požadavků.`)
+      ${(customMessage || `${vazenySalutation} ${escapeHtml(declinedName)},\n\nzasíláme Vám nabídku podle Vašich požadavků.`)
         .split('\n')
         .map((line: string) => `<p style="font-size:15px; color:#334155; line-height:1.6; margin:0 0 4px;">${escapeHtml(line)}</p>`)
         .join('')}
