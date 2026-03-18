@@ -13,8 +13,8 @@ interface SendContractEmailRequest {
   customEmailText?: string | null;
 }
 
-const buildClientEmailTextFallback = (lastName: string, dateFrom: string, dateTo: string, destination: string) => {
-  return `Vážený ${lastName},\n\nposíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.\n\nProsíme o prostudování smlouvy a její podepsání.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
+const buildClientEmailTextFallback = (salutation: string, dateFrom: string, dateTo: string, destination: string) => {
+  return `${salutation},\n\nposíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.\n\nProsíme o prostudování smlouvy a její podepsání.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
 };
 
 const buildSupplierEmailTextFallback = (dateFrom: string, dateTo: string, destination: string) => {
@@ -95,7 +95,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const clientEmail = contract.client?.email;
     const clientLastName = contract.client?.last_name || "klient";
-    const clientFirstName = contract.client?.first_name || "";
+    const clientTitle = contract.client?.title || "";
+    const titleLastName = clientTitle ? `${clientTitle} ${clientLastName}`.trim() : clientLastName;
     if (!clientEmail) {
       return new Response(JSON.stringify({ error: "Client email not found" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,8 +111,41 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = siteUrl || "https://yarogolf-crm.lovable.app";
     const signLink = signToken ? `${baseUrl}/sign-contract?token=${signToken}` : "";
 
+    // Decline title+last name to vokativ using AI
+    let vokativSalutation = titleLastName;
+    try {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (LOVABLE_API_KEY) {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: "Převeď české příjmení (případně s titulem) do 5. pádu (vokativu). Vrať POUZE skloňované příjmení (s titulem pokud byl uveden), nic jiného. Titul neskloňuj. Pokud příjmení nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Novák → Nováku, Svobodová → Svobodová, Dvořák → Dvořáku, pan Novák → pane Nováku, paní Svobodová → paní Svobodová.",
+              },
+              { role: "user", content: titleLastName },
+            ],
+          }),
+        });
+        if (aiResp.ok) {
+          const aiData = await aiResp.json();
+          const declined = aiData.choices?.[0]?.message?.content?.trim();
+          if (declined && declined.length < 200) vokativSalutation = declined;
+        }
+      }
+    } catch (e) {
+      console.error("Name declension error:", e);
+    }
+
+    const isFemale = clientTitle === 'paní' || clientTitle === 'Paní' || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
+    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
+    const fullSalutation = `${vazenySalutation} ${vokativSalutation}`;
+
     const placeholderVars: Record<string, string> = {
-      first_name: clientFirstName,
+      first_name: "",
       last_name: clientLastName,
       destination,
       hotel: "",
@@ -162,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (clientTemplate) {
       clientEmailText = replacePlaceholders(clientTemplate.body, placeholderVars) + signLinkText + attachmentNote;
     } else {
-      clientEmailText = buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
+      clientEmailText = buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
     }
 
     const clientEmailPayload: any = {

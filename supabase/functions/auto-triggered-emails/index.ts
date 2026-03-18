@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
           const { data: clients } = await supabase
             .from("clients")
-            .select("id, first_name, last_name, email, date_of_birth")
+            .select("id, first_name, last_name, title, email, date_of_birth")
             .not("email", "is", null)
             .not("date_of_birth", "is", null);
 
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
             if (alreadySent) continue;
 
             const vars: Record<string, string> = {
-              first_name: client.first_name || "",
+              first_name: "",
               last_name: client.last_name || "",
               destination: "",
               hotel: "",
@@ -283,7 +283,7 @@ async function processDealEmail(
 
   const destination = deal.destination?.name || "";
   const vars: Record<string, string> = {
-    first_name: lead?.clients?.first_name || "",
+    first_name: "",
     last_name: lead?.clients?.last_name || "",
     destination,
     hotel: "",
