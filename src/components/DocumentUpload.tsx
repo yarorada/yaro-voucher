@@ -117,44 +117,50 @@ export function DocumentUpload({
 
   const uploadFile = async (file: File, index: number) => {
     try {
-      let fileToUpload = file;
       let originalSize = file.size;
       let compressedSize = file.size;
       let savings = 0;
 
-      // Compress image files before upload
-      if (isImageFile(file)) {
-        setUploadingFiles(prev => 
-          prev.map((uf, i) => i === index ? { 
-            ...uf, 
-            status: "compressing",
-            progress: 10,
-            originalSize: file.size 
-          } : uf)
-        );
+      // Step 1: Convert to PNG (PDF, HEIC, JPG, WEBP → PNG)
+      setUploadingFiles(prev =>
+        prev.map((uf, i) => i === index ? { ...uf, status: "compressing", progress: 10, originalSize: file.size } : uf)
+      );
 
+      let pngFile: File;
+      try {
+        pngFile = await convertDocumentToPng(file);
+      } catch (convErr) {
+        console.error("Conversion to PNG failed:", convErr);
+        toast.warning("Převod na PNG selhal, nahrávám originál");
+        pngFile = file;
+      }
+
+      let fileToUpload = pngFile;
+
+      // Step 2: Compress if it's an image (PNG is an image)
+      if (isImageFile(fileToUpload) && !isPdfFile(file)) {
         try {
-          const compressed = await compressImage(file, 1920, 1920, 0.85);
-          
-          // Only use compressed version if it's actually smaller
-          if (compressed.compressedSize < file.size) {
-            fileToUpload = new File([compressed.blob], file.name, {
-              type: "image/jpeg",
+          const compressed = await compressImage(fileToUpload, 1920, 1920, 0.92);
+          if (compressed.compressedSize < fileToUpload.size) {
+            fileToUpload = new File([compressed.blob], pngFile.name, {
+              type: "image/png",
               lastModified: Date.now(),
             });
             originalSize = compressed.originalSize;
             compressedSize = compressed.compressedSize;
             savings = compressed.savings;
-            
-            toast.success(`Obrázek zkomprimován o ${savings}%`);
+            toast.success(`Dokument převeden na PNG a zkomprimován o ${savings}%`);
           } else {
-            // Original is smaller, use it
-            toast.info("Komprese nepřinesla úsporu, použit originál");
+            fileToUpload = pngFile;
+            toast.success("Dokument převeden na PNG");
           }
         } catch (compressionError) {
           console.error("Compression error:", compressionError);
-          toast.warning("Komprese selhala, nahrávám originál");
+          fileToUpload = pngFile;
+          toast.success("Dokument převeden na PNG");
         }
+      } else {
+        toast.success("Dokument převeden na PNG");
       }
 
       // Update progress
