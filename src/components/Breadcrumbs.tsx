@@ -17,6 +17,7 @@ const routeNames: Record<string, string> = {
   "hotels": "Hotely",
   "admin": "Admin",
   "roles": "Roles",
+  "email-templates": "Email-templates",
 };
 
 interface Breadcrumb {
