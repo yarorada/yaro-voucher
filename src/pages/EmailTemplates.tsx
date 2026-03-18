@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +76,7 @@ export default function EmailTemplates() {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({ subject: "", body: "", trigger_type: "", trigger_offset_days: "" });
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchTemplates = async () => {
     const { data, error } = await supabase
@@ -135,7 +136,21 @@ export default function EmailTemplates() {
   };
 
   const insertPlaceholder = (placeholder: string) => {
-    setEditForm(prev => ({ ...prev, body: prev.body + placeholder }));
+    const textarea = bodyRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newBody = editForm.body.slice(0, start) + placeholder + editForm.body.slice(end);
+      setEditForm(prev => ({ ...prev, body: newBody }));
+      // Restore cursor position after React re-render
+      requestAnimationFrame(() => {
+        textarea.selectionStart = start + placeholder.length;
+        textarea.selectionEnd = start + placeholder.length;
+        textarea.focus();
+      });
+    } else {
+      setEditForm(prev => ({ ...prev, body: prev.body + placeholder }));
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Načítání...</div>;
@@ -205,6 +220,7 @@ export default function EmailTemplates() {
               <div>
                 <Label>Tělo e-mailu</Label>
                 <Textarea
+                  ref={bodyRef}
                   value={editForm.body}
                   onChange={e => setEditForm(p => ({ ...p, body: e.target.value }))}
                   rows={12}
