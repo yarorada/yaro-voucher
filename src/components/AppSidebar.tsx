@@ -164,6 +164,20 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-border/50 mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
+            <div className="flex items-center gap-2 px-2 py-2 group-data-[state=collapsed]:hidden">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <UserCircle className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-foreground">{displayName}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{displayEmail}</p>
+              </div>
+            </div>
+            <div className="group-data-[state=expanded]:hidden px-2 py-1 flex justify-center">
+              <UserCircle className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <div className="px-2 py-1">
               <ThemeToggle />
             </div>
