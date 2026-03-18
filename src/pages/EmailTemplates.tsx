@@ -27,7 +27,7 @@ interface EmailTemplate {
 }
 
 const PLACEHOLDERS = [
-  { key: "{{first_name}}", desc: "Křestní jméno klienta" },
+  { key: "{{salutation}}", desc: "Oslovení – Vážený/Vážená + příjmení ve vokativu (dle titulu Pan/Paní)" },
   { key: "{{last_name}}", desc: "Příjmení klienta" },
   { key: "{{destination}}", desc: "Název destinace" },
   { key: "{{hotel}}", desc: "Název hotelu" },
