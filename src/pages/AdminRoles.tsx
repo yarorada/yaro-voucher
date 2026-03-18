@@ -300,6 +300,7 @@ export default function AdminRoles() {
                 profile={profile}
                 currentRole={getRoleForUser(profile.id)}
                 onRoleChange={handleSetRole}
+                onNameChange={handleNameChange}
                 assigning={assigning}
               />
             ))}
