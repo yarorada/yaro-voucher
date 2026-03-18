@@ -1910,6 +1910,7 @@ export type Database = {
         Args: { p_issue_date: string }
         Returns: string
       }
+      has_full_data_scope: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
