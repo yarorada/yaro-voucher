@@ -520,7 +520,7 @@ export function DocumentUpload({
                   <Progress value={uploadingFile.progress} className="h-1" />
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">
-                      {uploadingFile.status === "compressing" && "Komprimuji obrázek..."}
+                      {uploadingFile.status === "compressing" && "Převádím na PNG..."}
                       {uploadingFile.status === "uploading" && "Nahrávám..."}
                       {uploadingFile.status === "processing" && "Zpracovávám OCR..."}
                       {uploadingFile.status === "success" && "Dokončeno"}
