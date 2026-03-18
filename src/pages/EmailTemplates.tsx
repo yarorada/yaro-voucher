@@ -76,6 +76,7 @@ export default function EmailTemplates() {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({ subject: "", body: "", trigger_type: "", trigger_offset_days: "" });
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchTemplates = async () => {
     const { data, error } = await supabase
