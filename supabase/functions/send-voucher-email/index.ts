@@ -144,18 +144,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Get orderer (lead_client_id) from the deal — that's who gets the email
     let clientEmail: string | null = null;
     let clientLastName = "klient";
-    let clientFirstName = "";
+    let clientTitle = "";
 
     if (voucher.deal_id) {
       const { data: deal } = await supabase
         .from("deals").select("lead_client_id").eq("id", voucher.deal_id).single();
       if (deal?.lead_client_id) {
         const { data: orderer } = await supabase
-          .from("clients").select("email, first_name, last_name").eq("id", deal.lead_client_id).single();
+          .from("clients").select("email, first_name, last_name, title").eq("id", deal.lead_client_id).single();
         if (orderer) {
           clientEmail = orderer.email;
           clientLastName = orderer.last_name || "klient";
-          clientFirstName = orderer.first_name || "";
+          clientTitle = orderer.title || "";
         }
       }
     }
@@ -167,23 +167,57 @@ const handler = async (req: Request): Promise<Response> => {
       if (mainClientData?.email) {
         clientEmail = mainClientData.email;
         clientLastName = mainClientData.last_name || "klient";
-        clientFirstName = mainClientData.first_name || "";
+        clientTitle = mainClientData.title || "";
       }
     }
 
     // Fallback: voucher.client_id
     if (!clientEmail && voucher.client_id) {
       const { data: fallbackClient } = await supabase
-        .from("clients").select("email, first_name, last_name").eq("id", voucher.client_id).single();
+        .from("clients").select("email, first_name, last_name, title").eq("id", voucher.client_id).single();
       if (fallbackClient) {
         clientEmail = fallbackClient.email;
         clientLastName = fallbackClient.last_name || "klient";
-        clientFirstName = fallbackClient.first_name || "";
+        clientTitle = fallbackClient.title || "";
       }
     }
 
     // If client email not found, skip sending to client (don't throw)
     const noClientEmail = !clientEmail;
+
+    // Build vokativ salutation using AI
+    const titleLastName = clientTitle ? `${clientTitle} ${clientLastName}`.trim() : clientLastName;
+    let vokativSalutation = titleLastName;
+    try {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (LOVABLE_API_KEY) {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: "Převeď české příjmení (případně s titulem) do 5. pádu (vokativu). Vrať POUZE skloňované příjmení (s titulem pokud byl uveden), nic jiného. Titul neskloňuj. Pokud příjmení nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Novák → Nováku, Svobodová → Svobodová, Dvořák → Dvořáku, pan Novák → pane Nováku, paní Svobodová → paní Svobodová.",
+              },
+              { role: "user", content: titleLastName },
+            ],
+          }),
+        });
+        if (aiResp.ok) {
+          const aiData = await aiResp.json();
+          const declined = aiData.choices?.[0]?.message?.content?.trim();
+          if (declined && declined.length < 200) vokativSalutation = declined;
+        }
+      }
+    } catch (e) {
+      console.error("Name declension error:", e);
+    }
+
+    const isFemale = clientTitle === 'paní' || clientTitle === 'Paní' || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
+    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
+    const fullSalutation = `${vazenySalutation} ${vokativSalutation}`;
 
     const { dateFrom, dateTo } = getTravelDateRange(voucher.services || []);
     const hotelName = voucher.hotel_name || "N/A";
