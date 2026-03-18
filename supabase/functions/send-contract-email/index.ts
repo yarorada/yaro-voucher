@@ -95,7 +95,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const clientEmail = contract.client?.email;
     const clientLastName = contract.client?.last_name || "klient";
-    const clientFirstName = contract.client?.first_name || "";
+    const clientTitle = contract.client?.title || "";
+    const titleLastName = clientTitle ? `${clientTitle} ${clientLastName}`.trim() : clientLastName;
     if (!clientEmail) {
       return new Response(JSON.stringify({ error: "Client email not found" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
