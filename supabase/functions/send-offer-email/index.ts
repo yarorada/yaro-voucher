@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
       ? `${formatDate(sharedStart)} – ${formatDate(sharedEnd)}`
       : '';
 
-    // Decline name to accusative for the title
+    // Decline last name to 4th case (akuzativ) for the title heading — use full name for the heading
     let accusativeName = clientFullName;
     try {
       const LOVABLE_API_KEY2 = Deno.env.get("LOVABLE_API_KEY");

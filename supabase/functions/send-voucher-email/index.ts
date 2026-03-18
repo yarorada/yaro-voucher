@@ -17,8 +17,8 @@ interface SendEmailRequest {
 }
 
 // Fallback Czech email text for client
-const buildClientEmailTextFallback = (lastName: string, dateFrom: string, dateTo: string, hotel: string) => {
-  return `Vážený ${lastName},\n\nposíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
+const buildClientEmailTextFallback = (salutation: string, dateFrom: string, dateTo: string, hotel: string) => {
+  return `${salutation},\n\nposíláme vám voucher na služby k vašemu zájezdu od ${dateFrom} do ${dateTo} do hotelu ${hotel}.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
 };
 
 // Fallback English email text for supplier

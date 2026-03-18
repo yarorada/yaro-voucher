@@ -13,8 +13,8 @@ interface SendContractEmailRequest {
   customEmailText?: string | null;
 }
 
-const buildClientEmailTextFallback = (lastName: string, dateFrom: string, dateTo: string, destination: string) => {
-  return `Vážený ${lastName},\n\nposíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.\n\nProsíme o prostudování smlouvy a její podepsání.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
+const buildClientEmailTextFallback = (salutation: string, dateFrom: string, dateTo: string, destination: string) => {
+  return `${salutation},\n\nposíláme vám cestovní smlouvu k vašemu zájezdu od ${dateFrom} do ${dateTo} do destinace ${destination}.\n\nProsíme o prostudování smlouvy a její podepsání.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`;
 };
 
 const buildSupplierEmailTextFallback = (dateFrom: string, dateTo: string, destination: string) => {
