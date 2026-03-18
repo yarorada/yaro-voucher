@@ -1,4 +1,4 @@
-import { useState, useCallback, ReactNode, useRef } from "react";
+import { useState, useCallback, ReactNode, useRef, useMemo } from "react";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
@@ -24,6 +24,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const STORAGE_KEY = "yaro-dashboard-order";
 const HIDDEN_KEY = "yaro-dashboard-hidden";
@@ -38,16 +39,6 @@ const DEFAULT_ORDER = [
   "vouchers",
   "contracts",
 ];
-
-const TILE_COMPONENTS: Record<string, ReactNode> = {
-  bank_notifications: <BankNotificationsCard />,
-  tasks: <TasksCard />,
-  stats: <StatsCard />,
-  overdue: <OverduePaymentsCard />,
-  deals: <RecentDealsCard />,
-  vouchers: <RecentVouchersCard />,
-  contracts: <RecentContractsCard />,
-};
 
 type TileSize = "1x1" | "2x1" | "1x2" | "2x2";
 
