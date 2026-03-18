@@ -55,10 +55,24 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { open, setOpen, setOpenMobile } = useSidebar();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { isAdmin } = useUserRole();
   const { canAccess } = useUserPermissions();
   const isMobile = useIsMobile();
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setProfileName(data?.name ?? null));
+  }, [user?.id]);
+
+  const displayName = profileName || user?.email?.split("@")[0] || "Uživatel";
+  const displayEmail = user?.email ?? "";
 
   const menuItems = allMenuItems.filter(item => {
     if (item.url === "/") return true;
