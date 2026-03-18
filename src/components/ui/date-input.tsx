@@ -127,17 +127,20 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
               return;
             }
           }
-          // 6-digit fast path (DDMMRR) only on paste — not while typing digit by digit
-          // to avoid premature parse when user is still entering a 4-digit year
-          if (digitsOnly.length === 6 && isPaste) {
-            const formatted = digitsOnly.slice(0, 2) + "." + digitsOnly.slice(2, 4) + "." + digitsOnly.slice(4);
-            const parsedDate = parse(formatted, "dd.MM.yy", new Date());
-            if (isValid(parsedDate)) {
-              setInputValue(formatted);
-              isTypingRef.current = false;
-              onChange(parsedDate);
-              onTextInput?.(parsedDate);
-              return;
+          // 6-digit fast path (DDMMRR): parse immediately unless year starts with "19"
+          // (if "19xx", user is likely entering a historical year → wait for 4 digits)
+          if (digitsOnly.length === 6) {
+            const yearPart = digitsOnly.slice(4, 6);
+            if (!yearPart.startsWith("19")) {
+              const formatted = digitsOnly.slice(0, 2) + "." + digitsOnly.slice(2, 4) + "." + digitsOnly.slice(4);
+              const parsedDate = parse(formatted, "dd.MM.yy", new Date());
+              if (isValid(parsedDate)) {
+                setInputValue(formatted);
+                isTypingRef.current = false;
+                onChange(parsedDate);
+                onTextInput?.(parsedDate);
+                return;
+              }
             }
           }
         }
@@ -177,15 +180,20 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           }
         }
 
-        // 2-digit year DD.MM.YY — only on paste, never during manual typing/backspacing
-        if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted) && isPaste) {
-          const parsedDate = parse(formatted, "dd.MM.yy", new Date());
-          if (isValid(parsedDate)) {
-            isTypingRef.current = false;
-            onChange(parsedDate);
-            onTextInput?.(parsedDate);
-            return;
+        // 2-digit year DD.MM.YY — parse immediately unless year starts with "19"
+        // (if "19xx", user is entering a historical year → wait for full YYYY)
+        if (/^\d{2}\.\d{2}\.\d{2}$/.test(formatted)) {
+          const yearPart = digitsOnly.slice(4, 6);
+          if (!yearPart.startsWith("19")) {
+            const parsedDate = parse(formatted, "dd.MM.yy", new Date());
+            if (isValid(parsedDate)) {
+              isTypingRef.current = false;
+              onChange(parsedDate);
+              onTextInput?.(parsedDate);
+              return;
+            }
           }
+          // Year starts with "19" → stay in typing mode, wait for full RRRR
         }
 
         // Incomplete date — block external sync until user finishes or blurs
