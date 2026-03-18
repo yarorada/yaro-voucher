@@ -148,11 +148,10 @@ Deno.serve(async (req) => {
       console.error("Name declension error:", e);
     }
 
-    // Get salutation - "pane" for male, "paní" for female
+    // Get gender for Vážený/Vážená
     // Detect from title or last name ending
     const isFemale = client.title === 'paní' || client.title === 'Paní' || 
       clientLastName.endsWith('ová') || clientLastName.endsWith('á');
-    const salutation = isFemale ? 'paní' : 'pane';
     const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
 
     // Build public URL — include variant filter so the link shows only selected variants
