@@ -16,6 +16,7 @@ const MfaSetup = () => {
   const [verifyCode, setVerifyCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [enrollError, setEnrollError] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
