@@ -16,6 +16,7 @@ const MfaSetup = () => {
   const [verifyCode, setVerifyCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [enrollError, setEnrollError] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,12 +67,29 @@ const MfaSetup = () => {
       });
 
       if (error) {
-        // If factor already exists, user already has 2FA - redirect to verify
+        // If factor already exists with same name, unenroll it and retry once
         if (error.code === 'mfa_factor_name_conflict') {
-          navigate("/mfa-verify");
+          const { data: factors2 } = await supabase.auth.mfa.listFactors();
+          for (const f of factors2?.totp ?? []) {
+            await supabase.auth.mfa.unenroll({ factorId: f.id });
+          }
+          const { data: retryData, error: retryError } = await supabase.auth.mfa.enroll({
+            factorType: 'totp',
+            friendlyName: 'YARO Travel 2FA'
+          });
+          if (retryError) {
+            setEnrollError(retryError.message || "Nepodařilo se nastavit 2FA. Odhlaste se a zkuste znovu.");
+            return;
+          }
+          if (retryData) {
+            setQrCode(retryData.totp.qr_code);
+            setSecret(retryData.totp.secret);
+            setFactorId(retryData.id);
+          }
           return;
         }
-        throw error;
+        setEnrollError(error.message || "Nepodařilo se nastavit dvoufaktorovou autentizaci.");
+        return;
       }
 
       if (data) {
@@ -81,11 +99,7 @@ const MfaSetup = () => {
       }
     } catch (error: any) {
       console.error("MFA enrollment error:", error);
-      toast({
-        title: "Chyba při nastavení 2FA",
-        description: error.message || "Nepodařilo se nastavit dvoufaktorovou autentizaci",
-        variant: "destructive",
-      });
+      setEnrollError(error.message || "Nepodařilo se nastavit dvoufaktorovou autentizaci.");
     } finally {
       setLoading(false);
     }
@@ -148,6 +162,30 @@ const MfaSetup = () => {
     return (
       <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (enrollError) {
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <img src={yaroLogo} alt="YARO Travel" className="h-16" />
+            </div>
+            <CardTitle className="text-2xl text-center text-destructive">Chyba nastavení 2FA</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">{enrollError}</p>
+            <Button className="w-full" onClick={() => { setEnrollError(""); setLoading(true); enrollMfa(); }}>
+              Zkusit znovu
+            </Button>
+            <Button variant="outline" className="w-full" onClick={async () => { await supabase.auth.signOut({ scope: 'local' }); navigate("/auth"); }}>
+              Odhlásit se
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

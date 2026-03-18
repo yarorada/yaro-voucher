@@ -62,11 +62,11 @@ Deno.serve(async (req) => {
     }
 
     // Unenroll all MFA factors so the user sets up 2FA fresh after login
-    const { data: factors } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: user.id });
-    if (factors?.totp) {
-      for (const factor of factors.totp) {
-        await supabaseAdmin.auth.admin.mfa.deleteFactor({ userId: user.id, id: factor.id });
-      }
+    // Admin API returns { factors: Factor[] }, not { totp: [] } like the user-level API
+    const { data: factorsData } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: user.id });
+    const allFactors = (factorsData as any)?.factors ?? (factorsData as any)?.totp ?? [];
+    for (const factor of allFactors) {
+      await supabaseAdmin.auth.admin.mfa.deleteFactor({ userId: user.id, id: factor.id });
     }
 
     return new Response(
