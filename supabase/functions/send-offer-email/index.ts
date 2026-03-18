@@ -660,7 +660,7 @@ Deno.serve(async (req) => {
         from: 'YARO Travel <radek@yarogolf.cz>',
         to: [client.email],
         bcc: ['zajezdy@yarotravel.cz'],
-        subject,
+        subject: resolvedSubject,
         html: emailHtml,
       }),
     });
