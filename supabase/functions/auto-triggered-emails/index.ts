@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
             if (alreadySent) continue;
 
             const vars: Record<string, string> = {
-              first_name: client.first_name || "",
+              first_name: "",
               last_name: client.last_name || "",
               destination: "",
               hotel: "",
