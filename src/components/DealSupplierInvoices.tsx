@@ -265,8 +265,24 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
 
       setUploadProgress(30);
 
+      // Always fetch contract number fresh at upload time to avoid stale state
+      let freshContractNumber = contractNumber;
+      if (!freshContractNumber) {
+        const { data: contractData } = await supabase
+          .from("travel_contracts")
+          .select("contract_number")
+          .eq("deal_id", dealId)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (contractData?.contract_number) {
+          freshContractNumber = contractData.contract_number.replace(/-/g, "");
+          setContractNumber(freshContractNumber);
+        }
+      }
+
       // Build prefixed file name using contract number (e.g. CS26012_FACTURE.pdf)
-      const prefix = contractNumber ? `${contractNumber}_` : "";
+      const prefix = freshContractNumber ? `${freshContractNumber}_` : "";
       const prefixedFileName = `${prefix}${file.name}`;
 
       // Upload to storage
