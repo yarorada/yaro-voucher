@@ -196,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (clientTemplate) {
       clientEmailText = replacePlaceholders(clientTemplate.body, placeholderVars) + signLinkText + attachmentNote;
     } else {
-      clientEmailText = buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
+      clientEmailText = buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
     }
 
     const clientEmailPayload: any = {
