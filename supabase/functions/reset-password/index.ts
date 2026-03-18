@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use admin client to update password (bypasses AAL2 requirement)
+    // Use admin client to update password and unenroll MFA (bypasses AAL2 requirement)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -59,6 +59,14 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: updateError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Unenroll all MFA factors so the user sets up 2FA fresh after login
+    const { data: factors } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: user.id });
+    if (factors?.totp) {
+      for (const factor of factors.totp) {
+        await supabaseAdmin.auth.admin.mfa.deleteFactor({ userId: user.id, id: factor.id });
+      }
     }
 
     return new Response(
