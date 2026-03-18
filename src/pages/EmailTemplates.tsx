@@ -49,7 +49,7 @@ const TRIGGER_TYPES = [
 ];
 
 const EXAMPLE_DATA: Record<string, string> = {
-  "{{first_name}}": "Jan",
+  "{{salutation}}": "Vážený pane Nováku",
   "{{last_name}}": "Novák",
   "{{destination}}": "Belek, Turecko",
   "{{hotel}}": "Regnum Carya",
