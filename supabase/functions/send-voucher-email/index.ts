@@ -337,7 +337,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: "YARO Travel <radek@yarogolf.cz>",
         to: [extraEmail],
         subject: customEmailSubject || subject,
-        text: customEmailBody || buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName),
+        text: customEmailBody || buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, hotelName),
       };
       if (pdfAttachment.length > 0) extraPayload.attachments = pdfAttachment;
       const extraResponse = await fetch("https://api.resend.com/emails", {

@@ -36,9 +36,14 @@ const buildDefaultEmailText = (contract: any) => {
     dateRange = `${from} – ${to}`;
   }
 
-  return `Vážený kliente,
+  const client = contract?.client;
+  const title = client?.title || "";
+  const lastName = client?.last_name || "[Příjmení]";
+  const titleLastName = title ? `${title} ${lastName}` : lastName;
 
-děkujeme Vám za důvěru projevenou naší společnosti a věříme, že s našimi službami budete spokojen. V příloze naleznete cestovní smlouvu na váš zájezd do ${hotelName} v termínu ${dateRange}, případně také další dokumenty týkající se Vaší dovolené.`;
+  return `Vážený/á ${titleLastName},
+
+děkujeme Vám za důvěru projevenou naší společnosti a věříme, že s našimi službami budete spokojen/a. V příloze naleznete cestovní smlouvu na váš zájezd do ${hotelName} v termínu ${dateRange}, případně také další dokumenty týkající se Vaší dovolené.`;
 };
 
 export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContractEmailProps) => {
