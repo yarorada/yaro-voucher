@@ -368,9 +368,9 @@ export function DocumentUpload({
         const currentUrls = Array.isArray((clientData as any).document_urls) ? (clientData as any).document_urls : [];
         const newUrls = [...currentUrls, { 
           url: documentUrl, 
-          type: documentType, 
+          type: documentType,
           uploadedAt: new Date().toISOString(),
-          fileName: file.name 
+          fileName: fileToUpload.name
         }];
         
         await supabase
