@@ -8,7 +8,7 @@ import { Upload, FileText, Loader2, X, CheckCircle2, AlertCircle } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { compressImage, isImageFile, formatBytes } from "@/lib/imageCompression";
+import { compressImage, isImageFile, formatBytes, convertDocumentToPng, isPdfFile } from "@/lib/imageCompression";
 
 interface DocumentUploadProps {
   clientId: string;
