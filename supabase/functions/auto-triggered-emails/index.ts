@@ -283,7 +283,7 @@ async function processDealEmail(
 
   const destination = deal.destination?.name || "";
   const vars: Record<string, string> = {
-    first_name: lead?.clients?.first_name || "",
+    first_name: "",
     last_name: lead?.clients?.last_name || "",
     destination,
     hotel: "",
