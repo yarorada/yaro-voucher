@@ -330,8 +330,8 @@ const Index = () => {
   }, []);
 
   const visibleOrder = editing
-    ? order
-    : order.filter((id) => !hiddenTiles.includes(id));
+    ? order.filter((id) => TILE_COMPONENTS[id] !== null)
+    : order.filter((id) => !hiddenTiles.includes(id) && TILE_COMPONENTS[id] !== null);
 
   return (
     <div className="min-h-full bg-[var(--gradient-subtle)]">
