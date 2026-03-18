@@ -48,7 +48,7 @@ const allMenuItems = [
   { title: "Hotely", url: "/hotels", icon: Hotel, prodejce: true },
   { title: "Destinace", url: "/destinations", icon: MapPin, prodejce: false },
   { title: "Účetnictví", url: "/accounting", icon: Calculator, prodejce: false },
-  { title: "E-maily", url: "/email-templates", icon: Mail, prodejce: false },
+  { title: "Šablony e-mailů", url: "/email-templates", icon: Mail, prodejce: false },
 ];
 
 export function AppSidebar() {
