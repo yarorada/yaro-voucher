@@ -69,6 +69,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [contractNumber, setContractNumber] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Preview state
@@ -113,6 +114,24 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       setInvoices(data as unknown as SupplierInvoice[]);
     }
     setLoading(false);
+  }, [dealId]);
+
+  // Fetch contract number for this deal (used as file prefix)
+  useEffect(() => {
+    const fetchContractNumber = async () => {
+      const { data } = await supabase
+        .from("travel_contracts")
+        .select("contract_number")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data?.contract_number) {
+        // Strip dashes to get clean prefix like "CS26012"
+        setContractNumber(data.contract_number.replace(/-/g, ""));
+      }
+    };
+    fetchContractNumber();
   }, [dealId]);
 
   useEffect(() => {
@@ -246,6 +265,10 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
 
       setUploadProgress(30);
 
+      // Build prefixed file name using contract number (e.g. CS26012_FACTURE.pdf)
+      const prefix = contractNumber ? `${contractNumber}_` : "";
+      const prefixedFileName = `${prefix}${file.name}`;
+
       // Upload to storage
       const ext = file.name.split(".").pop();
       const path = `${dealId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -293,7 +316,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       }
 
       setPendingFileUrl(fileUrl);
-      setPendingFileName(file.name);
+      setPendingFileName(prefixedFileName);
       setUploadProgress(100);
       setConfirmDialogOpen(true);
     } catch (error) {
