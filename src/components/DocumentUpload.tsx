@@ -385,7 +385,7 @@ export function DocumentUpload({
           url: documentUrl, 
           type: documentType,
           uploadedAt: new Date().toISOString(),
-          fileName: fileToUpload.name
+          fileName: `${fileLabel}.png`
         }];
         
         await supabase
