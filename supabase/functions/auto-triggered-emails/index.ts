@@ -167,18 +167,47 @@ Deno.serve(async (req) => {
             const alreadySent = await checkAlreadySent(supabase, template.id, client.email, todayStr);
             if (alreadySent) continue;
 
-            const vars: Record<string, string> = {
-              first_name: "",
-              last_name: client.last_name || "",
-              destination: "",
-              hotel: "",
-              date_from: "",
-              date_to: "",
-              total_price: "",
-              voucher_code: "",
-              contract_number: "",
-              sign_link: "",
-            };
+    // Build salutation for birthday emails
+    const birthdayTitle = client.title || "";
+    const birthdayLastName = client.last_name || "";
+    const birthdayTitleLastName = birthdayTitle ? `${birthdayTitle} ${birthdayLastName}`.trim() : birthdayLastName;
+    const isBirthdayFemale = birthdayTitle === 'paní' || birthdayTitle === 'Paní' || birthdayLastName.endsWith('ová') || birthdayLastName.endsWith('á');
+    const birthdayVazeny = isBirthdayFemale ? 'Vážená' : 'Vážený';
+    let birthdayDeclinedName = birthdayTitleLastName;
+    try {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (LOVABLE_API_KEY) {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              { role: "system", content: "Převeď české příjmení (případně s titulem) do 5. pádu (vokativu). Vrať POUZE skloňované příjmení (s titulem pokud byl uveden), nic jiného. Titul neskloňuj." },
+              { role: "user", content: birthdayTitleLastName },
+            ],
+          }),
+        });
+        if (aiResp.ok) {
+          const aiData = await aiResp.json();
+          const declined = aiData.choices?.[0]?.message?.content?.trim();
+          if (declined && declined.length < 200) birthdayDeclinedName = declined;
+        }
+      }
+    } catch (e) { console.error("Birthday name declension error:", e); }
+
+    const vars: Record<string, string> = {
+      salutation: `${birthdayVazeny} ${birthdayDeclinedName}`,
+      last_name: birthdayLastName,
+      destination: "",
+      hotel: "",
+      date_from: "",
+      date_to: "",
+      total_price: "",
+      voucher_code: "",
+      contract_number: "",
+      sign_link: "",
+    };
 
             const subject = replacePlaceholders(template.subject, vars);
             const body = replacePlaceholders(template.body, vars);
