@@ -164,20 +164,19 @@ export function DocumentUpload({
       }
 
       // Update progress
-      setUploadingFiles(prev => 
-        prev.map((uf, i) => i === index ? { 
-          ...uf, 
+      setUploadingFiles(prev =>
+        prev.map((uf, i) => i === index ? {
+          ...uf,
           status: "uploading",
           progress: 30,
           originalSize,
           compressedSize,
-          savings 
+          savings
         } : uf)
       );
 
-      // Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${clientId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Upload to Supabase Storage — always as .png
+      const fileName = `${clientId}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("client-documents")
