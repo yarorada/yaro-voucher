@@ -267,7 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!skipClient && !noClientEmail) {
       const clientEmailText = customEmailBody || (clientTemplate
         ? replacePlaceholders(clientTemplate.body, placeholderVars)
-        : buildClientEmailTextFallback(clientLastName, dateFrom, dateTo, hotelName));
+        : buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, hotelName));
 
       const clientEmailPayload: any = {
         from: "YARO Travel <radek@yarogolf.cz>",
