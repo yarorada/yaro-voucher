@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
           const { data: clients } = await supabase
             .from("clients")
-            .select("id, first_name, last_name, email, date_of_birth")
+            .select("id, first_name, last_name, title, email, date_of_birth")
             .not("email", "is", null)
             .not("date_of_birth", "is", null);
 
