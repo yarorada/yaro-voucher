@@ -166,6 +166,30 @@ const MfaSetup = () => {
     );
   }
 
+  if (enrollError) {
+    return (
+      <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center">
+              <img src={yaroLogo} alt="YARO Travel" className="h-16" />
+            </div>
+            <CardTitle className="text-2xl text-center text-destructive">Chyba nastavení 2FA</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">{enrollError}</p>
+            <Button className="w-full" onClick={() => { setEnrollError(""); setLoading(true); enrollMfa(); }}>
+              Zkusit znovu
+            </Button>
+            <Button variant="outline" className="w-full" onClick={async () => { await supabase.auth.signOut({ scope: 'local' }); navigate("/auth"); }}>
+              Odhlásit se
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)] flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
