@@ -220,6 +220,7 @@ export default function EmailTemplates() {
               <div>
                 <Label>Tělo e-mailu</Label>
                 <Textarea
+                  ref={bodyRef}
                   value={editForm.body}
                   onChange={e => setEditForm(p => ({ ...p, body: e.target.value }))}
                   rows={12}
