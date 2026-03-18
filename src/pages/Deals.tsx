@@ -567,7 +567,7 @@ const Deals = () => {
                           <DealStatusBadge status={deal.status} />
                           <span className="font-bold text-foreground">{getBaseNumber(deal.deal_number)}</span>
                           {displayDesc && (
-                            <span className="text-foreground truncate">{displayDesc}</span>
+                            <span className="text-foreground">{displayDesc}</span>
                           )}
                         </div>
                         {/* Row 3: Metadata grid */}
