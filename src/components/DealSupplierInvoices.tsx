@@ -265,6 +265,10 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
 
       setUploadProgress(30);
 
+      // Build prefixed file name using contract number (e.g. CS26012_FACTURE.pdf)
+      const prefix = contractNumber ? `${contractNumber}_` : "";
+      const prefixedFileName = `${prefix}${file.name}`;
+
       // Upload to storage
       const ext = file.name.split(".").pop();
       const path = `${dealId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -312,7 +316,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       }
 
       setPendingFileUrl(fileUrl);
-      setPendingFileName(file.name);
+      setPendingFileName(prefixedFileName);
       setUploadProgress(100);
       setConfirmDialogOpen(true);
     } catch (error) {
