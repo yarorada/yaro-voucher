@@ -268,6 +268,17 @@ const Index = () => {
   const [hiddenTiles, setHiddenTiles] = useState<string[]>(loadHidden);
   const [tileSizes, setTileSizes] = useState<Record<string, TileSize>>(loadSizes);
   const [editing, setEditing] = useState(false);
+  const { canAccess } = useUserPermissions();
+
+  const TILE_COMPONENTS = useMemo<Record<string, ReactNode>>(() => ({
+    bank_notifications: <BankNotificationsCard />,
+    tasks: <TasksCard />,
+    stats: canAccess("statistics") ? <StatsCard /> : null,
+    overdue: <OverduePaymentsCard />,
+    deals: <RecentDealsCard />,
+    vouchers: <RecentVouchersCard />,
+    contracts: <RecentContractsCard />,
+  }), [canAccess]);
 
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
 
