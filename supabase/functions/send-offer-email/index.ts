@@ -613,6 +613,42 @@ Deno.serve(async (req) => {
 
     const subject = `Nabídka zájezdu${destText ? ' – ' + destText : ''} | YARO Travel`;
 
+    // Load offer template if no custom message
+    let offerTemplate: any = null;
+    try {
+      const { data } = await supabase.from("email_templates").select("*").eq("template_key", "offer_client_cz").eq("is_active", true).single();
+      offerTemplate = data;
+    } catch (e) { /* ignore */ }
+
+    const offerPlaceholderVars: Record<string, string> = {
+      salutation: `${vazenySalutation} ${declinedName}`,
+      last_name: clientLastName,
+      destination: destText,
+      hotel: "",
+      date_from: sharedStart ? `${new Date(sharedStart).getDate()}.${new Date(sharedStart).getMonth()+1}.${new Date(sharedStart).getFullYear()}` : "",
+      date_to: sharedEnd ? `${new Date(sharedEnd).getDate()}.${new Date(sharedEnd).getMonth()+1}.${new Date(sharedEnd).getFullYear()}` : "",
+      total_price: "",
+      voucher_code: "",
+      contract_number: "",
+      sign_link: publicUrl,
+    };
+
+    const resolvedSubject = offerTemplate?.subject
+      ? offerTemplate.subject.split('{{destination}}').join(destText || '').replace(/\{\{[^}]+\}\}/g, (m: string) => offerPlaceholderVars[m.slice(2,-2)] || '')
+      : `Nabídka zájezdu${destText ? ' – ' + destText : ''} | YARO Travel`;
+
+    function replacePlaceholders(text: string, vars: Record<string, string>): string {
+      let result = text;
+      for (const [key, val] of Object.entries(vars)) {
+        result = result.split(`{{${key}}}`).join(val);
+      }
+      return result;
+    }
+
+    const defaultGreeting = `${vazenySalutation} ${declinedName},\n\nzasíláme Vám nabídku podle Vašich požadavků.`;
+    const resolvedMessage = customMessage || (offerTemplate ? replacePlaceholders(offerTemplate.body, offerPlaceholderVars) : defaultGreeting);
+
+
     // Send email via Resend
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
