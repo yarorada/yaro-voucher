@@ -1,4 +1,8 @@
 import heic2any from "heic2any";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 /**
  * Check if a file is a HEIC/HEIF format
@@ -8,9 +12,15 @@ export function isHeicFile(file: File): boolean {
   if (heicTypes.includes(file.type.toLowerCase())) {
     return true;
   }
-  // Also check file extension as some browsers don't set the correct MIME type
   const extension = file.name.split('.').pop()?.toLowerCase();
   return extension === "heic" || extension === "heif";
+}
+
+/**
+ * Check if a file is a PDF
+ */
+export function isPdfFile(file: File): boolean {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
 /**
@@ -23,17 +33,89 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
       toType: "image/jpeg",
       quality: 0.9,
     });
-    
-    // heic2any can return a single blob or an array of blobs
     const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-    
-    // Create a new File with .jpg extension
     const newFileName = file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
     return new File([resultBlob], newFileName, { type: "image/jpeg" });
   } catch (error) {
     console.error("HEIC conversion failed:", error);
     throw new Error("Nepodařilo se převést HEIC obrázek. Zkuste prosím jiný formát.");
   }
+}
+
+/**
+ * Convert PDF first page to PNG using PDF.js
+ */
+export async function convertPdfToPng(file: File): Promise<File> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(1);
+
+  const scale = 2.5; // high resolution for documents
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas context not available");
+
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) { reject(new Error("Failed to render PDF to PNG")); return; }
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      resolve(new File([blob], `${baseName}.png`, { type: "image/png" }));
+    }, "image/png");
+  });
+}
+
+/**
+ * Convert any supported document file to PNG.
+ * Handles: PDF, HEIC/HEIF, JPG, WEBP, PNG (pass-through already PNG)
+ */
+export async function convertDocumentToPng(file: File): Promise<File> {
+  // Already PNG — just return
+  if (file.type === "image/png" || file.name.toLowerCase().endsWith(".png")) {
+    return file;
+  }
+
+  // PDF → first page as PNG
+  if (isPdfFile(file)) {
+    return convertPdfToPng(file);
+  }
+
+  // HEIC/HEIF → JPEG first, then PNG via canvas
+  let imageFile = file;
+  if (isHeicFile(file)) {
+    imageFile = await convertHeicToJpeg(file);
+  }
+
+  // Any image → PNG via canvas
+  return new Promise<File>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas context not available")); return; }
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Failed to convert to PNG")); return; }
+          const baseName = file.name.replace(/\.[^.]+$/, "");
+          resolve(new File([blob], `${baseName}.png`, { type: "image/png" }));
+        }, "image/png");
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(imageFile);
+  });
 }
 
 /**

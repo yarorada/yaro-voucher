@@ -8,7 +8,7 @@ import { Upload, FileText, Loader2, X, CheckCircle2, AlertCircle } from "lucide-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { compressImage, isImageFile, formatBytes } from "@/lib/imageCompression";
+import { compressImage, isImageFile, formatBytes, convertDocumentToPng, isPdfFile } from "@/lib/imageCompression";
 
 interface DocumentUploadProps {
   clientId: string;
@@ -117,61 +117,66 @@ export function DocumentUpload({
 
   const uploadFile = async (file: File, index: number) => {
     try {
-      let fileToUpload = file;
       let originalSize = file.size;
       let compressedSize = file.size;
       let savings = 0;
 
-      // Compress image files before upload
-      if (isImageFile(file)) {
-        setUploadingFiles(prev => 
-          prev.map((uf, i) => i === index ? { 
-            ...uf, 
-            status: "compressing",
-            progress: 10,
-            originalSize: file.size 
-          } : uf)
-        );
+      // Step 1: Convert to PNG (PDF, HEIC, JPG, WEBP → PNG)
+      setUploadingFiles(prev =>
+        prev.map((uf, i) => i === index ? { ...uf, status: "compressing", progress: 10, originalSize: file.size } : uf)
+      );
 
+      let pngFile: File;
+      try {
+        pngFile = await convertDocumentToPng(file);
+      } catch (convErr) {
+        console.error("Conversion to PNG failed:", convErr);
+        toast.warning("Převod na PNG selhal, nahrávám originál");
+        pngFile = file;
+      }
+
+      let fileToUpload = pngFile;
+
+      // Step 2: Compress if it's an image (PNG is an image)
+      if (isImageFile(fileToUpload) && !isPdfFile(file)) {
         try {
-          const compressed = await compressImage(file, 1920, 1920, 0.85);
-          
-          // Only use compressed version if it's actually smaller
-          if (compressed.compressedSize < file.size) {
-            fileToUpload = new File([compressed.blob], file.name, {
-              type: "image/jpeg",
+          const compressed = await compressImage(fileToUpload, 1920, 1920, 0.92);
+          if (compressed.compressedSize < fileToUpload.size) {
+            fileToUpload = new File([compressed.blob], pngFile.name, {
+              type: "image/png",
               lastModified: Date.now(),
             });
             originalSize = compressed.originalSize;
             compressedSize = compressed.compressedSize;
             savings = compressed.savings;
-            
-            toast.success(`Obrázek zkomprimován o ${savings}%`);
+            toast.success(`Dokument převeden na PNG a zkomprimován o ${savings}%`);
           } else {
-            // Original is smaller, use it
-            toast.info("Komprese nepřinesla úsporu, použit originál");
+            fileToUpload = pngFile;
+            toast.success("Dokument převeden na PNG");
           }
         } catch (compressionError) {
           console.error("Compression error:", compressionError);
-          toast.warning("Komprese selhala, nahrávám originál");
+          fileToUpload = pngFile;
+          toast.success("Dokument převeden na PNG");
         }
+      } else {
+        toast.success("Dokument převeden na PNG");
       }
 
       // Update progress
-      setUploadingFiles(prev => 
-        prev.map((uf, i) => i === index ? { 
-          ...uf, 
+      setUploadingFiles(prev =>
+        prev.map((uf, i) => i === index ? {
+          ...uf,
           status: "uploading",
           progress: 30,
           originalSize,
           compressedSize,
-          savings 
+          savings
         } : uf)
       );
 
-      // Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${clientId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Upload to Supabase Storage — always as .png
+      const fileName = `${clientId}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("client-documents")
@@ -363,9 +368,9 @@ export function DocumentUpload({
         const currentUrls = Array.isArray((clientData as any).document_urls) ? (clientData as any).document_urls : [];
         const newUrls = [...currentUrls, { 
           url: documentUrl, 
-          type: documentType, 
+          type: documentType,
           uploadedAt: new Date().toISOString(),
-          fileName: file.name 
+          fileName: fileToUpload.name
         }];
         
         await supabase
@@ -515,7 +520,7 @@ export function DocumentUpload({
                   <Progress value={uploadingFile.progress} className="h-1" />
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">
-                      {uploadingFile.status === "compressing" && "Komprimuji obrázek..."}
+                      {uploadingFile.status === "compressing" && "Převádím na PNG..."}
                       {uploadingFile.status === "uploading" && "Nahrávám..."}
                       {uploadingFile.status === "processing" && "Zpracovávám OCR..."}
                       {uploadingFile.status === "success" && "Dokončeno"}
