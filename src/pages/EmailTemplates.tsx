@@ -136,7 +136,21 @@ export default function EmailTemplates() {
   };
 
   const insertPlaceholder = (placeholder: string) => {
-    setEditForm(prev => ({ ...prev, body: prev.body + placeholder }));
+    const textarea = bodyRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newBody = editForm.body.slice(0, start) + placeholder + editForm.body.slice(end);
+      setEditForm(prev => ({ ...prev, body: newBody }));
+      // Restore cursor position after React re-render
+      requestAnimationFrame(() => {
+        textarea.selectionStart = start + placeholder.length;
+        textarea.selectionEnd = start + placeholder.length;
+        textarea.focus();
+      });
+    } else {
+      setEditForm(prev => ({ ...prev, body: prev.body + placeholder }));
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Načítání...</div>;
