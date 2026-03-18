@@ -175,8 +175,23 @@ export function DocumentUpload({
         } : uf)
       );
 
+      // Fetch client last name for meaningful filename
+      let fileLabel = "Dokument";
+      try {
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("last_name")
+          .eq("id", clientId)
+          .single();
+        if (clientData?.last_name) {
+          const suffix = documentType === "passport" ? "Pas" : documentType === "id_card" ? "ID" : "Dokument";
+          fileLabel = `${clientData.last_name}_${suffix}`;
+        }
+      } catch {}
+
       // Upload to Supabase Storage — always as .png
-      const fileName = `${clientId}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+      const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const fileName = `${clientId}/${fileLabel}_${uniqueSuffix}.png`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("client-documents")
@@ -370,7 +385,7 @@ export function DocumentUpload({
           url: documentUrl, 
           type: documentType,
           uploadedAt: new Date().toISOString(),
-          fileName: fileToUpload.name
+          fileName: `${fileLabel}.png`
         }];
         
         await supabase
