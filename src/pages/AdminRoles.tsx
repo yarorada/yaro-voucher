@@ -228,7 +228,10 @@ export default function AdminRoles() {
   const getRoleForUser = (userId: string) =>
     userRoles.find((r) => r.user_id === userId)?.role ?? null;
 
-  const handleSetRole = async (userId: string, role: string) => {
+  const handleNameChange = (userId: string, name: string) => {
+    setProfiles((prev) => prev.map((p) => p.id === userId ? { ...p, name: name || null } : p));
+  };
+
     setAssigning(userId);
     try {
       await (supabase as any).from("user_roles").delete().eq("user_id", userId);
