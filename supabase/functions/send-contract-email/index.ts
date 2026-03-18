@@ -111,8 +111,41 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = siteUrl || "https://yarogolf-crm.lovable.app";
     const signLink = signToken ? `${baseUrl}/sign-contract?token=${signToken}` : "";
 
+    // Decline title+last name to vokativ using AI
+    let vokativSalutation = titleLastName;
+    try {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (LOVABLE_API_KEY) {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              {
+                role: "system",
+                content: "Převeď české příjmení (případně s titulem) do 5. pádu (vokativu). Vrať POUZE skloňované příjmení (s titulem pokud byl uveden), nic jiného. Titul neskloňuj. Pokud příjmení nelze skloňovat (cizí jméno), vrať ho beze změny. Příklad: Novák → Nováku, Svobodová → Svobodová, Dvořák → Dvořáku, pan Novák → pane Nováku, paní Svobodová → paní Svobodová.",
+              },
+              { role: "user", content: titleLastName },
+            ],
+          }),
+        });
+        if (aiResp.ok) {
+          const aiData = await aiResp.json();
+          const declined = aiData.choices?.[0]?.message?.content?.trim();
+          if (declined && declined.length < 200) vokativSalutation = declined;
+        }
+      }
+    } catch (e) {
+      console.error("Name declension error:", e);
+    }
+
+    const isFemale = clientTitle === 'paní' || clientTitle === 'Paní' || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
+    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
+    const fullSalutation = `${vazenySalutation} ${vokativSalutation}`;
+
     const placeholderVars: Record<string, string> = {
-      first_name: clientFirstName,
+      first_name: "",
       last_name: clientLastName,
       destination,
       hotel: "",
