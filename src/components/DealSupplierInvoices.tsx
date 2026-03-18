@@ -69,6 +69,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [contractNumber, setContractNumber] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Preview state
