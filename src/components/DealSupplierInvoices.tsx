@@ -116,6 +116,24 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     setLoading(false);
   }, [dealId]);
 
+  // Fetch contract number for this deal (used as file prefix)
+  useEffect(() => {
+    const fetchContractNumber = async () => {
+      const { data } = await supabase
+        .from("travel_contracts")
+        .select("contract_number")
+        .eq("deal_id", dealId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data?.contract_number) {
+        // Strip dashes to get clean prefix like "CS26012"
+        setContractNumber(data.contract_number.replace(/-/g, ""));
+      }
+    };
+    fetchContractNumber();
+  }, [dealId]);
+
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
