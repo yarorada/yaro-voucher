@@ -150,9 +150,11 @@ Deno.serve(async (req) => {
 
     // Get gender for Vážený/Vážená
     // Detect from title or last name ending
-    const isFemale = client.title === 'paní' || client.title === 'Paní' || 
-      clientLastName.endsWith('ová') || clientLastName.endsWith('á');
-    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
+    const titleLower = (client.title || '').toLowerCase().trim();
+    const isFemale = titleLower === 'paní' || titleLower === 'sl.' || titleLower === 'slečna'
+      || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
+    const isMaleExplicit = titleLower === 'pan' || titleLower === 'pán' || titleLower === 'pane';
+    const vazenySalutation = isFemale && !isMaleExplicit ? 'Vážená' : 'Vážený';
 
     // Build public URL — include variant filter so the link shows only selected variants
     let publicUrl = `https://yarogolf-crm.lovable.app/offer/${encodeURIComponent(deal.share_token)}`;
