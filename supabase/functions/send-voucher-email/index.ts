@@ -226,6 +226,7 @@ const handler = async (req: Request): Promise<Response> => {
     const hotelName = voucher.hotel_name || "N/A";
 
     const placeholderVars: Record<string, string> = {
+      salutation: fullSalutation,
       first_name: "",
       last_name: clientLastName,
       hotel: hotelName,
