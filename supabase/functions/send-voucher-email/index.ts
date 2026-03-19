@@ -215,8 +215,11 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Name declension error:", e);
     }
 
-    const isFemale = clientTitle === 'paní' || clientTitle === 'Paní' || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
-    const vazenySalutation = isFemale ? 'Vážená' : 'Vážený';
+    const titleLower = clientTitle.toLowerCase().trim();
+    const isFemale = titleLower === 'paní' || titleLower === 'sl.' || titleLower === 'slečna'
+      || clientLastName.endsWith('ová') || clientLastName.endsWith('á');
+    const isMaleExplicit = titleLower === 'pan' || titleLower === 'pán' || titleLower === 'pane';
+    const vazenySalutation = isFemale && !isMaleExplicit ? 'Vážená' : 'Vážený';
     const fullSalutation = `${vazenySalutation} ${vokativSalutation}`;
 
     const { dateFrom, dateTo } = getTravelDateRange(voucher.services || []);
