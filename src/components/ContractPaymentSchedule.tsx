@@ -59,9 +59,10 @@ interface ContractPaymentScheduleProps {
   contractNumber?: string;
   bankAccount?: string;
   currency?: string;
+  onPaymentsChange?: () => void;
 }
 
-export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK' }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK', onPaymentsChange }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,7 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
 
       if (error) throw error;
       setPayments(data || []);
+      onPaymentsChange?.();
     } catch (error) {
       console.error("Error fetching payments:", error);
     } finally {

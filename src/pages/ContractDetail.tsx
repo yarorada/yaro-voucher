@@ -595,6 +595,7 @@ const ContractDetail = () => {
             contractNumber={contract.contract_number}
             bankAccount={(contract as any).agency_bank_account}
             currency={(contract as any).currency || contract.deal?.currency || "CZK"}
+            onPaymentsChange={refetch}
           />
 
 
