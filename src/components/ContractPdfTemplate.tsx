@@ -275,8 +275,26 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             <h2 style={sectionTitle}>Itinerář cesty – letecká přeprava</h2>
             {flightServices.map((flight: any) => {
               const legs = getFlightLegs(flight);
+              const details = flight.details ? (typeof flight.details === 'string' ? JSON.parse(flight.details) : flight.details) : {};
+              const baggage = details.baggage || {};
+
+              // Build baggage lines
+              const baggageItems: string[] = [];
+              if (baggage.cabin_bag?.included) {
+                baggageItems.push(`Taška na palubu${baggage.cabin_bag.kg ? ` ${baggage.cabin_bag.kg} kg` : ''}`);
+              }
+              if (baggage.hand_luggage?.included) {
+                baggageItems.push(`Palubní zavazadlo${baggage.hand_luggage.kg ? ` ${baggage.hand_luggage.kg} kg` : ''}`);
+              }
+              if (baggage.checked_luggage?.included) {
+                baggageItems.push(`Odbavené zavazadlo${baggage.checked_luggage.kg ? ` ${baggage.checked_luggage.kg} kg` : ''}`);
+              }
+              if (baggage.golf_bag?.included) {
+                baggageItems.push(`Golfový bag${baggage.golf_bag.kg ? ` ${baggage.golf_bag.kg} kg` : ''}`);
+              }
+
               return (
-                <div key={flight.id} style={{ marginBottom: '3px' }}>
+                <div key={flight.id} style={{ marginBottom: '4px' }}>
                   {legs.length > 0 ? (
                     <div style={{ fontSize: '9px' }}>
                       {legs.map((leg, idx) => (
@@ -288,6 +306,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {flight.service_name}
                       {flight.start_date && flight.end_date ? ` · ${(() => { const ds = parseDateSafe(flight.start_date); const de = parseDateSafe(flight.end_date); return `${ds ? format(ds, "d. M. yyyy") : ''} – ${de ? format(de, "d. M. yyyy") : ''}`; })()}` : ''}
                       {flight.description ? ` · ${flight.description}` : ''}
+                    </p>
+                  )}
+                  {baggageItems.length > 0 && (
+                    <p style={{ fontSize: '8.5px', margin: '2px 0', color: '#555', lineHeight: 1.2 }}>
+                      🧳 Zavazadla: {baggageItems.join(' · ')}
                     </p>
                   )}
                 </div>
