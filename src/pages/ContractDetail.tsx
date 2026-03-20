@@ -578,7 +578,7 @@ const ContractDetail = () => {
                         ))}
                     <tr className="bg-muted/50">
                       <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
-                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal?.total_price, true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
+                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.total_price, true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -590,7 +590,7 @@ const ContractDetail = () => {
           <ContractPaymentSchedule 
             contractId={contract.id}
             dealId={(contract as any).deal_id || contract.deal?.id}
-            totalPrice={contract.deal?.total_price}
+            totalPrice={contract.total_price}
             departureDate={contract.deal?.start_date}
             contractNumber={contract.contract_number}
             bankAccount={(contract as any).agency_bank_account}

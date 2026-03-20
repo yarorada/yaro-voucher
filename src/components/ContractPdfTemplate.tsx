@@ -243,7 +243,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {deal?.destination?.name}{deal?.destination?.country?.name ? `, ${deal.destination.country.name}` : ''}
                 </td>
                 <td style={{ ...labelStyle, width: '16%' }}>Celková cena:</td>
-                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(deal?.total_price, true, currency)}</td>
+                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(contract.total_price, true, currency)}</td>
               </tr>
               {deal?.start_date && deal?.end_date && (
                 <tr>
@@ -398,7 +398,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
-                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(deal?.total_price, true, currency)}</td>
+                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(contract.total_price, true, currency)}</td>
                 </tr>
               </tbody>
             </table>
