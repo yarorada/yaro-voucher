@@ -398,7 +398,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
                   <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
-                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(contract.total_price, true, currency)}</td>
+                  <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0), true, currency)}</td>
                 </tr>
               </tbody>
             </table>
