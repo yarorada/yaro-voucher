@@ -278,19 +278,19 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               const details = flight.details ? (typeof flight.details === 'string' ? JSON.parse(flight.details) : flight.details) : {};
               const baggage = details.baggage || {};
 
-              // Build baggage lines
-              const baggageItems: string[] = [];
+              // Build baggage lines from OP (deal service details)
+              const baggageItems: { label: string; kg?: number }[] = [];
               if (baggage.cabin_bag?.included) {
-                baggageItems.push(`Taška na palubu${baggage.cabin_bag.kg ? ` ${baggage.cabin_bag.kg} kg` : ''}`);
+                baggageItems.push({ label: 'Taška na palubu', kg: baggage.cabin_bag.kg });
               }
               if (baggage.hand_luggage?.included) {
-                baggageItems.push(`Palubní zavazadlo${baggage.hand_luggage.kg ? ` ${baggage.hand_luggage.kg} kg` : ''}`);
+                baggageItems.push({ label: 'Palubní zavazadlo', kg: baggage.hand_luggage.kg });
               }
               if (baggage.checked_luggage?.included) {
-                baggageItems.push(`Odbavené zavazadlo${baggage.checked_luggage.kg ? ` ${baggage.checked_luggage.kg} kg` : ''}`);
+                baggageItems.push({ label: 'Odbavené zavazadlo', kg: baggage.checked_luggage.kg });
               }
               if (baggage.golf_bag?.included) {
-                baggageItems.push(`Golfový bag${baggage.golf_bag.kg ? ` ${baggage.golf_bag.kg} kg` : ''}`);
+                baggageItems.push({ label: 'Golfový bag', kg: baggage.golf_bag.kg });
               }
 
               return (
@@ -309,9 +309,15 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                     </p>
                   )}
                   {baggageItems.length > 0 && (
-                    <p style={{ fontSize: '8.5px', margin: '2px 0', color: '#555', lineHeight: 1.2 }}>
-                      🧳 Zavazadla: {baggageItems.join(' · ')}
-                    </p>
+                    <div style={{ fontSize: '8.5px', margin: '3px 0 1px 0', color: '#444', lineHeight: 1.3 }}>
+                      <span style={{ fontWeight: 600 }}>Zavazadla: </span>
+                      {baggageItems.map((b, i) => (
+                        <span key={i}>
+                          {i > 0 && <span style={{ margin: '0 4px', color: '#aaa' }}>|</span>}
+                          {b.label}{b.kg ? <span style={{ fontWeight: 600 }}> {b.kg} kg</span> : ''}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               );
