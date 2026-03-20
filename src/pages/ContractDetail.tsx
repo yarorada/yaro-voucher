@@ -590,7 +590,11 @@ const ContractDetail = () => {
           <ContractPaymentSchedule 
             contractId={contract.id}
             dealId={(contract as any).deal_id || contract.deal?.id}
-            totalPrice={contract.deal?.total_price ?? contract.total_price}
+            totalPrice={
+              contract.deal?.services?.length
+                ? contract.deal.services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0)
+                : (contract.deal?.total_price ?? contract.total_price)
+            }
             departureDate={contract.deal?.start_date}
             contractNumber={contract.contract_number}
             bankAccount={(contract as any).agency_bank_account}
