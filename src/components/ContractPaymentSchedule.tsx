@@ -452,8 +452,8 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
                     <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
                   </div>
                   <div className="flex justify-between text-body">
-                    <span>Zálohy a splátky:</span>
-                    <span className="font-semibold">{formatPrice(depositsSum, true, currency)}</span>
+                    <span>Naplánované platby celkem:</span>
+                    <span className="font-semibold">{formatPrice(allPaymentsSum, true, currency)}</span>
                   </div>
                   <div className="flex justify-between text-body font-medium">
                     <span>Zbývá k doplacení:</span>
