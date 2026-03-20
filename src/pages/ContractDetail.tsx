@@ -578,7 +578,7 @@ const ContractDetail = () => {
                         ))}
                     <tr className="bg-muted/50">
                       <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
-                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.total_price, true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
+                      <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal.services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0), true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
                     </tr>
                   </tbody>
                 </table>
