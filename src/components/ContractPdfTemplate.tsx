@@ -243,7 +243,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                   {deal?.destination?.name}{deal?.destination?.country?.name ? `, ${deal.destination.country.name}` : ''}
                 </td>
                 <td style={{ ...labelStyle, width: '16%' }}>Celková cena:</td>
-                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(contract.total_price, true, currency)}</td>
+                <td style={{ ...valueStyle, fontWeight: 'bold', fontSize: '11px' }}>{formatPrice(services.length > 0 ? services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0) : (deal?.total_price ?? contract.total_price), true, currency)}</td>
               </tr>
               {deal?.start_date && deal?.end_date && (
                 <tr>
