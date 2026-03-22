@@ -390,17 +390,29 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                     </div>
                   );
                 })}
+                {remainingPayment > 0 && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/10">
+                    <Checkbox disabled checked={false} className="shrink-0 opacity-40" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">Nezapláceno</span>
+                          <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-400">
+                            Zbývá doplatit
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-orange-600 whitespace-nowrap">
+                          {formatPrice(remainingPayment, true, currency)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="border-t pt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Celkem:</span>
                    <span className="font-semibold">{formatPrice(totalPrice, true, currency)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Zbývá:</span>
-                  <span className={cn("font-bold", remainingPayment > 0 ? "text-orange-600" : "text-green-600")}>
-                     {formatPrice(remainingPayment, true, currency)}
-                   </span>
                 </div>
                 <div className="flex justify-between text-green-600">
                   <span>Zaplaceno:</span>
