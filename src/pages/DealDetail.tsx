@@ -1454,8 +1454,6 @@ const DealDetail = () => {
           });
       }
       // If remaining <= 0, nothing to do — already fully covered
-
-      await Promise.all(updates);
     } catch (error) {
       console.error("Error auto-generating payments:", error);
     }
