@@ -321,8 +321,18 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
           ) : (
             <>
               <div className="space-y-2">
-                {payments.map((payment) => {
+                {payments.map((payment, index) => {
                   const isOverdue = !payment.paid && isPast(startOfDay(new Date(payment.due_date)));
+                  // Calculate cumulative paid amount up to and including this payment
+                  const paidUpToHere = payments
+                    .slice(0, index + 1)
+                    .filter(p => p.paid)
+                    .reduce((sum, p) => sum + p.amount, 0);
+                  const remainingAfterThis = Math.max(0, totalPrice - paidUpToHere);
+                  // Show remaining only on paid payments or the last unpaid one
+                  const isLastUnpaid = !payment.paid && payments.slice(index + 1).every(p => p.paid);
+                  const showRemaining = payment.paid || isLastUnpaid;
+
                   return (
                     <div
                       key={payment.id}
@@ -338,9 +348,16 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium truncate">
-                            {payment.notes || getPaymentTypeLabel(payment.payment_type)}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium truncate">
+                              {payment.notes || getPaymentTypeLabel(payment.payment_type)}
+                            </span>
+                            {payment.paid && (
+                              <span className="shrink-0 inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+                                Záloha
+                              </span>
+                            )}
+                          </div>
                           <span className="text-sm font-bold whitespace-nowrap">
                             {formatPrice(payment.amount, true, currency)}
                           </span>
@@ -353,6 +370,11 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                           {payment.paid && payment.paid_at && (
                             <span className="text-green-600">
                               Zaplaceno: {format(new Date(payment.paid_at), "d.M.yyyy", { locale: cs })}
+                            </span>
+                          )}
+                          {showRemaining && (
+                            <span className={cn("font-medium", remainingAfterThis > 0 ? "text-orange-600" : "text-green-600")}>
+                              Zbývá: {formatPrice(remainingAfterThis, true, currency)}
                             </span>
                           )}
                         </div>
