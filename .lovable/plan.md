@@ -1,102 +1,61 @@
 
-# Plán: Správa úrovní přístupu a přepínač rozsahu dat
+## Problem
 
-## Co bude přidáno
+When a service is added or its price changes, the `autoGeneratePayments` function has two code paths:
 
-### 1. Přepínač "Rozsah dat" per uživatel
-Každý uživatel bude mít nové nastavení:
-- **Všechna data** — vidí záznamy všech kolegů (výchozí pro Admin a "Bez role")
-- **Pouze vlastní data** — vidí pouze záznamy, které sám vložil (výchozí pro Prodejce)
+1. **Unpaid "final" exists** → converts it to deposit, adds new final ✓ (works correctly)
+2. **No unpaid final exists** (e.g. all payments are deposits/installments, or all are paid) → redistributes amounts among unpaid payments ✗ (wrong — should add a new doplatek instead)
 
-Toto nastavení bude uloženo v nové tabulce `user_data_scope` a správce ho může u každého uživatele přepnout v rozhraní `/admin/roles`.
+Additionally, the paid payments badge shows "Záloha" for all paid items, but the user wants paid items to keep their original label and the NEW payment to be explicitly labeled "Doplatek".
 
-### 2. Rozšíření sekce oprávnění v UI
-V rozbalitelné části každého uživatele přibude nová vizuální sekce **"Rozsah přístupu k datům"** s přepínačem, oddělenou od přepínačů sekcí.
+## Plan
 
-### 3. Vynucení rozsahu dat v kódu (hook)
-Nový hook `useDataScope` vrátí aktuálnímu přihlášenému uživateli jeho nastavení (`own` nebo `all`). Tento hook bude použit na místech, kde se data filtrují — primárně v komponentách se seznamy (Deals, Clients, Vouchers, Contracts).
+### 1. Fix `autoGeneratePayments` in `src/pages/DealDetail.tsx` (lines ~1488–1517)
 
----
-
-## Technické změny
-
-### Databáze (migrace)
-Nová tabulka `user_data_scope`:
-```sql
-CREATE TABLE public.user_data_scope (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  scope text NOT NULL DEFAULT 'all', -- 'all' | 'own'
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id)
-);
-
-ALTER TABLE public.user_data_scope ENABLE ROW LEVEL SECURITY;
-
--- Admins can manage all
-CREATE POLICY "Admins can manage data scope"
-  ON public.user_data_scope FOR ALL
-  USING (has_role(auth.uid(), 'admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-
--- Users can read own scope
-CREATE POLICY "Users can view own scope"
-  ON public.user_data_scope FOR SELECT
-  USING (auth.uid() = user_id);
-```
-
-### Nový hook: `src/hooks/useDataScope.tsx`
-- Načte záznam z `user_data_scope` pro aktuálního uživatele
-- Vrátí `scope: 'all' | 'own'`
-- Prodejce bez záznamu = defaultně `'own'`, ostatní = `'all'`
-
-### Rozšíření `useUserPermissionsForUser`
-- Přidání metod `getDataScope()` a `setDataScope(scope)` pro admin UI
-
-### Úprava `src/pages/AdminRoles.tsx`
-V rozbalitelné části každého uživatele přibude sekce:
+Replace the `else` branch (no unpaid final) with logic that:
+- Calculates the remaining balance = `totalPrice - sum(ALL existing payments)`
+- If remaining > 0.01 → inserts a **new** `payment_type: "final"` row labeled "Doplatek"
+- Never modifies amounts of existing payments (paid or unpaid)
+- If remaining ≤ 0 → does nothing (already fully covered)
 
 ```
-┌─────────────────────────────────────────────┐
-│ Rozsah přístupu k datům                     │
-│                                             │
-│ ○ Všechna data   ● Pouze vlastní data       │
-│                                             │
-│ [popis aktuálního nastavení]                │
-└─────────────────────────────────────────────┘
+NEW ELSE BRANCH:
+  remaining = totalPrice - sum(all existing payments)
+  if remaining > 0.01:
+    INSERT new final payment { payment_type: "final", amount: remaining, notes: "Doplatek", due_date: departure-1month or +2months }
 ```
 
-### Vynucení v seznamech dat
-Hook `useDataScope` bude použit na těchto stránkách:
-- `src/pages/Deals.tsx` — filtr deals
-- `src/pages/Clients.tsx` — filtr klientů
-- `src/pages/VouchersList.tsx` — filtr voucherů
-- `src/pages/Contracts.tsx` — filtr smluv
+This also covers the case where all payments are paid — it will add a new doplatek for whatever is left.
 
-Když `scope === 'own'`, do Supabase dotazů bude přidán filtr `.eq('user_id', user.id)`. Když `scope === 'all'`, filtr se neaplikuje.
+### 2. Fix badge label in `src/components/DealPaymentSchedule.tsx` (line ~356)
 
----
+Currently all paid payments show a green "Záloha" badge. Change this so:
+- Paid payments show their actual type label ("Záloha", "Splátka", or "Doplatek")
+- A `final` type paid payment shows "Doplatek" (green badge), not "Záloha"
 
-## Výchozí hodnoty dle role
+```typescript
+// Instead of always showing "Záloha":
+{payment.paid && (
+  <span className="...green badge...">
+    {payment.payment_type === "final" ? "Doplatek" : "Záloha"}
+  </span>
+)}
+```
 
-| Role | Výchozí rozsah dat |
-|------|-------------------|
-| admin | Všechna data |
-| prodejce | Pouze vlastní data |
-| bez role | Všechna data |
+### Files to edit
+- `src/pages/DealDetail.tsx` — fix `autoGeneratePayments` else branch (lines ~1488–1517)
+- `src/components/DealPaymentSchedule.tsx` — fix paid badge label (line ~356)
 
-Pokud v tabulce `user_data_scope` není záznam pro daného uživatele, aplikuje se výchozí hodnota dle role.
+### Flow after fix
+```
+Service added/changed
+  └─ autoGeneratePayments(dealId, newTotal)
+       ├─ No payments yet → create 50% deposit + doplatek (unchanged)
+       ├─ Unpaid final exists → convert to deposit, add new doplatek (unchanged, works)
+       └─ No unpaid final (all deposits or all paid)
+            └─ remaining = newTotal - sum(all payments)
+                 ├─ remaining > 0 → INSERT new "final" / "Doplatek"
+                 └─ remaining ≤ 0 → no action
+```
 
----
-
-## Souhrn souborů ke změně / vytvoření
-
-- `supabase/migrations/...` — nová tabulka `user_data_scope`
-- `src/hooks/useDataScope.tsx` — nový hook
-- `src/hooks/useUserPermissions.tsx` — rozšíření `useUserPermissionsForUser` o data scope
-- `src/pages/AdminRoles.tsx` — UI přepínač rozsahu dat
-- `src/pages/Deals.tsx` — aplikace data scope filtru
-- `src/pages/Clients.tsx` — aplikace data scope filtru
-- `src/pages/VouchersList.tsx` — aplikace data scope filtru
-- `src/pages/Contracts.tsx` — aplikace data scope filtru
+The new doplatek syncs to `contract_payments` via the existing trigger `sync_deal_payment_to_contracts`, so it automatically appears in the contract payment schedule and in accounting.
