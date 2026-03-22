@@ -1438,7 +1438,6 @@ const DealDetail = () => {
         .reduce((sum, p) => sum + (p.amount || 0), 0);
 
       const unpaidPayments = existingPayments.filter(p => !p.paid);
-      if (unpaidPayments.length === 0) return;
 
       // Find unpaid final payment(s)
       const unpaidFinal = unpaidPayments.filter(p => p.payment_type === "final");
