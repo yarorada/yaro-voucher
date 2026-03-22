@@ -391,12 +391,34 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                   );
                 })}
                 {remainingPayment > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/10">
-                    <Checkbox disabled checked={false} className="shrink-0 opacity-40" />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const dueDate = departureDate
+                          ? format(addMonths(new Date(departureDate), -1), "yyyy-MM-dd")
+                          : format(addMonths(new Date(), 2), "yyyy-MM-dd");
+                        const { error } = await supabase.from("deal_payments").insert({
+                          deal_id: dealId,
+                          payment_type: "final",
+                          amount: remainingPayment,
+                          due_date: dueDate,
+                          notes: "Doplatek",
+                        });
+                        if (error) throw error;
+                        toast({ title: "Doplatek přidán", description: `Přidána platba ${formatPrice(remainingPayment, true, currency)}` });
+                        fetchPayments();
+                      } catch (e) {
+                        toast({ title: "Chyba", description: "Nepodařilo se přidat doplatek", variant: "destructive" });
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-dashed border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/10 hover:bg-orange-100/60 dark:hover:bg-orange-950/20 transition-colors cursor-pointer text-left"
+                  >
+                    <Plus className="h-4 w-4 text-orange-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-muted-foreground">Nezapláceno</span>
+                          <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Přidat doplatek</span>
                           <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-400">
                             Zbývá doplatit
                           </span>
@@ -406,7 +428,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )}
               </div>
               <div className="border-t pt-3 space-y-1 text-sm">
