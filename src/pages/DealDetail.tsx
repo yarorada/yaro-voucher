@@ -1432,7 +1432,7 @@ const DealDetail = () => {
         return;
       }
       
-      // Payments exist — recalculate all unpaid proportionally, keep paid locked
+      // Payments exist — convert existing unpaid "final" to deposit, then add new final with remaining
       const paidSum = existingPayments
         .filter(p => p.paid)
         .reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -1440,34 +1440,82 @@ const DealDetail = () => {
       const unpaidPayments = existingPayments.filter(p => !p.paid);
       if (unpaidPayments.length === 0) return;
 
-      const remaining = Math.max(0, totalPrice - paidSum);
-      const unpaidTotal = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      // Find unpaid final payment(s)
+      const unpaidFinal = unpaidPayments.filter(p => p.payment_type === "final");
+      const unpaidNonFinal = unpaidPayments.filter(p => p.payment_type !== "final");
 
       const updates: PromiseLike<any>[] = [];
-      if (unpaidTotal > 0) {
-        let distributed = 0;
-        unpaidPayments.forEach((p, idx) => {
-          let newAmount: number;
-          if (idx === unpaidPayments.length - 1) {
-            newAmount = Math.max(0, remaining - distributed);
-          } else {
-            newAmount = Math.round((p.amount || 0) / unpaidTotal * remaining);
-            distributed += newAmount;
-          }
-          if (Math.abs((p.amount || 0) - newAmount) > 0.01) {
-            updates.push(
-              supabase.from("deal_payments").update({ amount: newAmount }).eq("id", p.id).then()
-            );
-          }
-        });
-      } else {
-        const last = unpaidPayments[unpaidPayments.length - 1];
-        if (Math.abs((last.amount || 0) - remaining) > 0.01) {
+
+      if (unpaidFinal.length > 0) {
+        // Convert each unpaid "final" to "deposit" (záloha)
+        for (const finalPayment of unpaidFinal) {
           updates.push(
-            supabase.from("deal_payments").update({ amount: remaining }).eq("id", last.id).then()
+            supabase
+              .from("deal_payments")
+              .update({ payment_type: "deposit", notes: finalPayment.notes || "Záloha" })
+              .eq("id", finalPayment.id)
+              .then()
           );
         }
+
+        // Calculate sum of all non-final unpaid amounts (keeping their current amounts)
+        const nonFinalUnpaidSum = unpaidNonFinal.reduce((sum, p) => sum + (p.amount || 0), 0);
+        // Plus the converted final payments (they keep their amounts)
+        const convertedFinalSum = unpaidFinal.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const allDepositsSum = paidSum + nonFinalUnpaidSum + convertedFinalSum;
+        const newFinalAmount = Math.max(0, totalPrice - allDepositsSum);
+
+        if (newFinalAmount > 0.01) {
+          // Add new "doplatek" (final) with remaining amount
+          const departureDate = startDate;
+          const finalDueDate = departureDate
+            ? addMonths(departureDate, -1)
+            : addMonths(new Date(), 2);
+
+          updates.push(
+            supabase
+              .from("deal_payments")
+              .insert({
+                deal_id: dealId,
+                payment_type: "final",
+                amount: newFinalAmount,
+                due_date: format(finalDueDate, "yyyy-MM-dd"),
+                notes: "Doplatek",
+              })
+              .then()
+          );
+        }
+      } else {
+        // No unpaid final — just update the last unpaid payment to cover remaining
+        const remaining = Math.max(0, totalPrice - paidSum);
+        const unpaidTotal = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        if (unpaidTotal > 0) {
+          let distributed = 0;
+          unpaidPayments.forEach((p, idx) => {
+            let newAmount: number;
+            if (idx === unpaidPayments.length - 1) {
+              newAmount = Math.max(0, remaining - distributed);
+            } else {
+              newAmount = Math.round((p.amount || 0) / unpaidTotal * remaining);
+              distributed += newAmount;
+            }
+            if (Math.abs((p.amount || 0) - newAmount) > 0.01) {
+              updates.push(
+                supabase.from("deal_payments").update({ amount: newAmount }).eq("id", p.id).then()
+              );
+            }
+          });
+        } else {
+          const last = unpaidPayments[unpaidPayments.length - 1];
+          if (Math.abs((last.amount || 0) - remaining) > 0.01) {
+            updates.push(
+              supabase.from("deal_payments").update({ amount: remaining }).eq("id", last.id).then()
+            );
+          }
+        }
       }
+
       await Promise.all(updates);
     } catch (error) {
       console.error("Error auto-generating payments:", error);
