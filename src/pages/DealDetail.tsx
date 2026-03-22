@@ -1488,7 +1488,7 @@ const DealDetail = () => {
       } else {
         // No unpaid final exists (all paid or only deposits remain)
         // Calculate remaining = totalPrice - sum(ALL existing payments)
-        const allPaymentsSum = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const allPaymentsSum = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const remaining = totalPrice - allPaymentsSum;
 
         if (remaining > 0.01) {
