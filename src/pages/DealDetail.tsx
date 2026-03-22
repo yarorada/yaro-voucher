@@ -1432,86 +1432,28 @@ const DealDetail = () => {
         return;
       }
       
-      // Payments exist — convert existing unpaid "final" to deposit, then add new final with remaining
-      const paidSum = existingPayments
-        .filter(p => p.paid)
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      // RULE: Never modify existing payments (paid or unpaid).
+      // Only insert a new Doplatek if totalPrice exceeds the sum of all scheduled payments.
+      const allPaymentsSum = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const remaining = totalPrice - allPaymentsSum;
 
-      const unpaidPayments = existingPayments.filter(p => !p.paid);
+      if (remaining > 0.01) {
+        const departureDate = startDate;
+        const finalDueDate = departureDate
+          ? addMonths(departureDate, -1)
+          : addMonths(new Date(), 2);
 
-      // Find unpaid final payment(s)
-      const unpaidFinal = unpaidPayments.filter(p => p.payment_type === "final");
-      const unpaidNonFinal = unpaidPayments.filter(p => p.payment_type !== "final");
-
-      const updates: PromiseLike<any>[] = [];
-
-      if (unpaidFinal.length > 0) {
-        // Convert each unpaid "final" to "deposit" (záloha)
-        for (const finalPayment of unpaidFinal) {
-          updates.push(
-            supabase
-              .from("deal_payments")
-              .update({ payment_type: "deposit", notes: finalPayment.notes || "Záloha" })
-              .eq("id", finalPayment.id)
-              .then()
-          );
-        }
-
-        // Calculate sum of all non-final unpaid amounts (keeping their current amounts)
-        const nonFinalUnpaidSum = unpaidNonFinal.reduce((sum, p) => sum + (p.amount || 0), 0);
-        // Plus the converted final payments (they keep their amounts)
-        const convertedFinalSum = unpaidFinal.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const allDepositsSum = paidSum + nonFinalUnpaidSum + convertedFinalSum;
-        const newFinalAmount = Math.max(0, totalPrice - allDepositsSum);
-
-        if (newFinalAmount > 0.01) {
-          // Add new "doplatek" (final) with remaining amount
-          const departureDate = startDate;
-          const finalDueDate = departureDate
-            ? addMonths(departureDate, -1)
-            : addMonths(new Date(), 2);
-
-          updates.push(
-            supabase
-              .from("deal_payments")
-              .insert({
-                deal_id: dealId,
-                payment_type: "final",
-                amount: newFinalAmount,
-                due_date: format(finalDueDate, "yyyy-MM-dd"),
-                notes: "Doplatek",
-              })
-              .then()
-          );
-        }
-      } else {
-        // No unpaid final exists (all paid or only deposits remain)
-        // Calculate remaining = totalPrice - sum(ALL existing payments)
-        const allPaymentsSum = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const remaining = totalPrice - allPaymentsSum;
-
-        if (remaining > 0.01) {
-          // Insert a new doplatek for the remaining balance
-          const departureDate = startDate;
-          const finalDueDate = departureDate
-            ? addMonths(departureDate, -1)
-            : addMonths(new Date(), 2);
-
-          updates.push(
-            supabase
-              .from("deal_payments")
-              .insert({
-                deal_id: dealId,
-                payment_type: "final",
-                amount: remaining,
-                due_date: format(finalDueDate, "yyyy-MM-dd"),
-                notes: "Doplatek",
-              })
-              .then()
-          );
-        }
-        // If remaining <= 0, do nothing — already fully covered
+        await supabase
+          .from("deal_payments")
+          .insert({
+            deal_id: dealId,
+            payment_type: "final",
+            amount: remaining,
+            due_date: format(finalDueDate, "yyyy-MM-dd"),
+            notes: "Doplatek",
+          });
       }
+      // If remaining <= 0, nothing to do — already fully covered
 
       await Promise.all(updates);
     } catch (error) {
