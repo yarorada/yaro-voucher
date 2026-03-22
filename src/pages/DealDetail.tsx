@@ -1486,34 +1486,32 @@ const DealDetail = () => {
           );
         }
       } else {
-        // No unpaid final — just update the last unpaid payment to cover remaining
-        const remaining = Math.max(0, totalPrice - paidSum);
-        const unpaidTotal = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        // No unpaid final exists (all paid or only deposits remain)
+        // Calculate remaining = totalPrice - sum(ALL existing payments)
+        const allPaymentsSum = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const remaining = totalPrice - allPaymentsSum;
 
-        if (unpaidTotal > 0) {
-          let distributed = 0;
-          unpaidPayments.forEach((p, idx) => {
-            let newAmount: number;
-            if (idx === unpaidPayments.length - 1) {
-              newAmount = Math.max(0, remaining - distributed);
-            } else {
-              newAmount = Math.round((p.amount || 0) / unpaidTotal * remaining);
-              distributed += newAmount;
-            }
-            if (Math.abs((p.amount || 0) - newAmount) > 0.01) {
-              updates.push(
-                supabase.from("deal_payments").update({ amount: newAmount }).eq("id", p.id).then()
-              );
-            }
-          });
-        } else {
-          const last = unpaidPayments[unpaidPayments.length - 1];
-          if (Math.abs((last.amount || 0) - remaining) > 0.01) {
-            updates.push(
-              supabase.from("deal_payments").update({ amount: remaining }).eq("id", last.id).then()
-            );
-          }
+        if (remaining > 0.01) {
+          // Insert a new doplatek for the remaining balance
+          const departureDate = startDate;
+          const finalDueDate = departureDate
+            ? addMonths(departureDate, -1)
+            : addMonths(new Date(), 2);
+
+          updates.push(
+            supabase
+              .from("deal_payments")
+              .insert({
+                deal_id: dealId,
+                payment_type: "final",
+                amount: remaining,
+                due_date: format(finalDueDate, "yyyy-MM-dd"),
+                notes: "Doplatek",
+              })
+              .then()
+          );
         }
+        // If remaining <= 0, do nothing — already fully covered
       }
 
       await Promise.all(updates);
