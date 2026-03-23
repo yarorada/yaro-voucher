@@ -816,7 +816,7 @@ const Clients = () => {
 
                         <DocumentUpload
                           clientId={editingClient.id}
-                          documentType="other"
+                          documentType="passport"
                           autoSaveToClient={true}
                           onDataExtracted={(data) => {
                             const newFilledFields = new Set(ocrFilledFields);
