@@ -701,7 +701,7 @@ const Clients = () => {
                         <DateInput
                           value={formData.date_of_birth}
                           onChange={(date) => setFormData({ ...formData, date_of_birth: date })}
-                          className={ocrFilledFields.has("date_of_birth") ? "border-green-500 bg-green-50" : ""}
+                          className={ocrFilledFields.has("date_of_birth") ? "border-green-500 bg-green-500/10" : ""}
                         />
                       </div>
                     </div>
@@ -776,13 +776,13 @@ const Clients = () => {
                           placeholder="Číslo pasu"
                           value={formData.passport_number}
                           onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
-                          className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-50" : ""}
+                          className={ocrFilledFields.has("passport_number") ? "border-green-500 bg-green-500/10" : ""}
                         />
                         <DateInput
                           value={formData.passport_expiry}
                           onChange={(date) => setFormData({ ...formData, passport_expiry: date })}
                           placeholder="Platnost do"
-                          className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-50" : ""}
+                          className={ocrFilledFields.has("passport_expiry") ? "border-green-500 bg-green-500/10" : ""}
                         />
                       </div>
                       <div className="space-y-1">
@@ -791,13 +791,13 @@ const Clients = () => {
                           placeholder="Číslo OP"
                           value={formData.id_card_number}
                           onChange={(e) => setFormData({ ...formData, id_card_number: e.target.value })}
-                          className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-50" : ""}
+                          className={ocrFilledFields.has("id_card_number") ? "border-green-500 bg-green-500/10" : ""}
                         />
                         <DateInput
                           value={formData.id_card_expiry}
                           onChange={(date) => setFormData({ ...formData, id_card_expiry: date })}
                           placeholder="Platnost do"
-                          className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-50" : ""}
+                          className={ocrFilledFields.has("id_card_expiry") ? "border-green-500 bg-green-500/10" : ""}
                         />
                       </div>
                     </div>

@@ -1043,7 +1043,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                     id="first_name"
                     value={editedData.first_name || ''}
                     onChange={(e) => setEditedData({ ...editedData, first_name: e.target.value })}
-                    className={uploads[previewIndex]?.ocrFilledFields?.has('first_name') ? "border-green-500 bg-green-50" : ""}
+                    className={uploads[previewIndex]?.ocrFilledFields?.has('first_name') ? "border-green-500 bg-green-500/10" : ""}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1060,7 +1060,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                     id="last_name"
                     value={editedData.last_name || ''}
                     onChange={(e) => setEditedData({ ...editedData, last_name: e.target.value })}
-                    className={uploads[previewIndex]?.ocrFilledFields?.has('last_name') ? "border-green-500 bg-green-50" : ""}
+                    className={uploads[previewIndex]?.ocrFilledFields?.has('last_name') ? "border-green-500 bg-green-500/10" : ""}
                   />
                 </div>
               </div>
@@ -1082,7 +1082,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                       className={cn(
                         "w-full justify-start text-left font-normal",
                         !editedData.date_of_birth && "text-muted-foreground",
-                        uploads[previewIndex]?.ocrFilledFields?.has('date_of_birth') && "border-green-500 bg-green-50"
+                        uploads[previewIndex]?.ocrFilledFields?.has('date_of_birth') && "border-green-500 bg-green-500/10"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1131,7 +1131,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                         id="passport_number"
                         value={editedData.passport_number || ''}
                         onChange={(e) => setEditedData({ ...editedData, passport_number: e.target.value })}
-                        className={uploads[previewIndex]?.ocrFilledFields?.has('passport_number') ? "border-green-500 bg-green-50" : ""}
+                        className={uploads[previewIndex]?.ocrFilledFields?.has('passport_number') ? "border-green-500 bg-green-500/10" : ""}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1151,7 +1151,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                             className={cn(
                               "w-full justify-start text-left font-normal",
                               !editedData.passport_expiry && "text-muted-foreground",
-                              uploads[previewIndex]?.ocrFilledFields?.has('passport_expiry') && "border-green-500 bg-green-50"
+                              uploads[previewIndex]?.ocrFilledFields?.has('passport_expiry') && "border-green-500 bg-green-500/10"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1203,7 +1203,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                         id="id_card_number"
                         value={editedData.id_card_number || ''}
                         onChange={(e) => setEditedData({ ...editedData, id_card_number: e.target.value })}
-                        className={uploads[previewIndex]?.ocrFilledFields?.has('id_card_number') ? "border-green-500 bg-green-50" : ""}
+                        className={uploads[previewIndex]?.ocrFilledFields?.has('id_card_number') ? "border-green-500 bg-green-500/10" : ""}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1223,7 +1223,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
                             className={cn(
                               "w-full justify-start text-left font-normal",
                               !editedData.id_card_expiry && "text-muted-foreground",
-                              uploads[previewIndex]?.ocrFilledFields?.has('id_card_expiry') && "border-green-500 bg-green-50"
+                              uploads[previewIndex]?.ocrFilledFields?.has('id_card_expiry') && "border-green-500 bg-green-500/10"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
