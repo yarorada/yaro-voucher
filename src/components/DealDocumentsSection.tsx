@@ -476,10 +476,15 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       .maybeSingle();
 
     const nameParts = (clientName || "").split(" ");
+    const lastName = nameParts.slice(1).join(" ") || clientName || "";
+    // Detect gender from title or last name suffix (same logic as edge functions)
+    const isFemale = /paní/i.test(nameParts[0] || "") || /ová$|á$/i.test(lastName);
+    const genderPrefix = isFemale ? "Vážená" : "Vážený";
+    const salutation = lastName ? `${genderPrefix} ${lastName}` : `${genderPrefix} ${clientName || "kliente"}`;
     const vars: Record<string, string> = {
       first_name: nameParts[0] || "",
-      last_name: nameParts.slice(1).join(" ") || clientName || "",
-      salutation: clientName || "klient",
+      last_name: lastName,
+      salutation,
       destination: "",
       hotel: "",
       date_from: "",
