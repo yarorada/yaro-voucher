@@ -6,20 +6,18 @@ const corsHeaders = {
 };
 
 const AMNIS_API_BASE = "https://api.amnistreasury.com";
-const AMNIS_TOKEN_URL = `${AMNIS_API_BASE}/oauth/v2/token`;
+const AMNIS_TOKEN_URL = `${AMNIS_API_BASE}/api/token`;
 const AMNIS_TRANSACTIONS_URL = `${AMNIS_API_BASE}/api/transactions`;
 
 async function getAmnisToken(clientId: string, clientSecret: string): Promise<string> {
-  const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-  });
-
   const response = await fetch(AMNIS_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
   });
 
   if (!response.ok) {
