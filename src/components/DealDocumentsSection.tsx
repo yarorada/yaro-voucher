@@ -451,26 +451,58 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   const vouchersWithSupplier = vouchers.filter(v => v.supplier_id && v.suppliers?.email);
   const uniqueSupplierIds = Array.from(new Set(vouchersWithSupplier.map(v => v.supplier_id!)));
 
-  // Open client send dialog
-  const openClientDialog = () => {
-    const name = clientName || "klient";
-    setClientEmailSubject("Cestovní dokumenty - YARO Travel");
-    setClientEmailBody(
-      `Vážený ${name},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
-    );
+  const replacePlaceholders = (text: string, vars: Record<string, string>) => {
+    let result = text;
+    for (const [key, val] of Object.entries(vars)) {
+      result = result.split(`{{${key}}}`).join(val);
+    }
+    return result;
+  };
+
+  // Open client send dialog — load template from DB
+  const openClientDialog = async () => {
     setExtraEmails([]);
     setNewExtraEmail("");
     setSelectedDocIds(new Set(documents.map(d => d.id)));
     setSelectedVoucherIds(new Set(vouchers.map(v => v.id)));
     setClientSendDialogOpen(true);
+
+    // Fetch template
+    const { data: tpl } = await supabase
+      .from("email_templates")
+      .select("subject, body")
+      .eq("template_key", "deal_docs_client_cz")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    const nameParts = (clientName || "").split(" ");
+    const vars: Record<string, string> = {
+      first_name: nameParts[0] || "",
+      last_name: nameParts.slice(1).join(" ") || clientName || "",
+      salutation: clientName || "klient",
+      destination: "",
+      hotel: "",
+      date_from: "",
+      date_to: "",
+      total_price: "",
+      voucher_code: "",
+      contract_number: "",
+      sign_link: "",
+    };
+
+    if (tpl) {
+      setClientEmailSubject(replacePlaceholders(tpl.subject, vars));
+      setClientEmailBody(replacePlaceholders(tpl.body, vars));
+    } else {
+      setClientEmailSubject("Cestovní dokumenty - YARO Travel");
+      setClientEmailBody(
+        `Vážený ${clientName || "klient"},\n\nv příloze zasíláme kompletní cestovní dokumenty k Vašemu zájezdu.\n\nS pozdravem,\nYARO Travel - Váš specialista na dovolenou\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
+      );
+    }
   };
 
-  // Open supplier send dialog
-  const openSupplierDialog = () => {
-    setSupplierEmailSubject("Travel Documents – YARO Travel");
-    setSupplierEmailBody(
-      `Dear Partner,\n\nplease find attached the travel voucher(s) for your records.\n\nKind regards,\nYARO Travel\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
-    );
+  // Open supplier send dialog — load template from DB
+  const openSupplierDialog = async () => {
     // Default: all vouchers per supplier selected
     const initSelection: Record<string, Set<string>> = {};
     for (const suppId of uniqueSupplierIds) {
@@ -478,6 +510,24 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     }
     setSupplierVoucherSelection(initSelection);
     setSupplierSendDialogOpen(true);
+
+    // Fetch template
+    const { data: tpl } = await supabase
+      .from("email_templates")
+      .select("subject, body")
+      .eq("template_key", "deal_docs_supplier_en")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (tpl) {
+      setSupplierEmailSubject(tpl.subject);
+      setSupplierEmailBody(tpl.body);
+    } else {
+      setSupplierEmailSubject("Travel Documents – YARO Travel");
+      setSupplierEmailBody(
+        `Dear Partner,\n\nplease find attached the travel voucher(s) for your records.\n\nKind regards,\nYARO Travel\nTel.: +420 602 102 108\nwww.yarotravel.cz\nzajezdy@yarotravel.cz`
+      );
+    }
   };
 
   const getLogoBase64 = useCallback(async (): Promise<string | undefined> => {
