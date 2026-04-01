@@ -560,19 +560,47 @@ export default function Invoicing() {
     return URL.createObjectURL(await response.blob());
   };
 
+  const resolveInvoiceFile = async (inv: Invoice) => {
+    if (inv.file_url) {
+      return {
+        fileUrl: inv.file_url,
+        fileName: inv.file_name,
+      };
+    }
+
+    if (inv.deal_supplier_invoice_id) {
+      const { data, error } = await supabase
+        .from("deal_supplier_invoices")
+        .select("file_url, file_name")
+        .eq("id", inv.deal_supplier_invoice_id)
+        .maybeSingle();
+
+      if (!error && data?.file_url) {
+        return {
+          fileUrl: data.file_url,
+          fileName: data.file_name,
+        };
+      }
+    }
+
+    return null;
+  };
+
   const openReceivedInvoicePreview = async (inv: Invoice) => {
-    if (!inv.file_url) {
+    const resolvedFile = await resolveInvoiceFile(inv);
+
+    if (!resolvedFile?.fileUrl) {
       toast.error("U faktury chybí nahraný soubor");
       return;
     }
 
     clearFilePreviewUrl();
     setFilePreviewInvoice(inv);
-    setFilePreviewKind(getFilePreviewKind(inv.file_name, inv.file_url));
+    setFilePreviewKind(getFilePreviewKind(resolvedFile.fileName, resolvedFile.fileUrl));
     setFilePreviewLoading(true);
 
     try {
-      const previewUrl = await getInvoiceFilePreviewUrl(inv.file_url);
+      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl);
       setFilePreviewUrl(previewUrl);
     } catch (error) {
       console.error("Invoice preview failed:", error);
@@ -584,12 +612,12 @@ export default function Invoicing() {
   };
 
   const handleOpenInvoiceFile = async (inv: Invoice) => {
-    if (!inv.file_url) return;
-
     if (inv.invoice_type === "received") {
       await openReceivedInvoicePreview(inv);
       return;
     }
+
+    if (!inv.file_url) return;
 
     try {
       const previewUrl = await getInvoiceFilePreviewUrl(inv.file_url);
@@ -601,7 +629,7 @@ export default function Invoicing() {
   };
 
   const handleGeneratePdf = async (inv: Invoice) => {
-    if (inv.invoice_type === "received" && inv.file_url) {
+    if (inv.invoice_type === "received" && (inv.file_url || inv.deal_supplier_invoice_id)) {
       await openReceivedInvoicePreview(inv);
       return;
     }
@@ -802,6 +830,7 @@ export default function Invoicing() {
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
+            onOpenFile={handleOpenInvoiceFile}
             onEmail={handleOpenEmailDialog}
             onMarkPaid={handleOpenMarkPaid}
           />
@@ -816,6 +845,7 @@ export default function Invoicing() {
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
+            onOpenFile={handleOpenInvoiceFile}
             onEmail={handleOpenEmailDialog}
             onMarkPaid={handleOpenMarkPaid}
           />
@@ -1596,7 +1626,7 @@ function InvoiceTable({
                             <QrCode className="h-4 w-4 mr-2" /> QR platba
                           </DropdownMenuItem>
                         )}
-                        {inv.file_url && (
+                        {(inv.file_url || inv.deal_supplier_invoice_id) && (
                           <DropdownMenuItem onClick={() => onOpenFile(inv)}>
                             <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
                           </DropdownMenuItem>
