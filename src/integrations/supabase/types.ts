@@ -576,6 +576,7 @@ export type Database = {
           created_at: string
           currency: string | null
           deal_id: string
+          due_date: string | null
           file_name: string
           file_url: string
           id: string
@@ -586,11 +587,13 @@ export type Database = {
           supplier_name: string | null
           total_amount: number | null
           user_id: string
+          variable_symbol: string | null
         }
         Insert: {
           created_at?: string
           currency?: string | null
           deal_id: string
+          due_date?: string | null
           file_name: string
           file_url: string
           id?: string
@@ -601,11 +604,13 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           user_id?: string
+          variable_symbol?: string | null
         }
         Update: {
           created_at?: string
           currency?: string | null
           deal_id?: string
+          due_date?: string | null
           file_name?: string
           file_url?: string
           id?: string
@@ -616,6 +621,7 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           user_id?: string
+          variable_symbol?: string | null
         }
         Relationships: [
           {
