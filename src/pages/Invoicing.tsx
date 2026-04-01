@@ -506,7 +506,14 @@ export default function Invoicing() {
 
   const openNewForm = (type: string) => {
     setEditingInvoice(null);
-    setForm({ ...emptyForm, invoice_type: type });
+    const base = { ...emptyForm, invoice_type: type };
+    if (type === "issued") {
+      base.supplier_name = agencyName;
+      base.supplier_ico = agencyIco;
+      base.supplier_dic = agencyDic;
+      base.supplier_address = agencyAddress;
+    }
+    setForm(base);
     setOcrPreview(null);
     setScanFileUrl(null);
     setScanFileName(null);
