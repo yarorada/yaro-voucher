@@ -346,30 +346,28 @@ const Suppliers = () => {
               <DialogDescription>Zadejte informace o {currentLabel}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* ARES lookup for customers */}
-              {isCustomerForm && (
-                <div className="space-y-2">
-                  <Label>Načíst z ARES</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.ico}
-                      onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
-                      placeholder="Zadejte IČO"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={aresLoading || !formData.ico.trim()}
-                      onClick={() => handleAresLookup(formData.ico)}
-                    >
-                      {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                      <span className="ml-1">ARES</span>
-                    </Button>
-                  </div>
+              {/* ARES lookup for all partner types */}
+              <div className="space-y-2">
+                <Label>Načíst z ARES</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.ico}
+                    onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+                    placeholder="Zadejte IČO"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={aresLoading || !formData.ico.trim()}
+                    onClick={() => handleAresLookup(formData.ico)}
+                  >
+                    {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    <span className="ml-1">ARES</span>
+                  </Button>
                 </div>
-              )}
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-2">
@@ -377,18 +375,14 @@ const Suppliers = () => {
                   <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                 </div>
 
-                {isCustomerForm && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="ico">IČO</Label>
-                      <Input id="ico" value={formData.ico} onChange={(e) => setFormData({ ...formData, ico: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dic">DIČ</Label>
-                      <Input id="dic" value={formData.dic} onChange={(e) => setFormData({ ...formData, dic: e.target.value })} />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="ico">IČO</Label>
+                  <Input id="ico" value={formData.ico} onChange={(e) => setFormData({ ...formData, ico: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dic">DIČ</Label>
+                  <Input id="dic" value={formData.dic} onChange={(e) => setFormData({ ...formData, dic: e.target.value })} />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="contact_person">Kontaktní osoba</Label>
