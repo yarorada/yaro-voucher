@@ -427,14 +427,23 @@ export default function Invoicing() {
     }));
   };
 
+  const getInvoiceTotal = (inv: Invoice): number | null => {
+    if (Array.isArray(inv.items) && inv.items.length > 0 && inv.items.some((it: any) => it.text || it.unit_price > 0)) {
+      const typedItems = inv.items as InvoiceItem[];
+      return Math.round(typedItems.reduce((s, it) => s + it.quantity * it.unit_price * (1 + it.vat_rate / 100), 0) * 100) / 100;
+    }
+    return inv.total_amount;
+  };
+
   const handleGeneratePdf = async (inv: Invoice) => {
-    if (inv.currency === "CZK" && inv.total_amount) {
+    const effectiveTotal = getInvoiceTotal(inv);
+    if (inv.currency === "CZK" && effectiveTotal) {
       const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
       const iban = inv.iban || bankAccountToIban(account);
       if (iban) {
         const spayd = generateSpaydString({
           iban,
-          amount: inv.total_amount,
+          amount: effectiveTotal,
           variableSymbol: inv.variable_symbol || undefined,
           message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
         });
