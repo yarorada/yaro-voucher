@@ -191,6 +191,7 @@ export default function Invoicing() {
 
   const handleOpenMarkPaid = (inv: Invoice) => {
     setMarkPaidDate(format(new Date(), "yyyy-MM-dd"));
+    setMarkPaidMethod(inv.payment_method || "moneta");
     setMarkPaidInvoice(inv);
   };
 
