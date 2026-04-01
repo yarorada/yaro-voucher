@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
@@ -43,6 +44,9 @@ interface Supplier {
   country_name: string | null;
   website: string | null;
   notes: string | null;
+  partner_type: string;
+  ico: string | null;
+  dic: string | null;
 }
 
 const emptyForm = {
@@ -56,8 +60,9 @@ const emptyForm = {
   country_name: "",
   website: "",
   notes: "",
+  ico: "",
+  dic: "",
 };
-
 
 type SupplierPayload = {
   name: string;
@@ -70,6 +75,9 @@ type SupplierPayload = {
   country_name: string | null;
   website: string | null;
   notes: string | null;
+  partner_type: string;
+  ico: string | null;
+  dic: string | null;
 };
 
 const Suppliers = () => {
@@ -79,6 +87,8 @@ const Suppliers = () => {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [searchText, setSearchText] = useState("");
   const [formData, setFormData] = useState(emptyForm);
+  const [activeTab, setActiveTab] = useState<"supplier" | "customer">("supplier");
+  const [aresLoading, setAresLoading] = useState(false);
   // Duplicate check state
   const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
   const [dupDialogOpen, setDupDialogOpen] = useState(false);
@@ -107,6 +117,8 @@ const Suppliers = () => {
           country_name: data.country_name.trim() || null,
           website: data.website.trim() || null,
           notes: data.notes.trim() || null,
+          ico: data.ico.trim() || null,
+          dic: data.dic.trim() || null,
         };
         await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
         setLastSaved(new Date());
@@ -129,12 +141,12 @@ const Suppliers = () => {
     try {
       const { data, error } = await supabase
         .from("suppliers")
-        .select("id, name, contact_person, email, phone, street, postal_code, city, country_name, website, notes")
+        .select("id, name, contact_person, email, phone, street, postal_code, city, country_name, website, notes, partner_type, ico, dic")
         .order("name", { ascending: true });
       if (error) throw error;
       setSuppliers((data as Supplier[]) || []);
     } catch {
-      toast.error("Chyba při načítání dodavatelů");
+      toast.error("Chyba při načítání partnerů");
     } finally {
       setLoading(false);
     }
@@ -146,30 +158,61 @@ const Suppliers = () => {
     }
   };
 
+  const handleAresLookup = async (ico: string) => {
+    if (!ico || ico.trim().length < 2) return;
+    setAresLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ares-lookup", {
+        body: { ico: ico.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      setFormData((f) => ({
+        ...f,
+        name: data.name || f.name,
+        ico: data.ico || f.ico,
+        dic: data.dic || f.dic,
+        street: data.street || f.street,
+        city: data.city || f.city,
+        postal_code: data.postal_code || f.postal_code,
+        country_name: f.country_name || "Česká republika",
+      }));
+      toast.success("Údaje doplněny z ARES");
+    } catch {
+      toast.error("Nepodařilo se načíst údaje z ARES");
+    } finally {
+      setAresLoading(false);
+    }
+  };
+
   const saveSupplier = async (payload: SupplierPayload) => {
     try {
+      const label = payload.partner_type === "customer" ? "Odběratel" : "Dodavatel";
       if (editingSupplier) {
         const { error } = await supabase.from("suppliers").update(payload).eq("id", editingSupplier.id);
         if (error) throw error;
-        toast.success("Dodavatel byl aktualizován");
+        toast.success(`${label} byl aktualizován`);
       } else {
         const { error } = await supabase.from("suppliers").insert(payload);
         if (error) throw error;
-        toast.success("Dodavatel byl přidán");
+        toast.success(`${label} byl přidán`);
       }
       handleDialogClose();
       fetchSuppliers();
     } catch (error: any) {
-      if (error.code === "23505") toast.error("Dodavatel s tímto názvem již existuje");
-      else toast.error("Chyba při ukládání dodavatele");
+      if (error.code === "23505") toast.error("Partner s tímto názvem již existuje");
+      else toast.error("Chyba při ukládání partnera");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) { toast.error("Název dodavatele je povinný"); return; }
+    if (!formData.name.trim()) { toast.error("Název je povinný"); return; }
 
-    const payload = {
+    const payload: SupplierPayload = {
       name: formData.name.trim(),
       contact_person: formData.contact_person.trim() || null,
       email: formData.email.trim() || null,
@@ -180,6 +223,9 @@ const Suppliers = () => {
       country_name: formData.country_name.trim() || null,
       website: formData.website.trim() || null,
       notes: formData.notes.trim() || null,
+      partner_type: editingSupplier ? editingSupplier.partner_type : activeTab,
+      ico: formData.ico.trim() || null,
+      dic: formData.dic.trim() || null,
     };
 
     // Skip duplicate check when editing
@@ -213,19 +259,21 @@ const Suppliers = () => {
       country_name: supplier.country_name || "",
       website: supplier.website || "",
       notes: supplier.notes || "",
+      ico: supplier.ico || "",
+      dic: supplier.dic || "",
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Opravdu chcete smazat tohoto dodavatele?")) return;
+    if (!confirm("Opravdu chcete smazat tohoto partnera?")) return;
     try {
       const { error } = await supabase.from("suppliers").delete().eq("id", id);
       if (error) throw error;
-      toast.success("Dodavatel byl smazán");
+      toast.success("Partner byl smazán");
       fetchSuppliers();
     } catch {
-      toast.error("Chyba při mazání dodavatele");
+      toast.error("Chyba při mazání partnera");
     }
   };
 
@@ -236,15 +284,21 @@ const Suppliers = () => {
   };
 
   const filteredSuppliers = suppliers.filter((s) => {
+    if (s.partner_type !== activeTab) return false;
     if (!searchText.trim()) return true;
     const q = removeDiacritics(searchText.toLowerCase());
     return (
       removeDiacritics(s.name.toLowerCase()).includes(q) ||
       removeDiacritics((s.contact_person || "").toLowerCase()).includes(q) ||
       removeDiacritics((s.email || "").toLowerCase()).includes(q) ||
-      removeDiacritics((s.city || "").toLowerCase()).includes(q)
+      removeDiacritics((s.city || "").toLowerCase()).includes(q) ||
+      removeDiacritics((s.ico || "").toLowerCase()).includes(q)
     );
   });
+
+  const currentLabel = activeTab === "customer" ? "odběratele" : "dodavatele";
+  const currentLabelTitle = activeTab === "customer" ? "Odběratel" : "Dodavatel";
+  const isCustomerForm = editingSupplier ? editingSupplier.partner_type === "customer" : activeTab === "customer";
 
   usePageToolbar(
     <div className="flex items-center gap-2">
@@ -252,37 +306,90 @@ const Suppliers = () => {
         value={searchText}
         onChange={setSearchText}
         noResults={filteredSuppliers.length === 0 && !loading}
-        addLabel={`dodavatele „{text}"`}
+        addLabel={`${currentLabel} „{text}"`}
         onAddNew={(text) => {
           setFormData({ ...emptyForm, name: text });
           setEditingSupplier(null);
           setIsDialogOpen(true);
         }}
-        placeholder="Hledat dodavatele..."
+        placeholder={`Hledat ${currentLabel}...`}
         className="w-48 md:w-64"
         inputClassName="h-8 text-xs"
       />
-      <BulkSupplierUpload onComplete={fetchSuppliers} />
+      {activeTab === "supplier" && <BulkSupplierUpload onComplete={fetchSuppliers} />}
     </div>,
-    [searchText, filteredSuppliers.length, loading]
+    [searchText, filteredSuppliers.length, loading, activeTab]
   );
-
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
       <div className="container max-w-6xl mx-auto py-8 px-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "supplier" | "customer")} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="supplier">Dodavatelé ({suppliers.filter(s => s.partner_type === "supplier").length})</TabsTrigger>
+            <TabsTrigger value="customer">Odběratelé ({suppliers.filter(s => s.partner_type === "customer").length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="supplier" className="mt-0">
+            {renderTable(filteredSuppliers)}
+          </TabsContent>
+          <TabsContent value="customer" className="mt-0">
+            {renderTable(filteredSuppliers)}
+          </TabsContent>
+        </Tabs>
+
+        {/* Create/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) handleDialogClose(); }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
             <DialogHeader>
-              <DialogTitle>{editingSupplier ? "Upravit dodavatele" : "Nový dodavatel"}</DialogTitle>
-              <DialogDescription>Zadejte informace o dodavateli</DialogDescription>
+              <DialogTitle>{editingSupplier ? `Upravit ${currentLabelTitle.toLowerCase()}` : `Nový ${currentLabelTitle.toLowerCase()}`}</DialogTitle>
+              <DialogDescription>Zadejte informace o {currentLabel}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* ARES lookup for customers */}
+              {isCustomerForm && (
+                <div className="space-y-2">
+                  <Label>Načíst z ARES</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.ico}
+                      onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+                      placeholder="Zadejte IČO"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={aresLoading || !formData.ico.trim()}
+                      onClick={() => handleAresLookup(formData.ico)}
+                    >
+                      {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <span className="ml-1">ARES</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="name">Název <span className="text-destructive">*</span></Label>
                   <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                 </div>
+
+                {isCustomerForm && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="ico">IČO</Label>
+                      <Input id="ico" value={formData.ico} onChange={(e) => setFormData({ ...formData, ico: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dic">DIČ</Label>
+                      <Input id="dic" value={formData.dic} onChange={(e) => setFormData({ ...formData, dic: e.target.value })} />
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="contact_person">Kontaktní osoba</Label>
                   <Input id="contact_person" value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
@@ -365,10 +472,10 @@ const Suppliers = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Možná duplicita dodavatele
+                Možná duplicita
               </DialogTitle>
               <DialogDescription>
-                V databázi existují podobní dodavatelé. Chcete přesto přidat nového?
+                V databázi existují podobní partneři. Chcete přesto přidat nového?
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -413,76 +520,90 @@ const Suppliers = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Načítám dodavatele...</p>
-          </div>
-        ) : filteredSuppliers.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
-            <h2 className="text-heading-2 text-foreground mb-2">
-              {searchText ? "Žádní dodavatelé nenalezeni" : "Zatím žádní dodavatelé"}
-            </h2>
-            <p className="text-body text-muted-foreground mb-6">
-              {searchText ? "Zkuste změnit hledání" : "Přidejte prvního dodavatele"}
-            </p>
-          </Card>
-        ) : (
-          <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left px-4 py-3 font-medium text-primary">Název dodavatele</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSuppliers.map((supplier) => (
-                    <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3 font-medium text-foreground">{supplier.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {supplier.email
-                          ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
-                          : <span className="text-muted-foreground/40">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(supplier)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Upravit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDelete(supplier.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Smazat
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
       </div>
     </div>
   );
+
+  function renderTable(items: Supplier[]) {
+    if (loading) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Načítám...</p>
+        </div>
+      );
+    }
+    if (items.length === 0) {
+      return (
+        <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+          <h2 className="text-heading-2 text-foreground mb-2">
+            {searchText ? `Žádní ${currentLabel} nenalezeni` : `Zatím žádní ${currentLabel}`}
+          </h2>
+          <p className="text-body text-muted-foreground mb-6">
+            {searchText ? "Zkuste změnit hledání" : `Přidejte prvního ${currentLabel}`}
+          </p>
+        </Card>
+      );
+    }
+    return (
+      <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-3 font-medium text-primary">Název</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                {activeTab === "customer" && <th className="text-left px-4 py-3 font-medium text-muted-foreground">IČO</th>}
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((supplier) => (
+                <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">{supplier.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {supplier.email
+                      ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
+                      : <span className="text-muted-foreground/40">—</span>}
+                  </td>
+                  {activeTab === "customer" && (
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {supplier.ico || <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                  )}
+                  <td className="px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(supplier)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Upravit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(supplier.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Smazat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+  }
 };
 
 export default Suppliers;
