@@ -69,6 +69,7 @@ type Invoice = {
   payment_method: string | null;
   items: InvoiceItem[] | null;
   created_at: string;
+  taxable_date?: string | null;
 };
 
 type FilePreviewKind = "image" | "pdf" | "other";
@@ -128,6 +129,7 @@ const emptyForm = {
   total_amount: "",
   currency: "CZK",
   issue_date: format(new Date(), "yyyy-MM-dd"),
+  taxable_date: format(new Date(), "yyyy-MM-dd"),
   due_date: "",
   variable_symbol: "",
   specific_symbol: "",
