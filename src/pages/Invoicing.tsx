@@ -55,6 +55,11 @@ function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange
   );
 }
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
+const EUR_BANK = {
+  iban: "DE89202208000051200891",
+  swift: "SXPYDEHH",
+  bank: "BANKING CIRCLE S.A.",
+};
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
@@ -1538,20 +1543,39 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
         {/* Col 3: Bank stacked */}
         <div style={{ flex: 1 }}>
-          <div style={{ marginBottom: "4px" }}>
-            <span style={{ color: "#888" }}>Bankovní účet</span>
-            <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
-          </div>
-          {invoice.iban && (
-            <div style={{ marginBottom: "4px" }}>
-              <span style={{ color: "#888" }}>IBAN</span>
-              <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.iban}</p>
-            </div>
+          {cur === "EUR" ? (
+            <>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>IBAN</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.iban}</p>
+              </div>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>SWIFT</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.swift}</p>
+              </div>
+              <div>
+                <span style={{ color: "#888" }}>Banka</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.bank}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>Bankovní účet</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
+              </div>
+              {invoice.iban && (
+                <div style={{ marginBottom: "4px" }}>
+                  <span style={{ color: "#888" }}>IBAN</span>
+                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.iban}</p>
+                </div>
+              )}
+              <div>
+                <span style={{ color: "#888" }}>Měna</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{curSymbol}</p>
+              </div>
+            </>
           )}
-          <div>
-            <span style={{ color: "#888" }}>Měna</span>
-            <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{curSymbol}</p>
-          </div>
         </div>
       </div>
 
