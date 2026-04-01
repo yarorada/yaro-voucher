@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,6 +71,46 @@ type Invoice = {
   created_at: string;
 };
 
+type FilePreviewKind = "image" | "pdf" | "other";
+
+function getFilePreviewKind(fileName?: string | null, fileUrl?: string | null): FilePreviewKind {
+  const candidate = `${fileName || ""} ${fileUrl || ""}`.toLowerCase();
+  if (/\.(jpe?g|png|webp|gif|bmp|heic|heif|svg)(\?|$)/i.test(candidate)) return "image";
+  if (/\.pdf(\?|$)/i.test(candidate)) return "pdf";
+  return "other";
+}
+
+function parseStorageReference(fileUrl: string): { bucket: string; path: string } | null {
+  try {
+    const { pathname } = new URL(fileUrl);
+    const markers = ["/storage/v1/object/public/", "/storage/v1/object/sign/"];
+    const marker = markers.find((item) => pathname.includes(item));
+    if (!marker) return null;
+
+    const storageLocation = pathname.split(marker)[1];
+    if (!storageLocation) return null;
+
+    const [bucket, ...pathParts] = storageLocation.split("/");
+    if (!bucket || pathParts.length === 0) return null;
+
+    return {
+      bucket,
+      path: decodeURIComponent(pathParts.join("/")),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function base64ToBlobUrl(base64: string, contentType: string) {
+  const byteChars = atob(base64);
+  const byteArr = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteArr[i] = byteChars.charCodeAt(i);
+  }
+  return URL.createObjectURL(new Blob([byteArr], { type: contentType || "application/octet-stream" }));
+}
+
 const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
 
 const emptyForm = {
@@ -120,9 +161,21 @@ export default function Invoicing() {
   const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
   const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [markPaidMethod, setMarkPaidMethod] = useState<string>("moneta");
+  const [filePreviewInvoice, setFilePreviewInvoice] = useState<Invoice | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [filePreviewLoading, setFilePreviewLoading] = useState(false);
+  const [filePreviewKind, setFilePreviewKind] = useState<FilePreviewKind>("other");
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(filePreviewUrl);
+      }
+    };
+  }, [filePreviewUrl]);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
@@ -445,7 +498,142 @@ export default function Invoicing() {
     return inv.total_amount;
   };
 
+  const clearFilePreviewUrl = () => {
+    setFilePreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev);
+      }
+      return null;
+    });
+  };
+
+  const closeFilePreview = () => {
+    clearFilePreviewUrl();
+    setFilePreviewInvoice(null);
+    setFilePreviewLoading(false);
+    setFilePreviewKind("other");
+  };
+
+  const getInvoiceFilePreviewUrl = async (fileUrl: string) => {
+    const storageReference = parseStorageReference(fileUrl);
+
+    if (storageReference) {
+      try {
+        const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-file", {
+          body: storageReference,
+        });
+
+        if (!proxyError && proxyData?.base64) {
+          return base64ToBlobUrl(proxyData.base64, proxyData.contentType || "application/octet-stream");
+        }
+      } catch (error) {
+        console.warn("Proxy preview failed:", error);
+      }
+
+      try {
+        const { data, error } = await supabase.storage.from(storageReference.bucket).download(storageReference.path);
+        if (!error && data) {
+          return URL.createObjectURL(data);
+        }
+      } catch (error) {
+        console.warn("Storage preview failed:", error);
+      }
+
+      try {
+        const { data, error } = await supabase.storage.from(storageReference.bucket).createSignedUrl(storageReference.path, 300);
+        if (!error && data?.signedUrl) {
+          const response = await fetch(data.signedUrl);
+          if (response.ok) {
+            return URL.createObjectURL(await response.blob());
+          }
+        }
+      } catch (error) {
+        console.warn("Signed URL preview failed:", error);
+      }
+    }
+
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error("Preview download failed");
+    }
+
+    return URL.createObjectURL(await response.blob());
+  };
+
+  const resolveInvoiceFile = async (inv: Invoice) => {
+    if (inv.file_url) {
+      return {
+        fileUrl: inv.file_url,
+        fileName: inv.file_name,
+      };
+    }
+
+    if (inv.deal_supplier_invoice_id) {
+      const { data, error } = await supabase
+        .from("deal_supplier_invoices")
+        .select("file_url, file_name")
+        .eq("id", inv.deal_supplier_invoice_id)
+        .maybeSingle();
+
+      if (!error && data?.file_url) {
+        return {
+          fileUrl: data.file_url,
+          fileName: data.file_name,
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const openReceivedInvoicePreview = async (inv: Invoice) => {
+    const resolvedFile = await resolveInvoiceFile(inv);
+
+    if (!resolvedFile?.fileUrl) {
+      toast.error("U faktury chybí nahraný soubor");
+      return;
+    }
+
+    clearFilePreviewUrl();
+    setFilePreviewInvoice(inv);
+    setFilePreviewKind(getFilePreviewKind(resolvedFile.fileName, resolvedFile.fileUrl));
+    setFilePreviewLoading(true);
+
+    try {
+      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl);
+      setFilePreviewUrl(previewUrl);
+    } catch (error) {
+      console.error("Invoice preview failed:", error);
+      closeFilePreview();
+      toast.error("Nepodařilo se načíst soubor faktury");
+    } finally {
+      setFilePreviewLoading(false);
+    }
+  };
+
+  const handleOpenInvoiceFile = async (inv: Invoice) => {
+    if (inv.invoice_type === "received") {
+      await openReceivedInvoicePreview(inv);
+      return;
+    }
+
+    if (!inv.file_url) return;
+
+    try {
+      const previewUrl = await getInvoiceFilePreviewUrl(inv.file_url);
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error("Invoice file open failed:", error);
+      toast.error("Nepodařilo se otevřít soubor faktury");
+    }
+  };
+
   const handleGeneratePdf = async (inv: Invoice) => {
+    if (inv.invoice_type === "received" && (inv.file_url || inv.deal_supplier_invoice_id)) {
+      await openReceivedInvoicePreview(inv);
+      return;
+    }
+
     const effectiveTotal = getInvoiceTotal(inv);
     if (inv.currency === "CZK" && effectiveTotal) {
       const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
@@ -465,13 +653,65 @@ export default function Invoicing() {
     } else {
       setPdfQrUrl(null);
     }
-    // For received invoices with a file, open in new tab (iframe embedding is blocked by storage headers)
-    if (inv.invoice_type === "received" && inv.file_url) {
-      window.open(inv.file_url, "_blank", "noopener,noreferrer");
-      return;
-    }
     setPdfInvoice(inv);
   };
+
+  const filePreviewPortal = filePreviewInvoice ? createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-foreground/80"
+      onClick={closeFilePreview}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Náhled faktury</h2>
+            <p className="text-sm text-muted-foreground">
+              {filePreviewInvoice.file_name || filePreviewInvoice.invoice_number || "Doklad"}
+            </p>
+          </div>
+          <button
+            onClick={closeFilePreview}
+            className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <X className="h-5 w-5" />
+            <span className="sr-only">Zavřít</span>
+          </button>
+        </div>
+
+        <div className="flex min-h-[60vh] items-center justify-center">
+          {filePreviewLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          ) : filePreviewUrl && filePreviewKind === "image" ? (
+            <img
+              src={filePreviewUrl}
+              alt={filePreviewInvoice.file_name || "Faktura"}
+              className="max-h-[75vh] max-w-full rounded-lg object-contain"
+            />
+          ) : filePreviewUrl && filePreviewKind === "pdf" ? (
+            <iframe
+              src={filePreviewUrl}
+              className="h-[75vh] w-full rounded-lg"
+              title={filePreviewInvoice.file_name || "Náhled faktury"}
+            />
+          ) : filePreviewUrl ? (
+            <div className="space-y-3 py-8 text-center">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Náhled není pro tento typ souboru dostupný.</p>
+              <Button onClick={() => window.open(filePreviewUrl, "_blank", "noopener,noreferrer")}>Otevřít soubor</Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Náhled souboru není dostupný.</p>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
 
   const handlePrintPdf = async () => {
     if (!pdfRef.current) return;
@@ -590,6 +830,7 @@ export default function Invoicing() {
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
+            onOpenFile={handleOpenInvoiceFile}
             onEmail={handleOpenEmailDialog}
             onMarkPaid={handleOpenMarkPaid}
           />
@@ -604,6 +845,7 @@ export default function Invoicing() {
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
+            onOpenFile={handleOpenInvoiceFile}
             onEmail={handleOpenEmailDialog}
             onMarkPaid={handleOpenMarkPaid}
           />
@@ -1050,27 +1292,14 @@ export default function Invoicing() {
             </DialogTitle>
           </DialogHeader>
           {pdfInvoice && (
-            pdfInvoice.invoice_type === "received" && pdfInvoice.file_url ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={() => window.open(pdfInvoice.file_url!, '_blank')}>
-                    <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
-                  </Button>
-                </div>
-                {pdfInvoice.file_url.match(/\.(pdf)$/i) || pdfInvoice.file_name?.match(/\.(pdf)$/i) ? (
-                  <iframe src={pdfInvoice.file_url} className="w-full" style={{ height: "75vh" }} />
-                ) : (
-                  <img src={pdfInvoice.file_url} alt="Faktura" className="max-w-full" />
-                )}
-              </div>
-            ) : (
-              <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
-                <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
-              </div>
-            )
+            <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
+              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+            </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {filePreviewPortal}
 
       {/* Email Dialog */}
       <Dialog open={!!emailDialog} onOpenChange={(o) => { if (!o) setEmailDialog(null); }}>
@@ -1294,6 +1523,7 @@ function InvoiceTable({
   onQr,
   onDuplicate,
   onPdf,
+  onOpenFile,
   onEmail,
   onMarkPaid,
 }: {
@@ -1305,6 +1535,7 @@ function InvoiceTable({
   onQr: (i: Invoice) => void;
   onDuplicate: (i: Invoice) => void;
   onPdf: (i: Invoice) => void;
+  onOpenFile: (i: Invoice) => void;
   onEmail: (i: Invoice) => void;
   onMarkPaid: (i: Invoice) => void;
 }) {
@@ -1395,11 +1626,9 @@ function InvoiceTable({
                             <QrCode className="h-4 w-4 mr-2" /> QR platba
                           </DropdownMenuItem>
                         )}
-                        {inv.file_url && (
-                          <DropdownMenuItem asChild>
-                            <a href={inv.file_url} target="_blank" rel="noopener">
-                              <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
-                            </a>
+                        {(inv.file_url || inv.deal_supplier_invoice_id) && (
+                          <DropdownMenuItem onClick={() => onOpenFile(inv)}>
+                            <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
                           </DropdownMenuItem>
                         )}
                         {!inv.deal_supplier_invoice_id && (
