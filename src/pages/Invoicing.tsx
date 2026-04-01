@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,36 +24,6 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { parse, isValid } from "date-fns";
-
-function DatePickerInput({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
-  const dateValue = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
-  const validDate = dateValue && isValid(dateValue) ? dateValue : undefined;
-  return (
-    <div className="flex gap-1">
-      <Input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1" />
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0">
-            <CalendarIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
-          <Calendar
-            mode="single"
-            selected={validDate}
-            onSelect={(d) => d && onChange(format(d, "yyyy-MM-dd"))}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
@@ -975,11 +945,11 @@ export default function Invoicing() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Datum vystavení</Label>
-                <DatePickerInput value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v }))} />
+                <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
               </div>
               <div>
                 <Label>Datum splatnosti</Label>
-                <DatePickerInput value={form.due_date} onChange={(v) => setForm((f) => ({ ...f, due_date: v }))} />
+                <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
               </div>
             </div>
 
@@ -1040,7 +1010,7 @@ export default function Invoicing() {
             </p>
             <div>
               <Label>Datum zaplacení</Label>
-              <DatePickerInput value={markPaidDate} onChange={setMarkPaidDate} />
+              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
             </div>
             <div>
               <Label>Způsob platby</Label>
@@ -1069,45 +1039,31 @@ export default function Invoicing() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Náhled faktury</span>
-              {pdfInvoice?.invoice_type === "received" && pdfInvoice?.file_url ? (
-                <Button onClick={() => window.open(pdfInvoice.file_url!, "_blank")} size="sm">
-                  <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
-                </Button>
-              ) : (
-                <Button onClick={handlePrintPdf} size="sm">
-                  <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
-                </Button>
-              )}
+              <Button onClick={handlePrintPdf} size="sm">
+                <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
+              </Button>
             </DialogTitle>
           </DialogHeader>
-          {pdfInvoice && pdfInvoice.invoice_type === "received" && pdfInvoice.file_url ? (
-            (() => {
-              const ext = (pdfInvoice.file_name || pdfInvoice.file_url || "").split(".").pop()?.toLowerCase();
-              const isPdf = ext === "pdf";
-              const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "");
-              return (
-                <div className="flex justify-center">
-                  {isPdf ? (
-                    <iframe src={pdfInvoice.file_url} className="w-full" style={{ height: "75vh" }} />
-                  ) : isImage ? (
-                    <img src={pdfInvoice.file_url} alt="Faktura" className="max-w-full max-h-[75vh] object-contain" />
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <FileText className="h-12 w-12 mx-auto mb-2" />
-                      <p>Náhled není dostupný pro tento typ souboru.</p>
-                      <Button variant="outline" className="mt-4" onClick={() => window.open(pdfInvoice.file_url!, "_blank")}>
-                        <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
-                      </Button>
-                    </div>
-                  )}
+          {pdfInvoice && (
+            pdfInvoice.invoice_type === "received" && pdfInvoice.file_url ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => window.open(pdfInvoice.file_url!, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
+                  </Button>
                 </div>
-              );
-            })()
-          ) : pdfInvoice ? (
-            <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
-              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
-            </div>
-          ) : null}
+                {pdfInvoice.file_url.match(/\.(pdf)$/i) || pdfInvoice.file_name?.match(/\.(pdf)$/i) ? (
+                  <iframe src={pdfInvoice.file_url} className="w-full" style={{ height: "75vh" }} />
+                ) : (
+                  <img src={pdfInvoice.file_url} alt="Faktura" className="max-w-full" />
+                )}
+              </div>
+            ) : (
+              <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
+                <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+              </div>
+            )
+          )}
         </DialogContent>
       </Dialog>
 
