@@ -1437,7 +1437,7 @@ export default function Invoicing() {
           </DialogHeader>
           {pdfInvoice && (
             <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
-              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} logoSrc={logoBase64} />
             </div>
           )}
         </DialogContent>
