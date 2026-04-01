@@ -265,6 +265,11 @@ export default function Invoicing() {
   };
 
   const handleSubmit = () => {
+    // Auto-calculate total from items for issued invoices
+    const calcItems = form.invoice_type === "issued" && items.length > 0 ? items : [];
+    const itemsTotal = calcItems.reduce((sum, it) => sum + it.quantity * it.unit_price, 0);
+    const finalTotal = calcItems.length > 0 ? itemsTotal : (form.total_amount ? parseFloat(form.total_amount) : null);
+
     const values: any = {
       invoice_type: form.invoice_type,
       invoice_number: form.invoice_number || null,
@@ -277,7 +282,7 @@ export default function Invoicing() {
       supplier_ico: form.supplier_ico || null,
       supplier_dic: form.supplier_dic || null,
       supplier_address: form.supplier_address || null,
-      total_amount: form.total_amount ? parseFloat(form.total_amount) : null,
+      total_amount: finalTotal,
       currency: form.currency,
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
@@ -287,6 +292,7 @@ export default function Invoicing() {
       file_url: scanFileUrl || editingInvoice?.file_url || null,
       file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
+      items: calcItems.length > 0 ? calcItems : [],
     };
     saveMutation.mutate(values);
   };
