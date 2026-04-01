@@ -800,6 +800,26 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                   placeholder="01.01.2025"
                 />
               </div>
+              {(ocrData.currency === "CZK" || !ocrData.currency) && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Variabilní symbol</Label>
+                    <Input
+                      value={ocrData.variable_symbol || ""}
+                      onChange={(e) => setOcrData((p) => ({ ...p, variable_symbol: e.target.value }))}
+                      placeholder="VS"
+                    />
+                  </div>
+                  <div>
+                    <Label>Datum splatnosti (DD.MM.YYYY)</Label>
+                    <Input
+                      value={ocrData.due_date || ""}
+                      onChange={(e) => setOcrData((p) => ({ ...p, due_date: e.target.value }))}
+                      placeholder="15.01.2025"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setConfirmDialogOpen(false); resetForm(); }}>
