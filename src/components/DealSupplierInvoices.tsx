@@ -60,6 +60,8 @@ interface OcrResult {
   total_amount: number | null;
   currency: string | null;
   issue_date: string | null;
+  variable_symbol: string | null;
+  due_date: string | null;
 }
 
 export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
