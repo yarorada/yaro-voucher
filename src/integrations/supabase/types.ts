@@ -1265,6 +1265,7 @@ export type Database = {
           client_dic: string | null
           client_ico: string | null
           client_name: string | null
+          constant_symbol: string | null
           created_at: string
           currency: string | null
           deal_id: string | null
@@ -1282,6 +1283,7 @@ export type Database = {
           paid: boolean | null
           paid_at: string | null
           payment_method: string | null
+          specific_symbol: string | null
           supplier_address: string | null
           supplier_dic: string | null
           supplier_ico: string | null
@@ -1298,6 +1300,7 @@ export type Database = {
           client_dic?: string | null
           client_ico?: string | null
           client_name?: string | null
+          constant_symbol?: string | null
           created_at?: string
           currency?: string | null
           deal_id?: string | null
@@ -1315,6 +1318,7 @@ export type Database = {
           paid?: boolean | null
           paid_at?: string | null
           payment_method?: string | null
+          specific_symbol?: string | null
           supplier_address?: string | null
           supplier_dic?: string | null
           supplier_ico?: string | null
@@ -1331,6 +1335,7 @@ export type Database = {
           client_dic?: string | null
           client_ico?: string | null
           client_name?: string | null
+          constant_symbol?: string | null
           created_at?: string
           currency?: string | null
           deal_id?: string | null
@@ -1348,6 +1353,7 @@ export type Database = {
           paid?: boolean | null
           paid_at?: string | null
           payment_method?: string | null
+          specific_symbol?: string | null
           supplier_address?: string | null
           supplier_dic?: string | null
           supplier_ico?: string | null

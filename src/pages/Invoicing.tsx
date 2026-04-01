@@ -58,6 +58,8 @@ type Invoice = {
   paid: boolean | null;
   paid_at: string | null;
   variable_symbol: string | null;
+  specific_symbol: string | null;
+  constant_symbol: string | null;
   bank_account: string | null;
   iban: string | null;
   file_url: string | null;
@@ -87,6 +89,8 @@ const emptyForm = {
   issue_date: format(new Date(), "yyyy-MM-dd"),
   due_date: "",
   variable_symbol: "",
+  specific_symbol: "",
+  constant_symbol: "",
   bank_account: DEFAULT_BANK_ACCOUNT,
   iban: "",
   notes: "",
@@ -328,6 +332,8 @@ export default function Invoicing() {
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
       variable_symbol: form.variable_symbol || null,
+      specific_symbol: form.specific_symbol || null,
+      constant_symbol: form.constant_symbol || null,
       bank_account: form.bank_account || null,
       iban: form.iban || (form.bank_account ? bankAccountToIban(form.bank_account) : null),
       file_url: scanFileUrl || editingInvoice?.file_url || null,
@@ -357,6 +363,8 @@ export default function Invoicing() {
       issue_date: inv.issue_date || "",
       due_date: inv.due_date || "",
       variable_symbol: inv.variable_symbol || "",
+      specific_symbol: inv.specific_symbol || "",
+      constant_symbol: inv.constant_symbol || "",
       bank_account: inv.bank_account || "",
       iban: inv.iban || "",
       notes: inv.notes || "",
@@ -384,6 +392,8 @@ export default function Invoicing() {
       issue_date: format(new Date(), "yyyy-MM-dd"),
       due_date: "",
       variable_symbol: "",
+      specific_symbol: inv.specific_symbol || "",
+      constant_symbol: inv.constant_symbol || "",
       bank_account: inv.bank_account || DEFAULT_BANK_ACCOUNT,
       iban: inv.iban || "",
       notes: inv.notes || "",
@@ -917,6 +927,23 @@ export default function Invoicing() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label>Specifický symbol</Label>
+                <Input
+                  value={form.specific_symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, specific_symbol: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Konstantní symbol</Label>
+                <Input
+                  value={form.constant_symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, constant_symbol: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label>Datum vystavení</Label>
                 <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
               </div>
@@ -1071,9 +1098,6 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
             FAKTURA {invoice.invoice_number || ""}
           </h1>
-          <p style={{ color: "#666", margin: 0, fontSize: "11px" }}>
-            {invoice.invoice_type === "issued" ? "Vydaná faktura" : "Přijatá faktura"}
-          </p>
         </div>
       </div>
 
@@ -1114,6 +1138,18 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
             <span style={{ fontSize: "10px", color: "#888" }}>Variabilní symbol</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.variable_symbol || "—"}</p>
           </div>
+          {invoice.specific_symbol && (
+            <div>
+              <span style={{ fontSize: "10px", color: "#888" }}>Specifický symbol</span>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.specific_symbol}</p>
+            </div>
+          )}
+          {invoice.constant_symbol && (
+            <div>
+              <span style={{ fontSize: "10px", color: "#888" }}>Konstantní symbol</span>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.constant_symbol}</p>
+            </div>
+          )}
           <div>
             <span style={{ fontSize: "10px", color: "#888" }}>Bankovní účet</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
