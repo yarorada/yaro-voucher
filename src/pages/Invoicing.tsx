@@ -724,11 +724,116 @@ export default function Invoicing() {
               </div>
             )}
 
+            {/* Line items for issued invoices */}
+            {form.invoice_type === "issued" && (
+              <div className="border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Položky faktury</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, { ...emptyItem }])}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Přidat řádek
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 text-xs text-muted-foreground font-medium px-1">
+                    <span>Popis</span>
+                    <span>Množství</span>
+                    <span>Cena/ks</span>
+                    <span>DPH %</span>
+                    <span>Celkem</span>
+                    <span></span>
+                  </div>
+                  {items.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 items-center">
+                      <Input
+                        value={item.text}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
+                        placeholder="Popis položky"
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <Input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, unit_price: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <Input
+                        type="number"
+                        value={item.vat_rate}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, vat_rate: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <span className="text-sm tabular-nums text-right pr-1">
+                        {(item.quantity * item.unit_price).toLocaleString("cs-CZ")}
+                      </span>
+                      <div className="flex gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setItems((prev) => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)])}
+                          title="Duplikovat"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        {items.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                            title="Odebrat"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Totals */}
+                {items.some((it) => it.text || it.unit_price > 0) && (() => {
+                  const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+                  const vatTotal = items.reduce((s, it) => s + it.quantity * it.unit_price * (it.vat_rate / 100), 0);
+                  return (
+                    <div className="border-t pt-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Základ:</span>
+                        <span className="tabular-nums">{subtotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                      </div>
+                      {vatTotal > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">DPH:</span>
+                          <span className="tabular-nums">{vatTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold">
+                        <span>Celkem:</span>
+                        <span className="tabular-nums">{(subtotal + vatTotal).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-4">
+              {form.invoice_type !== "issued" && (
               <div>
                 <Label>Částka</Label>
                 <Input type="number" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
               </div>
+              )}
               <div>
                 <Label>Měna</Label>
                 <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
