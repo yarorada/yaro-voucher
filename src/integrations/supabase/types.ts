@@ -2043,6 +2043,7 @@ export type Database = {
     Functions: {
       generate_contract_number: { Args: never; Returns: string }
       generate_deal_number: { Args: never; Returns: string }
+      generate_invoice_number: { Args: never; Returns: string }
       generate_voucher_code_for_year: {
         Args: { p_issue_date: string }
         Returns: string
