@@ -205,6 +205,18 @@ export default function Invoicing() {
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
+  useEffect(() => {
+    fetch(yaroLogo)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoBase64(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -1425,7 +1437,7 @@ export default function Invoicing() {
           </DialogHeader>
           {pdfInvoice && (
             <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
-              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} logoSrc={logoBase64} />
             </div>
           )}
         </DialogContent>
@@ -1466,7 +1478,7 @@ export default function Invoicing() {
   );
 }
 
-function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string | null }) {
+function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUrl: string | null; logoSrc?: string }) {
   const formatDate = (d: string | null) => d ? format(new Date(d), "d.M.yyyy") : "—";
   const cur = invoice.currency || "CZK";
   const curSymbol = cur === "CZK" ? "Kč" : cur === "EUR" ? "€" : cur === "USD" ? "$" : cur === "GBP" ? "£" : cur;
@@ -1485,7 +1497,7 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           </h1>
           <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
         </div>
-        <img src={yaroLogo} alt="YARO s.r.o." style={{ height: "40px" }} />
+        {logoSrc && <img src={logoSrc} alt="YARO s.r.o." style={{ height: "40px" }} />}
       </div>
 
       {/* Two column: Supplier / Customer */}
