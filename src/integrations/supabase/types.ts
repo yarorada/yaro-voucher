@@ -1252,6 +1252,134 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          bank_account: string | null
+          client_address: string | null
+          client_dic: string | null
+          client_ico: string | null
+          client_name: string | null
+          created_at: string
+          currency: string | null
+          deal_id: string | null
+          deal_supplier_invoice_id: string | null
+          due_date: string | null
+          file_name: string | null
+          file_url: string | null
+          iban: string | null
+          id: string
+          invoice_number: string | null
+          invoice_type: string
+          issue_date: string | null
+          notes: string | null
+          paid: boolean | null
+          paid_at: string | null
+          payment_method: string | null
+          supplier_address: string | null
+          supplier_dic: string | null
+          supplier_ico: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+          variable_symbol: string | null
+        }
+        Insert: {
+          bank_account?: string | null
+          client_address?: string | null
+          client_dic?: string | null
+          client_ico?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string | null
+          deal_id?: string | null
+          deal_supplier_invoice_id?: string | null
+          due_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          iban?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_type?: string
+          issue_date?: string | null
+          notes?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          payment_method?: string | null
+          supplier_address?: string | null
+          supplier_dic?: string | null
+          supplier_ico?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+          variable_symbol?: string | null
+        }
+        Update: {
+          bank_account?: string | null
+          client_address?: string | null
+          client_dic?: string | null
+          client_ico?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string | null
+          deal_id?: string | null
+          deal_supplier_invoice_id?: string | null
+          due_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          iban?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_type?: string
+          issue_date?: string | null
+          notes?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          payment_method?: string | null
+          supplier_address?: string | null
+          supplier_dic?: string | null
+          supplier_ico?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+          variable_symbol?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_deal_supplier_invoice_id_fkey"
+            columns: ["deal_supplier_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "deal_supplier_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           contract_id: string | null
