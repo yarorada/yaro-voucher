@@ -1244,6 +1244,11 @@ function InvoiceTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
+                    {!inv.paid && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {type === "issued" && (
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPdf(inv)} title="Náhled PDF">
                         <FileText className="h-3.5 w-3.5" />
