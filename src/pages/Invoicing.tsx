@@ -153,6 +153,7 @@ export default function Invoicing() {
       setOcrPreview(null);
       setScanFileUrl(null);
       setScanFileName(null);
+      setItems([{ ...emptyItem }]);
     },
     onError: (e: any) => toast.error(e.message),
   });
