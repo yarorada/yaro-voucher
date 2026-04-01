@@ -631,12 +631,16 @@ export default function Invoicing() {
     return await response.blob();
   };
 
-  const getInvoiceFilePreviewUrl = async (fileUrl: string, fileName?: string | null) => {
+  const getInvoiceFilePreview = async (fileUrl: string, fileName?: string | null) => {
     const fileBlob = await downloadInvoiceFileBlob(fileUrl);
 
     if (getFilePreviewKind(fileName, fileUrl) === "pdf") {
       try {
-        return await renderPdfPreviewHtmlUrl(fileBlob);
+        const pages = await renderPdfToImages(fileBlob);
+        if (pages.length > 0) {
+          setFilePreviewPages(pages);
+          return null; // signal: use pages, not URL
+        }
       } catch (error) {
         console.warn("PDF preview render failed, falling back to blob preview:", error);
       }
