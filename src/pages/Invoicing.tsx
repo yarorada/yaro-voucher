@@ -1430,7 +1430,7 @@ export default function Invoicing() {
             <DialogTitle className="flex items-center justify-between">
               <span>Náhled faktury</span>
               <Button onClick={handlePrintPdf} size="sm">
-                <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
+                <Download className="h-4 w-4 mr-1" /> Stáhnout PDF
               </Button>
             </DialogTitle>
           </DialogHeader>
