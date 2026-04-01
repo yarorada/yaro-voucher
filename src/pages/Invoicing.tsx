@@ -542,6 +542,7 @@ export default function Invoicing() {
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
             onEmail={handleOpenEmailDialog}
+            onMarkPaid={handleOpenMarkPaid}
           />
         </TabsContent>
         <TabsContent value="issued">
@@ -555,6 +556,7 @@ export default function Invoicing() {
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
             onEmail={handleOpenEmailDialog}
+            onMarkPaid={handleOpenMarkPaid}
           />
         </TabsContent>
       </Tabs>
