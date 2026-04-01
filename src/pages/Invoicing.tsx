@@ -781,17 +781,22 @@ export default function Invoicing() {
         <div className="flex min-h-[60vh] items-center justify-center">
           {filePreviewLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          ) : filePreviewPages.length > 0 ? (
+            <div className="flex w-full flex-col items-center gap-4">
+              {filePreviewPages.map((src, idx) => (
+                <img
+                  key={idx}
+                  src={src}
+                  alt={`Strana ${idx + 1}`}
+                  className="w-full max-w-4xl rounded-lg shadow-md"
+                />
+              ))}
+            </div>
           ) : filePreviewUrl && filePreviewKind === "image" ? (
             <img
               src={filePreviewUrl}
               alt={filePreviewInvoice.file_name || "Faktura"}
               className="max-h-[75vh] max-w-full rounded-lg object-contain"
-            />
-          ) : filePreviewUrl && filePreviewKind === "pdf" ? (
-            <iframe
-              src={filePreviewUrl}
-              className="h-[75vh] w-full rounded-lg"
-              title={filePreviewInvoice.file_name || "Náhled faktury"}
             />
           ) : filePreviewUrl ? (
             <div className="space-y-3 py-8 text-center">
