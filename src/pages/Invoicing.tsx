@@ -65,6 +65,8 @@ type Invoice = {
   created_at: string;
 };
 
+const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
+
 const emptyForm = {
   invoice_type: "issued" as string,
   invoice_number: "",
