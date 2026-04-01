@@ -171,6 +171,28 @@ export default function Invoicing() {
     },
   });
 
+  const markPaidMutation = useMutation({
+    mutationFn: async ({ invoice, paid_at }: { invoice: Invoice; paid_at: string }) => {
+      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", invoice.id);
+      if (error) throw error;
+      if (invoice.deal_supplier_invoice_id) {
+        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at }).eq("id", invoice.deal_supplier_invoice_id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["deal-supplier-invoices"] });
+      toast.success("Faktura označena jako zaplacená");
+      setMarkPaidInvoice(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleOpenMarkPaid = (inv: Invoice) => {
+    setMarkPaidDate(format(new Date(), "yyyy-MM-dd"));
+    setMarkPaidInvoice(inv);
+  };
+
   const handleAresLookup = async (ico: string) => {
     if (!ico || ico.length < 2) return;
     setAresLoading(true);
