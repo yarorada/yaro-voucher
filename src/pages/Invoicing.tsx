@@ -173,11 +173,11 @@ export default function Invoicing() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: async ({ invoice, paid_at }: { invoice: Invoice; paid_at: string }) => {
-      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", invoice.id);
+    mutationFn: async ({ invoice, paid_at, payment_method }: { invoice: Invoice; paid_at: string; payment_method: string }) => {
+      const { error } = await supabase.from("invoices").update({ paid: true, paid_at, payment_method }).eq("id", invoice.id);
       if (error) throw error;
       if (invoice.deal_supplier_invoice_id) {
-        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at }).eq("id", invoice.deal_supplier_invoice_id);
+        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at, payment_method }).eq("id", invoice.deal_supplier_invoice_id);
       }
     },
     onSuccess: () => {
