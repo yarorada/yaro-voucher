@@ -12,6 +12,7 @@ import {
   Mail,
   Hotel,
   Calculator,
+  Receipt,
   ShieldCheck,
   UserCircle,
 } from "lucide-react";
