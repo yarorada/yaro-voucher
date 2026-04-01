@@ -1447,11 +1447,14 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
-          FAKTURA {invoice.invoice_number || ""}
-        </h1>
-        <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
+            FAKTURA {invoice.invoice_number || ""}
+          </h1>
+          <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
+        </div>
+        <img src={yaroLogo} alt="YARO s.r.o." style={{ height: "40px" }} />
       </div>
 
       {/* Two column: Supplier / Customer */}
