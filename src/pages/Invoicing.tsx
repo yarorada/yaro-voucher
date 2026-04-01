@@ -1168,7 +1168,7 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
 
       {/* Footer */}
       <div style={{ marginTop: "30px", borderTop: "1px solid #ddd", paddingTop: "10px", textAlign: "center", color: "#999", fontSize: "9px" }}>
-        {invoice.supplier_name || agencyName} • {invoice.supplier_address || agencyAddress}{(invoice.supplier_ico || agencyIco) ? ` • IČO: ${invoice.supplier_ico || agencyIco}` : ""}{(invoice.supplier_dic || agencyDic) ? ` • DIČ: ${invoice.supplier_dic || agencyDic}` : ""}
+        {invoice.supplier_name || ""} • {invoice.supplier_address || ""}{invoice.supplier_ico ? ` • IČO: ${invoice.supplier_ico}` : ""}{invoice.supplier_dic ? ` • DIČ: ${invoice.supplier_dic}` : ""}
       </div>
     </div>
   );
