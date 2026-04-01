@@ -60,6 +60,8 @@ interface OcrResult {
   total_amount: number | null;
   currency: string | null;
   issue_date: string | null;
+  variable_symbol: string | null;
+  due_date: string | null;
 }
 
 export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
@@ -101,6 +103,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     total_amount: null,
     currency: "CZK",
     issue_date: null,
+    variable_symbol: null,
+    due_date: null,
   });
 
   const fetchInvoices = useCallback(async () => {
@@ -327,6 +331,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
             total_amount: ocrResult.data.total_amount || null,
             currency: ocrResult.data.currency || "CZK",
             issue_date: ocrResult.data.issue_date || null,
+            variable_symbol: ocrResult.data.variable_symbol || null,
+            due_date: ocrResult.data.due_date || null,
           });
         }
       }
@@ -363,6 +369,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         total_amount: ocrData.total_amount,
         currency: ocrData.currency || "CZK",
         issue_date: parseIssueDate(ocrData.issue_date),
+        variable_symbol: ocrData.variable_symbol || null,
+        due_date: parseIssueDate(ocrData.due_date),
       } as any);
 
       if (error) throw error;
@@ -380,7 +388,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const resetForm = () => {
     setPendingFileUrl("");
     setPendingFileName("");
-    setOcrData({ supplier_name: null, total_amount: null, currency: "CZK", issue_date: null });
+    setOcrData({ supplier_name: null, total_amount: null, currency: "CZK", issue_date: null, variable_symbol: null, due_date: null });
   };
 
   const handleTogglePaid = async (invoice: SupplierInvoice) => {
@@ -794,6 +802,26 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
                   placeholder="01.01.2025"
                 />
               </div>
+              {(ocrData.currency === "CZK" || !ocrData.currency) && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Variabilní symbol</Label>
+                    <Input
+                      value={ocrData.variable_symbol || ""}
+                      onChange={(e) => setOcrData((p) => ({ ...p, variable_symbol: e.target.value }))}
+                      placeholder="VS"
+                    />
+                  </div>
+                  <div>
+                    <Label>Datum splatnosti (DD.MM.YYYY)</Label>
+                    <Input
+                      value={ocrData.due_date || ""}
+                      onChange={(e) => setOcrData((p) => ({ ...p, due_date: e.target.value }))}
+                      placeholder="15.01.2025"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setConfirmDialogOpen(false); resetForm(); }}>

@@ -30,14 +30,19 @@ serve(async (req) => {
   "supplier_name": "name of the supplier/company that issued the invoice (string)",
   "total_amount": "total amount to be paid as a number (number, not string)",
   "currency": "currency code like CZK, EUR, USD, GBP (string, default CZK)",
-  "issue_date": "issue date in DD.MM.YYYY format (string)"
+  "issue_date": "issue date in DD.MM.YYYY format (string)",
+  "variable_symbol": "variable symbol / variabilní symbol (string or null)",
+  "due_date": "due date / datum splatnosti in DD.MM.YYYY format (string or null)"
 }
 
 Important:
 - For total_amount, return only the numeric value (e.g. 15000, not "15 000 Kč")
-- For issue_date, use DD.MM.YYYY format with 4-digit year
+- For issue_date and due_date, use DD.MM.YYYY format with 4-digit year
 - Look for "Datum vystavení", "Date of issue", "Invoice date" etc.
 - Look for "Celkem k úhradě", "Total", "Amount due", "Částka" etc.
+- Look for "Variabilní symbol", "Var. symbol", "VS" for the variable symbol
+- Look for "Datum splatnosti", "Due date", "Splatnost" for the due date
+- For variable_symbol and due_date, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
 
