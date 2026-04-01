@@ -486,9 +486,24 @@ export default function Accounting() {
                       <TableCell className="whitespace-nowrap">{r.destination}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDateShort(r.from)}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDateShort(r.to)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellDeposit)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyDeposit)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitDeposit)}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.sellDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.buyDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.profitDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap p-0">
                         {editingRow === r.contractId ? (
