@@ -20,10 +20,7 @@ import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from
 import QRCode from "qrcode";
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
-const AGENCY_NAME = "YARO s.r.o.";
-const AGENCY_ICO = "09396039";
-const AGENCY_DIC = "CZ09396039";
-const AGENCY_ADDRESS = "Albrechtická 569/22, 790 01 Jeseník";
+const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
   text: string;
@@ -132,10 +129,19 @@ export default function Invoicing() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers-for-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name, ico, dic").order("name");
+      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name, ico, dic, partner_type").order("name");
       return data || [];
     },
   });
+
+  // Find agency partner (YARO s.r.o.) for issued invoice defaults
+  const agencyPartner = suppliers.find((s) => s.name === AGENCY_PARTNER_NAME);
+  const agencyName = agencyPartner?.name || AGENCY_PARTNER_NAME;
+  const agencyIco = agencyPartner?.ico || "";
+  const agencyDic = agencyPartner?.dic || "";
+  const agencyAddress = agencyPartner
+    ? [agencyPartner.street, agencyPartner.postal_code, agencyPartner.city, agencyPartner.country_name].filter(Boolean).join(", ")
+    : "";
 
   const saveMutation = useMutation({
     mutationFn: async (values: any) => {
@@ -502,7 +508,14 @@ export default function Invoicing() {
 
   const openNewForm = (type: string) => {
     setEditingInvoice(null);
-    setForm({ ...emptyForm, invoice_type: type });
+    const base = { ...emptyForm, invoice_type: type };
+    if (type === "issued") {
+      base.supplier_name = agencyName;
+      base.supplier_ico = agencyIco;
+      base.supplier_dic = agencyDic;
+      base.supplier_address = agencyAddress;
+    }
+    setForm(base);
     setOcrPreview(null);
     setScanFileUrl(null);
     setScanFileName(null);
@@ -1055,10 +1068,10 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
             Dodavatel
           </h3>
-          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{AGENCY_NAME}</p>
-          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{AGENCY_ADDRESS}</p>
-          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {AGENCY_ICO}</p>
-          <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {AGENCY_DIC}</p>
+          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{invoice.supplier_name || ""}</p>
+          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{invoice.supplier_address || ""}</p>
+          {invoice.supplier_ico && <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {invoice.supplier_ico}</p>}
+          {invoice.supplier_dic && <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {invoice.supplier_dic}</p>}
         </div>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
@@ -1174,7 +1187,7 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
 
       {/* Footer */}
       <div style={{ marginTop: "30px", borderTop: "1px solid #ddd", paddingTop: "10px", textAlign: "center", color: "#999", fontSize: "9px" }}>
-        {AGENCY_NAME} • {AGENCY_ADDRESS} • IČO: {AGENCY_ICO} • DIČ: {AGENCY_DIC}
+        {invoice.supplier_name || ""} • {invoice.supplier_address || ""}{invoice.supplier_ico ? ` • IČO: ${invoice.supplier_ico}` : ""}{invoice.supplier_dic ? ` • DIČ: ${invoice.supplier_dic}` : ""}
       </div>
     </div>
   );
