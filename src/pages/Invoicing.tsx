@@ -200,6 +200,7 @@ export default function Invoicing() {
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [filePreviewLoading, setFilePreviewLoading] = useState(false);
   const [filePreviewKind, setFilePreviewKind] = useState<FilePreviewKind>("other");
+  const [filePreviewPages, setFilePreviewPages] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
@@ -550,81 +551,33 @@ export default function Invoicing() {
     setFilePreviewInvoice(null);
     setFilePreviewLoading(false);
     setFilePreviewKind("other");
+    setFilePreviewPages([]);
   };
 
-  const renderPdfPreviewHtmlUrl = async (blob: Blob) => {
+  const renderPdfToImages = async (blob: Blob): Promise<string[]> => {
     const pdfjsLib = await import("pdfjs-dist");
     pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
     const pdfBuffer = await blob.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
-    const pageImages: string[] = [];
+    const pages: string[] = [];
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1.6 });
+      const viewport = page.getViewport({ scale: 2 });
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
-      if (!context) {
-        continue;
-      }
+      if (!context) continue;
 
       canvas.width = viewport.width;
       canvas.height = viewport.height;
 
       await page.render({ canvasContext: context, viewport }).promise;
-      pageImages.push(canvas.toDataURL("image/png"));
+      pages.push(canvas.toDataURL("image/png"));
     }
 
-    if (!pageImages.length) {
-      throw new Error("PDF preview render failed");
-    }
-
-    const html = `<!doctype html>
-<html lang="cs">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Náhled faktury</title>
-    <style>
-      :root { color-scheme: light; }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        padding: 16px;
-        background: #f5f5f5;
-        font-family: Arial, sans-serif;
-      }
-      .pages {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        align-items: center;
-      }
-      .page {
-        width: 100%;
-        max-width: 1100px;
-        background: #ffffff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      }
-      img {
-        display: block;
-        width: 100%;
-        height: auto;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="pages">
-      ${pageImages.map((src, index) => `<figure class="page"><img src="${src}" alt="Strana ${index + 1}" /></figure>`).join("")}
-    </div>
-  </body>
-</html>`;
-
-    return URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    return pages;
   };
 
   const downloadInvoiceFileBlob = async (fileUrl: string) => {
@@ -678,12 +631,16 @@ export default function Invoicing() {
     return await response.blob();
   };
 
-  const getInvoiceFilePreviewUrl = async (fileUrl: string, fileName?: string | null) => {
+  const getInvoiceFilePreview = async (fileUrl: string, fileName?: string | null) => {
     const fileBlob = await downloadInvoiceFileBlob(fileUrl);
 
     if (getFilePreviewKind(fileName, fileUrl) === "pdf") {
       try {
-        return await renderPdfPreviewHtmlUrl(fileBlob);
+        const pages = await renderPdfToImages(fileBlob);
+        if (pages.length > 0) {
+          setFilePreviewPages(pages);
+          return null; // signal: use pages, not URL
+        }
       } catch (error) {
         console.warn("PDF preview render failed, falling back to blob preview:", error);
       }
@@ -727,13 +684,17 @@ export default function Invoicing() {
     }
 
     clearFilePreviewUrl();
+    setFilePreviewPages([]);
     setFilePreviewInvoice(inv);
     setFilePreviewKind(getFilePreviewKind(resolvedFile.fileName, resolvedFile.fileUrl));
     setFilePreviewLoading(true);
 
     try {
-      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl, resolvedFile.fileName);
-      setFilePreviewUrl(previewUrl);
+      const previewUrl = await getInvoiceFilePreview(resolvedFile.fileUrl, resolvedFile.fileName);
+      if (previewUrl) {
+        setFilePreviewUrl(previewUrl);
+      }
+      // if previewUrl is null, pages were set directly by renderPdfToImages
     } catch (error) {
       console.error("Invoice preview failed:", error);
       closeFilePreview();
@@ -820,17 +781,22 @@ export default function Invoicing() {
         <div className="flex min-h-[60vh] items-center justify-center">
           {filePreviewLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          ) : filePreviewPages.length > 0 ? (
+            <div className="flex w-full flex-col items-center gap-4">
+              {filePreviewPages.map((src, idx) => (
+                <img
+                  key={idx}
+                  src={src}
+                  alt={`Strana ${idx + 1}`}
+                  className="w-full max-w-4xl rounded-lg shadow-md"
+                />
+              ))}
+            </div>
           ) : filePreviewUrl && filePreviewKind === "image" ? (
             <img
               src={filePreviewUrl}
               alt={filePreviewInvoice.file_name || "Faktura"}
               className="max-h-[75vh] max-w-full rounded-lg object-contain"
-            />
-          ) : filePreviewUrl && filePreviewKind === "pdf" ? (
-            <iframe
-              src={filePreviewUrl}
-              className="h-[75vh] w-full rounded-lg"
-              title={filePreviewInvoice.file_name || "Náhled faktury"}
             />
           ) : filePreviewUrl ? (
             <div className="space-y-3 py-8 text-center">
