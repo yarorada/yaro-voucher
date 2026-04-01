@@ -128,10 +128,19 @@ export default function Invoicing() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers-for-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name, ico, dic").order("name");
+      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name, ico, dic, partner_type").order("name");
       return data || [];
     },
   });
+
+  // Find agency partner (YARO s.r.o.) for issued invoice defaults
+  const agencyPartner = suppliers.find((s) => s.name === AGENCY_PARTNER_NAME);
+  const agencyName = agencyPartner?.name || AGENCY_PARTNER_NAME;
+  const agencyIco = agencyPartner?.ico || "";
+  const agencyDic = agencyPartner?.dic || "";
+  const agencyAddress = agencyPartner
+    ? [agencyPartner.street, agencyPartner.postal_code, agencyPartner.city, agencyPartner.country_name].filter(Boolean).join(", ")
+    : "";
 
   const saveMutation = useMutation({
     mutationFn: async (values: any) => {
