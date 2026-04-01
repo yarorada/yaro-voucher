@@ -13,6 +13,7 @@ export const ALL_SECTIONS = [
   { key: "hotels", label: "Hotely" },
   { key: "destinations", label: "Destinace" },
   { key: "accounting", label: "Účetnictví" },
+  { key: "invoicing", label: "Fakturace" },
   { key: "email-templates", label: "E-maily" },
 ] as const;
 
