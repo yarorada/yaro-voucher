@@ -551,6 +551,7 @@ export default function Invoicing() {
     setFilePreviewInvoice(null);
     setFilePreviewLoading(false);
     setFilePreviewKind("other");
+    setFilePreviewPages([]);
   };
 
   const renderPdfPreviewHtmlUrl = async (blob: Blob) => {
