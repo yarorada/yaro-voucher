@@ -1049,10 +1049,10 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
             Dodavatel
           </h3>
-          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{AGENCY_NAME}</p>
-          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{AGENCY_ADDRESS}</p>
-          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {AGENCY_ICO}</p>
-          <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {AGENCY_DIC}</p>
+          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{invoice.supplier_name || agencyName}</p>
+          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{invoice.supplier_address || agencyAddress}</p>
+          {(invoice.supplier_ico || agencyIco) && <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {invoice.supplier_ico || agencyIco}</p>}
+          {(invoice.supplier_dic || agencyDic) && <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {invoice.supplier_dic || agencyDic}</p>}
         </div>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
