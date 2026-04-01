@@ -25,6 +25,13 @@ const AGENCY_ICO = "09396039";
 const AGENCY_DIC = "CZ09396039";
 const AGENCY_ADDRESS = "Albrechtická 569/22, 790 01 Jeseník";
 
+type InvoiceItem = {
+  text: string;
+  quantity: number;
+  unit_price: number;
+  vat_rate: number;
+};
+
 type Invoice = {
   id: string;
   user_id: string;
@@ -54,8 +61,11 @@ type Invoice = {
   file_name: string | null;
   notes: string | null;
   payment_method: string | null;
+  items: InvoiceItem[] | null;
   created_at: string;
 };
+
+const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
 
 const emptyForm = {
   invoice_type: "issued" as string,
@@ -99,6 +109,7 @@ export default function Invoicing() {
   const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
+  const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
@@ -111,7 +122,7 @@ export default function Invoicing() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Invoice[];
+      return (data || []) as unknown as Invoice[];
     },
   });
 
@@ -142,6 +153,7 @@ export default function Invoicing() {
       setOcrPreview(null);
       setScanFileUrl(null);
       setScanFileName(null);
+      setItems([{ ...emptyItem }]);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -254,6 +266,13 @@ export default function Invoicing() {
   };
 
   const handleSubmit = () => {
+    // Auto-calculate total from items for issued invoices
+    const calcItems = form.invoice_type === "issued" && items.length > 0 ? items : [];
+    const itemsTotal = calcItems.reduce((sum, it) => sum + it.quantity * it.unit_price * (1 + it.vat_rate / 100), 0);
+    const finalTotal = calcItems.length > 0 && calcItems.some(it => it.text || it.unit_price > 0) 
+      ? Math.round(itemsTotal * 100) / 100 
+      : (form.total_amount ? parseFloat(form.total_amount) : null);
+
     const values: any = {
       invoice_type: form.invoice_type,
       invoice_number: form.invoice_number || null,
@@ -266,7 +285,7 @@ export default function Invoicing() {
       supplier_ico: form.supplier_ico || null,
       supplier_dic: form.supplier_dic || null,
       supplier_address: form.supplier_address || null,
-      total_amount: form.total_amount ? parseFloat(form.total_amount) : null,
+      total_amount: finalTotal,
       currency: form.currency,
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
@@ -276,6 +295,7 @@ export default function Invoicing() {
       file_url: scanFileUrl || editingInvoice?.file_url || null,
       file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
+      items: calcItems.length > 0 ? calcItems : [],
     };
     saveMutation.mutate(values);
   };
@@ -303,6 +323,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
     });
+    setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
   };
 
@@ -329,6 +350,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
     });
+    setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
   };
 
@@ -458,6 +480,7 @@ export default function Invoicing() {
     setOcrPreview(null);
     setScanFileUrl(null);
     setScanFileName(null);
+    setItems([{ ...emptyItem }]);
     setShowForm(true);
   };
 
@@ -703,11 +726,116 @@ export default function Invoicing() {
               </div>
             )}
 
+            {/* Line items for issued invoices */}
+            {form.invoice_type === "issued" && (
+              <div className="border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Položky faktury</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setItems((prev) => [...prev, { ...emptyItem }])}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Přidat řádek
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 text-xs text-muted-foreground font-medium px-1">
+                    <span>Popis</span>
+                    <span>Množství</span>
+                    <span>Cena/ks</span>
+                    <span>DPH %</span>
+                    <span>Celkem</span>
+                    <span></span>
+                  </div>
+                  {items.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 items-center">
+                      <Input
+                        value={item.text}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
+                        placeholder="Popis položky"
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <Input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, unit_price: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <Input
+                        type="number"
+                        value={item.vat_rate}
+                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, vat_rate: parseFloat(e.target.value) || 0 } : it))}
+                        className="h-8 text-sm"
+                        min={0}
+                      />
+                      <span className="text-sm tabular-nums text-right pr-1">
+                        {(item.quantity * item.unit_price).toLocaleString("cs-CZ")}
+                      </span>
+                      <div className="flex gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setItems((prev) => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)])}
+                          title="Duplikovat"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        {items.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                            title="Odebrat"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Totals */}
+                {items.some((it) => it.text || it.unit_price > 0) && (() => {
+                  const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+                  const vatTotal = items.reduce((s, it) => s + it.quantity * it.unit_price * (it.vat_rate / 100), 0);
+                  return (
+                    <div className="border-t pt-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Základ:</span>
+                        <span className="tabular-nums">{subtotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                      </div>
+                      {vatTotal > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">DPH:</span>
+                          <span className="tabular-nums">{vatTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold">
+                        <span>Celkem:</span>
+                        <span className="tabular-nums">{(subtotal + vatTotal).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {form.currency}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-4">
+              {form.invoice_type !== "issued" && (
               <div>
                 <Label>Částka</Label>
                 <Input type="number" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
               </div>
+              )}
               <div>
                 <Label>Měna</Label>
                 <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
@@ -902,11 +1030,62 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
       </div>
 
-      {/* Amount */}
+      {/* Items table */}
+      {Array.isArray(invoice.items) && invoice.items.length > 0 && invoice.items.some((it: any) => it.text || it.unit_price > 0) && (() => {
+        const typedItems = invoice.items as InvoiceItem[];
+        const subtotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+        const vatTotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price * (it.vat_rate / 100), 0);
+        return (
+          <div style={{ marginBottom: "25px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #000" }}>
+                  <th style={{ textAlign: "left", padding: "6px 4px", fontWeight: "bold" }}>Popis</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>Množství</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Cena/ks</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>DPH</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Celkem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {typedItems.map((it, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "5px 4px" }}>{it.text}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.quantity}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.unit_price.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.vat_rate}%</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{(it.quantity * it.unit_price).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "1px solid #ccc" }}>
+                  <td colSpan={4} style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>Základ:</td>
+                  <td style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>{subtotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                </tr>
+                {vatTotal > 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: "right", padding: "3px 4px" }}>DPH:</td>
+                    <td style={{ textAlign: "right", padding: "3px 4px" }}>{vatTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                  </tr>
+                )}
+                <tr style={{ borderTop: "2px solid #000" }}>
+                  <td colSpan={4} style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>Celkem k úhradě:</td>
+                  <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>{(subtotal + vatTotal).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      })()}
+
+      {/* Amount (shown when no items) */}
+      {(!Array.isArray(invoice.items) || !invoice.items.length || !invoice.items.some((it: any) => it.text || it.unit_price > 0)) && (
       <div style={{ background: "#f8f8f8", borderRadius: "6px", padding: "16px 20px", marginBottom: "25px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "14px", fontWeight: "bold" }}>Celkem k úhradě</span>
         <span style={{ fontSize: "20px", fontWeight: "bold" }}>{formatAmount(invoice.total_amount, invoice.currency)}</span>
       </div>
+      )}
 
       {/* Notes */}
       {invoice.notes && (

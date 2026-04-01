@@ -1271,6 +1271,7 @@ export type Database = {
           invoice_number: string | null
           invoice_type: string
           issue_date: string | null
+          items: Json | null
           notes: string | null
           paid: boolean | null
           paid_at: string | null
@@ -1303,6 +1304,7 @@ export type Database = {
           invoice_number?: string | null
           invoice_type?: string
           issue_date?: string | null
+          items?: Json | null
           notes?: string | null
           paid?: boolean | null
           paid_at?: string | null
@@ -1335,6 +1337,7 @@ export type Database = {
           invoice_number?: string | null
           invoice_type?: string
           issue_date?: string | null
+          items?: Json | null
           notes?: string | null
           paid?: boolean | null
           paid_at?: string | null

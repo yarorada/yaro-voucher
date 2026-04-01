@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN items jsonb DEFAULT '[]'::jsonb;
