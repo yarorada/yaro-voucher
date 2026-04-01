@@ -12,7 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -421,14 +427,23 @@ export default function Invoicing() {
     }));
   };
 
+  const getInvoiceTotal = (inv: Invoice): number | null => {
+    if (Array.isArray(inv.items) && inv.items.length > 0 && inv.items.some((it: any) => it.text || it.unit_price > 0)) {
+      const typedItems = inv.items as InvoiceItem[];
+      return Math.round(typedItems.reduce((s, it) => s + it.quantity * it.unit_price * (1 + it.vat_rate / 100), 0) * 100) / 100;
+    }
+    return inv.total_amount;
+  };
+
   const handleGeneratePdf = async (inv: Invoice) => {
-    if (inv.currency === "CZK" && inv.total_amount) {
+    const effectiveTotal = getInvoiceTotal(inv);
+    if (inv.currency === "CZK" && effectiveTotal) {
       const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
       const iban = inv.iban || bankAccountToIban(account);
       if (iban) {
         const spayd = generateSpaydString({
           iban,
-          amount: inv.total_amount,
+          amount: effectiveTotal,
           variableSymbol: inv.variable_symbol || undefined,
           message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
         });
@@ -1296,38 +1311,59 @@ function InvoiceTable({
                         <CheckCircle2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {type === "issued" && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPdf(inv)} title="Náhled PDF">
-                        <FileText className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {type === "issued" && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEmail(inv)} title="Odeslat e-mailem">
-                        <Send className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {inv.currency === "CZK" && inv.total_amount && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onQr(inv)} title="QR platba">
-                        <QrCode className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {inv.file_url && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Otevřít soubor">
-                        <a href={inv.file_url} target="_blank" rel="noopener"><ExternalLink className="h-3.5 w-3.5" /></a>
-                      </Button>
-                    )}
-                    {type === "issued" && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate(inv)} title="Duplikovat">
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(inv)} title="Upravit">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {!inv.deal_supplier_invoice_id && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(inv.id)} title="Smazat">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                    {type === "issued" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onPdf(inv)}>
+                            <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onEmail(inv)}>
+                            <Send className="h-4 w-4 mr-2" /> Odeslání
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDuplicate(inv)}>
+                            <Copy className="h-4 w-4 mr-2" /> Duplikace
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onEdit(inv)}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editace
+                          </DropdownMenuItem>
+                          {inv.currency === "CZK" && inv.total_amount && (
+                            <DropdownMenuItem onClick={() => onQr(inv)}>
+                              <QrCode className="h-4 w-4 mr-2" /> QR platba
+                            </DropdownMenuItem>
+                          )}
+                          {!inv.deal_supplier_invoice_id && (
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <>
+                        {inv.currency === "CZK" && inv.total_amount && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onQr(inv)} title="QR platba">
+                            <QrCode className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {inv.file_url && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Otevřít soubor">
+                            <a href={inv.file_url} target="_blank" rel="noopener"><ExternalLink className="h-3.5 w-3.5" /></a>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(inv)} title="Upravit">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {!inv.deal_supplier_invoice_id && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(inv.id)} title="Smazat">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </TableCell>
