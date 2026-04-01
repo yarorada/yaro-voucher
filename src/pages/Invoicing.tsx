@@ -599,35 +599,99 @@ export default function Invoicing() {
             )}
 
             {form.invoice_type === "received" && (
-              <div className="border rounded-lg p-3 space-y-3">
-                <h3 className="text-sm font-semibold">Dodavatel</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>IČO dodavatele</Label>
-                    <div className="flex gap-1">
-                      <Input
-                        value={form.supplier_ico}
-                        onChange={(e) => setForm((f) => ({ ...f, supplier_ico: e.target.value }))}
-                        placeholder="12345678"
+              <div className="space-y-3">
+                {/* OCR Scan */}
+                <div className="border border-dashed rounded-lg p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                      <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
+                    </h3>
+                    <div>
+                      <input
+                        ref={ocrFileRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleOcrScan(f);
+                          e.target.value = "";
+                        }}
                       />
-                      <Button type="button" variant="outline" size="icon" onClick={() => handleAresLookup(form.supplier_ico)} disabled={aresLoading}>
-                        {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => ocrFileRef.current?.click()}
+                        disabled={ocrScanning}
+                      >
+                        {ocrScanning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ScanLine className="h-4 w-4 mr-1" />}
+                        {ocrScanning ? "Skenování…" : "Nahrát a skenovat"}
                       </Button>
                     </div>
                   </div>
-                  <div>
-                    <Label>Název dodavatele</Label>
-                    <Input value={form.supplier_name} onChange={(e) => setForm((f) => ({ ...f, supplier_name: e.target.value }))} />
-                  </div>
+
+                  {/* OCR Preview */}
+                  {ocrPreview && (
+                    <div className="bg-green-500/10 rounded-md p-3 space-y-2">
+                      <p className="text-sm font-medium text-green-700 dark:text-green-400">Extrahovaná data — zkontrolujte a potvrďte:</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {ocrPreview.supplier_name && (
+                          <div><span className="text-muted-foreground">Dodavatel:</span> {ocrPreview.supplier_name}</div>
+                        )}
+                        {ocrPreview.total_amount != null && (
+                          <div><span className="text-muted-foreground">Částka:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.issue_date && (
+                          <div><span className="text-muted-foreground">Datum vystavení:</span> {ocrPreview.issue_date}</div>
+                        )}
+                        {ocrPreview.currency && (
+                          <div><span className="text-muted-foreground">Měna:</span> {ocrPreview.currency}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button type="button" size="sm" onClick={handleOcrConfirm}>
+                          <Check className="h-3.5 w-3.5 mr-1" /> Převzít data
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setOcrPreview(null)}>
+                          <X className="h-3.5 w-3.5 mr-1" /> Zahodit
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>DIČ</Label>
-                    <Input value={form.supplier_dic} onChange={(e) => setForm((f) => ({ ...f, supplier_dic: e.target.value }))} />
+
+                {/* Supplier info */}
+                <div className="border rounded-lg p-3 space-y-3">
+                  <h3 className="text-sm font-semibold">Dodavatel</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>IČO dodavatele</Label>
+                      <div className="flex gap-1">
+                        <Input
+                          value={form.supplier_ico}
+                          onChange={(e) => setForm((f) => ({ ...f, supplier_ico: e.target.value }))}
+                          placeholder="12345678"
+                        />
+                        <Button type="button" variant="outline" size="icon" onClick={() => handleAresLookup(form.supplier_ico)} disabled={aresLoading}>
+                          {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Název dodavatele</Label>
+                      <Input value={form.supplier_name} onChange={(e) => setForm((f) => ({ ...f, supplier_name: e.target.value }))} />
+                    </div>
                   </div>
-                  <div>
-                    <Label>Adresa</Label>
-                    <Input value={form.supplier_address} onChange={(e) => setForm((f) => ({ ...f, supplier_address: e.target.value }))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>DIČ</Label>
+                      <Input value={form.supplier_dic} onChange={(e) => setForm((f) => ({ ...f, supplier_dic: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label>Adresa</Label>
+                      <Input value={form.supplier_address} onChange={(e) => setForm((f) => ({ ...f, supplier_address: e.target.value }))} />
+                    </div>
                   </div>
                 </div>
               </div>
