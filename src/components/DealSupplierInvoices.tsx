@@ -369,6 +369,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         total_amount: ocrData.total_amount,
         currency: ocrData.currency || "CZK",
         issue_date: parseIssueDate(ocrData.issue_date),
+        variable_symbol: ocrData.variable_symbol || null,
+        due_date: parseIssueDate(ocrData.due_date),
       } as any);
 
       if (error) throw error;
