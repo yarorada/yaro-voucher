@@ -1334,6 +1334,14 @@ export default function Invoicing() {
                       <SelectItem value="EUR">EUR</SelectItem>
                       <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="CHF">CHF</SelectItem>
+                      <SelectItem value="PLN">PLN</SelectItem>
+                      <SelectItem value="HUF">HUF</SelectItem>
+                      <SelectItem value="THB">THB</SelectItem>
+                      <SelectItem value="AED">AED</SelectItem>
+                      <SelectItem value="TRY">TRY</SelectItem>
+                      <SelectItem value="ZAR">ZAR</SelectItem>
+                      <SelectItem value="CNY">CNY</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
