@@ -1147,6 +1147,78 @@ export default function Invoicing() {
               </div>
             )}
 
+            {/* === DATUMY === */}
+            <div className="border rounded-lg p-3 space-y-3">
+              <h3 className="text-sm font-semibold">Datumy</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Datum vystavení</Label>
+                  <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
+                </div>
+                {form.invoice_type === "issued" && (
+                  <div>
+                    <Label>DUZP</Label>
+                    <Input type="date" value={form.taxable_date} onChange={(e) => setForm((f) => ({ ...f, taxable_date: e.target.value }))} />
+                  </div>
+                )}
+                <div>
+                  <Label>Datum splatnosti</Label>
+                  <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            {/* === SYMBOLY === */}
+            <div className="border rounded-lg p-3 space-y-3">
+              <h3 className="text-sm font-semibold">Symboly</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Variabilní symbol</Label>
+                  <Input
+                    value={form.variable_symbol}
+                    onChange={(e) => setForm((f) => ({ ...f, variable_symbol: e.target.value }))}
+                    placeholder={form.invoice_type === "issued" && !editingInvoice ? "Automaticky z čísla" : ""}
+                    disabled={form.invoice_type === "issued" && !editingInvoice}
+                  />
+                </div>
+                <div>
+                  <Label>Specifický symbol</Label>
+                  <Input value={form.specific_symbol} onChange={(e) => setForm((f) => ({ ...f, specific_symbol: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Konstantní symbol</Label>
+                  <Input value={form.constant_symbol} onChange={(e) => setForm((f) => ({ ...f, constant_symbol: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            {/* === PLATEBNÍ ÚDAJE === */}
+            <div className="border rounded-lg p-3 space-y-3">
+              <h3 className="text-sm font-semibold">Platební údaje</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Měna</Label>
+                  <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Bankovní účet</Label>
+                  <Input value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} placeholder="123456789/0100" />
+                </div>
+                <div>
+                  <Label>IBAN</Label>
+                  <Input value={form.iban} onChange={(e) => setForm((f) => ({ ...f, iban: e.target.value }))} placeholder="CZ..." />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-4">
               {form.invoice_type !== "issued" && (
               <div>
@@ -1154,66 +1226,6 @@ export default function Invoicing() {
                 <Input type="number" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
               </div>
               )}
-              <div>
-                <Label>Měna</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CZK">CZK</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Variabilní symbol</Label>
-                <Input
-                  value={form.variable_symbol}
-                  onChange={(e) => setForm((f) => ({ ...f, variable_symbol: e.target.value }))}
-                  placeholder={form.invoice_type === "issued" && !editingInvoice ? "Automaticky z čísla" : ""}
-                  disabled={form.invoice_type === "issued" && !editingInvoice}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Specifický symbol</Label>
-                <Input
-                  value={form.specific_symbol}
-                  onChange={(e) => setForm((f) => ({ ...f, specific_symbol: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Konstantní symbol</Label>
-                <Input
-                  value={form.constant_symbol}
-                  onChange={(e) => setForm((f) => ({ ...f, constant_symbol: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Datum vystavení</Label>
-                <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Datum splatnosti</Label>
-                <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Bankovní účet</Label>
-                <Input value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} placeholder="123456789/0100" />
-              </div>
-              <div>
-                <Label>IBAN</Label>
-                <Input value={form.iban} onChange={(e) => setForm((f) => ({ ...f, iban: e.target.value }))} placeholder="CZ..." />
-              </div>
             </div>
 
             <div>
