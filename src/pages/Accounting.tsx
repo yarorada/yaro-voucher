@@ -155,6 +155,13 @@ export default function Accounting() {
           // Modře pouze pokud je zaplacena právě jedna platba a ta je z minulého měsíce
           const highlightBlue = paidPayments.length === 1 && isInPreviousMonth(firstPaidAt);
 
+          // Locked deposit values
+          const lockedSell = (c as any).accounting_sell_deposit_locked;
+          const lockedBuy = (c as any).accounting_buy_deposit_locked;
+          const lockedProfit = (c as any).accounting_profit_deposit_locked;
+          const lockedAt = (c as any).accounting_deposit_locked_at;
+          const isLocked = lockedAt != null;
+
           return {
             contractId: c.id,
             dealId: deal?.id || null,
@@ -164,18 +171,23 @@ export default function Accounting() {
             destination: destName,
             from: startDate,
             to: endDate,
-            sellDeposit,
-            buyDeposit,
+            sellDeposit: isLocked ? Number(lockedSell) : sellDeposit,
+            buyDeposit: isLocked ? Number(lockedBuy) : buyDeposit,
+            profitDeposit: isLocked ? Number(lockedProfit) : profitDeposit,
+            // Raw calculated values for locking
+            _rawSellDeposit: sellDeposit,
+            _rawBuyDeposit: buyDeposit,
+            _rawProfitDeposit: profitDeposit,
             sellFinal,
             buyFinal,
             hasOverride,
-            profitDeposit,
             profitFinal,
-            vatDeposit,
+            vatDeposit: isLocked ? Math.round(Number(lockedProfit) * vatRate) : vatDeposit,
             vatFinal,
-            vatDiff,
+            vatDiff: isPastTrip ? vatFinal - (isLocked ? Math.round(Number(lockedProfit) * vatRate) : vatDeposit) : 0,
             highlightRed,
             highlightBlue,
+            isLocked,
           };
         })
         .filter(Boolean);
