@@ -1265,7 +1265,7 @@ function InvoiceTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Číslo</TableHead>
+              {type === "issued" && <TableHead>Číslo</TableHead>}
               <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
               <TableHead className="text-right">Částka</TableHead>
               <TableHead>Vystaveno</TableHead>
@@ -1278,7 +1278,7 @@ function InvoiceTable({
           <TableBody>
             {invoices.map((inv) => (
               <TableRow key={inv.id}>
-                <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>
+                {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
                 <TableCell>
                   {type === "issued" ? inv.client_name : inv.supplier_name}
                   {inv.deal_id && (
@@ -1311,60 +1311,48 @@ function InvoiceTable({
                         <CheckCircle2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {type === "issued" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onPdf(inv)}>
-                            <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
-                          </DropdownMenuItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onPdf(inv)}>
+                          <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
+                        </DropdownMenuItem>
+                        {type === "issued" && (
                           <DropdownMenuItem onClick={() => onEmail(inv)}>
                             <Send className="h-4 w-4 mr-2" /> Odeslání
                           </DropdownMenuItem>
+                        )}
+                        {type === "issued" && (
                           <DropdownMenuItem onClick={() => onDuplicate(inv)}>
                             <Copy className="h-4 w-4 mr-2" /> Duplikace
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEdit(inv)}>
-                            <Pencil className="h-4 w-4 mr-2" /> Editace
-                          </DropdownMenuItem>
-                          {inv.currency === "CZK" && inv.total_amount && (
-                            <DropdownMenuItem onClick={() => onQr(inv)}>
-                              <QrCode className="h-4 w-4 mr-2" /> QR platba
-                            </DropdownMenuItem>
-                          )}
-                          {!inv.deal_supplier_invoice_id && (
-                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> Smazání
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <>
+                        )}
+                        <DropdownMenuItem onClick={() => onEdit(inv)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editace
+                        </DropdownMenuItem>
                         {inv.currency === "CZK" && inv.total_amount && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onQr(inv)} title="QR platba">
-                            <QrCode className="h-3.5 w-3.5" />
-                          </Button>
+                          <DropdownMenuItem onClick={() => onQr(inv)}>
+                            <QrCode className="h-4 w-4 mr-2" /> QR platba
+                          </DropdownMenuItem>
                         )}
                         {inv.file_url && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Otevřít soubor">
-                            <a href={inv.file_url} target="_blank" rel="noopener"><ExternalLink className="h-3.5 w-3.5" /></a>
-                          </Button>
+                          <DropdownMenuItem asChild>
+                            <a href={inv.file_url} target="_blank" rel="noopener">
+                              <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
+                            </a>
+                          </DropdownMenuItem>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(inv)} title="Upravit">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
                         {!inv.deal_supplier_invoice_id && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(inv.id)} title="Smazat">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                          </DropdownMenuItem>
                         )}
-                      </>
-                    )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
