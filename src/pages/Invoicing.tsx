@@ -519,7 +519,82 @@ export default function Invoicing() {
     setFilePreviewKind("other");
   };
 
-  const getInvoiceFilePreviewUrl = async (fileUrl: string) => {
+  const renderPdfPreviewHtmlUrl = async (blob: Blob) => {
+    const pdfjsLib = await import("pdfjs-dist");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+    const pdfBuffer = await blob.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
+    const pageImages: string[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.6 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        continue;
+      }
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      pageImages.push(canvas.toDataURL("image/png"));
+    }
+
+    if (!pageImages.length) {
+      throw new Error("PDF preview render failed");
+    }
+
+    const html = `<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Náhled faktury</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #f5f5f5;
+        font-family: Arial, sans-serif;
+      }
+      .pages {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+      }
+      .page {
+        width: 100%;
+        max-width: 1100px;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="pages">
+      ${pageImages.map((src, index) => `<figure class="page"><img src="${src}" alt="Strana ${index + 1}" /></figure>`).join("")}
+    </div>
+  </body>
+</html>`;
+
+    return URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  };
+
+  const downloadInvoiceFileBlob = async (fileUrl: string) => {
     const storageReference = parseStorageReference(fileUrl);
 
     if (storageReference) {
@@ -529,7 +604,12 @@ export default function Invoicing() {
         });
 
         if (!proxyError && proxyData?.base64) {
-          return base64ToBlobUrl(proxyData.base64, proxyData.contentType || "application/octet-stream");
+          const byteChars = atob(proxyData.base64);
+          const byteArr = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteArr[i] = byteChars.charCodeAt(i);
+          }
+          return new Blob([byteArr], { type: proxyData.contentType || "application/octet-stream" });
         }
       } catch (error) {
         console.warn("Proxy preview failed:", error);
@@ -538,7 +618,7 @@ export default function Invoicing() {
       try {
         const { data, error } = await supabase.storage.from(storageReference.bucket).download(storageReference.path);
         if (!error && data) {
-          return URL.createObjectURL(data);
+          return data;
         }
       } catch (error) {
         console.warn("Storage preview failed:", error);
@@ -549,7 +629,7 @@ export default function Invoicing() {
         if (!error && data?.signedUrl) {
           const response = await fetch(data.signedUrl);
           if (response.ok) {
-            return URL.createObjectURL(await response.blob());
+            return await response.blob();
           }
         }
       } catch (error) {
@@ -562,7 +642,21 @@ export default function Invoicing() {
       throw new Error("Preview download failed");
     }
 
-    return URL.createObjectURL(await response.blob());
+    return await response.blob();
+  };
+
+  const getInvoiceFilePreviewUrl = async (fileUrl: string, fileName?: string | null) => {
+    const fileBlob = await downloadInvoiceFileBlob(fileUrl);
+
+    if (getFilePreviewKind(fileName, fileUrl) === "pdf") {
+      try {
+        return await renderPdfPreviewHtmlUrl(fileBlob);
+      } catch (error) {
+        console.warn("PDF preview render failed, falling back to blob preview:", error);
+      }
+    }
+
+    return URL.createObjectURL(fileBlob);
   };
 
   const resolveInvoiceFile = async (inv: Invoice) => {
@@ -605,7 +699,7 @@ export default function Invoicing() {
     setFilePreviewLoading(true);
 
     try {
-      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl);
+      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl, resolvedFile.fileName);
       setFilePreviewUrl(previewUrl);
     } catch (error) {
       console.error("Invoice preview failed:", error);
@@ -625,8 +719,10 @@ export default function Invoicing() {
     if (!inv.file_url) return;
 
     try {
-      const previewUrl = await getInvoiceFilePreviewUrl(inv.file_url);
-      window.open(previewUrl, "_blank", "noopener,noreferrer");
+      const fileBlob = await downloadInvoiceFileBlob(inv.file_url);
+      const fileBlobUrl = URL.createObjectURL(fileBlob);
+      window.open(fileBlobUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(fileBlobUrl), 60_000);
     } catch (error) {
       console.error("Invoice file open failed:", error);
       toast.error("Nepodařilo se otevřít soubor faktury");
