@@ -785,7 +785,6 @@ export default function Invoicing() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="outline"
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
@@ -1431,7 +1430,7 @@ export default function Invoicing() {
             <DialogTitle className="flex items-center justify-between">
               <span>Náhled faktury</span>
               <Button onClick={handlePrintPdf} size="sm">
-                <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
+                <Download className="h-4 w-4 mr-1" /> Stáhnout PDF
               </Button>
             </DialogTitle>
           </DialogHeader>
