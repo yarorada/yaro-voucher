@@ -957,9 +957,19 @@ export default function Invoicing() {
               <Label>Datum zaplacení</Label>
               <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
             </div>
+            <div>
+              <Label>Způsob platby</Label>
+              <Select value={markPaidMethod} onValueChange={setMarkPaidMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="moneta">Moneta</SelectItem>
+                  <SelectItem value="amnis">Amnis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMarkPaidInvoice(null)}>Zrušit</Button>
-              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
+              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate, payment_method: markPaidMethod })} disabled={markPaidMutation.isPending}>
                 {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
                 Potvrdit
               </Button>
