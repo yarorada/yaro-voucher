@@ -32,6 +32,7 @@ import ContractDetail from "./pages/ContractDetail";
 import CreateContract from "./pages/CreateContract";
 import Statistics from "./pages/Statistics";
 import Accounting from "./pages/Accounting";
+import Invoicing from "./pages/Invoicing";
 import EmailTemplates from "./pages/EmailTemplates";
 import Hotels from "./pages/Hotels";
 import PublicOffer from "./pages/PublicOffer";
