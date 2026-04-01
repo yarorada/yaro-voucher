@@ -927,6 +927,23 @@ export default function Invoicing() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label>Specifický symbol</Label>
+                <Input
+                  value={form.specific_symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, specific_symbol: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Konstantní symbol</Label>
+                <Input
+                  value={form.constant_symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, constant_symbol: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label>Datum vystavení</Label>
                 <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
               </div>
