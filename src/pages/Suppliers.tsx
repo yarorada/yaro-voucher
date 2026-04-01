@@ -547,7 +547,7 @@ const Suppliers = () => {
                 <th className="text-left px-4 py-3 font-medium text-primary">Název</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                {activeTab === "customer" && <th className="text-left px-4 py-3 font-medium text-muted-foreground">IČO</th>}
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">IČO</th>
                 <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
               </tr>
             </thead>
