@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,36 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { parse, isValid } from "date-fns";
+
+function DatePickerInput({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const dateValue = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  const validDate = dateValue && isValid(dateValue) ? dateValue : undefined;
+  return (
+    <div className="flex gap-1">
+      <Input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1" />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <CalendarIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="single"
+            selected={validDate}
+            onSelect={(d) => d && onChange(format(d, "yyyy-MM-dd"))}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
@@ -945,11 +975,11 @@ export default function Invoicing() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Datum vystavení</Label>
-                <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
+                <DatePickerInput value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v }))} />
               </div>
               <div>
                 <Label>Datum splatnosti</Label>
-                <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
+                <DatePickerInput value={form.due_date} onChange={(v) => setForm((f) => ({ ...f, due_date: v }))} />
               </div>
             </div>
 
@@ -1010,7 +1040,7 @@ export default function Invoicing() {
             </p>
             <div>
               <Label>Datum zaplacení</Label>
-              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
+              <DatePickerInput value={markPaidDate} onChange={setMarkPaidDate} />
             </div>
             <div>
               <Label>Způsob platby</Label>
