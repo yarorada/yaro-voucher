@@ -465,6 +465,11 @@ export default function Invoicing() {
     } else {
       setPdfQrUrl(null);
     }
+    // For received invoices with a file, open in new tab (iframe embedding is blocked by storage headers)
+    if (inv.invoice_type === "received" && inv.file_url) {
+      window.open(inv.file_url, "_blank", "noopener,noreferrer");
+      return;
+    }
     setPdfInvoice(inv);
   };
 
