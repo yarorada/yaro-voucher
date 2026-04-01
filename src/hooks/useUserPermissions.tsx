@@ -9,7 +9,7 @@ export const ALL_SECTIONS = [
   { key: "vouchers", label: "Vouchery" },
   { key: "statistics", label: "Statistiky" },
   { key: "clients", label: "Klienti" },
-  { key: "suppliers", label: "Dodavatelé" },
+  { key: "suppliers", label: "Partneři" },
   { key: "hotels", label: "Hotely" },
   { key: "destinations", label: "Destinace" },
   { key: "accounting", label: "Účetnictví" },
