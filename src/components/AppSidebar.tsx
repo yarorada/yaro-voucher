@@ -45,7 +45,7 @@ const allMenuItems = [
   { title: "Vouchery", url: "/vouchers", icon: FileText, prodejce: true },
   { title: "Statistiky", url: "/statistics", icon: BarChart3, prodejce: false },
   { title: "Klienti", url: "/clients", icon: Users, prodejce: true },
-  { title: "Dodavatelé", url: "/suppliers", icon: Building2, prodejce: false },
+  { title: "Partneři", url: "/suppliers", icon: Building2, prodejce: false },
   { title: "Hotely", url: "/hotels", icon: Hotel, prodejce: true },
   { title: "Destinace", url: "/destinations", icon: MapPin, prodejce: false },
   { title: "Účetnictví", url: "/accounting", icon: Calculator, prodejce: false },
