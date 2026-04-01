@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { invoiceId, recipientEmail, customSubject, customBody } = await req.json();
+    const { invoiceId, recipientEmail, customSubject, customBody, attachmentBase64, attachmentFileName } = await req.json();
 
     if (!invoiceId || !recipientEmail) {
       return new Response(JSON.stringify({ error: "Missing invoiceId or recipientEmail" }), {
@@ -57,8 +57,16 @@ Deno.serve(async (req) => {
       html: body.replace(/\n/g, "<br>"),
     };
 
+    if (attachmentBase64) {
+      const fileName = attachmentFileName || invoice.file_name || `faktura-${invoice.invoice_number || invoiceId}.pdf`;
+      emailPayload.attachments = [{
+        filename: fileName,
+        content: attachmentBase64,
+      }];
+      console.log("Inline PDF attachment added:", fileName);
+    }
     // Attach PDF if file_url exists
-    if (invoice.file_url) {
+    else if (invoice.file_url) {
       try {
         // Extract bucket and path from the storage URL
         const pdfContent = await fetchPdfFromStorage(supabase, invoice.file_url, supabaseUrl, serviceKey);
