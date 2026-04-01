@@ -200,6 +200,7 @@ export default function Invoicing() {
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [filePreviewLoading, setFilePreviewLoading] = useState(false);
   const [filePreviewKind, setFilePreviewKind] = useState<FilePreviewKind>("other");
+  const [filePreviewPages, setFilePreviewPages] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
