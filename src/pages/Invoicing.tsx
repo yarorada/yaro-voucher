@@ -478,6 +478,7 @@ export default function Invoicing() {
     setOcrPreview(null);
     setScanFileUrl(null);
     setScanFileName(null);
+    setItems([{ ...emptyItem }]);
     setShowForm(true);
   };
 
