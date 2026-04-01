@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,13 +12,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
+const AGENCY_NAME = "YARO s.r.o.";
+const AGENCY_ICO = "09396039";
+const AGENCY_DIC = "CZ09396039";
+const AGENCY_ADDRESS = "Albrechtická 569/22, 790 01 Jeseník";
 
 type Invoice = {
   id: string;
@@ -83,7 +87,15 @@ export default function Invoicing() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrDialogInvoice, setQrDialogInvoice] = useState<Invoice | null>(null);
   const [search, setSearch] = useState("");
+  const [pdfInvoice, setPdfInvoice] = useState<Invoice | null>(null);
+  const [pdfQrUrl, setPdfQrUrl] = useState<string | null>(null);
+  const [emailDialog, setEmailDialog] = useState<Invoice | null>(null);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
   const queryClient = useQueryClient();
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
@@ -100,7 +112,7 @@ export default function Invoicing() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers-for-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name").order("name");
+      const { data } = await supabase.from("suppliers").select("id, name, email, address, street, city, postal_code, country_name, ico, dic").order("name");
       return data || [];
     },
   });
@@ -279,8 +291,83 @@ export default function Invoicing() {
       ...f,
       supplier_id: supplierId,
       client_name: s.name,
+      client_ico: (s as any).ico || f.client_ico,
+      client_dic: (s as any).dic || f.client_dic,
       client_address: [s.street, s.city, s.postal_code, s.country_name].filter(Boolean).join(", "),
     }));
+  };
+
+  const handleGeneratePdf = async (inv: Invoice) => {
+    if (inv.currency === "CZK" && inv.total_amount) {
+      const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
+      const iban = inv.iban || bankAccountToIban(account);
+      if (iban) {
+        const spayd = generateSpaydString({
+          iban,
+          amount: inv.total_amount,
+          variableSymbol: inv.variable_symbol || undefined,
+          message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
+        });
+        const url = await QRCode.toDataURL(spayd, { width: 180, margin: 1, errorCorrectionLevel: "M" });
+        setPdfQrUrl(url);
+      } else {
+        setPdfQrUrl(null);
+      }
+    } else {
+      setPdfQrUrl(null);
+    }
+    setPdfInvoice(inv);
+  };
+
+  const handlePrintPdf = async () => {
+    if (!pdfRef.current) return;
+    const html2pdf = (await import("html2pdf.js")).default;
+    const el = pdfRef.current;
+    html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: `${pdfInvoice?.invoice_number || "faktura"}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(el)
+      .save();
+  };
+
+  const handleOpenEmailDialog = (inv: Invoice) => {
+    // Try to find the supplier to get their email
+    const supplier = suppliers.find((s) => s.id === inv.supplier_id);
+    setEmailTo(supplier?.email || "");
+    setEmailSubject(`Faktura ${inv.invoice_number || ""}`);
+    setEmailBody(buildDefaultEmailBody(inv));
+    setEmailDialog(inv);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailDialog || !emailTo) {
+      toast.error("Vyplňte e-mailovou adresu příjemce");
+      return;
+    }
+    setEmailSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: {
+          invoiceId: emailDialog.id,
+          recipientEmail: emailTo,
+          customSubject: emailSubject,
+          customBody: emailBody,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Faktura odeslána e-mailem");
+      setEmailDialog(null);
+    } catch (err: any) {
+      toast.error(err.message || "Nepodařilo se odeslat e-mail");
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   const filtered = invoices.filter((inv) => {
@@ -337,6 +424,8 @@ export default function Invoicing() {
             onDelete={(id) => deleteMutation.mutate(id)}
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
+            onPdf={handleGeneratePdf}
+            onEmail={handleOpenEmailDialog}
           />
         </TabsContent>
         <TabsContent value="issued">
@@ -348,6 +437,8 @@ export default function Invoicing() {
             onDelete={(id) => deleteMutation.mutate(id)}
             onQr={handleShowQr}
             onDuplicate={handleDuplicate}
+            onPdf={handleGeneratePdf}
+            onEmail={handleOpenEmailDialog}
           />
         </TabsContent>
       </Tabs>
@@ -374,7 +465,15 @@ export default function Invoicing() {
               </div>
               <div>
                 <Label>Číslo faktury</Label>
-                <Input value={form.invoice_number} onChange={(e) => setForm((f) => ({ ...f, invoice_number: e.target.value }))} />
+                <Input
+                  value={form.invoice_number}
+                  onChange={(e) => setForm((f) => ({ ...f, invoice_number: e.target.value }))}
+                  placeholder={form.invoice_type === "issued" && !editingInvoice ? "Automaticky (FAV-RRNNN)" : ""}
+                  disabled={form.invoice_type === "issued" && !editingInvoice}
+                />
+                {form.invoice_type === "issued" && !editingInvoice && (
+                  <p className="text-xs text-muted-foreground mt-1">Číslo bude přiděleno automaticky</p>
+                )}
               </div>
             </div>
 
@@ -384,7 +483,7 @@ export default function Invoicing() {
                   <h3 className="text-sm font-semibold">Odběratel</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Vybrat z dodavatelů</Label>
+                      <Label>Vybrat z partnerů</Label>
                       <Select value={form.supplier_id} onValueChange={handleSupplierSelect}>
                         <SelectTrigger><SelectValue placeholder="Vybrat…" /></SelectTrigger>
                         <SelectContent>
@@ -486,7 +585,12 @@ export default function Invoicing() {
               </div>
               <div>
                 <Label>Variabilní symbol</Label>
-                <Input value={form.variable_symbol} onChange={(e) => setForm((f) => ({ ...f, variable_symbol: e.target.value }))} />
+                <Input
+                  value={form.variable_symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, variable_symbol: e.target.value }))}
+                  placeholder={form.invoice_type === "issued" && !editingInvoice ? "Automaticky z čísla" : ""}
+                  disabled={form.invoice_type === "issued" && !editingInvoice}
+                />
               </div>
             </div>
 
@@ -545,8 +649,177 @@ export default function Invoicing() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
+        <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Náhled faktury</span>
+              <Button onClick={handlePrintPdf} size="sm">
+                <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {pdfInvoice && (
+            <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
+              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Dialog */}
+      <Dialog open={!!emailDialog} onOpenChange={(o) => { if (!o) setEmailDialog(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Odeslat fakturu e-mailem</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Příjemce</Label>
+              <Input value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="email@firma.cz" />
+            </div>
+            <div>
+              <Label>Předmět</Label>
+              <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
+            </div>
+            <div>
+              <Label>Text e-mailu</Label>
+              <Textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={8} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEmailDialog(null)}>Zrušit</Button>
+              <Button onClick={handleSendEmail} disabled={emailSending}>
+                {emailSending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                Odeslat
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string | null }) {
+  const formatDate = (d: string | null) => d ? format(new Date(d), "d.M.yyyy") : "—";
+  const formatAmount = (a: number | null, c: string | null) =>
+    a != null ? `${a.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} ${c || "CZK"}` : "—";
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px" }}>
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
+            FAKTURA {invoice.invoice_number || ""}
+          </h1>
+          <p style={{ color: "#666", margin: 0, fontSize: "11px" }}>
+            {invoice.invoice_type === "issued" ? "Vydaná faktura" : "Přijatá faktura"}
+          </p>
+        </div>
+      </div>
+
+      {/* Two column: Supplier / Customer */}
+      <div style={{ display: "flex", gap: "40px", marginBottom: "25px" }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
+            Dodavatel
+          </h3>
+          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{AGENCY_NAME}</p>
+          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{AGENCY_ADDRESS}</p>
+          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {AGENCY_ICO}</p>
+          <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {AGENCY_DIC}</p>
+        </div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
+            Odběratel
+          </h3>
+          <p style={{ fontWeight: "bold", margin: "0 0 2px" }}>{invoice.client_name || "—"}</p>
+          <p style={{ margin: "0 0 2px", fontSize: "11px" }}>{invoice.client_address || ""}</p>
+          {invoice.client_ico && <p style={{ margin: "0 0 2px", fontSize: "11px" }}>IČO: {invoice.client_ico}</p>}
+          {invoice.client_dic && <p style={{ margin: 0, fontSize: "11px" }}>DIČ: {invoice.client_dic}</p>}
+        </div>
+      </div>
+
+      {/* Invoice details */}
+      <div style={{ borderTop: "2px solid #000", borderBottom: "1px solid #ddd", padding: "12px 0", marginBottom: "20px" }}>
+        <div style={{ display: "flex", gap: "30px" }}>
+          <div>
+            <span style={{ fontSize: "10px", color: "#888" }}>Datum vystavení</span>
+            <p style={{ margin: 0, fontWeight: "bold" }}>{formatDate(invoice.issue_date)}</p>
+          </div>
+          <div>
+            <span style={{ fontSize: "10px", color: "#888" }}>Datum splatnosti</span>
+            <p style={{ margin: 0, fontWeight: "bold" }}>{formatDate(invoice.due_date)}</p>
+          </div>
+          <div>
+            <span style={{ fontSize: "10px", color: "#888" }}>Variabilní symbol</span>
+            <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.variable_symbol || "—"}</p>
+          </div>
+          <div>
+            <span style={{ fontSize: "10px", color: "#888" }}>Bankovní účet</span>
+            <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Amount */}
+      <div style={{ background: "#f8f8f8", borderRadius: "6px", padding: "16px 20px", marginBottom: "25px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "14px", fontWeight: "bold" }}>Celkem k úhradě</span>
+        <span style={{ fontSize: "20px", fontWeight: "bold" }}>{formatAmount(invoice.total_amount, invoice.currency)}</span>
+      </div>
+
+      {/* Notes */}
+      {invoice.notes && (
+        <div style={{ marginBottom: "25px" }}>
+          <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "4px" }}>Poznámka</h3>
+          <p style={{ margin: 0, fontSize: "11px" }}>{invoice.notes}</p>
+        </div>
+      )}
+
+      {/* QR Code */}
+      {qrUrl && (
+        <div style={{ borderTop: "1px solid #ddd", paddingTop: "15px", display: "flex", alignItems: "center", gap: "15px" }}>
+          <img src={qrUrl} alt="QR platba" style={{ width: "140px", height: "140px" }} />
+          <div>
+            <p style={{ fontWeight: "bold", margin: "0 0 4px", fontSize: "11px" }}>QR platba</p>
+            <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#666" }}>Naskenujte kód pro rychlou úhradu</p>
+            <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#666" }}>Částka: {formatAmount(invoice.total_amount, invoice.currency)}</p>
+            {invoice.variable_symbol && <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#666" }}>VS: {invoice.variable_symbol}</p>}
+            {invoice.due_date && <p style={{ margin: 0, fontSize: "10px", color: "#666" }}>Splatnost: {formatDate(invoice.due_date)}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ marginTop: "30px", borderTop: "1px solid #ddd", paddingTop: "10px", textAlign: "center", color: "#999", fontSize: "9px" }}>
+        {AGENCY_NAME} • {AGENCY_ADDRESS} • IČO: {AGENCY_ICO} • DIČ: {AGENCY_DIC}
+      </div>
+    </div>
+  );
+}
+
+function buildDefaultEmailBody(inv: Invoice): string {
+  const amount = inv.total_amount
+    ? `${inv.total_amount.toLocaleString("cs-CZ")} ${inv.currency || "CZK"}`
+    : "";
+  const dueDate = inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "";
+  const vs = inv.variable_symbol || "";
+
+  return `Dobrý den,
+
+zasíláme Vám fakturu č. ${inv.invoice_number || ""}.
+
+Částka: ${amount}${vs ? `\nVariabilní symbol: ${vs}` : ""}${dueDate ? `\nDatum splatnosti: ${dueDate}` : ""}
+Bankovní účet: ${inv.bank_account || DEFAULT_BANK_ACCOUNT}
+
+S pozdravem,
+YARO Travel
+Tel.: +420 602 102 108
+www.yarotravel.cz
+zajezdy@yarotravel.cz`;
 }
 
 function InvoiceTable({
@@ -557,6 +830,8 @@ function InvoiceTable({
   onDelete,
   onQr,
   onDuplicate,
+  onPdf,
+  onEmail,
 }: {
   invoices: Invoice[];
   isLoading: boolean;
@@ -565,6 +840,8 @@ function InvoiceTable({
   onDelete: (id: string) => void;
   onQr: (i: Invoice) => void;
   onDuplicate: (i: Invoice) => void;
+  onPdf: (i: Invoice) => void;
+  onEmail: (i: Invoice) => void;
 }) {
   if (isLoading) {
     return <div className="py-8 text-center text-muted-foreground">Načítání…</div>;
@@ -584,6 +861,7 @@ function InvoiceTable({
               <TableHead className="text-right">Částka</TableHead>
               <TableHead>Vystaveno</TableHead>
               <TableHead>Splatnost</TableHead>
+              <TableHead>VS</TableHead>
               <TableHead>Stav</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
@@ -607,6 +885,7 @@ function InvoiceTable({
                 <TableCell>
                   {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
                 </TableCell>
+                <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
                 <TableCell>
                   {inv.paid ? (
                     <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">
@@ -618,6 +897,16 @@ function InvoiceTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
+                    {type === "issued" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPdf(inv)} title="Náhled PDF">
+                        <FileText className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {type === "issued" && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEmail(inv)} title="Odeslat e-mailem">
+                        <Send className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {inv.currency === "CZK" && inv.total_amount && (
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onQr(inv)} title="QR platba">
                         <QrCode className="h-3.5 w-3.5" />
