@@ -1030,11 +1030,62 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
       </div>
 
-      {/* Amount */}
+      {/* Items table */}
+      {Array.isArray(invoice.items) && invoice.items.length > 0 && invoice.items.some((it: any) => it.text || it.unit_price > 0) && (() => {
+        const typedItems = invoice.items as InvoiceItem[];
+        const subtotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+        const vatTotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price * (it.vat_rate / 100), 0);
+        return (
+          <div style={{ marginBottom: "25px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #000" }}>
+                  <th style={{ textAlign: "left", padding: "6px 4px", fontWeight: "bold" }}>Popis</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>Množství</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Cena/ks</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>DPH</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Celkem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {typedItems.map((it, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "5px 4px" }}>{it.text}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.quantity}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.unit_price.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.vat_rate}%</td>
+                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{(it.quantity * it.unit_price).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "1px solid #ccc" }}>
+                  <td colSpan={4} style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>Základ:</td>
+                  <td style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>{subtotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                </tr>
+                {vatTotal > 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: "right", padding: "3px 4px" }}>DPH:</td>
+                    <td style={{ textAlign: "right", padding: "3px 4px" }}>{vatTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                  </tr>
+                )}
+                <tr style={{ borderTop: "2px solid #000" }}>
+                  <td colSpan={4} style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>Celkem k úhradě:</td>
+                  <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>{(subtotal + vatTotal).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      })()}
+
+      {/* Amount (shown when no items) */}
+      {(!Array.isArray(invoice.items) || !invoice.items.length || !invoice.items.some((it: any) => it.text || it.unit_price > 0)) && (
       <div style={{ background: "#f8f8f8", borderRadius: "6px", padding: "16px 20px", marginBottom: "25px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "14px", fontWeight: "bold" }}>Celkem k úhradě</span>
         <span style={{ fontSize: "20px", fontWeight: "bold" }}>{formatAmount(invoice.total_amount, invoice.currency)}</span>
       </div>
+      )}
 
       {/* Notes */}
       {invoice.notes && (
