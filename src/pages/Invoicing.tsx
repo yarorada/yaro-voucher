@@ -554,7 +554,7 @@ export default function Invoicing() {
   const getInvoicePdfFileName = (inv: Invoice) => `${inv.invoice_number || "faktura"}.pdf`;
 
   const getInvoicePdfOptions = (fileName: string) => ({
-    margin: [10, 10, 10, 10],
+    margin: [10, 10, 10, 10] as [number, number, number, number],
     filename: fileName,
     image: { type: "jpeg", quality: 0.95 },
     html2canvas: { scale: 2, useCORS: true },
