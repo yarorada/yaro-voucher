@@ -1478,7 +1478,7 @@ export default function Invoicing() {
   );
 }
 
-function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string | null }) {
+function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUrl: string | null; logoSrc?: string }) {
   const formatDate = (d: string | null) => d ? format(new Date(d), "d.M.yyyy") : "—";
   const cur = invoice.currency || "CZK";
   const curSymbol = cur === "CZK" ? "Kč" : cur === "EUR" ? "€" : cur === "USD" ? "$" : cur === "GBP" ? "£" : cur;
@@ -1497,7 +1497,7 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           </h1>
           <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
         </div>
-        {logoBase64 && <img src={logoBase64} alt="YARO s.r.o." style={{ height: "40px" }} />}
+        {logoSrc && <img src={logoSrc} alt="YARO s.r.o." style={{ height: "40px" }} />}
       </div>
 
       {/* Two column: Supplier / Customer */}
