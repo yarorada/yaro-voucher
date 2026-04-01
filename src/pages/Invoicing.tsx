@@ -55,6 +55,11 @@ function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange
   );
 }
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
+const EUR_BANK = {
+  iban: "DE89202208000051200891",
+  swift: "SXPYDEHH",
+  bank: "BANKING CIRCLE S.A.",
+};
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
