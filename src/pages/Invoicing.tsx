@@ -1194,6 +1194,7 @@ function InvoiceTable({
   onDuplicate,
   onPdf,
   onEmail,
+  onMarkPaid,
 }: {
   invoices: Invoice[];
   isLoading: boolean;
@@ -1204,6 +1205,7 @@ function InvoiceTable({
   onDuplicate: (i: Invoice) => void;
   onPdf: (i: Invoice) => void;
   onEmail: (i: Invoice) => void;
+  onMarkPaid: (i: Invoice) => void;
 }) {
   if (isLoading) {
     return <div className="py-8 text-center text-muted-foreground">Načítání…</div>;
