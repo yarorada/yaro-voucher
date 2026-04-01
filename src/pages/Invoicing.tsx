@@ -452,6 +452,9 @@ export default function Invoicing() {
   const openNewForm = (type: string) => {
     setEditingInvoice(null);
     setForm({ ...emptyForm, invoice_type: type });
+    setOcrPreview(null);
+    setScanFileUrl(null);
+    setScanFileName(null);
     setShowForm(true);
   };
 
