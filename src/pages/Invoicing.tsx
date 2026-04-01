@@ -20,10 +20,7 @@ import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from
 import QRCode from "qrcode";
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
-const AGENCY_NAME = "YARO s.r.o.";
-const AGENCY_ICO = "09396039";
-const AGENCY_DIC = "CZ09396039";
-const AGENCY_ADDRESS = "Albrechtická 569/22, 790 01 Jeseník";
+const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
   text: string;
