@@ -172,12 +172,16 @@ export default function Invoicing() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: async ({ id, paid_at }: { id: string; paid_at: string }) => {
-      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", id);
+    mutationFn: async ({ invoice, paid_at }: { invoice: Invoice; paid_at: string }) => {
+      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", invoice.id);
       if (error) throw error;
+      if (invoice.deal_supplier_invoice_id) {
+        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at }).eq("id", invoice.deal_supplier_invoice_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["deal-supplier-invoices"] });
       toast.success("Faktura označena jako zaplacená");
       setMarkPaidInvoice(null);
     },
@@ -953,7 +957,7 @@ export default function Invoicing() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMarkPaidInvoice(null)}>Zrušit</Button>
-              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ id: markPaidInvoice.id, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
+              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
                 {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
                 Potvrdit
               </Button>
@@ -962,6 +966,7 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
+      {/* PDF Preview Dialog */}
       <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
         <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
