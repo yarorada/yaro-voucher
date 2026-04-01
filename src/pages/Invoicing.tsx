@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { createPortal } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -550,6 +551,93 @@ export default function Invoicing() {
     return inv.total_amount;
   };
 
+  const getInvoicePdfFileName = (inv: Invoice) => `${inv.invoice_number || "faktura"}.pdf`;
+
+  const getInvoicePdfOptions = (fileName: string) => ({
+    margin: [10, 10, 10, 10],
+    filename: fileName,
+    image: { type: "jpeg", quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  });
+
+  const downloadBlobFile = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const blobToBase64 = async (blob: Blob) => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(new Error("Nepodařilo se připravit PDF přílohu"));
+      reader.readAsDataURL(blob);
+    });
+
+    return dataUrl.split(",")[1] || "";
+  };
+
+  const buildInvoiceQrUrl = async (inv: Invoice) => {
+    const effectiveTotal = getInvoiceTotal(inv);
+    if (inv.currency !== "CZK" || !effectiveTotal) return null;
+
+    const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
+    const iban = inv.iban || bankAccountToIban(account);
+    if (!iban) return null;
+
+    const spayd = generateSpaydString({
+      iban,
+      amount: effectiveTotal,
+      variableSymbol: inv.variable_symbol || undefined,
+      message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
+    });
+
+    return QRCode.toDataURL(spayd, { width: 180, margin: 1, errorCorrectionLevel: "M" });
+  };
+
+  const generateInvoicePdfBlob = async (inv: Invoice) => {
+    const html2pdf = (await import("html2pdf.js")).default;
+    const qrUrl = await buildInvoiceQrUrl(inv);
+    const mountNode = document.createElement("div");
+    mountNode.style.position = "fixed";
+    mountNode.style.left = "-10000px";
+    mountNode.style.top = "0";
+    mountNode.style.width = "794px";
+    mountNode.style.pointerEvents = "none";
+    mountNode.style.opacity = "0";
+    mountNode.style.background = "#ffffff";
+    document.body.appendChild(mountNode);
+
+    const root = createRoot(mountNode);
+
+    try {
+      root.render(
+        <div className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
+          <InvoicePdfContent invoice={inv} qrUrl={qrUrl} logoSrc={logoBase64} />
+        </div>
+      );
+
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      const content = mountNode.firstElementChild as HTMLElement | null;
+      if (!content) throw new Error("Nepodařilo se připravit PDF faktury");
+
+      const blob = await html2pdf().set(getInvoicePdfOptions(getInvoicePdfFileName(inv))).from(content).outputPdf("blob");
+      return { blob: blob as Blob, fileName: getInvoicePdfFileName(inv), qrUrl };
+    } finally {
+      root.unmount();
+      mountNode.remove();
+    }
+  };
+
   const clearFilePreviewUrl = () => {
     setFilePreviewUrl((prev) => {
       if (prev?.startsWith("blob:")) {
@@ -742,25 +830,8 @@ export default function Invoicing() {
       return;
     }
 
-    const effectiveTotal = getInvoiceTotal(inv);
-    if (inv.currency === "CZK" && effectiveTotal) {
-      const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
-      const iban = inv.iban || bankAccountToIban(account);
-      if (iban) {
-        const spayd = generateSpaydString({
-          iban,
-          amount: effectiveTotal,
-          variableSymbol: inv.variable_symbol || undefined,
-          message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
-        });
-        const url = await QRCode.toDataURL(spayd, { width: 180, margin: 1, errorCorrectionLevel: "M" });
-        setPdfQrUrl(url);
-      } else {
-        setPdfQrUrl(null);
-      }
-    } else {
-      setPdfQrUrl(null);
-    }
+    const qrUrl = await buildInvoiceQrUrl(inv);
+    setPdfQrUrl(qrUrl);
     setPdfInvoice(inv);
   };
 
@@ -857,19 +928,15 @@ export default function Invoicing() {
   ) : null;
 
   const handlePrintPdf = async () => {
-    if (!pdfRef.current) return;
-    const html2pdf = (await import("html2pdf.js")).default;
-    const el = pdfRef.current;
-    html2pdf()
-      .set({
-        margin: [10, 10, 10, 10],
-        filename: `${pdfInvoice?.invoice_number || "faktura"}.pdf`,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(el)
-      .save();
+    if (!pdfInvoice) return;
+
+    try {
+      const { blob, fileName } = await generateInvoicePdfBlob(pdfInvoice);
+      downloadBlobFile(blob, fileName);
+    } catch (error) {
+      console.error("Invoice PDF download failed:", error);
+      toast.error("Nepodařilo se vygenerovat PDF faktury");
+    }
   };
 
   const handleOpenEmailDialog = (inv: Invoice) => {
@@ -888,12 +955,23 @@ export default function Invoicing() {
     }
     setEmailSending(true);
     try {
+      let attachmentBase64: string | undefined;
+      let attachmentFileName: string | undefined;
+
+      if (emailDialog.invoice_type === "issued") {
+        const { blob, fileName } = await generateInvoicePdfBlob(emailDialog);
+        attachmentBase64 = await blobToBase64(blob);
+        attachmentFileName = fileName;
+      }
+
       const { data, error } = await supabase.functions.invoke("send-invoice-email", {
         body: {
           invoiceId: emailDialog.id,
           recipientEmail: emailTo,
           customSubject: emailSubject,
           customBody: emailBody,
+          attachmentBase64,
+          attachmentFileName,
         },
       });
       if (error) throw error;
