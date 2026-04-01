@@ -1353,22 +1353,22 @@ export default function Invoicing() {
 
 function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string | null }) {
   const formatDate = (d: string | null) => d ? format(new Date(d), "d.M.yyyy") : "—";
-  const formatAmount = (a: number | null, c: string | null) =>
-    a != null ? `${a.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} ${c || "CZK"}` : "—";
+  const cur = invoice.currency || "CZK";
+  const fmt = (n: number) => n.toLocaleString("cs-CZ", { minimumFractionDigits: 2 });
+  const formatAmount = (a: number | null, c: string | null) => a != null ? `${fmt(a)} ${c || "CZK"}` : "—";
 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px" }}>
-        <div>
-          <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
-            FAKTURA {invoice.invoice_number || ""}
-          </h1>
-        </div>
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
+          FAKTURA {invoice.invoice_number || ""}
+        </h1>
+        <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
       </div>
 
       {/* Two column: Supplier / Customer */}
-      <div style={{ display: "flex", gap: "40px", marginBottom: "25px" }}>
+      <div style={{ display: "flex", gap: "40px", marginBottom: "20px" }}>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: "10px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.5px" }}>
             Dodavatel
@@ -1389,36 +1389,59 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
       </div>
 
-      {/* Invoice details */}
-      <div style={{ borderTop: "2px solid #000", borderBottom: "1px solid #ddd", padding: "12px 0", marginBottom: "20px" }}>
-        <div style={{ display: "flex", gap: "30px" }}>
-          <div>
+      {/* Grouped detail rows: Dates / Symbols / Bank */}
+      <div style={{ borderTop: "2px solid #000", borderBottom: "1px solid #ddd", padding: "10px 0", marginBottom: "18px" }}>
+        {/* Row 1: Dates */}
+        <div style={{ display: "flex", gap: "30px", marginBottom: "8px" }}>
+          <div style={{ minWidth: "100px" }}>
             <span style={{ fontSize: "10px", color: "#888" }}>Datum vystavení</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{formatDate(invoice.issue_date)}</p>
           </div>
-          <div>
+          {invoice.taxable_date && (
+            <div style={{ minWidth: "100px" }}>
+              <span style={{ fontSize: "10px", color: "#888" }}>DUZP</span>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{formatDate(invoice.taxable_date)}</p>
+            </div>
+          )}
+          <div style={{ minWidth: "100px" }}>
             <span style={{ fontSize: "10px", color: "#888" }}>Datum splatnosti</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{formatDate(invoice.due_date)}</p>
           </div>
-          <div>
+        </div>
+        {/* Row 2: Symbols */}
+        <div style={{ display: "flex", gap: "30px", marginBottom: "8px" }}>
+          <div style={{ minWidth: "100px" }}>
             <span style={{ fontSize: "10px", color: "#888" }}>Variabilní symbol</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.variable_symbol || "—"}</p>
           </div>
           {invoice.specific_symbol && (
-            <div>
+            <div style={{ minWidth: "100px" }}>
               <span style={{ fontSize: "10px", color: "#888" }}>Specifický symbol</span>
               <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.specific_symbol}</p>
             </div>
           )}
           {invoice.constant_symbol && (
-            <div>
+            <div style={{ minWidth: "100px" }}>
               <span style={{ fontSize: "10px", color: "#888" }}>Konstantní symbol</span>
               <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.constant_symbol}</p>
             </div>
           )}
-          <div>
+        </div>
+        {/* Row 3: Bank info */}
+        <div style={{ display: "flex", gap: "30px" }}>
+          <div style={{ minWidth: "120px" }}>
             <span style={{ fontSize: "10px", color: "#888" }}>Bankovní účet</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
+          </div>
+          {invoice.iban && (
+            <div style={{ minWidth: "160px" }}>
+              <span style={{ fontSize: "10px", color: "#888" }}>IBAN</span>
+              <p style={{ margin: 0, fontWeight: "bold", fontSize: "11px" }}>{invoice.iban}</p>
+            </div>
+          )}
+          <div style={{ minWidth: "60px" }}>
+            <span style={{ fontSize: "10px", color: "#888" }}>Měna</span>
+            <p style={{ margin: 0, fontWeight: "bold" }}>{cur}</p>
           </div>
         </div>
       </div>
@@ -1426,45 +1449,66 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
       {/* Items table */}
       {Array.isArray(invoice.items) && invoice.items.length > 0 && invoice.items.some((it: any) => it.text || it.unit_price > 0) && (() => {
         const typedItems = invoice.items as InvoiceItem[];
+        const vatGroups = new Map<number, { base: number; vat: number }>();
+        typedItems.forEach((it) => {
+          const lineBase = it.quantity * it.unit_price;
+          const lineVat = lineBase * (it.vat_rate / 100);
+          const existing = vatGroups.get(it.vat_rate) || { base: 0, vat: 0 };
+          vatGroups.set(it.vat_rate, { base: existing.base + lineBase, vat: existing.vat + lineVat });
+        });
         const subtotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price, 0);
         const vatTotal = typedItems.reduce((s, it) => s + it.quantity * it.unit_price * (it.vat_rate / 100), 0);
         return (
-          <div style={{ marginBottom: "25px" }}>
+          <div style={{ marginBottom: "20px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #000" }}>
                   <th style={{ textAlign: "left", padding: "6px 4px", fontWeight: "bold" }}>Popis</th>
                   <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>Množství</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Cena/ks</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "60px" }}>DPH</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "90px" }}>Celkem</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "80px" }}>Cena/ks bez DPH</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "80px" }}>Základ</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "50px" }}>DPH %</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "70px" }}>DPH {cur}</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", width: "80px" }}>Celkem</th>
                 </tr>
               </thead>
               <tbody>
-                {typedItems.map((it, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "5px 4px" }}>{it.text}</td>
-                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.quantity}</td>
-                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.unit_price.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
-                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.vat_rate}%</td>
-                    <td style={{ textAlign: "right", padding: "5px 4px" }}>{(it.quantity * it.unit_price).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                ))}
+                {typedItems.map((it, idx) => {
+                  const lb = it.quantity * it.unit_price;
+                  const lv = lb * (it.vat_rate / 100);
+                  return (
+                    <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "5px 4px" }}>{it.text}</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.quantity}</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{fmt(it.unit_price)}</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{fmt(lb)}</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{it.vat_rate}%</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{fmt(lv)}</td>
+                      <td style={{ textAlign: "right", padding: "5px 4px" }}>{fmt(lb + lv)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr style={{ borderTop: "1px solid #ccc" }}>
-                  <td colSpan={4} style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>Základ:</td>
-                  <td style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>{subtotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                  <td colSpan={6} style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>Základ celkem:</td>
+                  <td style={{ textAlign: "right", padding: "5px 4px", fontWeight: "bold" }}>{fmt(subtotal)} {cur}</td>
                 </tr>
-                {vatTotal > 0 && (
+                {Array.from(vatGroups.entries()).map(([rate, { base, vat }]) => (
+                  <tr key={rate}>
+                    <td colSpan={6} style={{ textAlign: "right", padding: "3px 4px", fontSize: "10px" }}>DPH {rate}% (základ {fmt(base)}):</td>
+                    <td style={{ textAlign: "right", padding: "3px 4px", fontSize: "10px" }}>{fmt(vat)} {cur}</td>
+                  </tr>
+                ))}
+                {vatTotal > 0 && vatGroups.size > 1 && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "right", padding: "3px 4px" }}>DPH:</td>
-                    <td style={{ textAlign: "right", padding: "3px 4px" }}>{vatTotal.toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                    <td colSpan={6} style={{ textAlign: "right", padding: "3px 4px", fontWeight: "bold" }}>DPH celkem:</td>
+                    <td style={{ textAlign: "right", padding: "3px 4px", fontWeight: "bold" }}>{fmt(vatTotal)} {cur}</td>
                   </tr>
                 )}
                 <tr style={{ borderTop: "2px solid #000" }}>
-                  <td colSpan={4} style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>Celkem k úhradě:</td>
-                  <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>{(subtotal + vatTotal).toLocaleString("cs-CZ", { minimumFractionDigits: 2 })} {invoice.currency || "CZK"}</td>
+                  <td colSpan={6} style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>Celkem k úhradě:</td>
+                  <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: "bold", fontSize: "13px" }}>{fmt(subtotal + vatTotal)} {cur}</td>
                 </tr>
               </tfoot>
             </table>
@@ -1502,8 +1546,14 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
       )}
 
-      {/* Footer */}
-      <div style={{ marginTop: "30px", borderTop: "1px solid #ddd", paddingTop: "10px", textAlign: "center", color: "#999", fontSize: "9px" }}>
+      {/* Foreign currency note */}
+      {cur !== "CZK" && (
+        <div style={{ marginBottom: "15px", fontSize: "9px", color: "#666" }}>
+          Faktura vystavena v měně {cur}. Dle § 4 odst. 15 zákona č. 235/2004 Sb. se přepočet na CZK provádí kurzem ČNB ke dni uskutečnění zdanitelného plnění.
+        </div>
+      )}
+
+      <div style={{ marginTop: "25px", borderTop: "1px solid #ddd", paddingTop: "10px", textAlign: "center", color: "#999", fontSize: "9px" }}>
         {invoice.supplier_name || ""} • {invoice.supplier_address || ""}{invoice.supplier_ico ? ` • IČO: ${invoice.supplier_ico}` : ""}{invoice.supplier_dic ? ` • DIČ: ${invoice.supplier_dic}` : ""}
       </div>
     </div>
