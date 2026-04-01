@@ -1069,16 +1069,45 @@ export default function Invoicing() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Náhled faktury</span>
-              <Button onClick={handlePrintPdf} size="sm">
-                <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
-              </Button>
+              {pdfInvoice?.invoice_type === "received" && pdfInvoice?.file_url ? (
+                <Button onClick={() => window.open(pdfInvoice.file_url!, "_blank")} size="sm">
+                  <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
+                </Button>
+              ) : (
+                <Button onClick={handlePrintPdf} size="sm">
+                  <FileText className="h-4 w-4 mr-1" /> Stáhnout PDF
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
-          {pdfInvoice && (
+          {pdfInvoice && pdfInvoice.invoice_type === "received" && pdfInvoice.file_url ? (
+            (() => {
+              const ext = (pdfInvoice.file_name || pdfInvoice.file_url || "").split(".").pop()?.toLowerCase();
+              const isPdf = ext === "pdf";
+              const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "");
+              return (
+                <div className="flex justify-center">
+                  {isPdf ? (
+                    <iframe src={pdfInvoice.file_url} className="w-full" style={{ height: "75vh" }} />
+                  ) : isImage ? (
+                    <img src={pdfInvoice.file_url} alt="Faktura" className="max-w-full max-h-[75vh] object-contain" />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-2" />
+                      <p>Náhled není dostupný pro tento typ souboru.</p>
+                      <Button variant="outline" className="mt-4" onClick={() => window.open(pdfInvoice.file_url!, "_blank")}>
+                        <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : pdfInvoice ? (
             <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
               <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
             </div>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
 
