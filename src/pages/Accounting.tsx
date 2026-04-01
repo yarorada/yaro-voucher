@@ -222,6 +222,7 @@ export default function Accounting() {
     lockAll();
   }, [rows, queryClient]);
 
+  const saveMutation = useMutation({
     mutationFn: async ({ contractId, value }: { contractId: string; value: number | null }) => {
       const { error } = await supabase
         .from("travel_contracts")
