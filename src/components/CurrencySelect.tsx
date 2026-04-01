@@ -17,6 +17,8 @@ const CURRENCIES = [
   { code: "THB", name: "Thajský baht", symbol: "฿" },
   { code: "AED", name: "Emirátský dirham", symbol: "د.إ" },
   { code: "TRY", name: "Turecká lira", symbol: "₺" },
+  { code: "ZAR", name: "Jihoafrický rand", symbol: "R" },
+  { code: "CNY", name: "Čínský jüan", symbol: "¥" },
 ];
 
 interface CurrencySelectProps {
