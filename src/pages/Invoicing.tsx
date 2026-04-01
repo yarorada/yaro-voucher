@@ -197,7 +197,8 @@ export default function Invoicing() {
     try {
       let processFile = file;
       if (file.type.startsWith("image/") && file.type !== "image/png") {
-        processFile = await compressImage(file);
+        const compressed = await compressImage(file);
+        processFile = new File([compressed.blob], file.name, { type: compressed.blob.type });
       }
       const reader = new FileReader();
       const base64 = await new Promise<string>((resolve) => {
