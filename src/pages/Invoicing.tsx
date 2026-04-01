@@ -1045,9 +1045,24 @@ export default function Invoicing() {
             </DialogTitle>
           </DialogHeader>
           {pdfInvoice && (
-            <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
-              <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
-            </div>
+            pdfInvoice.invoice_type === "received" && pdfInvoice.file_url ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => window.open(pdfInvoice.file_url!, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" /> Otevřít soubor
+                  </Button>
+                </div>
+                {pdfInvoice.file_url.match(/\.(pdf)$/i) || pdfInvoice.file_name?.match(/\.(pdf)$/i) ? (
+                  <iframe src={pdfInvoice.file_url} className="w-full" style={{ height: "75vh" }} />
+                ) : (
+                  <img src={pdfInvoice.file_url} alt="Faktura" className="max-w-full" />
+                )}
+              </div>
+            ) : (
+              <div ref={pdfRef} className="bg-white text-black p-8" style={{ fontFamily: "Arial, sans-serif", fontSize: "12px", lineHeight: "1.5" }}>
+                <InvoicePdfContent invoice={pdfInvoice} qrUrl={pdfQrUrl} />
+              </div>
+            )
           )}
         </DialogContent>
       </Dialog>
