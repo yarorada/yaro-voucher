@@ -1,38 +1,42 @@
 
 
-## Zamknutí zálohových položek při modrém/červeném zvýraznění
+## Oprava odesílání vydaných faktur e-mailem
 
-### Kontext
-Na kartě Účetnictví se hodnoty Prodej zálohy, Nákup zálohy a Zisk zálohy počítají dynamicky z deal_profitability. Když smlouva získá modré (první zaplacená splátka v minulém měsíci) nebo červené (konec zájezdu v minulém měsíci) zvýraznění, tyto hodnoty se mají "zamknout" — uložit snapshot do databáze a nadále zobrazovat uloženou hodnotu místo dynamicky vypočtené.
+### Problém
+Edge funkce `send-invoice-email` používá connector gateway (`connector-gateway.lovable.dev/resend`), ale projekt nemá připojený Resend connector. Logy ukazují chybu: `"Credential not found", source: "connectors_gateway"`.
 
-### Plán
+### Řešení
+Přepsat edge funkci tak, aby volala Resend API přímo (bez gateway), protože `RESEND_API_KEY` je již uložen v secrets.
 
-**1. Migrace databáze — nové sloupce na `travel_contracts`**
-- `accounting_sell_deposit_locked` (numeric, nullable)
-- `accounting_buy_deposit_locked` (numeric, nullable)
-- `accounting_profit_deposit_locked` (numeric, nullable)
-- `accounting_deposit_locked_at` (timestamptz, nullable) — kdy bylo zamčeno
+### Změny
 
-Pokud jsou tyto sloupce vyplněné, znamená to, že zálohy jsou zamčeny.
+**1. `supabase/functions/send-invoice-email/index.ts`**
+- Nahradit volání `connector-gateway.lovable.dev/resend/emails` přímým voláním `https://api.resend.com/emails`
+- Použít `RESEND_API_KEY` přímo v `Authorization: Bearer` headeru
+- Odstranit závislost na `LOVABLE_API_KEY` a `X-Connection-Api-Key`
 
-**2. Logika zamykání v `Accounting.tsx`**
-- Při načtení dat z DB, pokud řádek má `highlightBlue` nebo `highlightRed` a zároveň nemá vyplněné locked sloupce → automaticky uložit aktuální vypočtené hodnoty (sellDeposit, buyDeposit, profitDeposit) do travel_contracts
-- Toto se provede jednou (mutation po načtení dat) pro všechny řádky, které ještě nebyly zamčeny
-- Pořadí: modrá se aplikuje jako první (dříve než červená), ale obě zamykají stejné hodnoty — stačí zamknout při prvním výskytu
+Klíčová změna:
+```typescript
+// Místo gateway:
+const emailResponse = await fetch("https://api.resend.com/emails", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${resendApiKey}`,
+  },
+  body: JSON.stringify({
+    from: "YARO Travel <zajezdy@yarotravel.cz>",
+    to: [recipientEmail],
+    subject,
+    html: body.replace(/\n/g, "<br>"),
+  }),
+});
+```
 
-**3. Zobrazení zamčených hodnot**
-- Ve sloupci Prodej zál., Nákup zál., Zisk zál.: pokud existují locked hodnoty, zobrazit je místo dynamicky vypočtených
-- Přidat vizuální indikátor (ikona zámku nebo tooltip) u zamčených řádků
-- Zamčené hodnoty nelze editovat (jsou read-only, na rozdíl od Nákup vyúčt.)
-
-**4. Úprava selectu v queryFn**
-- Přidat `accounting_sell_deposit_locked, accounting_buy_deposit_locked, accounting_profit_deposit_locked` do select dotazu na travel_contracts
-- V mapování řádků: pokud locked hodnoty existují, použít je; jinak použít dynamické
+**2. Redeploy edge funkce** po úpravě.
 
 ### Technické detaily
-
-- Migrace přidá 4 nullable sloupce na `travel_contracts`
-- `useEffect` v Accounting.tsx detekuje řádky s highlight + bez locked hodnot a batch-updatene je
-- Zálohy se zamykají jednou a navždy — pozdější změny v dealu se do záloh nepromítnou
-- Zisk zálohy se zamyká jako samostatná hodnota (ne jako computed z sell-buy), aby byl přesný snapshot
+- `RESEND_API_KEY` secret existuje a je nastaven
+- Přímé volání Resend API obchází gateway a eliminuje chybu "Credential not found"
+- Žádné změny v klientském kódu (`Invoicing.tsx`) nejsou potřeba
 
