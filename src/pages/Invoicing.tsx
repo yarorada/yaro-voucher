@@ -1040,7 +1040,7 @@ export default function Invoicing() {
             </p>
             <div>
               <Label>Datum zaplacení</Label>
-              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
+              <DatePickerInput value={markPaidDate} onChange={setMarkPaidDate} />
             </div>
             <div>
               <Label>Způsob platby</Label>
