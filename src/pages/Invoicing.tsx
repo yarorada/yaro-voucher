@@ -24,6 +24,36 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { parse, isValid } from "date-fns";
+
+function DatePickerInput({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const dateValue = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  const validDate = dateValue && isValid(dateValue) ? dateValue : undefined;
+  return (
+    <div className="flex gap-1">
+      <Input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1" />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" className="shrink-0">
+            <CalendarIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="single"
+            selected={validDate}
+            onSelect={(d) => d && onChange(format(d, "yyyy-MM-dd"))}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
