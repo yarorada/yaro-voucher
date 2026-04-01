@@ -1,85 +1,38 @@
 
 
-## Fakturační systém — plán implementace
+## Zamknutí zálohových položek při modrém/červeném zvýraznění
 
-### Přehled
-Vytvoření kompletního fakturačního modulu s evidencí přijatých a vydaných faktur, navigační položkou "Fakturace", napojením na existující dodavatelské faktury z obchodních případů, QR kódy pro platby a automatickým doplněním dat firmy podle IČO z ARES.
+### Kontext
+Na kartě Účetnictví se hodnoty Prodej zálohy, Nákup zálohy a Zisk zálohy počítají dynamicky z deal_profitability. Když smlouva získá modré (první zaplacená splátka v minulém měsíci) nebo červené (konec zájezdu v minulém měsíci) zvýraznění, tyto hodnoty se mají "zamknout" — uložit snapshot do databáze a nadále zobrazovat uloženou hodnotu místo dynamicky vypočtené.
 
----
+### Plán
 
-### 1. Databáze — nové tabulky
+**1. Migrace databáze — nové sloupce na `travel_contracts`**
+- `accounting_sell_deposit_locked` (numeric, nullable)
+- `accounting_buy_deposit_locked` (numeric, nullable)
+- `accounting_profit_deposit_locked` (numeric, nullable)
+- `accounting_deposit_locked_at` (timestamptz, nullable) — kdy bylo zamčeno
 
-**`invoices`** — hlavní tabulka faktur (přijaté i vydané):
-- `id`, `user_id`, `invoice_type` (received/issued), `invoice_number`
-- `supplier_id` (odkaz na suppliers — odběratel/dodavatel)
-- `deal_id` (nullable — vazba na obchodní případ, pokud existuje)
-- `deal_supplier_invoice_id` (nullable — odkaz na původní fakturu z deal_supplier_invoices)
-- `client_name`, `client_ico`, `client_dic`, `client_address`
-- `supplier_name`, `supplier_ico`, `supplier_dic`, `supplier_address`
-- `total_amount`, `currency`, `issue_date`, `due_date`, `paid`, `paid_at`
-- `variable_symbol`, `bank_account`, `iban`
-- `file_url`, `file_name`, `notes`
-- `created_at`, `updated_at`
-- RLS: authenticated users, s ohledem na `has_full_data_scope`
+Pokud jsou tyto sloupce vyplněné, znamená to, že zálohy jsou zamčeny.
 
-**Migrace**: Jednorázový import existujících záznamů z `deal_supplier_invoices` do tabulky `invoices` s `invoice_type = 'received'` a vazbou přes `deal_supplier_invoice_id`.
+**2. Logika zamykání v `Accounting.tsx`**
+- Při načtení dat z DB, pokud řádek má `highlightBlue` nebo `highlightRed` a zároveň nemá vyplněné locked sloupce → automaticky uložit aktuální vypočtené hodnoty (sellDeposit, buyDeposit, profitDeposit) do travel_contracts
+- Toto se provede jednou (mutation po načtení dat) pro všechny řádky, které ještě nebyly zamčeny
+- Pořadí: modrá se aplikuje jako první (dříve než červená), ale obě zamykají stejné hodnoty — stačí zamknout při prvním výskytu
 
-### 2. Edge funkce — ARES lookup
+**3. Zobrazení zamčených hodnot**
+- Ve sloupci Prodej zál., Nákup zál., Zisk zál.: pokud existují locked hodnoty, zobrazit je místo dynamicky vypočtených
+- Přidat vizuální indikátor (ikona zámku nebo tooltip) u zamčených řádků
+- Zamčené hodnoty nelze editovat (jsou read-only, na rozdíl od Nákup vyúčt.)
 
-**`ares-lookup`** — nová edge funkce:
-- Přijme IČO, zavolá veřejné ARES API (`https://ares.gov.cz/ekonomicke-subjekty-v-registru-statistickem-a-telefonnim/rest/ekonomicke-subjekty/{ico}`)
-- Vrátí: název firmy, DIČ, adresu (ulice, město, PSČ)
-- Nevyžaduje API klíč (veřejné API)
-
-### 3. Navigace
-
-- Přidat položku "Fakturace" do `AppSidebar.tsx` s ikonou `Receipt` mezi Účetnictví a Šablony e-mailů
-- Přidat routu `/invoicing` do `App.tsx`
-
-### 4. Stránka Fakturace (`src/pages/Invoicing.tsx`)
-
-**Záložky**: Přijaté faktury | Vydané faktury
-
-**Přijaté faktury**:
-- Tabulka: číslo, dodavatel, částka, měna, datum vystavení, datum zaplacení, stav (zaplaceno/nezaplaceno), vazba na deal
-- Automatický import z deal_supplier_invoices (synchronizace)
-- Možnost přidat novou fakturu bez vazby na deal (upload souboru + OCR)
-- U faktur bez QR kódu — generování QR platebního kódu (SPAYD, pouze CZK) pomocí existující `spayd.ts` knihovny
-
-**Vydané faktury**:
-- Formulář: odběratel (výběr z dodavatelů nebo zadání IČO → ARES doplnění), částka, měna, VS, datum, bankovní účet
-- QR kód pro platbu automaticky generován
-- Možnost duplikovat/kopírovat existující fakturu
-- Seznam odběratelů se přebírá z tabulky `suppliers`
-
-### 5. QR kód pro platby
-
-- Využití existující knihovny `src/lib/spayd.ts` (bankAccountToIban, generateSpaydString, generatePaymentQrDataUrl)
-- Pro přijaté faktury: generování QR pokud je zadán bankovní účet/IBAN, částka a VS
-- Pro vydané faktury: automatické generování QR s firemním účtem YARO
-
-### 6. Synchronizace s deal_supplier_invoices
-
-- Při vytvoření nové faktury v obchodním případě se automaticky vytvoří odpovídající záznam v `invoices`
-- Databázový trigger na `deal_supplier_invoices` INSERT/UPDATE/DELETE → sync do `invoices`
-- Změna stavu zaplacení v jednom místě se projeví v obou
-
----
+**4. Úprava selectu v queryFn**
+- Přidat `accounting_sell_deposit_locked, accounting_buy_deposit_locked, accounting_profit_deposit_locked` do select dotazu na travel_contracts
+- V mapování řádků: pokud locked hodnoty existují, použít je; jinak použít dynamické
 
 ### Technické detaily
 
-```text
-Struktura:
-├── supabase/migrations/  — CREATE TABLE invoices + trigger sync
-├── supabase/functions/ares-lookup/index.ts  — ARES API proxy
-├── src/pages/Invoicing.tsx  — hlavní stránka
-├── src/components/InvoiceForm.tsx  — formulář pro vytvoření/editaci
-├── src/components/InvoiceList.tsx  — seznam faktur s filtry
-├── src/components/AresLookup.tsx  — komponenta pro doplnění dat z IČO
-├── src/components/AppSidebar.tsx  — nová nav položka
-└── src/App.tsx  — nová routa
-```
-
-ARES API endpoint (veřejný, bez klíče):
-`GET https://ares.gov.cz/ekonomicke-subjekty-v-registru-statistickem-a-telefonnim/rest/ekonomicke-subjekty/{ico}`
+- Migrace přidá 4 nullable sloupce na `travel_contracts`
+- `useEffect` v Accounting.tsx detekuje řádky s highlight + bez locked hodnot a batch-updatene je
+- Zálohy se zamykají jednou a navždy — pozdější změny v dealu se do záloh nepromítnou
+- Zisk zálohy se zamyká jako samostatná hodnota (ne jako computed z sell-buy), aby byl přesný snapshot
 
