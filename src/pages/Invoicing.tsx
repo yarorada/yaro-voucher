@@ -191,6 +191,64 @@ export default function Invoicing() {
     }
   };
 
+  const handleOcrScan = async (file: File) => {
+    setOcrScanning(true);
+    setOcrPreview(null);
+    try {
+      let processFile = file;
+      if (file.type.startsWith("image/") && file.type !== "image/png") {
+        processFile = await compressImage(file);
+      }
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(processFile);
+      });
+
+      // Upload file to storage
+      const ext = file.name.split(".").pop() || "png";
+      const path = `invoices/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("documents").upload(path, processFile);
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+        setScanFileUrl(urlData?.publicUrl || null);
+        setScanFileName(file.name);
+      }
+
+      const { data, error } = await supabase.functions.invoke("ocr-supplier-invoice", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+      if (data?.data) {
+        setOcrPreview(data.data);
+        toast.success("Data extrahována – zkontrolujte a potvrďte");
+      } else {
+        toast.error("Nepodařilo se rozpoznat data z dokumentu");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Chyba při OCR skenování");
+    } finally {
+      setOcrScanning(false);
+    }
+  };
+
+  const handleOcrConfirm = () => {
+    if (!ocrPreview) return;
+    setForm((f) => ({
+      ...f,
+      supplier_name: ocrPreview.supplier_name || f.supplier_name,
+      total_amount: ocrPreview.total_amount?.toString() || f.total_amount,
+      currency: ocrPreview.currency || f.currency,
+      issue_date: ocrPreview.issue_date
+        ? ocrPreview.issue_date.split(".").length === 3
+          ? `${ocrPreview.issue_date.split(".")[2]}-${ocrPreview.issue_date.split(".")[1].padStart(2, "0")}-${ocrPreview.issue_date.split(".")[0].padStart(2, "0")}`
+          : f.issue_date
+        : f.issue_date,
+    }));
+    setOcrPreview(null);
+    toast.success("Data převzata do formuláře");
+  };
+
   const handleSubmit = () => {
     const values: any = {
       invoice_type: form.invoice_type,
