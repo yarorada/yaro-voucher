@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
