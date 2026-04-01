@@ -331,6 +331,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
             total_amount: ocrResult.data.total_amount || null,
             currency: ocrResult.data.currency || "CZK",
             issue_date: ocrResult.data.issue_date || null,
+            variable_symbol: ocrResult.data.variable_symbol || null,
+            due_date: ocrResult.data.due_date || null,
           });
         }
       }
