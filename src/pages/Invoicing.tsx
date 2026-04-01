@@ -332,6 +332,8 @@ export default function Invoicing() {
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
       variable_symbol: form.variable_symbol || null,
+      specific_symbol: form.specific_symbol || null,
+      constant_symbol: form.constant_symbol || null,
       bank_account: form.bank_account || null,
       iban: form.iban || (form.bank_account ? bankAccountToIban(form.bank_account) : null),
       file_url: scanFileUrl || editingInvoice?.file_url || null,
