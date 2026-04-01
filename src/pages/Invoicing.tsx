@@ -321,6 +321,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
     });
+    setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
   };
 
@@ -347,6 +348,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
     });
+    setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
   };
 
