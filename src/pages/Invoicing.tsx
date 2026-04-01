@@ -109,6 +109,7 @@ export default function Invoicing() {
   const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
+  const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
