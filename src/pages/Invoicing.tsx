@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -110,6 +110,8 @@ export default function Invoicing() {
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
+  const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
+  const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
@@ -168,6 +170,24 @@ export default function Invoicing() {
       toast.success("Faktura smazána");
     },
   });
+
+  const markPaidMutation = useMutation({
+    mutationFn: async ({ id, paid_at }: { id: string; paid_at: string }) => {
+      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("Faktura označena jako zaplacená");
+      setMarkPaidInvoice(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleOpenMarkPaid = (inv: Invoice) => {
+    setMarkPaidDate(format(new Date(), "yyyy-MM-dd"));
+    setMarkPaidInvoice(inv);
+  };
 
   const handleAresLookup = async (ico: string) => {
     if (!ico || ico.length < 2) return;
@@ -522,6 +542,7 @@ export default function Invoicing() {
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
             onEmail={handleOpenEmailDialog}
+            onMarkPaid={handleOpenMarkPaid}
           />
         </TabsContent>
         <TabsContent value="issued">
@@ -535,6 +556,7 @@ export default function Invoicing() {
             onDuplicate={handleDuplicate}
             onPdf={handleGeneratePdf}
             onEmail={handleOpenEmailDialog}
+            onMarkPaid={handleOpenMarkPaid}
           />
         </TabsContent>
       </Tabs>
@@ -915,7 +937,31 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF Preview Dialog */}
+      {/* Mark as Paid Dialog */}
+      <Dialog open={!!markPaidInvoice} onOpenChange={(o) => { if (!o) setMarkPaidInvoice(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Označit jako zaplacenou</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {markPaidInvoice?.invoice_number || markPaidInvoice?.supplier_name || "Faktura"} — {markPaidInvoice?.total_amount?.toLocaleString("cs-CZ")} {markPaidInvoice?.currency}
+            </p>
+            <div>
+              <Label>Datum zaplacení</Label>
+              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setMarkPaidInvoice(null)}>Zrušit</Button>
+              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ id: markPaidInvoice.id, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
+                {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                Potvrdit
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
         <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
@@ -1148,6 +1194,7 @@ function InvoiceTable({
   onDuplicate,
   onPdf,
   onEmail,
+  onMarkPaid,
 }: {
   invoices: Invoice[];
   isLoading: boolean;
@@ -1158,6 +1205,7 @@ function InvoiceTable({
   onDuplicate: (i: Invoice) => void;
   onPdf: (i: Invoice) => void;
   onEmail: (i: Invoice) => void;
+  onMarkPaid: (i: Invoice) => void;
 }) {
   if (isLoading) {
     return <div className="py-8 text-center text-muted-foreground">Načítání…</div>;
@@ -1213,6 +1261,11 @@ function InvoiceTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
+                    {!inv.paid && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {type === "issued" && (
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPdf(inv)} title="Náhled PDF">
                         <FileText className="h-3.5 w-3.5" />
