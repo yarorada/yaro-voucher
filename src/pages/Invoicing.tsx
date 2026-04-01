@@ -975,11 +975,11 @@ export default function Invoicing() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Datum vystavení</Label>
-                <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
+                <DatePickerInput value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v }))} />
               </div>
               <div>
                 <Label>Datum splatnosti</Label>
-                <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
+                <DatePickerInput value={form.due_date} onChange={(v) => setForm((f) => ({ ...f, due_date: v }))} />
               </div>
             </div>
 
