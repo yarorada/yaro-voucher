@@ -112,6 +112,7 @@ export default function Invoicing() {
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
   const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
   const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [markPaidMethod, setMarkPaidMethod] = useState<string>("moneta");
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
