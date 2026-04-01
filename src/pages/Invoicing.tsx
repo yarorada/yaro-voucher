@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X } from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
@@ -94,8 +95,13 @@ export default function Invoicing() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
+  const [ocrScanning, setOcrScanning] = useState(false);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string } | null>(null);
+  const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
+  const [scanFileName, setScanFileName] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
+  const ocrFileRef = useRef<HTMLInputElement>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
@@ -133,6 +139,9 @@ export default function Invoicing() {
       setShowForm(false);
       setEditingInvoice(null);
       setForm(emptyForm);
+      setOcrPreview(null);
+      setScanFileUrl(null);
+      setScanFileName(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -185,6 +194,65 @@ export default function Invoicing() {
     }
   };
 
+  const handleOcrScan = async (file: File) => {
+    setOcrScanning(true);
+    setOcrPreview(null);
+    try {
+      let processFile = file;
+      if (file.type.startsWith("image/") && file.type !== "image/png") {
+        const compressed = await compressImage(file);
+        processFile = new File([compressed.blob], file.name, { type: compressed.blob.type });
+      }
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(processFile);
+      });
+
+      // Upload file to storage
+      const ext = file.name.split(".").pop() || "png";
+      const path = `invoices/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("documents").upload(path, processFile);
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+        setScanFileUrl(urlData?.publicUrl || null);
+        setScanFileName(file.name);
+      }
+
+      const { data, error } = await supabase.functions.invoke("ocr-supplier-invoice", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+      if (data?.data) {
+        setOcrPreview(data.data);
+        toast.success("Data extrahována – zkontrolujte a potvrďte");
+      } else {
+        toast.error("Nepodařilo se rozpoznat data z dokumentu");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Chyba při OCR skenování");
+    } finally {
+      setOcrScanning(false);
+    }
+  };
+
+  const handleOcrConfirm = () => {
+    if (!ocrPreview) return;
+    setForm((f) => ({
+      ...f,
+      supplier_name: ocrPreview.supplier_name || f.supplier_name,
+      total_amount: ocrPreview.total_amount?.toString() || f.total_amount,
+      currency: ocrPreview.currency || f.currency,
+      issue_date: ocrPreview.issue_date
+        ? ocrPreview.issue_date.split(".").length === 3
+          ? `${ocrPreview.issue_date.split(".")[2]}-${ocrPreview.issue_date.split(".")[1].padStart(2, "0")}-${ocrPreview.issue_date.split(".")[0].padStart(2, "0")}`
+          : f.issue_date
+        : f.issue_date,
+    }));
+    setOcrPreview(null);
+    toast.success("Data převzata do formuláře");
+  };
+
   const handleSubmit = () => {
     const values: any = {
       invoice_type: form.invoice_type,
@@ -205,6 +273,8 @@ export default function Invoicing() {
       variable_symbol: form.variable_symbol || null,
       bank_account: form.bank_account || null,
       iban: form.iban || (form.bank_account ? bankAccountToIban(form.bank_account) : null),
+      file_url: scanFileUrl || editingInvoice?.file_url || null,
+      file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
     };
     saveMutation.mutate(values);
@@ -385,6 +455,9 @@ export default function Invoicing() {
   const openNewForm = (type: string) => {
     setEditingInvoice(null);
     setForm({ ...emptyForm, invoice_type: type });
+    setOcrPreview(null);
+    setScanFileUrl(null);
+    setScanFileName(null);
     setShowForm(true);
   };
 
@@ -532,35 +605,99 @@ export default function Invoicing() {
             )}
 
             {form.invoice_type === "received" && (
-              <div className="border rounded-lg p-3 space-y-3">
-                <h3 className="text-sm font-semibold">Dodavatel</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>IČO dodavatele</Label>
-                    <div className="flex gap-1">
-                      <Input
-                        value={form.supplier_ico}
-                        onChange={(e) => setForm((f) => ({ ...f, supplier_ico: e.target.value }))}
-                        placeholder="12345678"
+              <div className="space-y-3">
+                {/* OCR Scan */}
+                <div className="border border-dashed rounded-lg p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                      <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
+                    </h3>
+                    <div>
+                      <input
+                        ref={ocrFileRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleOcrScan(f);
+                          e.target.value = "";
+                        }}
                       />
-                      <Button type="button" variant="outline" size="icon" onClick={() => handleAresLookup(form.supplier_ico)} disabled={aresLoading}>
-                        {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => ocrFileRef.current?.click()}
+                        disabled={ocrScanning}
+                      >
+                        {ocrScanning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ScanLine className="h-4 w-4 mr-1" />}
+                        {ocrScanning ? "Skenování…" : "Nahrát a skenovat"}
                       </Button>
                     </div>
                   </div>
-                  <div>
-                    <Label>Název dodavatele</Label>
-                    <Input value={form.supplier_name} onChange={(e) => setForm((f) => ({ ...f, supplier_name: e.target.value }))} />
-                  </div>
+
+                  {/* OCR Preview */}
+                  {ocrPreview && (
+                    <div className="bg-green-500/10 rounded-md p-3 space-y-2">
+                      <p className="text-sm font-medium text-green-700 dark:text-green-400">Extrahovaná data — zkontrolujte a potvrďte:</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {ocrPreview.supplier_name && (
+                          <div><span className="text-muted-foreground">Dodavatel:</span> {ocrPreview.supplier_name}</div>
+                        )}
+                        {ocrPreview.total_amount != null && (
+                          <div><span className="text-muted-foreground">Částka:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.issue_date && (
+                          <div><span className="text-muted-foreground">Datum vystavení:</span> {ocrPreview.issue_date}</div>
+                        )}
+                        {ocrPreview.currency && (
+                          <div><span className="text-muted-foreground">Měna:</span> {ocrPreview.currency}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button type="button" size="sm" onClick={handleOcrConfirm}>
+                          <Check className="h-3.5 w-3.5 mr-1" /> Převzít data
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setOcrPreview(null)}>
+                          <X className="h-3.5 w-3.5 mr-1" /> Zahodit
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>DIČ</Label>
-                    <Input value={form.supplier_dic} onChange={(e) => setForm((f) => ({ ...f, supplier_dic: e.target.value }))} />
+
+                {/* Supplier info */}
+                <div className="border rounded-lg p-3 space-y-3">
+                  <h3 className="text-sm font-semibold">Dodavatel</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>IČO dodavatele</Label>
+                      <div className="flex gap-1">
+                        <Input
+                          value={form.supplier_ico}
+                          onChange={(e) => setForm((f) => ({ ...f, supplier_ico: e.target.value }))}
+                          placeholder="12345678"
+                        />
+                        <Button type="button" variant="outline" size="icon" onClick={() => handleAresLookup(form.supplier_ico)} disabled={aresLoading}>
+                          {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Název dodavatele</Label>
+                      <Input value={form.supplier_name} onChange={(e) => setForm((f) => ({ ...f, supplier_name: e.target.value }))} />
+                    </div>
                   </div>
-                  <div>
-                    <Label>Adresa</Label>
-                    <Input value={form.supplier_address} onChange={(e) => setForm((f) => ({ ...f, supplier_address: e.target.value }))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>DIČ</Label>
+                      <Input value={form.supplier_dic} onChange={(e) => setForm((f) => ({ ...f, supplier_dic: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label>Adresa</Label>
+                      <Input value={form.supplier_address} onChange={(e) => setForm((f) => ({ ...f, supplier_address: e.target.value }))} />
+                    </div>
                   </div>
                 </div>
               </div>
