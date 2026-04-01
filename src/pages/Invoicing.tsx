@@ -1138,6 +1138,18 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
             <span style={{ fontSize: "10px", color: "#888" }}>Variabilní symbol</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.variable_symbol || "—"}</p>
           </div>
+          {(invoice as any).specific_symbol && (
+            <div>
+              <span style={{ fontSize: "10px", color: "#888" }}>Specifický symbol</span>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{(invoice as any).specific_symbol}</p>
+            </div>
+          )}
+          {(invoice as any).constant_symbol && (
+            <div>
+              <span style={{ fontSize: "10px", color: "#888" }}>Konstantní symbol</span>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{(invoice as any).constant_symbol}</p>
+            </div>
+          )}
           <div>
             <span style={{ fontSize: "10px", color: "#888" }}>Bankovní účet</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
