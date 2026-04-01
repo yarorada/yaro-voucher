@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon, Download } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
