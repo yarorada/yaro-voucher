@@ -270,6 +270,8 @@ export default function Invoicing() {
       variable_symbol: form.variable_symbol || null,
       bank_account: form.bank_account || null,
       iban: form.iban || (form.bank_account ? bankAccountToIban(form.bank_account) : null),
+      file_url: scanFileUrl || editingInvoice?.file_url || null,
+      file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
     };
     saveMutation.mutate(values);
