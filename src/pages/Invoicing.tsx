@@ -112,6 +112,7 @@ export default function Invoicing() {
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
   const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
   const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [markPaidMethod, setMarkPaidMethod] = useState<string>("moneta");
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
@@ -172,11 +173,11 @@ export default function Invoicing() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: async ({ invoice, paid_at }: { invoice: Invoice; paid_at: string }) => {
-      const { error } = await supabase.from("invoices").update({ paid: true, paid_at }).eq("id", invoice.id);
+    mutationFn: async ({ invoice, paid_at, payment_method }: { invoice: Invoice; paid_at: string; payment_method: string }) => {
+      const { error } = await supabase.from("invoices").update({ paid: true, paid_at, payment_method }).eq("id", invoice.id);
       if (error) throw error;
       if (invoice.deal_supplier_invoice_id) {
-        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at }).eq("id", invoice.deal_supplier_invoice_id);
+        await supabase.from("deal_supplier_invoices").update({ is_paid: true, paid_at, payment_method }).eq("id", invoice.deal_supplier_invoice_id);
       }
     },
     onSuccess: () => {
@@ -190,6 +191,7 @@ export default function Invoicing() {
 
   const handleOpenMarkPaid = (inv: Invoice) => {
     setMarkPaidDate(format(new Date(), "yyyy-MM-dd"));
+    setMarkPaidMethod(inv.payment_method || "moneta");
     setMarkPaidInvoice(inv);
   };
 
@@ -955,9 +957,19 @@ export default function Invoicing() {
               <Label>Datum zaplacení</Label>
               <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
             </div>
+            <div>
+              <Label>Způsob platby</Label>
+              <Select value={markPaidMethod} onValueChange={setMarkPaidMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="moneta">Moneta</SelectItem>
+                  <SelectItem value="amnis">Amnis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMarkPaidInvoice(null)}>Zrušit</Button>
-              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
+              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate, payment_method: markPaidMethod })} disabled={markPaidMutation.isPending}>
                 {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
                 Potvrdit
               </Button>
