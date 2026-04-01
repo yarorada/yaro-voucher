@@ -363,8 +363,8 @@ export default function Invoicing() {
       issue_date: inv.issue_date || "",
       due_date: inv.due_date || "",
       variable_symbol: inv.variable_symbol || "",
-      specific_symbol: (inv as any).specific_symbol || "",
-      constant_symbol: (inv as any).constant_symbol || "",
+      specific_symbol: inv.specific_symbol || "",
+      constant_symbol: inv.constant_symbol || "",
       bank_account: inv.bank_account || "",
       iban: inv.iban || "",
       notes: inv.notes || "",
@@ -392,8 +392,8 @@ export default function Invoicing() {
       issue_date: format(new Date(), "yyyy-MM-dd"),
       due_date: "",
       variable_symbol: "",
-      specific_symbol: (inv as any).specific_symbol || "",
-      constant_symbol: (inv as any).constant_symbol || "",
+      specific_symbol: inv.specific_symbol || "",
+      constant_symbol: inv.constant_symbol || "",
       bank_account: inv.bank_account || DEFAULT_BANK_ACCOUNT,
       iban: inv.iban || "",
       notes: inv.notes || "",
@@ -1138,16 +1138,16 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
             <span style={{ fontSize: "10px", color: "#888" }}>Variabilní symbol</span>
             <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.variable_symbol || "—"}</p>
           </div>
-          {(invoice as any).specific_symbol && (
+          {invoice.specific_symbol && (
             <div>
               <span style={{ fontSize: "10px", color: "#888" }}>Specifický symbol</span>
-              <p style={{ margin: 0, fontWeight: "bold" }}>{(invoice as any).specific_symbol}</p>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.specific_symbol}</p>
             </div>
           )}
-          {(invoice as any).constant_symbol && (
+          {invoice.constant_symbol && (
             <div>
               <span style={{ fontSize: "10px", color: "#888" }}>Konstantní symbol</span>
-              <p style={{ margin: 0, fontWeight: "bold" }}>{(invoice as any).constant_symbol}</p>
+              <p style={{ margin: 0, fontWeight: "bold" }}>{invoice.constant_symbol}</p>
             </div>
           )}
           <div>
