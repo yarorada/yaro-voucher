@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Pencil, Check, X, Share2, Copy, Trash2 } from "lucide-react";
+import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -55,6 +56,8 @@ export default function Accounting() {
         .select(`
           id, contract_number, status, total_price, sent_at, signed_at,
           accounting_buy_final_override,
+          accounting_sell_deposit_locked, accounting_buy_deposit_locked,
+          accounting_profit_deposit_locked, accounting_deposit_locked_at,
           client:clients!travel_contracts_client_id_fkey(first_name, last_name),
           deal:deals!travel_contracts_deal_id_fkey(
             id, start_date, end_date, total_price,
@@ -152,6 +155,13 @@ export default function Accounting() {
           // Modře pouze pokud je zaplacena právě jedna platba a ta je z minulého měsíce
           const highlightBlue = paidPayments.length === 1 && isInPreviousMonth(firstPaidAt);
 
+          // Locked deposit values
+          const lockedSell = (c as any).accounting_sell_deposit_locked;
+          const lockedBuy = (c as any).accounting_buy_deposit_locked;
+          const lockedProfit = (c as any).accounting_profit_deposit_locked;
+          const lockedAt = (c as any).accounting_deposit_locked_at;
+          const isLocked = lockedAt != null;
+
           return {
             contractId: c.id,
             dealId: deal?.id || null,
@@ -161,23 +171,56 @@ export default function Accounting() {
             destination: destName,
             from: startDate,
             to: endDate,
-            sellDeposit,
-            buyDeposit,
+            sellDeposit: isLocked ? Number(lockedSell) : sellDeposit,
+            buyDeposit: isLocked ? Number(lockedBuy) : buyDeposit,
+            profitDeposit: isLocked ? Number(lockedProfit) : profitDeposit,
+            // Raw calculated values for locking
+            _rawSellDeposit: sellDeposit,
+            _rawBuyDeposit: buyDeposit,
+            _rawProfitDeposit: profitDeposit,
             sellFinal,
             buyFinal,
             hasOverride,
-            profitDeposit,
             profitFinal,
-            vatDeposit,
+            vatDeposit: isLocked ? Math.round(Number(lockedProfit) * vatRate) : vatDeposit,
             vatFinal,
-            vatDiff,
+            vatDiff: isPastTrip ? vatFinal - (isLocked ? Math.round(Number(lockedProfit) * vatRate) : vatDeposit) : 0,
             highlightRed,
             highlightBlue,
+            isLocked,
           };
         })
         .filter(Boolean);
     },
   });
+
+  // Auto-lock deposit values when highlighted (blue/red) and not yet locked
+  const lockingRef = useRef(false);
+  useEffect(() => {
+    if (lockingRef.current || !rows.length) return;
+    const toLock = rows.filter(
+      (r: any) => (r.highlightBlue || r.highlightRed) && !r.isLocked
+    );
+    if (!toLock.length) return;
+    lockingRef.current = true;
+
+    const lockAll = async () => {
+      for (const r of toLock as any[]) {
+        await supabase
+          .from("travel_contracts")
+          .update({
+            accounting_sell_deposit_locked: r._rawSellDeposit,
+            accounting_buy_deposit_locked: r._rawBuyDeposit,
+            accounting_profit_deposit_locked: r._rawProfitDeposit,
+            accounting_deposit_locked_at: new Date().toISOString(),
+          } as any)
+          .eq("id", r.contractId);
+      }
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+      lockingRef.current = false;
+    };
+    lockAll();
+  }, [rows, queryClient]);
 
   const saveMutation = useMutation({
     mutationFn: async ({ contractId, value }: { contractId: string; value: number | null }) => {
@@ -443,9 +486,24 @@ export default function Accounting() {
                       <TableCell className="whitespace-nowrap">{r.destination}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDateShort(r.from)}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDateShort(r.to)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellDeposit)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.buyDeposit)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatNum(r.profitDeposit)}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.sellDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.buyDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          {formatNum(r.profitDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground inline" />}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.sellFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap p-0">
                         {editingRow === r.contractId ? (
