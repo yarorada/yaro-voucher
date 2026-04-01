@@ -1541,10 +1541,13 @@ export type Database = {
           contact_person: string | null
           country_name: string | null
           created_at: string
+          dic: string | null
           email: string | null
+          ico: string | null
           id: string
           name: string
           notes: string | null
+          partner_type: string
           phone: string | null
           postal_code: string | null
           street: string | null
@@ -1558,10 +1561,13 @@ export type Database = {
           contact_person?: string | null
           country_name?: string | null
           created_at?: string
+          dic?: string | null
           email?: string | null
+          ico?: string | null
           id?: string
           name: string
           notes?: string | null
+          partner_type?: string
           phone?: string | null
           postal_code?: string | null
           street?: string | null
@@ -1575,10 +1581,13 @@ export type Database = {
           contact_person?: string | null
           country_name?: string | null
           created_at?: string
+          dic?: string | null
           email?: string | null
+          ico?: string | null
           id?: string
           name?: string
           notes?: string | null
+          partner_type?: string
           phone?: string | null
           postal_code?: string | null
           street?: string | null
