@@ -95,8 +95,13 @@ export default function Invoicing() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
+  const [ocrScanning, setOcrScanning] = useState(false);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string } | null>(null);
+  const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
+  const [scanFileName, setScanFileName] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
+  const ocrFileRef = useRef<HTMLInputElement>(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
