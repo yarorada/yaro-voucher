@@ -56,6 +56,8 @@ export default function Accounting() {
         .select(`
           id, contract_number, status, total_price, sent_at, signed_at,
           accounting_buy_final_override,
+          accounting_sell_deposit_locked, accounting_buy_deposit_locked,
+          accounting_profit_deposit_locked, accounting_deposit_locked_at,
           client:clients!travel_contracts_client_id_fkey(first_name, last_name),
           deal:deals!travel_contracts_deal_id_fkey(
             id, start_date, end_date, total_price,
