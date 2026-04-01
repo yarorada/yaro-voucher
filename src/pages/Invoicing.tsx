@@ -1275,20 +1275,11 @@ export default function Invoicing() {
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Datumy</h3>
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>Datum vystavení</Label>
-                  <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
-                </div>
+                <InvoiceDatePicker label="Datum vystavení" value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v, taxable_date: f.taxable_date === f.issue_date || !f.taxable_date ? v : f.taxable_date }))} />
                 {form.invoice_type === "issued" && (
-                  <div>
-                    <Label>DUZP</Label>
-                    <Input type="date" value={form.taxable_date} onChange={(e) => setForm((f) => ({ ...f, taxable_date: e.target.value }))} />
-                  </div>
+                  <InvoiceDatePicker label="DUZP" value={form.taxable_date} onChange={(v) => setForm((f) => ({ ...f, taxable_date: v }))} />
                 )}
-                <div>
-                  <Label>Datum splatnosti</Label>
-                  <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
-                </div>
+                <InvoiceDatePicker label="Datum splatnosti" value={form.due_date} onChange={(v) => setForm((f) => ({ ...f, due_date: v }))} />
               </div>
             </div>
 
