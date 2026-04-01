@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.amnis-fetch-transactions]
 verify_jwt = false
+
+[functions.ares-lookup]
+verify_jwt = false

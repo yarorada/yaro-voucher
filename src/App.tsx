@@ -356,6 +356,16 @@ const App = () => (
             }
           />
           <Route
+            path="/invoicing"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <Invoicing />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/hotels"
             element={
               <ProtectedRoute>
