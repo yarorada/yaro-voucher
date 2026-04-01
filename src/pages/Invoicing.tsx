@@ -1497,7 +1497,7 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           </h1>
           <p style={{ margin: 0, fontSize: "10px", color: "#888" }}>Daňový doklad</p>
         </div>
-        <img src={yaroLogo} alt="YARO s.r.o." style={{ height: "40px" }} />
+        {logoBase64 && <img src={logoBase64} alt="YARO s.r.o." style={{ height: "40px" }} />}
       </div>
 
       {/* Two column: Supplier / Customer */}
