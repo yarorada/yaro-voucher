@@ -205,6 +205,18 @@ export default function Invoicing() {
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
+  useEffect(() => {
+    fetch(yaroLogo)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoBase64(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     return () => {
