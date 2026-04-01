@@ -13,7 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +29,31 @@ import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
 
+function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const dateValue = value ? new Date(value + "T00:00:00") : undefined;
+  return (
+    <div>
+      {label && <Label>{label}</Label>}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateValue ? format(dateValue, "d.M.yyyy") : "Vyberte datum"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={dateValue}
+            onSelect={(d) => d && onChange(format(d, "yyyy-MM-dd"))}
+            initialFocus
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
 const DEFAULT_BANK_ACCOUNT = "227993932/0600";
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
@@ -1247,20 +1275,11 @@ export default function Invoicing() {
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Datumy</h3>
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>Datum vystavení</Label>
-                  <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
-                </div>
+                <InvoiceDatePicker label="Datum vystavení" value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v, taxable_date: f.taxable_date === f.issue_date || !f.taxable_date ? v : f.taxable_date }))} />
                 {form.invoice_type === "issued" && (
-                  <div>
-                    <Label>DUZP</Label>
-                    <Input type="date" value={form.taxable_date} onChange={(e) => setForm((f) => ({ ...f, taxable_date: e.target.value }))} />
-                  </div>
+                  <InvoiceDatePicker label="DUZP" value={form.taxable_date} onChange={(v) => setForm((f) => ({ ...f, taxable_date: v }))} />
                 )}
-                <div>
-                  <Label>Datum splatnosti</Label>
-                  <Input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} />
-                </div>
+                <InvoiceDatePicker label="Datum splatnosti" value={form.due_date} onChange={(v) => setForm((f) => ({ ...f, due_date: v }))} />
               </div>
             </div>
 
@@ -1368,10 +1387,7 @@ export default function Invoicing() {
             <p className="text-sm text-muted-foreground">
               {markPaidInvoice?.invoice_number || markPaidInvoice?.supplier_name || "Faktura"} — {markPaidInvoice?.total_amount?.toLocaleString("cs-CZ")} {markPaidInvoice?.currency}
             </p>
-            <div>
-              <Label>Datum zaplacení</Label>
-              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
-            </div>
+            <InvoiceDatePicker label="Datum zaplacení" value={markPaidDate} onChange={setMarkPaidDate} />
             <div>
               <Label>Způsob platby</Label>
               <Select value={markPaidMethod} onValueChange={setMarkPaidMethod}>
