@@ -89,6 +89,8 @@ const emptyForm = {
   issue_date: format(new Date(), "yyyy-MM-dd"),
   due_date: "",
   variable_symbol: "",
+  specific_symbol: "",
+  constant_symbol: "",
   bank_account: DEFAULT_BANK_ACCOUNT,
   iban: "",
   notes: "",
