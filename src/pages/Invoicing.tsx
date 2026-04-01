@@ -919,6 +919,31 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
+      {/* Mark as Paid Dialog */}
+      <Dialog open={!!markPaidInvoice} onOpenChange={(o) => { if (!o) setMarkPaidInvoice(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Označit jako zaplacenou</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {markPaidInvoice?.invoice_number || markPaidInvoice?.supplier_name || "Faktura"} — {markPaidInvoice?.total_amount?.toLocaleString("cs-CZ")} {markPaidInvoice?.currency}
+            </p>
+            <div>
+              <Label>Datum zaplacení</Label>
+              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setMarkPaidInvoice(null)}>Zrušit</Button>
+              <Button onClick={() => markPaidInvoice && markPaidMutation.mutate({ invoice: markPaidInvoice, paid_at: markPaidDate })} disabled={markPaidMutation.isPending}>
+                {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                Potvrdit
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* PDF Preview Dialog */}
       <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
         <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
