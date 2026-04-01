@@ -29,7 +29,32 @@ import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
 
-const DEFAULT_BANK_ACCOUNT = "227993932/0600";
+function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const dateValue = value ? new Date(value + "T00:00:00") : undefined;
+  return (
+    <div>
+      {label && <Label>{label}</Label>}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateValue ? format(dateValue, "d.M.yyyy") : "Vyberte datum"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={dateValue}
+            onSelect={(d) => d && onChange(format(d, "yyyy-MM-dd"))}
+            initialFocus
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
