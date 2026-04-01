@@ -103,6 +103,8 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     total_amount: null,
     currency: "CZK",
     issue_date: null,
+    variable_symbol: null,
+    due_date: null,
   });
 
   const fetchInvoices = useCallback(async () => {
