@@ -684,13 +684,17 @@ export default function Invoicing() {
     }
 
     clearFilePreviewUrl();
+    setFilePreviewPages([]);
     setFilePreviewInvoice(inv);
     setFilePreviewKind(getFilePreviewKind(resolvedFile.fileName, resolvedFile.fileUrl));
     setFilePreviewLoading(true);
 
     try {
-      const previewUrl = await getInvoiceFilePreviewUrl(resolvedFile.fileUrl, resolvedFile.fileName);
-      setFilePreviewUrl(previewUrl);
+      const previewUrl = await getInvoiceFilePreview(resolvedFile.fileUrl, resolvedFile.fileName);
+      if (previewUrl) {
+        setFilePreviewUrl(previewUrl);
+      }
+      // if previewUrl is null, pages were set directly by renderPdfToImages
     } catch (error) {
       console.error("Invoice preview failed:", error);
       closeFilePreview();
