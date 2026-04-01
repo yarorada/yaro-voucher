@@ -139,6 +139,9 @@ export default function Invoicing() {
       setShowForm(false);
       setEditingInvoice(null);
       setForm(emptyForm);
+      setOcrPreview(null);
+      setScanFileUrl(null);
+      setScanFileName(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
