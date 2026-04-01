@@ -1387,9 +1387,7 @@ export default function Invoicing() {
             <p className="text-sm text-muted-foreground">
               {markPaidInvoice?.invoice_number || markPaidInvoice?.supplier_name || "Faktura"} — {markPaidInvoice?.total_amount?.toLocaleString("cs-CZ")} {markPaidInvoice?.currency}
             </p>
-            <div>
-              <Label>Datum zaplacení</Label>
-              <Input type="date" value={markPaidDate} onChange={(e) => setMarkPaidDate(e.target.value)} />
+            <InvoiceDatePicker label="Datum zaplacení" value={markPaidDate} onChange={setMarkPaidDate} />
             </div>
             <div>
               <Label>Způsob platby</Label>
