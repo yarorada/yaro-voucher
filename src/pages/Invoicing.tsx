@@ -25,6 +25,13 @@ const AGENCY_ICO = "09396039";
 const AGENCY_DIC = "CZ09396039";
 const AGENCY_ADDRESS = "Albrechtická 569/22, 790 01 Jeseník";
 
+type InvoiceItem = {
+  text: string;
+  quantity: number;
+  unit_price: number;
+  vat_rate: number;
+};
+
 type Invoice = {
   id: string;
   user_id: string;
@@ -54,6 +61,7 @@ type Invoice = {
   file_name: string | null;
   notes: string | null;
   payment_method: string | null;
+  items: InvoiceItem[] | null;
   created_at: string;
 };
 
