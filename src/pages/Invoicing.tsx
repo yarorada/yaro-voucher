@@ -58,6 +58,8 @@ type Invoice = {
   paid: boolean | null;
   paid_at: string | null;
   variable_symbol: string | null;
+  specific_symbol: string | null;
+  constant_symbol: string | null;
   bank_account: string | null;
   iban: string | null;
   file_url: string | null;
