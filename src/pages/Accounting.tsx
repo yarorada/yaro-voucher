@@ -194,7 +194,34 @@ export default function Accounting() {
     },
   });
 
-  const saveMutation = useMutation({
+  // Auto-lock deposit values when highlighted (blue/red) and not yet locked
+  const lockingRef = useRef(false);
+  useEffect(() => {
+    if (lockingRef.current || !rows.length) return;
+    const toLock = rows.filter(
+      (r: any) => (r.highlightBlue || r.highlightRed) && !r.isLocked
+    );
+    if (!toLock.length) return;
+    lockingRef.current = true;
+
+    const lockAll = async () => {
+      for (const r of toLock as any[]) {
+        await supabase
+          .from("travel_contracts")
+          .update({
+            accounting_sell_deposit_locked: r._rawSellDeposit,
+            accounting_buy_deposit_locked: r._rawBuyDeposit,
+            accounting_profit_deposit_locked: r._rawProfitDeposit,
+            accounting_deposit_locked_at: new Date().toISOString(),
+          } as any)
+          .eq("id", r.contractId);
+      }
+      queryClient.invalidateQueries({ queryKey: ["accounting"] });
+      lockingRef.current = false;
+    };
+    lockAll();
+  }, [rows, queryClient]);
+
     mutationFn: async ({ contractId, value }: { contractId: string; value: number | null }) => {
       const { error } = await supabase
         .from("travel_contracts")
