@@ -1543,20 +1543,39 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
         </div>
         {/* Col 3: Bank stacked */}
         <div style={{ flex: 1 }}>
-          <div style={{ marginBottom: "4px" }}>
-            <span style={{ color: "#888" }}>Bankovní účet</span>
-            <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
-          </div>
-          {invoice.iban && (
-            <div style={{ marginBottom: "4px" }}>
-              <span style={{ color: "#888" }}>IBAN</span>
-              <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.iban}</p>
-            </div>
+          {cur === "EUR" ? (
+            <>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>IBAN</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.iban}</p>
+              </div>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>SWIFT</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.swift}</p>
+              </div>
+              <div>
+                <span style={{ color: "#888" }}>Banka</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{EUR_BANK.bank}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: "4px" }}>
+                <span style={{ color: "#888" }}>Bankovní účet</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.bank_account || DEFAULT_BANK_ACCOUNT}</p>
+              </div>
+              {invoice.iban && (
+                <div style={{ marginBottom: "4px" }}>
+                  <span style={{ color: "#888" }}>IBAN</span>
+                  <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{invoice.iban}</p>
+                </div>
+              )}
+              <div>
+                <span style={{ color: "#888" }}>Měna</span>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{curSymbol}</p>
+              </div>
+            </>
           )}
-          <div>
-            <span style={{ color: "#888" }}>Měna</span>
-            <p style={{ margin: 0, fontWeight: "bold", fontSize: "10px" }}>{curSymbol}</p>
-          </div>
         </div>
       </div>
 
