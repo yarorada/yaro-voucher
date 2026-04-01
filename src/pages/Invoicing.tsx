@@ -54,7 +54,7 @@ function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange
     </div>
   );
 }
-
+const DEFAULT_BANK_ACCOUNT = "227993932/0600";
 const AGENCY_PARTNER_NAME = "YARO s.r.o.";
 
 type InvoiceItem = {
