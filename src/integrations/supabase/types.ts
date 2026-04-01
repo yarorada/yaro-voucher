@@ -1289,6 +1289,7 @@ export type Database = {
           supplier_ico: string | null
           supplier_id: string | null
           supplier_name: string | null
+          taxable_date: string | null
           total_amount: number | null
           updated_at: string
           user_id: string
@@ -1324,6 +1325,7 @@ export type Database = {
           supplier_ico?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
+          taxable_date?: string | null
           total_amount?: number | null
           updated_at?: string
           user_id?: string
@@ -1359,6 +1361,7 @@ export type Database = {
           supplier_ico?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
+          taxable_date?: string | null
           total_amount?: number | null
           updated_at?: string
           user_id?: string
