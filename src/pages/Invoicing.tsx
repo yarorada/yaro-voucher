@@ -1098,9 +1098,6 @@ function InvoicePdfContent({ invoice, qrUrl }: { invoice: Invoice; qrUrl: string
           <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px", color: "#000" }}>
             FAKTURA {invoice.invoice_number || ""}
           </h1>
-          <p style={{ color: "#666", margin: 0, fontSize: "11px" }}>
-            {invoice.invoice_type === "issued" ? "Vydaná faktura" : "Přijatá faktura"}
-          </p>
         </div>
       </div>
 
