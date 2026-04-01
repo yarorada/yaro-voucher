@@ -563,11 +563,9 @@ const Suppliers = () => {
                       ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
                       : <span className="text-muted-foreground/40">—</span>}
                   </td>
-                  {activeTab === "customer" && (
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {supplier.ico || <span className="text-muted-foreground/40">—</span>}
-                    </td>
-                  )}
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {supplier.ico || <span className="text-muted-foreground/40">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
