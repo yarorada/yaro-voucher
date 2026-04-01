@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon } from "lucide-react";
+import { Plus, Search, Copy, QrCode, ExternalLink, Pencil, Trash2, Loader2, FileText, Send, ScanLine, Check, X, CheckCircle2, MoreHorizontal, CalendarIcon, Download } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -770,13 +770,44 @@ export default function Invoicing() {
               {filePreviewInvoice.file_name || filePreviewInvoice.invoice_number || "Doklad"}
             </p>
           </div>
-          <button
-            onClick={closeFilePreview}
-            className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <X className="h-5 w-5" />
-            <span className="sr-only">Zavřít</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const resolvedFile = await resolveInvoiceFile(filePreviewInvoice);
+                  if (!resolvedFile?.fileUrl) {
+                    toast.error("Soubor není dostupný ke stažení");
+                    return;
+                  }
+                  const blob = await downloadInvoiceFileBlob(resolvedFile.fileUrl);
+                  const downloadName = resolvedFile.fileName || filePreviewInvoice.invoice_number || "faktura";
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = downloadName;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                } catch {
+                  toast.error("Nepodařilo se stáhnout soubor");
+                }
+              }}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              Stáhnout PDF
+            </Button>
+            <button
+              onClick={closeFilePreview}
+              className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <X className="h-5 w-5" />
+              <span className="sr-only">Zavřít</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex min-h-[60vh] items-center justify-center">
