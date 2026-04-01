@@ -268,8 +268,10 @@ export default function Invoicing() {
   const handleSubmit = () => {
     // Auto-calculate total from items for issued invoices
     const calcItems = form.invoice_type === "issued" && items.length > 0 ? items : [];
-    const itemsTotal = calcItems.reduce((sum, it) => sum + it.quantity * it.unit_price, 0);
-    const finalTotal = calcItems.length > 0 ? itemsTotal : (form.total_amount ? parseFloat(form.total_amount) : null);
+    const itemsTotal = calcItems.reduce((sum, it) => sum + it.quantity * it.unit_price * (1 + it.vat_rate / 100), 0);
+    const finalTotal = calcItems.length > 0 && calcItems.some(it => it.text || it.unit_price > 0) 
+      ? Math.round(itemsTotal * 100) / 100 
+      : (form.total_amount ? parseFloat(form.total_amount) : null);
 
     const values: any = {
       invoice_type: form.invoice_type,
