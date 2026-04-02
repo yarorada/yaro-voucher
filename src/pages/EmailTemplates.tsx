@@ -157,7 +157,7 @@ export default function EmailTemplates() {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Načítání...</div>;
 
   return (
-    <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-heading-1">E-mailové šablony</h1>
