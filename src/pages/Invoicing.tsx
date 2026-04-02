@@ -105,6 +105,7 @@ type Invoice = {
   items: InvoiceItem[] | null;
   created_at: string;
   taxable_date?: string | null;
+  deal_number?: string | null;
 };
 
 type FilePreviewKind = "image" | "pdf" | "other";
