@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useParams, useNavigate } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
 import { Button } from "@/components/ui/button";
