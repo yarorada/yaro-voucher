@@ -793,6 +793,7 @@ const DealDetail = () => {
     adjustmentAmount,
     discountNote,
     adjustmentNote,
+    leadTravelerId,
   } : null;
 
   const { isSaving: isAutoSaving } = useAutoSave({
