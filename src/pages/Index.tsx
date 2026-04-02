@@ -1,4 +1,5 @@
 import { useState, useCallback, ReactNode, useRef, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
