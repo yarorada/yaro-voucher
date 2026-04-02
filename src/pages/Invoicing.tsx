@@ -183,6 +183,7 @@ export default function Invoicing() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrDialogInvoice, setQrDialogInvoice] = useState<Invoice | null>(null);
   const [search, setSearch] = useState("");
+  const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [pdfInvoice, setPdfInvoice] = useState<Invoice | null>(null);
   const [pdfQrUrl, setPdfQrUrl] = useState<string | null>(null);
   const [emailDialog, setEmailDialog] = useState<Invoice | null>(null);
