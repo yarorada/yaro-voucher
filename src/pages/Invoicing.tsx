@@ -1902,6 +1902,15 @@ function InvoiceTable({
                     <Badge variant="outline" className="ml-1 text-[10px]">OP</Badge>
                   )}
                 </TableCell>
+                {type === "received" && (
+                  <TableCell>
+                    {inv.deal_number ? (
+                      <Badge variant="outline" className="text-xs tabular-nums">
+                        {inv.deal_number.replace(/^CS-?/i, "")}
+                      </Badge>
+                    ) : "—"}
+                  </TableCell>
+                )}
                 <TableCell className="text-right tabular-nums">
                   {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
                 </TableCell>
