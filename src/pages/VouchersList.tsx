@@ -370,8 +370,7 @@ const VouchersList = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítám vouchery...</p>

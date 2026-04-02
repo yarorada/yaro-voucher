@@ -281,8 +281,7 @@ const Contracts = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítání smluv...</p>

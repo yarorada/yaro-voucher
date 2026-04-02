@@ -322,8 +322,7 @@ const Suppliers = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "supplier" | "customer")} className="space-y-6">
           <TabsList>
             <TabsTrigger value="supplier">Dodavatelé ({suppliers.filter(s => s.partner_type === "supplier").length})</TabsTrigger>
