@@ -178,6 +178,8 @@ const emptyForm = {
 export default function Invoicing() {
   const [tab, setTab] = useState("received");
   const [showForm, setShowForm] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [aresLoading, setAresLoading] = useState(false);
@@ -1050,8 +1052,60 @@ export default function Invoicing() {
     setShowForm(true);
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    // Switch to received tab, open form, trigger OCR
+    setTab("received");
+    openNewForm("received");
+    handleOcrScan(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      setIsDragging(false);
+      dragCounter.current = 0;
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div
+      className="p-4 md:p-6 space-y-4 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-lg backdrop-blur-sm pointer-events-none">
+          <div className="flex flex-col items-center gap-2 text-primary">
+            <FileText className="h-12 w-12" />
+            <p className="text-lg font-semibold">Přetáhněte fakturu pro nahrání</p>
+            <p className="text-sm text-muted-foreground">Soubor bude automaticky naskenován (OCR)</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Fakturace</h1>
       </div>
