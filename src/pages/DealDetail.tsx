@@ -687,13 +687,14 @@ const DealDetail = () => {
           adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
           discount_note: discountNote || null,
           adjustment_note: adjustmentNote || null,
+          lead_client_id: leadTravelerId || null,
         })
         .eq("id", deal.id);
       console.log("Auto-saved deal on leave");
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
-  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote, leadTravelerId]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
   // Track whether the user actually changed any deal field (compared to loaded state)
@@ -792,6 +793,7 @@ const DealDetail = () => {
     adjustmentAmount,
     discountNote,
     adjustmentNote,
+    leadTravelerId,
   } : null;
 
   const { isSaving: isAutoSaving } = useAutoSave({
@@ -816,6 +818,7 @@ const DealDetail = () => {
             adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
             discount_note: discountNote || null,
             adjustment_note: adjustmentNote || null,
+            lead_client_id: leadTravelerId || null,
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
@@ -861,7 +864,63 @@ const DealDetail = () => {
     };
   }, [deal, loading]);
 
-  // Drag and drop sensors
+  // Sync lead traveler (objednatel) to deal_travelers when checkbox "Je zároveň prvním cestujícím" is checked
+  const leadSyncRef = useRef({ leadTravelerId: "", isFirst: true, initialized: false });
+  useEffect(() => {
+    if (!deal || loading) return;
+    // Skip the initial render to avoid duplicate inserts on load
+    if (!leadSyncRef.current.initialized) {
+      leadSyncRef.current = { leadTravelerId, isFirst: leadTravelerIsFirstPassenger, initialized: true };
+      return;
+    }
+    const prev = leadSyncRef.current;
+    const changed = prev.leadTravelerId !== leadTravelerId || prev.isFirst !== leadTravelerIsFirstPassenger;
+    if (!changed) return;
+    leadSyncRef.current = { leadTravelerId, isFirst: leadTravelerIsFirstPassenger, initialized: true };
+
+    (async () => {
+      if (!leadTravelerId) return;
+
+      if (leadTravelerIsFirstPassenger) {
+        // Ensure this client is in deal_travelers as is_lead_traveler
+        const exists = deal.deal_travelers.some(t => t.client_id === leadTravelerId);
+        if (!exists) {
+          // Clear old lead flag
+          const oldLead = deal.deal_travelers.find(t => t.is_lead_traveler);
+          if (oldLead) {
+            await supabase.from("deal_travelers").update({ is_lead_traveler: false }).eq("id", oldLead.id);
+          }
+          await supabase.from("deal_travelers").insert({
+            deal_id: deal.id,
+            client_id: leadTravelerId,
+            is_lead_traveler: true,
+            order_index: 0,
+          });
+          fetchDeal();
+        } else {
+          // Already exists — just set is_lead_traveler flag
+          const oldLead = deal.deal_travelers.find(t => t.is_lead_traveler && t.client_id !== leadTravelerId);
+          if (oldLead) {
+            await supabase.from("deal_travelers").update({ is_lead_traveler: false }).eq("id", oldLead.id);
+          }
+          const target = deal.deal_travelers.find(t => t.client_id === leadTravelerId);
+          if (target && !target.is_lead_traveler) {
+            await supabase.from("deal_travelers").update({ is_lead_traveler: true }).eq("id", target.id);
+          }
+          fetchDeal();
+        }
+      } else {
+        // Checkbox unchecked — remove is_lead_traveler flag from travelers
+        const oldLead = deal.deal_travelers.find(t => t.is_lead_traveler);
+        if (oldLead) {
+          await supabase.from("deal_travelers").update({ is_lead_traveler: false }).eq("id", oldLead.id);
+          fetchDeal();
+        }
+      }
+    })();
+  }, [leadTravelerId, leadTravelerIsFirstPassenger, deal?.id]);
+
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
