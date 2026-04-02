@@ -801,7 +801,14 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const { data: vTravelers2 } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", voucher.id);
-            const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name, null, undefined, (vTravelers2 || []) as any);
+            let supplierData2: any = null;
+            if (fullVoucher.supplier_id) {
+              const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
+              supplierData2 = sd;
+            }
+            const logoInfo2 = await getLogoBase64();
+            const baggage2 = fullVoucher.deal_id ? await fetchBaggageFromDeal(supabase, fullVoucher.deal_id) : null;
+            const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData2?.name || voucher.suppliers?.name, supplierData2, logoInfo2, (vTravelers2 || []) as any, baggage2);
             const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
             const { error: uploadErr } = await supabase.storage
               .from("voucher-pdfs")
