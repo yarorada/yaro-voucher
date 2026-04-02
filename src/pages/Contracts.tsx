@@ -332,7 +332,6 @@ const Contracts = () => {
             ) : (
               filteredContracts?.map((contract) => {
                 const client = contract.client as any;
-                const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
                 const displayName = buildDisplayName(contract);
 
                 return (
@@ -345,9 +344,7 @@ const Contracts = () => {
                       <div className="flex-1 min-w-0">
                         {/* Line 1: Status + Number + Name */}
                         <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                          <Badge className={`text-xs shrink-0 ${config.className}`}>
-                            {config.label}
-                          </Badge>
+                          <ContractStatusBadge status={contract.status as ContractStatus} />
                           <span className="font-bold text-foreground">{contract.contract_number}</span>
                           {displayName && (
                             <span className="text-foreground truncate">{displayName}</span>
