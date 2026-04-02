@@ -530,6 +530,7 @@ export default function Invoicing() {
       iban,
       amount: inv.total_amount,
       variableSymbol: inv.variable_symbol || undefined,
+      dueDate: inv.due_date || undefined,
       message: inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined,
     });
     const url = await QRCode.toDataURL(spayd, { width: 250, margin: 1, errorCorrectionLevel: "M" });
@@ -602,6 +603,7 @@ export default function Invoicing() {
       iban,
       amount: effectiveTotal,
       variableSymbol: inv.variable_symbol || undefined,
+      dueDate: inv.due_date || undefined,
       message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
     });
 
