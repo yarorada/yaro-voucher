@@ -178,6 +178,8 @@ const emptyForm = {
 export default function Invoicing() {
   const [tab, setTab] = useState("received");
   const [showForm, setShowForm] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [aresLoading, setAresLoading] = useState(false);
