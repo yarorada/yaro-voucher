@@ -1881,8 +1881,9 @@ function InvoiceTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {type === "issued" && <TableHead>Číslo</TableHead>}
+               {type === "issued" && <TableHead>Číslo</TableHead>}
               <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
+              {type === "received" && <TableHead>Smlouva</TableHead>}
               <TableHead className="text-right">Částka</TableHead>
               <TableHead>Vystaveno</TableHead>
               <TableHead>Splatnost</TableHead>
