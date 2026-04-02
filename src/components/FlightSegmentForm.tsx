@@ -176,6 +176,12 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
     onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, kg: num } } });
   };
 
+  const updateBaggageCount = (field: keyof NonNullable<FlightFormData['baggage']>, value: string) => {
+    const num = value === "" ? undefined : Number(value);
+    const existing = baggage?.[field] || { included: true };
+    onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, count: num } } });
+  };
+
   const applyAutoFill = (newData: FlightFormData, index: number, fields: Partial<FlightSegment>) => {
     if (autoFillReturn && index === 0 && !is_one_way) {
       if (fields.departure && !return_segments[return_segments.length - 1]?.arrival) {
