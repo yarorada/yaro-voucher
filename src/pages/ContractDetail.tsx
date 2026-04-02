@@ -289,8 +289,7 @@ const ContractDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <PageShell>
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {getStatusBadge(contract.status, true)}
