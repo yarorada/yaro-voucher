@@ -38,12 +38,14 @@ export function generateSpaydString({
   amount,
   currency = 'CZK',
   variableSymbol,
+  dueDate,
   message,
 }: {
   iban: string;
   amount: number;
   currency?: string;
   variableSymbol?: string;
+  dueDate?: string;
   message?: string;
 }): string {
   const parts = [
@@ -55,6 +57,17 @@ export function generateSpaydString({
 
   if (variableSymbol) {
     parts.push(`X-VS:${variableSymbol}`);
+  }
+
+  if (dueDate) {
+    // SPAYD expects DT field in YYYYMMDD format
+    const d = new Date(dueDate);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      parts.push(`DT:${y}${m}${day}`);
+    }
   }
 
   if (message) {

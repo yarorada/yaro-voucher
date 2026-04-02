@@ -603,7 +603,8 @@ export default function Invoicing() {
       iban,
       amount: effectiveTotal,
       variableSymbol: inv.variable_symbol || undefined,
-      message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
+      dueDate: inv.due_date || undefined,
+      message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined,
     });
 
     return QRCode.toDataURL(spayd, { width: 180, margin: 1, errorCorrectionLevel: "M" });
