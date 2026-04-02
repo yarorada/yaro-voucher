@@ -552,7 +552,6 @@ const VouchersList = () => {
             )}
           </div>
         )}
-      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
