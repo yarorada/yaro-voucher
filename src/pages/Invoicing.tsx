@@ -1043,6 +1043,16 @@ export default function Invoicing() {
             <TabsTrigger value="issued">Vydané faktury</TabsTrigger>
           </TabsList>
           <div className="flex-1" />
+          <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny</SelectItem>
+              <SelectItem value="paid">Zaplacené</SelectItem>
+              <SelectItem value="unpaid">Nezaplacené</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
