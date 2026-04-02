@@ -372,6 +372,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         issue_date: parseIssueDate(ocrData.issue_date),
         variable_symbol: ocrData.variable_symbol || null,
         due_date: parseIssueDate(ocrData.due_date),
+        bank_account: ocrData.bank_account || null,
       } as any);
 
       if (error) throw error;
