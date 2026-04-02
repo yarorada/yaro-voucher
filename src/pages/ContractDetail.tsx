@@ -678,7 +678,7 @@ const ContractDetail = () => {
         }}
         onUpdate={refetch}
       />
-    </div>
+    </PageShell>
   );
 };
 

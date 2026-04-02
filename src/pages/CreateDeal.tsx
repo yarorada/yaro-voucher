@@ -202,8 +202,7 @@ const CreateDeal = () => {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 
