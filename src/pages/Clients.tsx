@@ -1126,8 +1126,7 @@ const Clients = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

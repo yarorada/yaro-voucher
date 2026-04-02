@@ -580,7 +580,7 @@ const VouchersList = () => {
         loading={loading}
         originalTravelerCount={originalTravelerCount}
       />
-    </div>
+    </PageShell>
   );
 };
 

@@ -426,8 +426,7 @@ const Contracts = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

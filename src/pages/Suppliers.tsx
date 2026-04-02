@@ -513,8 +513,7 @@ const Suppliers = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </PageShell>
   );
 
   function renderTable(items: Supplier[]) {
