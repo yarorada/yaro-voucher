@@ -279,18 +279,18 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               const baggage = details.baggage || {};
 
               // Build baggage lines from OP (deal service details)
-              const baggageItems: { label: string; kg?: number }[] = [];
+              const baggageItems: { label: string; kg?: number; count?: number }[] = [];
               if (baggage.cabin_bag?.included) {
-                baggageItems.push({ label: 'Taška na palubu', kg: baggage.cabin_bag.kg });
+                baggageItems.push({ label: 'Taška na palubu', kg: baggage.cabin_bag.kg, count: baggage.cabin_bag.count });
               }
               if (baggage.hand_luggage?.included) {
-                baggageItems.push({ label: 'Palubní zavazadlo', kg: baggage.hand_luggage.kg });
+                baggageItems.push({ label: 'Palubní zavazadlo', kg: baggage.hand_luggage.kg, count: baggage.hand_luggage.count });
               }
               if (baggage.checked_luggage?.included) {
-                baggageItems.push({ label: 'Odbavené zavazadlo', kg: baggage.checked_luggage.kg });
+                baggageItems.push({ label: 'Odbavené zavazadlo', kg: baggage.checked_luggage.kg, count: baggage.checked_luggage.count });
               }
               if (baggage.golf_bag?.included) {
-                baggageItems.push({ label: 'Golfový bag', kg: baggage.golf_bag.kg });
+                baggageItems.push({ label: 'Golfový bag', kg: baggage.golf_bag.kg, count: baggage.golf_bag.count });
               }
 
               return (
