@@ -157,27 +157,19 @@ const buildVoucherPdfBlob = (
     doc.text("SERVICE PROVIDER", margin, y);
     y += 4.5;
 
-    // Line 1: Supplier name (bold)
-    const nameText = removeDiacritics(supplierName);
+    // Line 1: Name + Address on one line, comma separated
+    const nameParts: string[] = [removeDiacritics(supplierName)];
+    if (supplierData?.address) nameParts.push(removeDiacritics(supplierData.address));
+    const nameAddrText = nameParts.join(", ");
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
-    doc.text(nameText, margin, y);
-    y += 4.5;
+    const nameAddrLines = doc.splitTextToSize(nameAddrText, contentW);
+    doc.text(nameAddrLines, margin, y);
+    y += nameAddrLines.length * 4.5;
 
-    // Line 2: Address (normal, wrapped)
-    if (supplierData?.address) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(30, 41, 59);
-      const addrLines = doc.splitTextToSize(removeDiacritics(supplierData.address), contentW);
-      doc.text(addrLines, margin, y);
-      y += addrLines.length * 4;
-    }
-
-    // Line 3: Contact, Phone, Email
+    // Line 2: Phone, Email (comma separated)
     const contactParts: string[] = [];
-    if (supplierData?.contact_person) contactParts.push(removeDiacritics(supplierData.contact_person));
     if (supplierData?.phone) contactParts.push(supplierData.phone);
     if (supplierData?.email) contactParts.push(supplierData.email);
     if (contactParts.length > 0) {
@@ -188,7 +180,6 @@ const buildVoucherPdfBlob = (
       y += 4.5;
     }
 
-    // No extra blank line — straight to divider
     doc.setDrawColor(203, 213, 225);
     doc.line(margin, y, W - margin, y);
     y += 6;
@@ -211,20 +202,27 @@ const buildVoucherPdfBlob = (
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
   const mainLabelW = doc.getTextWidth("Main Client:") + 3;
+  const namesX = margin + mainLabelW;
   doc.setFont("helvetica", "normal");
-  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + mainLabelW, y);
+  doc.text(`1. ${removeDiacritics(mainClientName)}`, namesX, y);
   y += 5;
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
   if (others.length > 0) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Others:", margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
+    // Render others in 3 columns, aligned with main client name
+    const colW = (W - margin - namesX) / 3;
+    let col = 0;
+    let rowY = y;
     others.forEach((n, i) => {
-      doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin, y);
-      y += 4.5;
+      const xPos = namesX + col * colW;
+      doc.text(`${i + 2}. ${removeDiacritics(n)}`, xPos, rowY);
+      col++;
+      if (col >= 3) {
+        col = 0;
+        rowY += 4.5;
+      }
     });
+    y = rowY + (col > 0 ? 4.5 : 0);
     y -= 1;
   }
   y += 4;
