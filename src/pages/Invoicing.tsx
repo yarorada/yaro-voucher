@@ -1001,6 +1001,8 @@ export default function Invoicing() {
 
   const filtered = invoices.filter((inv) => {
     if (inv.invoice_type !== tab) return false;
+    if (paidFilter === "paid" && !inv.paid) return false;
+    if (paidFilter === "unpaid" && inv.paid) return false;
     if (!search) return true;
     const s = search.toLowerCase();
     return (
