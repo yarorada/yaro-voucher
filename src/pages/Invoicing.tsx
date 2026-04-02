@@ -1891,7 +1891,7 @@ function InvoiceTable({
                 <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
                 <TableCell>
                   {inv.paid ? (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
                       Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                     </Badge>
                   ) : (
