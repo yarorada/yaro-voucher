@@ -333,6 +333,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
             issue_date: ocrResult.data.issue_date || null,
             variable_symbol: ocrResult.data.variable_symbol || null,
             due_date: ocrResult.data.due_date || null,
+            bank_account: ocrResult.data.bank_account || null,
           });
         }
       }
