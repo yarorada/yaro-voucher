@@ -425,7 +425,9 @@ const buildVoucherPdfBlob = (
       y += 5;
 
       const bagParts = baggageItems.map(item => {
-        let part = item.label;
+        let part = '';
+        if (item.count && item.count > 1) part += `${item.count}x `;
+        part += item.label;
         if (item.kg) part += ` ${item.kg} kg`;
         return part;
       });
