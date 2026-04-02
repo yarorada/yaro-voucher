@@ -141,7 +141,7 @@ const Contracts = () => {
         currency,
         costPrice.toString(),
         margin.toString(),
-        config.label,
+        contract.status,
       ];
     });
 
