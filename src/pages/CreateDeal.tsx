@@ -104,8 +104,7 @@ const CreateDeal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-4xl mx-auto py-8 px-4">
+    <PageShell maxWidth="narrow">
         <header className="mb-8">
           <h1 className="text-2xl md:text-heading-1 text-foreground">
             Nový obchodní případ
