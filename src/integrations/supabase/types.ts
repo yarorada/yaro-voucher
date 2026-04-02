@@ -860,6 +860,7 @@ export type Database = {
           end_date: string | null
           id: string
           lead_client_id: string | null
+          lead_traveler_is_first_passenger: boolean
           name: string | null
           notes: string | null
           rooming_list: Json | null
@@ -887,6 +888,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           lead_client_id?: string | null
+          lead_traveler_is_first_passenger?: boolean
           name?: string | null
           notes?: string | null
           rooming_list?: Json | null
@@ -914,6 +916,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           lead_client_id?: string | null
+          lead_traveler_is_first_passenger?: boolean
           name?: string | null
           notes?: string | null
           rooming_list?: Json | null

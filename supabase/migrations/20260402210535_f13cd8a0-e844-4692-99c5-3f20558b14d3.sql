@@ -1,0 +1,1 @@
+ALTER TABLE public.deals ADD COLUMN lead_traveler_is_first_passenger boolean NOT NULL DEFAULT true;
