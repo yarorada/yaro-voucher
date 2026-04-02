@@ -817,6 +817,7 @@ const DealDetail = () => {
             adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
             discount_note: discountNote || null,
             adjustment_note: adjustmentNote || null,
+            lead_client_id: leadTravelerId || null,
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
