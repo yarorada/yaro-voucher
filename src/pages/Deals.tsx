@@ -630,7 +630,6 @@ const Deals = () => {
             )}
           </div>
         )}
-      </div>
 
       {/* Duplicate Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
