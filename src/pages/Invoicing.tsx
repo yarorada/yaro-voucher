@@ -1913,15 +1913,12 @@ function InvoiceTable({
                 {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
                 <TableCell>
                   {type === "issued" ? inv.client_name : inv.supplier_name}
-                  {inv.deal_id && (
-                    <Badge variant="outline" className="ml-1 text-[10px]">OP</Badge>
-                  )}
                 </TableCell>
                 {type === "received" && (
                   <TableCell>
-                    {inv.deal_number ? (
+                    {inv.contract_number_display ? (
                       <Badge variant="outline" className="text-xs tabular-nums">
-                        {inv.deal_number.replace(/^CS-?/i, "")}
+                        {inv.contract_number_display.replace(/^CS-?/i, "")}
                       </Badge>
                     ) : "—"}
                   </TableCell>
