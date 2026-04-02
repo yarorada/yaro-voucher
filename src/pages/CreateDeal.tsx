@@ -74,6 +74,7 @@ const CreateDeal = () => {
           end_date: formatDateForDB(endDate),
           notes: notes || null,
           status: status,
+          lead_client_id: leadTravelerId,
         }])
         .select()
         .single();

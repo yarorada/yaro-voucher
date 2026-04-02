@@ -125,7 +125,7 @@ export const FloatingTaskButton = () => {
     try {
       const { data: deal, error: dealError } = await supabase
         .from("deals")
-        .insert([{ deal_number: "", name: dealName || null, status: dealStatus as any }])
+        .insert([{ deal_number: "", name: dealName || null, status: dealStatus as any, lead_client_id: dealLeadTravelerId }])
         .select()
         .single();
       if (dealError) throw dealError;
