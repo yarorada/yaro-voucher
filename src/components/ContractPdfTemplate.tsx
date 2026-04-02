@@ -314,7 +314,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {baggageItems.map((b, i) => (
                         <span key={i}>
                           {i > 0 && <span style={{ margin: '0 4px', color: '#aaa' }}>|</span>}
-                          {b.label}{b.kg ? <span style={{ fontWeight: 600 }}> {b.kg} kg</span> : ''}
+                          {b.count && b.count > 1 ? `${b.count}x ` : ''}{b.label}{b.kg ? <span style={{ fontWeight: 600 }}> {b.kg} kg</span> : ''}
                         </span>
                       ))}
                     </div>
