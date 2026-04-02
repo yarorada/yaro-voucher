@@ -105,6 +105,7 @@ type Invoice = {
   items: InvoiceItem[] | null;
   created_at: string;
   taxable_date?: string | null;
+  deal_number?: string | null;
 };
 
 type FilePreviewKind = "image" | "pdf" | "other";
@@ -233,10 +234,14 @@ export default function Invoicing() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*")
+        .select("*, deals:deal_id(deal_number)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as Invoice[];
+      return (data || []).map((row: any) => ({
+        ...row,
+        deal_number: row.deals?.deal_number || null,
+        deals: undefined,
+      })) as Invoice[];
     },
   });
 
@@ -1876,8 +1881,9 @@ function InvoiceTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {type === "issued" && <TableHead>Číslo</TableHead>}
+               {type === "issued" && <TableHead>Číslo</TableHead>}
               <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
+              {type === "received" && <TableHead>Smlouva</TableHead>}
               <TableHead className="text-right">Částka</TableHead>
               <TableHead>Vystaveno</TableHead>
               <TableHead>Splatnost</TableHead>
@@ -1896,6 +1902,15 @@ function InvoiceTable({
                     <Badge variant="outline" className="ml-1 text-[10px]">OP</Badge>
                   )}
                 </TableCell>
+                {type === "received" && (
+                  <TableCell>
+                    {inv.deal_number ? (
+                      <Badge variant="outline" className="text-xs tabular-nums">
+                        {inv.deal_number.replace(/^CS-?/i, "")}
+                      </Badge>
+                    ) : "—"}
+                  </TableCell>
+                )}
                 <TableCell className="text-right tabular-nums">
                   {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
                 </TableCell>
