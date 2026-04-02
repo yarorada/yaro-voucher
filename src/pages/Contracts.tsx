@@ -35,14 +35,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ContractStatus = "draft" | "sent" | "signed" | "cancelled";
+import { ContractStatusBadge } from "@/components/ContractStatusBadge";
 
-const statusConfig: Record<ContractStatus, { label: string; className: string }> = {
-  draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
-  sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
-  signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
-  cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
-};
+type ContractStatus = "draft" | "sent" | "signed" | "cancelled";
 
 const formatDateShort = (dateString: string | null | undefined): string => {
   if (!dateString) return "";
