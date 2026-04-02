@@ -1662,6 +1662,7 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageShell>
   );
 }
 
