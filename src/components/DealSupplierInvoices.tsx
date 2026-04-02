@@ -62,6 +62,7 @@ interface OcrResult {
   issue_date: string | null;
   variable_symbol: string | null;
   due_date: string | null;
+  bank_account: string | null;
 }
 
 export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
