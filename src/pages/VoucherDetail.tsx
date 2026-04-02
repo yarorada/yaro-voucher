@@ -633,7 +633,6 @@ const VoucherDetail = () => {
             </Card>
           )}
         </div>
-      </div>
 
       {/* Send Dialog */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
