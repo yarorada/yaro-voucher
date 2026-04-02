@@ -130,7 +130,6 @@ const Contracts = () => {
         (sum: number, s: any) => sum + (s.cost_price || 0), 0
       );
       const margin = salesPrice - costPrice;
-      const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
 
       return [
         contract.contract_number,
