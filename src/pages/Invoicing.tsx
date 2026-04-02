@@ -1490,7 +1490,7 @@ export default function Invoicing() {
       <Dialog open={!!markPaidInvoice} onOpenChange={(o) => { if (!o) setMarkPaidInvoice(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Označit jako zaplacenou</DialogTitle>
+            <DialogTitle>{markPaidInvoice?.paid ? "Změnit datum zaplacení" : "Označit jako zaplacenou"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
