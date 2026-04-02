@@ -157,16 +157,26 @@ const buildVoucherPdfBlob = (
     doc.text("SERVICE PROVIDER", margin, y);
     y += 4.5;
 
-    // Line 1: Bold name, then comma + address in normal weight
-    doc.setFontSize(9);
+    // Line 1: Bold name, comma, full address — all on one line
     doc.setTextColor(15, 23, 42);
-    doc.setFont("helvetica", "bold");
     const supplierNameClean = removeDiacritics(supplierName);
+    const addrClean = supplierData?.address ? `, ${removeDiacritics(supplierData.address)}` : "";
+    const fullProviderLine = supplierNameClean + addrClean;
+    // Auto-shrink font to fit on one line
+    let providerFontSize = 9;
+    doc.setFontSize(providerFontSize);
+    doc.setFont("helvetica", "normal");
+    while (providerFontSize > 6 && doc.getTextWidth(fullProviderLine) > contentW) {
+      providerFontSize -= 0.5;
+      doc.setFontSize(providerFontSize);
+    }
+    // Draw bold name part, then normal address part
+    doc.setFont("helvetica", "bold");
     doc.text(supplierNameClean, margin, y);
-    if (supplierData?.address) {
+    if (addrClean) {
       const nameW = doc.getTextWidth(supplierNameClean);
       doc.setFont("helvetica", "normal");
-      doc.text(`, ${removeDiacritics(supplierData.address)}`, margin + nameW, y);
+      doc.text(addrClean, margin + nameW, y);
     }
     y += 4.5;
 
