@@ -695,7 +695,7 @@ const DealDetail = () => {
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
-  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote, leadTravelerId]);
+  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote, leadTravelerId, leadTravelerIsFirstPassenger]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
   // Track whether the user actually changed any deal field (compared to loaded state)
