@@ -46,23 +46,41 @@ export const StatsCard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", currentYear],
     queryFn: async () => {
-      // Get current year stats
+      // Only include deals that have at least one travel contract (matching Statistics page logic)
+      const { data: dealsWithContracts } = await supabase
+        .from("deals")
+        .select("id, travel_contracts!travel_contracts_deal_id_fkey(id)")
+        .not("travel_contracts", "is", null);
+      
+      const dealIdsWithContract = new Set(
+        (dealsWithContracts || [])
+          .filter((d: any) => Array.isArray(d.travel_contracts) && d.travel_contracts.length > 0)
+          .map((d: any) => d.id)
+      );
+
+      // Get current year stats — exclude cancelled, only deals with contracts
       const { data: currentData, error: currentError } = await supabase
         .from("deal_profitability")
-        .select("revenue, total_costs, profit, start_date")
+        .select("deal_id, revenue, total_costs, profit, start_date, status")
         .gte("start_date", `${currentYear}-01-01`)
-        .lte("start_date", `${currentYear}-12-31`);
+        .lte("start_date", `${currentYear}-12-31`)
+        .neq("status", "cancelled");
 
       if (currentError) throw currentError;
 
-      // Get last year stats for comparison
+      const currentFiltered = (currentData || []).filter(d => d.deal_id && dealIdsWithContract.has(d.deal_id));
+
+      // Get last year stats for comparison — same filters
       const { data: lastYearData, error: lastYearError } = await supabase
         .from("deal_profitability")
-        .select("revenue, total_costs, profit, start_date")
+        .select("deal_id, revenue, total_costs, profit, start_date, status")
         .gte("start_date", `${lastYear}-01-01`)
-        .lte("start_date", `${lastYear}-12-31`);
+        .lte("start_date", `${lastYear}-12-31`)
+        .neq("status", "cancelled");
 
       if (lastYearError) throw lastYearError;
+
+      const lastFiltered = (lastYearData || []).filter(d => d.deal_id && dealIdsWithContract.has(d.deal_id));
 
       const currentStats: YearStats = {
         revenue: currentData?.reduce((sum, d) => sum + (d.revenue || 0), 0) || 0,
