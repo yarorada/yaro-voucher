@@ -62,6 +62,7 @@ interface OcrResult {
   issue_date: string | null;
   variable_symbol: string | null;
   due_date: string | null;
+  bank_account: string | null;
 }
 
 export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
@@ -105,6 +106,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     issue_date: null,
     variable_symbol: null,
     due_date: null,
+    bank_account: null,
   });
 
   const fetchInvoices = useCallback(async () => {
@@ -333,6 +335,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
             issue_date: ocrResult.data.issue_date || null,
             variable_symbol: ocrResult.data.variable_symbol || null,
             due_date: ocrResult.data.due_date || null,
+            bank_account: ocrResult.data.bank_account || null,
           });
         }
       }
@@ -371,6 +374,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         issue_date: parseIssueDate(ocrData.issue_date),
         variable_symbol: ocrData.variable_symbol || null,
         due_date: parseIssueDate(ocrData.due_date),
+        bank_account: ocrData.bank_account || null,
       } as any);
 
       if (error) throw error;
@@ -388,7 +392,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
   const resetForm = () => {
     setPendingFileUrl("");
     setPendingFileName("");
-    setOcrData({ supplier_name: null, total_amount: null, currency: "CZK", issue_date: null, variable_symbol: null, due_date: null });
+    setOcrData({ supplier_name: null, total_amount: null, currency: "CZK", issue_date: null, variable_symbol: null, due_date: null, bank_account: null });
   };
 
   const handleTogglePaid = async (invoice: SupplierInvoice) => {

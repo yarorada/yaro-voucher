@@ -573,6 +573,7 @@ export type Database = {
       }
       deal_supplier_invoices: {
         Row: {
+          bank_account: string | null
           created_at: string
           currency: string | null
           deal_id: string
@@ -590,6 +591,7 @@ export type Database = {
           variable_symbol: string | null
         }
         Insert: {
+          bank_account?: string | null
           created_at?: string
           currency?: string | null
           deal_id: string
@@ -607,6 +609,7 @@ export type Database = {
           variable_symbol?: string | null
         }
         Update: {
+          bank_account?: string | null
           created_at?: string
           currency?: string | null
           deal_id?: string

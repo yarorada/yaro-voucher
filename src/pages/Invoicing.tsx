@@ -191,7 +191,7 @@ export default function Invoicing() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [ocrScanning, setOcrScanning] = useState(false);
-  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string } | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
@@ -405,6 +405,13 @@ export default function Invoicing() {
           ? `${ocrPreview.issue_date.split(".")[2]}-${ocrPreview.issue_date.split(".")[1].padStart(2, "0")}-${ocrPreview.issue_date.split(".")[0].padStart(2, "0")}`
           : f.issue_date
         : f.issue_date,
+      variable_symbol: ocrPreview.variable_symbol || f.variable_symbol,
+      due_date: ocrPreview.due_date
+        ? ocrPreview.due_date.split(".").length === 3
+          ? `${ocrPreview.due_date.split(".")[2]}-${ocrPreview.due_date.split(".")[1].padStart(2, "0")}-${ocrPreview.due_date.split(".")[0].padStart(2, "0")}`
+          : f.due_date
+        : f.due_date,
+      bank_account: ocrPreview.bank_account || f.bank_account,
     }));
     setOcrPreview(null);
     toast.success("Data převzata do formuláře");

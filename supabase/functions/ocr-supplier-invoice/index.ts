@@ -32,7 +32,8 @@ serve(async (req) => {
   "currency": "currency code like CZK, EUR, USD, GBP (string, default CZK)",
   "issue_date": "issue date in DD.MM.YYYY format (string)",
   "variable_symbol": "variable symbol / variabilní symbol (string or null)",
-  "due_date": "due date / datum splatnosti in DD.MM.YYYY format (string or null)"
+  "due_date": "due date / datum splatnosti in DD.MM.YYYY format (string or null)",
+  "bank_account": "bank account number in Czech format like 123456789/0100 (string or null)"
 }
 
 Important:
@@ -42,7 +43,8 @@ Important:
 - Look for "Celkem k úhradě", "Total", "Amount due", "Částka" etc.
 - Look for "Variabilní symbol", "Var. symbol", "VS" for the variable symbol
 - Look for "Datum splatnosti", "Due date", "Splatnost" for the due date
-- For variable_symbol and due_date, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
+- Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
+- For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
 - Return only the JSON object, no additional text or markdown
 - If you cannot find a field, use null`;
 
