@@ -536,7 +536,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Receipt className="h-5 w-5" />
-          Doklady dodavatelům
+          Doklady od dodavatelů
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
