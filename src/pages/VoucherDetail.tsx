@@ -666,20 +666,23 @@ const VoucherDetail = () => {
 
   const getLogoBase64 = useCallback(async (): Promise<{ base64: string; w: number; h: number } | undefined> => {
     try {
-      const res = await fetch(yaroLogoWide);
-      const ab = await res.arrayBuffer();
-      const bytes = new Uint8Array(ab);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
-      // Get real dimensions via Image element
-      const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+      // Load image and draw to canvas to get correct data URL and dimensions
+      const dims = await new Promise<{ base64: string; w: number; h: number }>((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-        img.onerror = () => resolve({ w: 1165, h: 826 });
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL("image/png");
+          resolve({ base64: dataUrl, w: img.naturalWidth, h: img.naturalHeight });
+        };
+        img.onerror = () => reject(new Error("logo load failed"));
         img.src = yaroLogoWide;
       });
-      return { base64, w: dims.w, h: dims.h };
+      return dims;
     } catch { return undefined; }
   }, []);
 
