@@ -106,6 +106,7 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     issue_date: null,
     variable_symbol: null,
     due_date: null,
+    bank_account: null,
   });
 
   const fetchInvoices = useCallback(async () => {
