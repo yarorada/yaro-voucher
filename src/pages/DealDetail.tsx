@@ -2793,12 +2793,12 @@ const DealDetail = () => {
         </header>
 
         <Tabs defaultValue="info" className="mt-2">
-          <TabsList className="mb-4">
-            <TabsTrigger value="info">Základní info</TabsTrigger>
-            <TabsTrigger value="travelers">Cestující</TabsTrigger>
-            <TabsTrigger value="payments">Platební kalendář</TabsTrigger>
-            <TabsTrigger value="services">Služby</TabsTrigger>
-            <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+          <TabsList className="mb-4 flex overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="info" className="whitespace-nowrap">Základní info</TabsTrigger>
+            <TabsTrigger value="travelers" className="whitespace-nowrap">Cestující</TabsTrigger>
+            <TabsTrigger value="payments" className="whitespace-nowrap">Platební kalendář</TabsTrigger>
+            <TabsTrigger value="services" className="whitespace-nowrap">Služby</TabsTrigger>
+            <TabsTrigger value="documents" className="whitespace-nowrap">Dokumenty</TabsTrigger>
           </TabsList>
 
           {/* ── ZÁKLADNÍ INFO ── */}
