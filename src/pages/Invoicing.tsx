@@ -309,7 +309,7 @@ export default function Invoicing() {
   });
 
   const handleOpenMarkPaid = (inv: Invoice) => {
-    setMarkPaidDate(format(new Date(), "yyyy-MM-dd"));
+    setMarkPaidDate(inv.paid_at || format(new Date(), "yyyy-MM-dd"));
     setMarkPaidMethod(inv.payment_method || "moneta");
     setMarkPaidInvoice(inv);
   };
@@ -1490,7 +1490,7 @@ export default function Invoicing() {
       <Dialog open={!!markPaidInvoice} onOpenChange={(o) => { if (!o) setMarkPaidInvoice(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Označit jako zaplacenou</DialogTitle>
+            <DialogTitle>{markPaidInvoice?.paid ? "Změnit datum zaplacení" : "Označit jako zaplacenou"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -1891,7 +1891,7 @@ function InvoiceTable({
                 <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
                 <TableCell>
                   {inv.paid ? (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
                       Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                     </Badge>
                   ) : (
