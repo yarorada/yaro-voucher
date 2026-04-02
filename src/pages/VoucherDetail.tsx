@@ -138,7 +138,7 @@ const buildVoucherPdfBlob = (
 
   // Logo on left — 30mm wide, correct aspect ratio derived from actual image dimensions
   const logoW = 30;
-  const aspectRatio = logoInfo ? (logoInfo.w / logoInfo.h) : (1165 / 826);
+  const aspectRatio = logoInfo ? (logoInfo.w / logoInfo.h) : (260 / 123);
   const logoH = logoW / aspectRatio;
   if (logoInfo?.base64) {
     try {
