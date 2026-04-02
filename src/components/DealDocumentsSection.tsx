@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, DragEvent } from "react";
-import { jsPDF } from "jspdf";
+
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type LogoInfo } from "@/lib/voucherPdfBuilder";
 import { Button } from "@/components/ui/button";
