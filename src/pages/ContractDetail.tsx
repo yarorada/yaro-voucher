@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
