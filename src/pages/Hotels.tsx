@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
