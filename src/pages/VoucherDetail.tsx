@@ -157,24 +157,25 @@ const buildVoucherPdfBlob = (
     doc.text("SERVICE PROVIDER", margin, y);
     y += 4.5;
 
-    // Line 1: Name bold + Address normal, all on one line, left-aligned, no stretching
+    // Line 1: Supplier name (bold)
     const nameText = removeDiacritics(supplierName);
-    const addrText = supplierData?.address ? `, ${removeDiacritics(supplierData.address)}` : "";
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
     doc.text(nameText, margin, y);
-    if (addrText) {
-      const nameW = doc.getTextWidth(nameText);
+    y += 4.5;
+
+    // Line 2: Address (normal, wrapped)
+    if (supplierData?.address) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(30, 41, 59);
-      // Use "left" align explicitly to prevent any letter-spacing stretching
-      doc.text(addrText, margin + nameW, y, { align: "left" });
+      const addrLines = doc.splitTextToSize(removeDiacritics(supplierData.address), contentW);
+      doc.text(addrLines, margin, y);
+      y += addrLines.length * 4;
     }
-    y += 5;
 
-    // Line 2: Contact, Phone, Email
+    // Line 3: Contact, Phone, Email
     const contactParts: string[] = [];
     if (supplierData?.contact_person) contactParts.push(removeDiacritics(supplierData.contact_person));
     if (supplierData?.phone) contactParts.push(supplierData.phone);
@@ -184,7 +185,7 @@ const buildVoucherPdfBlob = (
       doc.setFont("helvetica", "normal");
       doc.setTextColor(30, 41, 59);
       doc.text(contactParts.join(", "), margin, y);
-      y += 5;
+      y += 4.5;
     }
 
     // No extra blank line — straight to divider
@@ -200,8 +201,6 @@ const buildVoucherPdfBlob = (
   doc.text("CLIENT INFORMATION", margin, y);
   y += 4;
 
-  // Fixed label column width so client names align
-  const labelColW = 26;
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
   const mainTraveler = travelers?.find(t => t.is_main_client);
@@ -211,8 +210,9 @@ const buildVoucherPdfBlob = (
 
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
+  const mainLabelW = doc.getTextWidth("Main Client:") + 3;
   doc.setFont("helvetica", "normal");
-  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + labelColW, y);
+  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + mainLabelW, y);
   y += 5;
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
@@ -221,17 +221,11 @@ const buildVoucherPdfBlob = (
     doc.text("Others:", margin, y);
     y += 5;
     doc.setFont("helvetica", "normal");
-    const cols = 3;
-    const colW = contentW / cols;
     others.forEach((n, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = margin + col * colW;
-      const yPos = y + row * 5;
-      doc.text(`${i + 2}. ${removeDiacritics(n)}`, x, yPos);
+      doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin, y);
+      y += 4.5;
     });
-    const rows = Math.ceil(others.length / cols);
-    y += rows * 5 - 1;
+    y -= 1;
   }
   y += 4;
   doc.setDrawColor(203, 213, 225);
