@@ -105,7 +105,7 @@ type Invoice = {
   items: InvoiceItem[] | null;
   created_at: string;
   taxable_date?: string | null;
-  deal_number?: string | null;
+  contract_number_display?: string | null;
 };
 
 type FilePreviewKind = "image" | "pdf" | "other";
@@ -234,13 +234,28 @@ export default function Invoicing() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, deals:deal_id(deal_number)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
+
+      // Fetch contract numbers for deal_ids
+      const dealIds = [...new Set((data || []).map((r: any) => r.deal_id).filter(Boolean))];
+      let contractMap: Record<string, string> = {};
+      if (dealIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from("travel_contracts")
+          .select("deal_id, contract_number")
+          .in("deal_id", dealIds);
+        if (contracts) {
+          for (const c of contracts) {
+            if (c.deal_id) contractMap[c.deal_id] = c.contract_number;
+          }
+        }
+      }
+
       return (data || []).map((row: any) => ({
         ...row,
-        deal_number: row.deals?.deal_number || null,
-        deals: undefined,
+        contract_number_display: row.deal_id ? (contractMap[row.deal_id] || null) : null,
       })) as Invoice[];
     },
   });
@@ -1898,15 +1913,12 @@ function InvoiceTable({
                 {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
                 <TableCell>
                   {type === "issued" ? inv.client_name : inv.supplier_name}
-                  {inv.deal_id && (
-                    <Badge variant="outline" className="ml-1 text-[10px]">OP</Badge>
-                  )}
                 </TableCell>
                 {type === "received" && (
                   <TableCell>
-                    {inv.deal_number ? (
+                    {inv.contract_number_display ? (
                       <Badge variant="outline" className="text-xs tabular-nums">
-                        {inv.deal_number.replace(/^CS-?/i, "")}
+                        {inv.contract_number_display.replace(/^CS-?/i, "")}
                       </Badge>
                     ) : "—"}
                   </TableCell>
