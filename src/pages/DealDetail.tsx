@@ -687,13 +687,14 @@ const DealDetail = () => {
           adjustment_amount: adjustmentAmount ? parseFloat(adjustmentAmount) : 0,
           discount_note: discountNote || null,
           adjustment_note: adjustmentNote || null,
+          lead_client_id: leadTravelerId || null,
         })
         .eq("id", deal.id);
       console.log("Auto-saved deal on leave");
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
-  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote]);
+  }, [deal, dealName, status, destinationId, startDate, endDate, totalPrice, depositAmount, depositPaid, notes, discountAmount, adjustmentAmount, discountNote, adjustmentNote, leadTravelerId]);
 
   const { setIsSaving, setLastSaved, pushSnapshot } = useGlobalHistory();
   // Track whether the user actually changed any deal field (compared to loaded state)
