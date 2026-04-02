@@ -555,7 +555,16 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         .select("client_id, is_main_client, clients(first_name, last_name)")
         .eq("voucher_id", voucher.id);
 
-      const pdfBlob = buildVoucherPdfBlob(fullVoucher, voucher.suppliers?.name, null, undefined, (voucherTravelers || []) as any);
+      let supplierData: any = null;
+      if (fullVoucher.supplier_id) {
+        const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
+        supplierData = sd;
+      }
+
+      const logoInfo = await getLogoBase64();
+      const baggage = fullVoucher.deal_id ? await fetchBaggageFromDeal(supabase, fullVoucher.deal_id) : null;
+
+      const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || voucher.suppliers?.name, supplierData, logoInfo, (voucherTravelers || []) as any, baggage);
 
       // Upload to deal-documents storage
       const path = `${dealId}/voucher-${fullVoucher.voucher_code}-${Date.now()}.pdf`;
@@ -580,7 +589,7 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   };
 
   // Generate PDF blob for a voucher (for inline attachment)
-  const generateVoucherPdfBase64 = async (v: DealVoucher, logoBase64?: string): Promise<string | null> => {
+  const generateVoucherPdfBase64 = async (v: DealVoucher, logoInfo?: LogoInfo): Promise<string | null> => {
     try {
       const { data: fullVoucher } = await supabase.from("vouchers").select("*").eq("id", v.id).single();
       if (!fullVoucher) return null;
@@ -590,7 +599,8 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
         supplierData = sd;
       }
       const { data: vTravelers } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", v.id);
-      const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoBase64, (vTravelers || []) as any);
+      const baggage = fullVoucher.deal_id ? await fetchBaggageFromDeal(supabase, fullVoucher.deal_id) : null;
+      const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || v.suppliers?.name, supplierData, logoInfo, (vTravelers || []) as any, baggage);
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
