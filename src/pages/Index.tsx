@@ -366,8 +366,7 @@ const Index = () => {
             </div>
           </SortableContext>
         </DndContext>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 
