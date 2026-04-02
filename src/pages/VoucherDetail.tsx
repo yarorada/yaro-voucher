@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useParams, useNavigate } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
 import { Button } from "@/components/ui/button";
@@ -399,8 +400,7 @@ const VoucherDetail = () => {
   const flights: any[] = Array.isArray(voucher.flights) ? voucher.flights : [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <PageShell>
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
@@ -633,7 +633,6 @@ const VoucherDetail = () => {
             </Card>
           )}
         </div>
-      </div>
 
       {/* Send Dialog */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
@@ -742,7 +741,7 @@ const VoucherDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -2717,8 +2718,7 @@ const DealDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <PageShell>
         <header className="mb-8">
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -2793,12 +2793,12 @@ const DealDetail = () => {
         </header>
 
         <Tabs defaultValue="info" className="mt-2">
-          <TabsList className="mb-4">
-            <TabsTrigger value="info">Základní info</TabsTrigger>
-            <TabsTrigger value="travelers">Cestující</TabsTrigger>
-            <TabsTrigger value="payments">Platební kalendář</TabsTrigger>
-            <TabsTrigger value="services">Služby</TabsTrigger>
-            <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+          <TabsList className="mb-4 flex overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="info" className="whitespace-nowrap">Základní info</TabsTrigger>
+            <TabsTrigger value="travelers" className="whitespace-nowrap">Cestující</TabsTrigger>
+            <TabsTrigger value="payments" className="whitespace-nowrap">Platební kalendář</TabsTrigger>
+            <TabsTrigger value="services" className="whitespace-nowrap">Služby</TabsTrigger>
+            <TabsTrigger value="documents" className="whitespace-nowrap">Dokumenty</TabsTrigger>
           </TabsList>
 
           {/* ── ZÁKLADNÍ INFO ── */}
@@ -3774,7 +3774,6 @@ const DealDetail = () => {
           </TabsContent>
 
         </Tabs>
-      </div>
 
       {/* Contract Sync Confirmation Dialog */}
       <Dialog open={contractSyncDialogOpen} onOpenChange={setContractSyncDialogOpen}>
@@ -3969,7 +3968,7 @@ const DealDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 };
 

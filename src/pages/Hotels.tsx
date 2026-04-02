@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { toast } from "sonner";
@@ -198,8 +199,7 @@ export default function Hotels() {
   const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="container max-w-6xl mx-auto space-y-4">
+    <PageShell className="space-y-4">
         <div>
           <h1 className="text-heading-1">Hotely</h1>
           <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
@@ -363,7 +363,6 @@ export default function Hotels() {
             ))}
           </div>
         )}
-      </div>
 
       {editHotel && (
         <HotelEditDialog
@@ -419,6 +418,6 @@ export default function Hotels() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 }

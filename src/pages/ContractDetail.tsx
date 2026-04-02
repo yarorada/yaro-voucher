@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -288,8 +289,7 @@ const ContractDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <PageShell>
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {getStatusBadge(contract.status, true)}
@@ -657,7 +657,6 @@ const ContractDetail = () => {
             </div>
           </Card>
         </div>
-      </div>
 
       {/* Hidden PDF content */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
@@ -678,7 +677,7 @@ const ContractDetail = () => {
         }}
         onUpdate={refetch}
       />
-    </div>
+    </PageShell>
   );
 };
 

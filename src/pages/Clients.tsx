@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -613,8 +614,7 @@ const Clients = () => {
   const hasPassport = (client: Client) => !!client.passport_number;
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
 
             {/* Dialogs */}
             <Dialog
@@ -1127,8 +1127,7 @@ const Clients = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "@/components/PageShell";
 import { VoucherForm } from "@/components/VoucherForm";
 import { useNavigate, useParams } from "react-router-dom";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
@@ -73,8 +74,7 @@ const EditVoucher = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-4xl mx-auto py-8 px-4">
+    <PageShell maxWidth="narrow">
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-foreground">Upravit voucher</h1>
           <p className="text-muted-foreground mt-2">
@@ -83,8 +83,7 @@ const EditVoucher = () => {
         </header>
 
         <VoucherForm voucherId={id} initialData={initialData} />
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,14 +35,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ContractStatus = "draft" | "sent" | "signed" | "cancelled";
+import { ContractStatusBadge } from "@/components/ContractStatusBadge";
 
-const statusConfig: Record<ContractStatus, { label: string; className: string }> = {
-  draft: { label: "Koncept", className: "bg-gray-500 hover:bg-gray-600 text-white border-transparent" },
-  sent: { label: "Odesláno", className: "bg-blue-500 hover:bg-blue-600 text-white border-transparent" },
-  signed: { label: "Podepsáno", className: "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" },
-  cancelled: { label: "Zrušeno", className: "bg-destructive hover:bg-destructive/80 text-destructive-foreground border-transparent" },
-};
+type ContractStatus = "draft" | "sent" | "signed" | "cancelled";
 
 const formatDateShort = (dateString: string | null | undefined): string => {
   if (!dateString) return "";
@@ -134,7 +130,6 @@ const Contracts = () => {
         (sum: number, s: any) => sum + (s.cost_price || 0), 0
       );
       const margin = salesPrice - costPrice;
-      const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
 
       return [
         contract.contract_number,
@@ -146,7 +141,7 @@ const Contracts = () => {
         currency,
         costPrice.toString(),
         margin.toString(),
-        config.label,
+        contract.status,
       ];
     });
 
@@ -281,8 +276,7 @@ const Contracts = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Načítání smluv...</p>
@@ -338,7 +332,6 @@ const Contracts = () => {
             ) : (
               filteredContracts?.map((contract) => {
                 const client = contract.client as any;
-                const config = statusConfig[contract.status as ContractStatus] || statusConfig.draft;
                 const displayName = buildDisplayName(contract);
 
                 return (
@@ -351,9 +344,7 @@ const Contracts = () => {
                       <div className="flex-1 min-w-0">
                         {/* Line 1: Status + Number + Name */}
                         <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                          <Badge className={`text-xs shrink-0 ${config.className}`}>
-                            {config.label}
-                          </Badge>
+                          <ContractStatusBadge status={contract.status as ContractStatus} />
                           <span className="font-bold text-foreground">{contract.contract_number}</span>
                           {displayName && (
                             <span className="text-foreground truncate">{displayName}</span>
@@ -426,8 +417,7 @@ const Contracts = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

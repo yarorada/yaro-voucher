@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { PageShell } from "@/components/PageShell";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
@@ -1090,8 +1091,9 @@ export default function Invoicing() {
   };
 
   return (
+    <PageShell maxWidth="wide">
     <div
-      className="p-4 md:p-6 space-y-4 relative"
+      className="space-y-4 relative"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -1660,6 +1662,7 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageShell>
   );
 }
 

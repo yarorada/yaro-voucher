@@ -1,4 +1,5 @@
 import { useState, useCallback, ReactNode, useRef, useMemo } from "react";
+import { PageShell } from "@/components/PageShell";
 import { TasksCard } from "@/components/dashboard/TasksCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { OverduePaymentsCard } from "@/components/dashboard/OverduePaymentsCard";
@@ -334,8 +335,7 @@ const Index = () => {
     : order.filter((id) => !hiddenTiles.includes(id) && TILE_COMPONENTS[id] !== null);
 
   return (
-    <div className="min-h-full bg-[var(--gradient-subtle)]">
-      <div className="container max-w-7xl mx-auto py-6 px-4 space-y-6">
+    <PageShell maxWidth="wide" className="space-y-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -367,8 +367,7 @@ const Index = () => {
             </div>
           </SortableContext>
         </DndContext>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
@@ -445,8 +446,7 @@ const Deals = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-6xl mx-auto py-8 px-4">
+    <PageShell>
 
         {loading ? (
           <div className="text-center py-12">
@@ -630,7 +630,6 @@ const Deals = () => {
             )}
           </div>
         )}
-      </div>
 
       {/* Duplicate Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
@@ -684,7 +683,7 @@ const Deals = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 };
 

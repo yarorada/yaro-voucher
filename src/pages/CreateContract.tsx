@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,8 +159,7 @@ const CreateContract = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto py-8 px-4">
+    <PageShell maxWidth="narrow">
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/contracts")}>
             <ArrowLeft className="h-4 w-4" />
@@ -246,8 +246,7 @@ const CreateContract = () => {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 
