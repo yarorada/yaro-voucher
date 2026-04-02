@@ -834,8 +834,12 @@ export default function Invoicing() {
   };
 
   const handleGeneratePdf = async (inv: Invoice) => {
-    if (inv.invoice_type === "received" && (inv.file_url || inv.deal_supplier_invoice_id)) {
-      await openReceivedInvoicePreview(inv);
+    if (inv.invoice_type === "received") {
+      if (inv.file_url || inv.deal_supplier_invoice_id) {
+        await openReceivedInvoicePreview(inv);
+      } else {
+        toast.error("U této přijaté faktury chybí nahraný soubor");
+      }
       return;
     }
 
