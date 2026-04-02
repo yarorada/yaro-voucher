@@ -201,8 +201,6 @@ const buildVoucherPdfBlob = (
   doc.text("CLIENT INFORMATION", margin, y);
   y += 4;
 
-  // Fixed label column width so client names align
-  const labelColW = 26;
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
   const mainTraveler = travelers?.find(t => t.is_main_client);
@@ -212,8 +210,9 @@ const buildVoucherPdfBlob = (
 
   doc.setFont("helvetica", "bold");
   doc.text("Main Client:", margin, y);
+  const mainLabelW = doc.getTextWidth("Main Client:") + 3;
   doc.setFont("helvetica", "normal");
-  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + labelColW, y);
+  doc.text(`1. ${removeDiacritics(mainClientName)}`, margin + mainLabelW, y);
   y += 5;
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
@@ -222,17 +221,11 @@ const buildVoucherPdfBlob = (
     doc.text("Others:", margin, y);
     y += 5;
     doc.setFont("helvetica", "normal");
-    const cols = 3;
-    const colW = contentW / cols;
     others.forEach((n, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = margin + col * colW;
-      const yPos = y + row * 5;
-      doc.text(`${i + 2}. ${removeDiacritics(n)}`, x, yPos);
+      doc.text(`${i + 2}. ${removeDiacritics(n)}`, margin, y);
+      y += 4.5;
     });
-    const rows = Math.ceil(others.length / cols);
-    y += rows * 5 - 1;
+    y -= 1;
   }
   y += 4;
   doc.setDrawColor(203, 213, 225);
