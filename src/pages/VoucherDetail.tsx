@@ -100,6 +100,18 @@ interface BaggageAllowance {
   golf_bag?: { included?: boolean; kg?: number };
 }
 
+const normalizePdfInlineText = (value?: string | null) => {
+  if (!value) return "";
+
+  return removeDiacritics(value)
+    .replace(/\s*[\r\n]+\s*/g, ", ")
+    .replace(/\s+/g, " ")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/(,\s*){2,}/g, ", ")
+    .replace(/^,\s*|,\s*$/g, "")
+    .trim();
+};
+
 const buildVoucherPdfBlob = (
   voucher: any,
   supplierName?: string,
@@ -159,24 +171,33 @@ const buildVoucherPdfBlob = (
 
     // Line 1: Bold name, comma, full address — all on one line
     doc.setTextColor(15, 23, 42);
-    const supplierNameClean = removeDiacritics(supplierName);
-    const addrClean = supplierData?.address ? `, ${removeDiacritics(supplierData.address)}` : "";
-    const fullProviderLine = supplierNameClean + addrClean;
-    // Auto-shrink font to fit on one line
+    const supplierNameClean = normalizePdfInlineText(supplierName);
+    const addressInline = normalizePdfInlineText(supplierData?.address);
+    const addressText = addressInline ? `, ${addressInline}` : "";
+
+    const getProviderLineWidth = () => {
+      doc.setFont("helvetica", "bold");
+      const nameWidth = supplierNameClean ? doc.getTextWidth(supplierNameClean) : 0;
+      doc.setFont("helvetica", "normal");
+      const addressWidth = addressText ? doc.getTextWidth(addressText) : 0;
+      return nameWidth + addressWidth;
+    };
+
+    // Auto-shrink font to fit on one line across the full content width
     let providerFontSize = 9;
     doc.setFontSize(providerFontSize);
-    doc.setFont("helvetica", "normal");
-    while (providerFontSize > 6 && doc.getTextWidth(fullProviderLine) > contentW) {
+    while (providerFontSize > 5 && getProviderLineWidth() > contentW) {
       providerFontSize -= 0.5;
       doc.setFontSize(providerFontSize);
     }
+
     // Draw bold name part, then normal address part
     doc.setFont("helvetica", "bold");
     doc.text(supplierNameClean, margin, y);
-    if (addrClean) {
+    if (addressText) {
       const nameW = doc.getTextWidth(supplierNameClean);
       doc.setFont("helvetica", "normal");
-      doc.text(addrClean, margin + nameW, y);
+      doc.text(addressText, margin + nameW, y);
     }
     y += 4.5;
 
