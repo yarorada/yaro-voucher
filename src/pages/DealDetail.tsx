@@ -2718,8 +2718,7 @@ const DealDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <PageShell>
         <header className="mb-8">
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
