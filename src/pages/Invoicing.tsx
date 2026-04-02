@@ -234,10 +234,14 @@ export default function Invoicing() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*")
+        .select("*, deals:deal_id(deal_number)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as Invoice[];
+      return (data || []).map((row: any) => ({
+        ...row,
+        deal_number: row.deals?.deal_number || null,
+        deals: undefined,
+      })) as Invoice[];
     },
   });
 
