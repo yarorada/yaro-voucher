@@ -657,7 +657,6 @@ const ContractDetail = () => {
             </div>
           </Card>
         </div>
-      </div>
 
       {/* Hidden PDF content */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>

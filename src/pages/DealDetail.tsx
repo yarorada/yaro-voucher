@@ -3774,7 +3774,6 @@ const DealDetail = () => {
           </TabsContent>
 
         </Tabs>
-      </div>
 
       {/* Contract Sync Confirmation Dialog */}
       <Dialog open={contractSyncDialogOpen} onOpenChange={setContractSyncDialogOpen}>
