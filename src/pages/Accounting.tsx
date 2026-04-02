@@ -548,7 +548,6 @@ export default function Accounting() {
             </Table>
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }
