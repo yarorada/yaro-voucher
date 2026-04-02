@@ -363,7 +363,6 @@ export default function Hotels() {
             ))}
           </div>
         )}
-      </div>
 
       {editHotel && (
         <HotelEditDialog
