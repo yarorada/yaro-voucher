@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageShell } from "@/components/PageShell";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
