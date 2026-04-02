@@ -140,6 +140,7 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onBatchUpdate, 
 export interface BaggageItem {
   included: boolean;
   kg?: number;
+  count?: number;
 }
 
 export interface FlightFormData {
@@ -173,6 +174,12 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
     const num = value === "" ? undefined : Number(value);
     const existing = baggage?.[field] || { included: true };
     onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, kg: num } } });
+  };
+
+  const updateBaggageCount = (field: keyof NonNullable<FlightFormData['baggage']>, value: string) => {
+    const num = value === "" ? undefined : Number(value);
+    const existing = baggage?.[field] || { included: true };
+    onChange({ ...data, baggage: { ...(baggage || {}), [field]: { ...existing, count: num } } });
   };
 
   const applyAutoFill = (newData: FlightFormData, index: number, fields: Partial<FlightSegment>) => {
@@ -331,10 +338,16 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
                   <span className="text-xs">V ceně</span>
                 </label>
                 {included && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("cabin_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
-                    <span className="text-xs text-muted-foreground">kg</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input type="number" min={1} value={item?.count ?? ""} onChange={(e) => updateBaggageCount("cabin_bag", e.target.value)} placeholder="1" className="w-10 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">ks</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("cabin_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">kg</span>
+                    </div>
+                  </>
                 )}
               </div>
             );
@@ -352,10 +365,16 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
                   <span className="text-xs">V ceně</span>
                 </label>
                 {included && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("hand_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
-                    <span className="text-xs text-muted-foreground">kg</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input type="number" min={1} value={item?.count ?? ""} onChange={(e) => updateBaggageCount("hand_luggage", e.target.value)} placeholder="1" className="w-10 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">ks</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("hand_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">kg</span>
+                    </div>
+                  </>
                 )}
               </div>
             );
@@ -373,10 +392,16 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
                   <span className="text-xs">V ceně</span>
                 </label>
                 {included && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("checked_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
-                    <span className="text-xs text-muted-foreground">kg</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input type="number" min={1} value={item?.count ?? ""} onChange={(e) => updateBaggageCount("checked_luggage", e.target.value)} placeholder="1" className="w-10 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">ks</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("checked_luggage", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">kg</span>
+                    </div>
+                  </>
                 )}
               </div>
             );
@@ -394,10 +419,16 @@ export const FlightSegmentForm = ({ data, onChange, autoFillReturn = true }: Fli
                   <span className="text-xs">V ceně</span>
                 </label>
                 {included && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("golf_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
-                    <span className="text-xs text-muted-foreground">kg</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input type="number" min={1} value={item?.count ?? ""} onChange={(e) => updateBaggageCount("golf_bag", e.target.value)} placeholder="1" className="w-10 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">ks</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input type="number" min={0} value={item?.kg ?? ""} onChange={(e) => updateBaggageKg("golf_bag", e.target.value)} placeholder="–" className="w-14 h-7 text-center text-xs p-1" />
+                      <span className="text-xs text-muted-foreground">kg</span>
+                    </div>
+                  </>
                 )}
               </div>
             );

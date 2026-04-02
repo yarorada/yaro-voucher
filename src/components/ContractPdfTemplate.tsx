@@ -279,18 +279,18 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               const baggage = details.baggage || {};
 
               // Build baggage lines from OP (deal service details)
-              const baggageItems: { label: string; kg?: number }[] = [];
+              const baggageItems: { label: string; kg?: number; count?: number }[] = [];
               if (baggage.cabin_bag?.included) {
-                baggageItems.push({ label: 'Taška na palubu', kg: baggage.cabin_bag.kg });
+                baggageItems.push({ label: 'Taška na palubu', kg: baggage.cabin_bag.kg, count: baggage.cabin_bag.count });
               }
               if (baggage.hand_luggage?.included) {
-                baggageItems.push({ label: 'Palubní zavazadlo', kg: baggage.hand_luggage.kg });
+                baggageItems.push({ label: 'Palubní zavazadlo', kg: baggage.hand_luggage.kg, count: baggage.hand_luggage.count });
               }
               if (baggage.checked_luggage?.included) {
-                baggageItems.push({ label: 'Odbavené zavazadlo', kg: baggage.checked_luggage.kg });
+                baggageItems.push({ label: 'Odbavené zavazadlo', kg: baggage.checked_luggage.kg, count: baggage.checked_luggage.count });
               }
               if (baggage.golf_bag?.included) {
-                baggageItems.push({ label: 'Golfový bag', kg: baggage.golf_bag.kg });
+                baggageItems.push({ label: 'Golfový bag', kg: baggage.golf_bag.kg, count: baggage.golf_bag.count });
               }
 
               return (
@@ -314,7 +314,7 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       {baggageItems.map((b, i) => (
                         <span key={i}>
                           {i > 0 && <span style={{ margin: '0 4px', color: '#aaa' }}>|</span>}
-                          {b.label}{b.kg ? <span style={{ fontWeight: 600 }}> {b.kg} kg</span> : ''}
+                          {b.count && b.count > 1 ? `${b.count}x ` : ''}{b.label}{b.kg ? <span style={{ fontWeight: 600 }}> {b.kg} kg</span> : ''}
                         </span>
                       ))}
                     </div>
@@ -379,10 +379,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       const b = details?.baggage;
                       if (b) {
                         const parts: string[] = [];
-                        if (b.cabin_bag?.included) parts.push('Taška');
-                        if (b.hand_luggage?.included) parts.push(b.hand_luggage.kg ? `Palubní ${b.hand_luggage.kg} kg` : 'Palubní');
-                        if (b.checked_luggage?.included) parts.push(b.checked_luggage.kg ? `Odbavené ${b.checked_luggage.kg} kg` : 'Odbavené');
-                        if (b.golf_bag?.included) parts.push(b.golf_bag.kg ? `Golfbag ${b.golf_bag.kg} kg` : 'Golfbag');
+                        const fmtCount = (c?: number) => c && c > 1 ? `${c}x ` : '';
+                        if (b.cabin_bag?.included) parts.push(`${fmtCount(b.cabin_bag.count)}Taška`);
+                        if (b.hand_luggage?.included) parts.push(`${fmtCount(b.hand_luggage.count)}Palubní${b.hand_luggage.kg ? ` ${b.hand_luggage.kg} kg` : ''}`);
+                        if (b.checked_luggage?.included) parts.push(`${fmtCount(b.checked_luggage.count)}Odbavené${b.checked_luggage.kg ? ` ${b.checked_luggage.kg} kg` : ''}`);
+                        if (b.golf_bag?.included) parts.push(`${fmtCount(b.golf_bag.count)}Golfbag${b.golf_bag.kg ? ` ${b.golf_bag.kg} kg` : ''}`);
                         if (parts.length > 0) baggageLine = parts.join(', ');
                       }
                     }
