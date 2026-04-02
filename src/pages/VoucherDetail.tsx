@@ -12,6 +12,7 @@ import { removeDiacritics } from "@/lib/utils";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { jsPDF } from "jspdf";
+import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type BaggageAllowance, type LogoInfo } from "@/lib/voucherPdfBuilder";
 import {
   AlertDialog,
   AlertDialogAction,
