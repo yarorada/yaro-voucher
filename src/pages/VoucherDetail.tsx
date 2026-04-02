@@ -406,7 +406,7 @@ const buildVoucherPdfBlob = (
 
   // ── BAGGAGE ALLOWANCE (only if flights exist and baggage data is present) ──
   if (flights.length > 0 && baggage) {
-    const baggageItems: { label: string; kg?: number; included?: boolean }[] = [
+    const baggageItems: { label: string; kg?: number; count?: number; included?: boolean }[] = [
       { label: "Personal item", ...(baggage.cabin_bag || {}) },
       { label: "Cabin bag", ...(baggage.hand_luggage || {}) },
       { label: "Checked luggage", ...(baggage.checked_luggage || {}) },
