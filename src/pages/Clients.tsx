@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
