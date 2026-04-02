@@ -234,13 +234,28 @@ export default function Invoicing() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, deals:deal_id(deal_number)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
+
+      // Fetch contract numbers for deal_ids
+      const dealIds = [...new Set((data || []).map((r: any) => r.deal_id).filter(Boolean))];
+      let contractMap: Record<string, string> = {};
+      if (dealIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from("travel_contracts")
+          .select("deal_id, contract_number")
+          .in("deal_id", dealIds);
+        if (contracts) {
+          for (const c of contracts) {
+            if (c.deal_id) contractMap[c.deal_id] = c.contract_number;
+          }
+        }
+      }
+
       return (data || []).map((row: any) => ({
         ...row,
-        deal_number: row.deals?.deal_number || null,
-        deals: undefined,
+        contract_number_display: row.deal_id ? (contractMap[row.deal_id] || null) : null,
       })) as Invoice[];
     },
   });
