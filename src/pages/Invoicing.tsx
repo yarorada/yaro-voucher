@@ -405,6 +405,13 @@ export default function Invoicing() {
           ? `${ocrPreview.issue_date.split(".")[2]}-${ocrPreview.issue_date.split(".")[1].padStart(2, "0")}-${ocrPreview.issue_date.split(".")[0].padStart(2, "0")}`
           : f.issue_date
         : f.issue_date,
+      variable_symbol: ocrPreview.variable_symbol || f.variable_symbol,
+      due_date: ocrPreview.due_date
+        ? ocrPreview.due_date.split(".").length === 3
+          ? `${ocrPreview.due_date.split(".")[2]}-${ocrPreview.due_date.split(".")[1].padStart(2, "0")}-${ocrPreview.due_date.split(".")[0].padStart(2, "0")}`
+          : f.due_date
+        : f.due_date,
+      bank_account: ocrPreview.bank_account || f.bank_account,
     }));
     setOcrPreview(null);
     toast.success("Data převzata do formuláře");
