@@ -83,17 +83,17 @@ export const StatsCard = () => {
       const lastFiltered = (lastYearData || []).filter(d => d.deal_id && dealIdsWithContract.has(d.deal_id));
 
       const currentStats: YearStats = {
-        revenue: currentData?.reduce((sum, d) => sum + (d.revenue || 0), 0) || 0,
-        costs: currentData?.reduce((sum, d) => sum + (d.total_costs || 0), 0) || 0,
-        profit: currentData?.reduce((sum, d) => sum + (d.profit || 0), 0) || 0,
-        dealCount: currentData?.length || 0,
+        revenue: currentFiltered.reduce((sum, d) => sum + (d.revenue || 0), 0),
+        costs: currentFiltered.reduce((sum, d) => sum + (d.total_costs || 0), 0),
+        profit: currentFiltered.reduce((sum, d) => sum + (d.profit || 0), 0),
+        dealCount: currentFiltered.length,
       };
 
       const lastYearStats: YearStats = {
-        revenue: lastYearData?.reduce((sum, d) => sum + (d.revenue || 0), 0) || 0,
-        costs: lastYearData?.reduce((sum, d) => sum + (d.total_costs || 0), 0) || 0,
-        profit: lastYearData?.reduce((sum, d) => sum + (d.profit || 0), 0) || 0,
-        dealCount: lastYearData?.length || 0,
+        revenue: lastFiltered.reduce((sum, d) => sum + (d.revenue || 0), 0),
+        costs: lastFiltered.reduce((sum, d) => sum + (d.total_costs || 0), 0),
+        profit: lastFiltered.reduce((sum, d) => sum + (d.profit || 0), 0),
+        dealCount: lastFiltered.length,
       };
 
       const calculateChange = (current: number, previous: number) => {
