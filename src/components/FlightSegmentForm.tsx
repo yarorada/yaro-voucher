@@ -140,6 +140,7 @@ const FlightSegmentRow = ({ segment, index, canRemove, onUpdate, onBatchUpdate, 
 export interface BaggageItem {
   included: boolean;
   kg?: number;
+  count?: number;
 }
 
 export interface FlightFormData {
