@@ -352,8 +352,7 @@ export default function Accounting() {
   };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="container max-w-[1600px] mx-auto space-y-4">
+    <PageShell maxWidth="wide" className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-heading-1">Účetnictví</h1>
           <div className="flex flex-wrap items-center gap-2">
