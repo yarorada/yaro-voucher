@@ -379,10 +379,11 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                       const b = details?.baggage;
                       if (b) {
                         const parts: string[] = [];
-                        if (b.cabin_bag?.included) parts.push('Taška');
-                        if (b.hand_luggage?.included) parts.push(b.hand_luggage.kg ? `Palubní ${b.hand_luggage.kg} kg` : 'Palubní');
-                        if (b.checked_luggage?.included) parts.push(b.checked_luggage.kg ? `Odbavené ${b.checked_luggage.kg} kg` : 'Odbavené');
-                        if (b.golf_bag?.included) parts.push(b.golf_bag.kg ? `Golfbag ${b.golf_bag.kg} kg` : 'Golfbag');
+                        const fmtCount = (c?: number) => c && c > 1 ? `${c}x ` : '';
+                        if (b.cabin_bag?.included) parts.push(`${fmtCount(b.cabin_bag.count)}Taška`);
+                        if (b.hand_luggage?.included) parts.push(`${fmtCount(b.hand_luggage.count)}Palubní${b.hand_luggage.kg ? ` ${b.hand_luggage.kg} kg` : ''}`);
+                        if (b.checked_luggage?.included) parts.push(`${fmtCount(b.checked_luggage.count)}Odbavené${b.checked_luggage.kg ? ` ${b.checked_luggage.kg} kg` : ''}`);
+                        if (b.golf_bag?.included) parts.push(`${fmtCount(b.golf_bag.count)}Golfbag${b.golf_bag.kg ? ` ${b.golf_bag.kg} kg` : ''}`);
                         if (parts.length > 0) baggageLine = parts.join(', ');
                       }
                     }
