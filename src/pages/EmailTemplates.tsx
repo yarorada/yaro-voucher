@@ -306,6 +306,5 @@ export default function EmailTemplates() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </PageShell>
 }

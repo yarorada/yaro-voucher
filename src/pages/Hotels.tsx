@@ -419,6 +419,5 @@ export default function Hotels() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </PageShell>
 }

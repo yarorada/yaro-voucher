@@ -378,7 +378,7 @@ const Statistics = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <PageShell className="space-y-6">
       <StatsSummaryCards stats={summaryStats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -392,7 +392,7 @@ const Statistics = () => {
       </div>
 
       <StatsClientTable excludeFlights={excludeFlights} flightCosts={flightCosts} />
-    </div>
+    </PageShell>
   );
 };
 
