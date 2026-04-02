@@ -246,8 +246,7 @@ const CreateContract = () => {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

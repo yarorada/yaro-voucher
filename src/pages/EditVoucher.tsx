@@ -83,8 +83,7 @@ const EditVoucher = () => {
         </header>
 
         <VoucherForm voucherId={id} initialData={initialData} />
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

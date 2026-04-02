@@ -14,8 +14,7 @@ const CreateVoucher = () => {
         </header>
 
         <VoucherForm />
-      </div>
-    </div>
+    </PageShell>
   );
 };
 
