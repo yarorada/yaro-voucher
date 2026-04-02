@@ -604,7 +604,7 @@ export default function Invoicing() {
       amount: effectiveTotal,
       variableSymbol: inv.variable_symbol || undefined,
       dueDate: inv.due_date || undefined,
-      message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined,
+      message: inv.notes || (inv.invoice_number ? `Faktura ${inv.invoice_number}` : undefined),
     });
 
     return QRCode.toDataURL(spayd, { width: 180, margin: 1, errorCorrectionLevel: "M" });
