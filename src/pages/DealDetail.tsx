@@ -820,6 +820,7 @@ const DealDetail = () => {
             discount_note: discountNote || null,
             adjustment_note: adjustmentNote || null,
             lead_client_id: leadTravelerId || null,
+            lead_traveler_is_first_passenger: leadTravelerIsFirstPassenger,
           })
           .eq("id", deal.id);
         setLastSaved(new Date());
