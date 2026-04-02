@@ -211,6 +211,10 @@ const buildVoucherPdfBlob = (
 
   const others: string[] = (voucher.other_travelers as string[]) || [];
   if (others.length > 0) {
+    // Bold "Others:" label
+    doc.setFont("helvetica", "bold");
+    doc.text("Others:", margin, y);
+    doc.setFont("helvetica", "normal");
     // Render others in 3 columns, aligned with main client name
     const colW = (W - margin - namesX) / 3;
     let col = 0;
