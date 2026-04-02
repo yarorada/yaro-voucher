@@ -1025,14 +1025,17 @@ const DealDetail = () => {
         adjustmentNote: data.adjustment_note || "",
       };
       
-      const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
-      if (leadTraveler) {
-        setLeadTravelerId(leadTraveler.client_id);
-        setLeadTravelerIsFirstPassenger(true);
-      } else if ((data as any).lead_client_id) {
-        // Orderer is set but not a traveler (checkbox was unchecked)
+      // Load lead traveler and first-passenger flag from DB
+      const isFirstPassenger = (data as any).lead_traveler_is_first_passenger ?? true;
+      if ((data as any).lead_client_id) {
         setLeadTravelerId((data as any).lead_client_id);
-        setLeadTravelerIsFirstPassenger(false);
+        setLeadTravelerIsFirstPassenger(isFirstPassenger);
+      } else {
+        const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
+        if (leadTraveler) {
+          setLeadTravelerId(leadTraveler.client_id);
+          setLeadTravelerIsFirstPassenger(true);
+        }
       }
 
       // Fetch variant count
