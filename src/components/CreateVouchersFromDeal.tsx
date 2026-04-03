@@ -492,7 +492,7 @@ export function CreateVouchersFromDeal({
         variant="outline"
         size="sm"
         onClick={handleOpenDialog}
-        className="gap-2 md:size-default"
+        className={triggerClassName || "gap-2 md:size-default"}
       >
         <FileText className="h-4 w-4" />
         <span className="hidden sm:inline">Vytvořit vouchery</span>
