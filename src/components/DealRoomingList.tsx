@@ -239,21 +239,25 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     );
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from("deals")
-      .update({ rooming_list: rooms as any })
-      .eq("id", dealId);
-
-    if (error) {
-      console.error("Save rooming list error:", error);
-      toast.error("Nepodařilo se uložit rooming list");
-    } else {
-      toast.success("Rooming list uložen");
+  // Auto-save rooming list
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
     }
-    setSaving(false);
-  };
+    if (!loaded) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      const { error } = await supabase
+        .from("deals")
+        .update({ rooming_list: rooms as any })
+        .eq("id", dealId);
+      if (error) {
+        console.error("Auto-save rooming list error:", error);
+      }
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [rooms, loaded, dealId]);
 
   const getAgeCategory = (dateOfBirth: string | null): "adult" | "child" | "infant" => {
     if (!dateOfBirth) return "adult";
