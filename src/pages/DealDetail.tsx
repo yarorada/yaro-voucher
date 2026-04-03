@@ -2861,7 +2861,7 @@ const DealDetail = () => {
           </TabsList>
 
           {/* ── ZÁKLADNÍ INFO ── */}
-          <TabsContent value="info" className="space-y-6">
+          <TabsContent value="info" className="space-y-6 overflow-x-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
