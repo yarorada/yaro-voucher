@@ -3753,10 +3753,10 @@ const DealDetail = () => {
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
-                          <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Osoby</TableHead>
-                          <TableHead className="text-center">Počet</TableHead>
-                          <TableHead>Dodavatel</TableHead>
+                          <TableHead className="hidden sm:table-cell">Datum</TableHead>
+                          <TableHead className="hidden sm:table-cell text-center">Osoby</TableHead>
+                          <TableHead className="hidden sm:table-cell text-center">Počet</TableHead>
+                          <TableHead className="hidden md:table-cell">Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
                         </TableRow>
