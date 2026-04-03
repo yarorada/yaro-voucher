@@ -449,7 +449,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
             <div className="flex gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm">
                     <Plus className="h-4 w-4 mr-1" />
                     Pokoj
                     {rooms.length > 0 && <ChevronDown className="h-3 w-3 ml-1" />}
