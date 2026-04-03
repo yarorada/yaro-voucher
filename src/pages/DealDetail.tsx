@@ -2884,7 +2884,7 @@ const DealDetail = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 min-w-0">
               {/* Left side - form fields */}
               <div className="space-y-3">
                 <div className="space-y-1">
