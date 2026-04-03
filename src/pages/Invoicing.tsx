@@ -1485,7 +1485,7 @@ export default function Invoicing() {
             {/* === SYMBOLY === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Symboly</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Variabilní symbol</Label>
                   <Input
