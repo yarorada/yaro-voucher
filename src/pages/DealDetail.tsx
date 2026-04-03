@@ -2629,19 +2629,8 @@ const DealDetail = () => {
   usePageToolbar(
     deal ? (
       <>
-        {/* Duplicate dialog (shared by mobile & desktop) */}
+        {/* Duplicate dialog */}
         <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className={`${toolbarButtonClass} hidden md:inline-flex`}
-              onClick={() => setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString())}
-            >
-              <Copy className="h-4 w-4" />
-              Duplikovat
-            </Button>
-          </DialogTrigger>
           <DialogContent className="bg-background">
             <DialogHeader>
               <DialogTitle>Duplikovat obchodní případ</DialogTitle>
@@ -2671,11 +2660,7 @@ const DealDetail = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Desktop buttons */}
-        <Button variant="outline" size="sm" onClick={handleCreateContract} className={`${toolbarButtonClass} hidden md:inline-flex`}>
-          <FileSignature className="h-4 w-4" />
-          Smlouva
-        </Button>
+        {/* Voucher & Share (hidden triggers, opened from dropdown) */}
         <CreateVouchersFromDeal
           dealId={deal.id}
           services={services}
@@ -2686,7 +2671,7 @@ const DealDetail = () => {
           })()}
           teeTimes={deal.tee_times as any}
           onComplete={fetchDeal}
-          triggerClassName={`${toolbarButtonClass} hidden md:inline-flex gap-2`}
+          triggerClassName="hidden"
           externalOpen={mobileVoucherOpen}
           onExternalOpenChange={setMobileVoucherOpen}
         />
@@ -2696,25 +2681,17 @@ const DealDetail = () => {
           onTokenGenerated={setShareToken}
           variants={dealVariants}
           key={`share-${dealVariants.length}`}
-          triggerClassName={`${toolbarButtonClass} hidden md:inline-flex gap-2`}
+          triggerClassName="hidden"
           externalOpen={mobileShareOpen}
           onExternalOpenChange={setMobileShareOpen}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDelete}
-          className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground hidden md:inline-flex`}
-        >
-          <Trash2 className="h-4 w-4" />
-          Smazat
-        </Button>
 
-        {/* Mobile: three-dot menu */}
+        {/* Single actions dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8 md:hidden">
+            <Button size="sm" className="h-8 text-xs gap-1">
               <MoreVertical className="h-4 w-4" />
+              Úpravy
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
