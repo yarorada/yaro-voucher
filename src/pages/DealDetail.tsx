@@ -3023,7 +3023,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── CESTUJÍCÍ ── */}
-          <TabsContent value="travelers" className="space-y-6">
+          <TabsContent value="travelers" className="space-y-6 overflow-x-hidden">
         <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
