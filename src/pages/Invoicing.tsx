@@ -1110,37 +1110,42 @@ export default function Invoicing() {
       )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Fakturace</h1>
+        <Button onClick={() => openNewForm(tab)} size="sm" className="sm:hidden">
+          <Plus className="h-4 w-4 mr-1" /> Nová
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
           <TabsList>
-            <TabsTrigger value="received">Přijaté faktury</TabsTrigger>
-            <TabsTrigger value="issued">Vydané faktury</TabsTrigger>
+            <TabsTrigger value="received">Přijaté</TabsTrigger>
+            <TabsTrigger value="issued">Vydané</TabsTrigger>
           </TabsList>
-          <div className="flex-1" />
-          <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny</SelectItem>
-              <SelectItem value="paid">Zaplacené</SelectItem>
-              <SelectItem value="unpaid">Nezaplacené</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Hledat…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-56"
-            />
+          <div className="hidden sm:block flex-1" />
+          <div className="flex items-center gap-2">
+            <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
+              <SelectTrigger className="w-32 sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny</SelectItem>
+                <SelectItem value="paid">Zaplacené</SelectItem>
+                <SelectItem value="unpaid">Nezaplacené</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Hledat…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-full sm:w-56"
+              />
+            </div>
+            <Button onClick={() => openNewForm(tab)} size="sm" className="hidden sm:inline-flex">
+              <Plus className="h-4 w-4 mr-1" /> Nová faktura
+            </Button>
           </div>
-          <Button onClick={() => openNewForm(tab)} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Nová faktura
-          </Button>
         </div>
 
         <TabsContent value="received">
