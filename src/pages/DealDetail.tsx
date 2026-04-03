@@ -302,6 +302,8 @@ interface Deal {
   adjustment_note: string | null;
   tee_times: any;
   currency: string | null;
+  lead_client_id: string | null;
+  lead_traveler_is_first_passenger: boolean;
   destination?: {
     id: string;
     name: string;
