@@ -192,10 +192,15 @@ export function CreateVouchersFromDeal({
   clientName,
   teeTimes,
   onComplete,
+  triggerClassName,
+  externalOpen,
+  onExternalOpenChange,
 }: CreateVouchersFromDealProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onExternalOpenChange || setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [results, setResults] = useState<
