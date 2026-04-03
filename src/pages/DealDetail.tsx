@@ -2860,7 +2860,7 @@ const DealDetail = () => {
                   </div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-2 md:col-span-3">
                   <Label className="text-xs text-muted-foreground">Destinace</Label>
                   <DestinationCombobox
                     value={destinationId}
