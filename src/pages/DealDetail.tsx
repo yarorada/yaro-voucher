@@ -415,6 +415,8 @@ const DealDetail = () => {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [newTravelerId, setNewTravelerId] = useState("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [mobileVoucherOpen, setMobileVoucherOpen] = useState(false);
+  const [mobileShareOpen, setMobileShareOpen] = useState(false);
   const [hotelConfirmOpen, setHotelConfirmOpen] = useState(false);
   const [hotelConfirmResolver, setHotelConfirmResolver] = useState<{ resolve: (v: boolean) => void } | null>(null);
   const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
