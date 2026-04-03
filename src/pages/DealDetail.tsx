@@ -2909,7 +2909,7 @@ const DealDetail = () => {
                   />
                 </div>
 
-                <div className="space-y-1 col-span-2 md:col-span-3">
+                <div className="space-y-1 sm:col-span-2 md:col-span-3">
                   <Label className="text-xs text-muted-foreground">Poznámky</Label>
                   <Textarea
                     id="notes"
