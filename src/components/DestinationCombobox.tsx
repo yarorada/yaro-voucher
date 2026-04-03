@@ -94,6 +94,9 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
   }, [search, q, destinations, destinationSuggestions]);
 
   const selectedDestination = destinations.find((d) => d.id === value);
+  const selectedDestinationLabel = selectedDestination
+    ? `${selectedDestination.name} (${selectedDestination.countries?.name} – ${selectedDestination.countries?.iso_code})`
+    : "Vyberte destinaci...";
 
   // Create destination + country (if needed) in one flow
   const handleCreateNew = async (destinationName: string, countryName: string, iso: string, currency: string) => {
@@ -149,15 +152,13 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className="w-full min-w-0 justify-between overflow-hidden"
         >
-          {selectedDestination
-            ? `${selectedDestination.name} (${selectedDestination.countries?.name} – ${selectedDestination.countries?.iso_code})`
-            : "Vyberte destinaci..."}
+          <span className="min-w-0 flex-1 truncate text-left">{selectedDestinationLabel}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[320px] p-0 bg-popover z-50" align="start" onWheel={(e) => e.stopPropagation()}>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] min-w-0 p-0 bg-popover z-50" align="start" onWheel={(e) => e.stopPropagation()}>
         <div className="flex items-center border-b px-3">
           <Input
             ref={inputRef}
@@ -184,7 +185,7 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                     setSearch("");
                   }}
                   className={cn(
-                    "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                    "relative flex w-full min-w-0 cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                     value === destination.id && "bg-accent"
                   )}
                 >
@@ -194,11 +195,8 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                       value === destination.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span>
-                    {destination.name}{" "}
-                    <span className="text-muted-foreground">
-                      ({destination.countries?.name} – {destination.countries?.iso_code})
-                    </span>
+                  <span className="min-w-0 truncate text-left">
+                    {destination.name} ({destination.countries?.name} – {destination.countries?.iso_code})
                   </span>
                 </button>
               ))}
@@ -223,14 +221,11 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                   onClick={() => {
                     handleCreateNew(sug.destination, sug.countryName, sug.iso, sug.currency);
                   }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                  className="flex w-full min-w-0 items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4 shrink-0 text-primary" />
-                  <span>
-                    <strong>{sug.destination}</strong>
-                    <span className="text-muted-foreground">
-                      {" "}– {sug.countryName} ({sug.iso})
-                    </span>
+                  <span className="min-w-0 truncate text-left">
+                    {sug.destination} – {sug.countryName} ({sug.iso})
                   </span>
                 </button>
               ))}
@@ -251,14 +246,11 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                     const destName = search.trim().charAt(0).toUpperCase() + search.trim().slice(1);
                     handleCreateNew(destName, country.name, country.iso, country.currency);
                   }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                  className="flex w-full min-w-0 items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4 shrink-0 text-primary" />
-                  <span>
-                    <strong>{search.trim()}</strong>{" "}
-                    <span className="text-muted-foreground">
-                      → {country.name} ({country.iso}) · {country.currency}
-                    </span>
+                  <span className="min-w-0 truncate text-left">
+                    {search.trim()} → {country.name} ({country.iso}) · {country.currency}
                   </span>
                 </button>
               ))}
@@ -274,10 +266,10 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
               {!showCustomCountryPicker ? (
                 <button
                   onClick={() => setShowCustomCountryPicker(true)}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                  className="flex w-full min-w-0 items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
                 >
                   <Plus className="h-4 w-4 shrink-0 text-primary" />
-                  <span>
+                  <span className="min-w-0 truncate text-left">
                     Vytvořit <strong>„{search.trim()}"</strong> a přiřadit zemi
                   </span>
                 </button>
@@ -302,10 +294,10 @@ export function DestinationCombobox({ value, onValueChange }: DestinationCombobo
                             setShowCustomCountryPicker(false);
                             setCustomCountrySearch("");
                           }}
-                          className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                          className="flex w-full min-w-0 items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
                         >
                           <Plus className="h-3 w-3 shrink-0 text-primary" />
-                          <span>{country.name} ({country.iso})</span>
+                          <span className="min-w-0 truncate text-left">{country.name} ({country.iso})</span>
                         </button>
                       ))}
                       {searchCountries(customCountrySearch, 10).length === 0 && (

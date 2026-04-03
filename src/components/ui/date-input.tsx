@@ -215,7 +215,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
     };
 
     return (
-      <div ref={ref} className={cn("flex gap-2", className)}>
+      <div ref={ref} className={cn("flex w-full min-w-0 gap-2", className)}>
         <Input
           type="text"
           value={inputValue}
@@ -224,7 +224,7 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
           onBlur={handleBlur}
           onPaste={handlePaste}
           placeholder={placeholder}
-          className="flex-1"
+          className="min-w-0 flex-1"
         />
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

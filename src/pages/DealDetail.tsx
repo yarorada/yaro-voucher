@@ -2767,12 +2767,12 @@ const DealDetail = () => {
 
   return (
     <PageShell>
-        <header className="mb-8">
-           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+        <header className="mb-8 min-w-0 overflow-hidden">
+           <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex min-w-0 items-center gap-2">
               <DealStatusBadge status={deal.status} />
               {isEditingName ? (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
+                <div className="flex flex-1 min-w-0 items-center gap-1 overflow-hidden">
                   <Input
                     ref={nameInputRef}
                     value={dealName}
@@ -2797,7 +2797,7 @@ const DealDetail = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 min-w-0">
+                <div className="flex flex-1 min-w-0 items-center gap-1 overflow-hidden">
                   <span className="font-bold text-heading-1 text-foreground flex-shrink-0">
                     {deal.deal_number.match(/^D-\d{6}/)?.[0] || deal.deal_number}
                   </span>
@@ -2830,7 +2830,7 @@ const DealDetail = () => {
                 parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
               }
               const desc = parts.join(" • ");
-              return desc ? <span className="text-sm text-muted-foreground truncate">{desc}</span> : null;
+              return desc ? <span className="block max-w-full truncate text-sm text-muted-foreground">{desc}</span> : null;
             })()}
           </div>
         </header>
@@ -2862,12 +2862,12 @@ const DealDetail = () => {
 
           {/* ── ZÁKLADNÍ INFO ── */}
           <TabsContent value="info" className="space-y-6 overflow-x-hidden">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
-           <CardContent className="overflow-x-hidden">
+           <CardContent className="min-w-0 overflow-x-hidden">
             {/* Mobile financial metrics row */}
             <div className="grid grid-cols-3 gap-2 mb-4 sm:hidden">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -2884,13 +2884,13 @@ const DealDetail = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 min-w-0">
+            <div className="grid min-w-0 grid-cols-1 items-start gap-6 sm:grid-cols-[minmax(0,1fr)_auto]">
               {/* Left side - form fields */}
-              <div className="space-y-3 min-w-0 overflow-hidden">
+              <div className="min-w-0 space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 min-w-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2941,7 +2941,7 @@ const DealDetail = () => {
                         const details = hs.details as any;
                         const mealPlan = details?.meal_plan || hs.description || '';
                         return (
-                          <div key={hs.id} className={`flex items-center gap-3 ${idx > 0 ? 'mt-1' : ''}`}>
+                          <div key={hs.id} className={`flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3 ${idx > 0 ? 'mt-1' : ''}`}>
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <Hotel className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                               <span className="text-sm font-medium truncate">{hs.service_name}</span>
@@ -2950,9 +2950,9 @@ const DealDetail = () => {
                               )}
                             </div>
                             {mealPlan && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                              <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground sm:flex-shrink-0">
                                 <Utensils className="h-3 w-3" />
-                                <span>{mealPlan}</span>
+                                <span className="truncate">{mealPlan}</span>
                               </div>
                             )}
                           </div>
@@ -2965,6 +2965,7 @@ const DealDetail = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Datum</Label>
                   <DateRangePicker
+                    className="min-w-0"
                     dateFrom={startDate}
                     dateTo={endDate}
                     onDateFromChange={setStartDate}

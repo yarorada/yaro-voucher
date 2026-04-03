@@ -28,26 +28,26 @@ export const DateRangePicker = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex flex-col sm:flex-row gap-2 items-start sm:items-center", className)}
+      className={cn("flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center", className)}
     >
-      <div className="flex items-center gap-2 flex-1 w-full">
-        <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[20px]">Od</span>
+      <div className="flex w-full min-w-0 flex-1 items-center gap-2">
+        <span className="shrink-0 text-sm text-muted-foreground">Od</span>
         <DateInput
           value={dateFrom}
           onChange={onDateFromChange}
           placeholder="DD.MM.RRRR"
-          className="flex-1"
+          className="min-w-0 flex-1"
           onCalendarSelect={handleFromDateSet}
           onTextInput={handleFromDateSet}
         />
       </div>
-      <div className="flex items-center gap-2 flex-1 w-full">
-        <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[20px]">Do</span>
+      <div className="flex w-full min-w-0 flex-1 items-center gap-2">
+        <span className="shrink-0 text-sm text-muted-foreground">Do</span>
         <DateInput
           value={dateTo}
           onChange={onDateToChange}
           placeholder="DD.MM.RRRR"
-          className="flex-1"
+          className="min-w-0 flex-1"
           open={toOpen}
           onOpenChange={setToOpen}
         />
