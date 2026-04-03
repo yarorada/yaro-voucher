@@ -3829,7 +3829,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── DOKUMENTY ── */}
-          <TabsContent value="documents" className="space-y-6">
+          <TabsContent value="documents" className="space-y-6 overflow-x-hidden">
         {/* Cestovní dokumenty section */}
         <DealDocumentsSection
           dealId={deal.id}
