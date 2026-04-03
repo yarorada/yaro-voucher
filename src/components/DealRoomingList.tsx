@@ -446,26 +446,37 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                 Přiřaďte cestující k pokojům
               </CardDescription>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {rooms.length > 0 && (
-                <>
-                  <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
-                    <FileDown className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">PDF</span>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Pokoj
+                    {rooms.length > 0 && <ChevronDown className="h-3 w-3 ml-1" />}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const formatD = (d: string | null) => {
-                        if (!d) return "";
-                        const dt = new Date(d);
-                        return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
-                      };
-                      const dateRange = dealInfo?.start_date && dealInfo?.end_date
-                        ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
-                        : "";
-                      setCustomMessage(
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={addRoom}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat pokoj
+                  </DropdownMenuItem>
+                  {rooms.length > 0 && (
+                    <>
+                      <DropdownMenuItem onClick={handleDownloadPdf}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Stáhnout PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const formatD = (d: string | null) => {
+                            if (!d) return "";
+                            const dt = new Date(d);
+                            return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
+                          };
+                          const dateRange = dealInfo?.start_date && dealInfo?.end_date
+                            ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
+                            : "";
+                          setCustomMessage(
 `Dear ${hotelSupplier?.name || "partner"},
 
 Please find attached the rooming list for ${dealInfo?.hotel_name || "the hotel"}${dateRange ? ` for the period ${dateRange}` : ""}.
@@ -476,25 +487,18 @@ Best regards,
 YARO Travel
 Tel.: +420 602 102 108
 zajezdy@yarotravel.cz`
-                      );
-                      setSendDialogOpen(true);
-                    }}
-                    disabled={!hotelSupplier?.email}
-                    title={!hotelSupplier?.email ? "Dodavatel ubytování nemá e-mail" : `Odeslat na ${hotelSupplier.email}`}
-                  >
-                    <Send className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Odeslat</span>
-                  </Button>
-                </>
-              )}
-              <Button size="sm" variant="outline" onClick={addRoom}>
-                <Plus className="h-4 w-4 mr-1" />
-                Pokoj
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />
-                Uložit
-              </Button>
+                          );
+                          setSendDialogOpen(true);
+                        }}
+                        disabled={!hotelSupplier?.email}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Odeslat dodavateli
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
