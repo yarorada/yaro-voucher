@@ -1036,9 +1036,9 @@ const DealDetail = () => {
       };
       
       // Load lead traveler and first-passenger flag from DB
-      const isFirstPassenger = (data as any).lead_traveler_is_first_passenger ?? true;
-      if ((data as any).lead_client_id) {
-        setLeadTravelerId((data as any).lead_client_id);
+      const isFirstPassenger = data.lead_traveler_is_first_passenger ?? true;
+      if (data.lead_client_id) {
+        setLeadTravelerId(data.lead_client_id);
         setLeadTravelerIsFirstPassenger(isFirstPassenger);
       } else {
         const leadTraveler = data.deal_travelers.find((t: any) => t.is_lead_traveler);
