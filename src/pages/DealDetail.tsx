@@ -2868,9 +2868,25 @@ const DealDetail = () => {
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row gap-6">
+            {/* Mobile financial metrics row */}
+            <div className="grid grid-cols-3 gap-2 mb-4 sm:hidden">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodej</div>
+                <div className="text-sm font-bold text-primary mt-0.5">{formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákup</div>
+                <div className="text-sm font-bold text-muted-foreground mt-0.5">{formatPriceCurrency(totalCostPrice, "CZK")}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Zisk</div>
+                <div className={`text-sm font-bold mt-0.5 ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatPriceCurrency(profit, "CZK")}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6">
               {/* Left side - form fields */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+              <div className="space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
@@ -2907,7 +2923,7 @@ const DealDetail = () => {
                   </div>
                 </div>
 
-                <div className="space-y-1 sm:col-span-2 md:col-span-3">
+                <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Destinace</Label>
                   <DestinationCombobox
                     value={destinationId}
@@ -2920,7 +2936,7 @@ const DealDetail = () => {
                   const hotelServices = services.filter(s => s.service_type === 'hotel');
                   if (hotelServices.length === 0) return null;
                   return (
-                    <div className={`space-y-1 sm:col-span-2 md:col-span-3`}>
+                    <div className="space-y-1">
                       {hotelServices.map((hs, idx) => {
                         const details = hs.details as any;
                         const mealPlan = details?.meal_plan || hs.description || '';
@@ -2946,7 +2962,7 @@ const DealDetail = () => {
                   );
                 })()}
 
-                <div className="space-y-1 sm:col-span-2 md:col-span-3">
+                <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Datum</Label>
                   <DateRangePicker
                     dateFrom={startDate}
@@ -2956,7 +2972,7 @@ const DealDetail = () => {
                   />
                 </div>
 
-                <div className="space-y-1 sm:col-span-2 md:col-span-3">
+                <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Poznámky</Label>
                   <Textarea
                     id="notes"
@@ -2968,25 +2984,25 @@ const DealDetail = () => {
                 </div>
               </div>
 
-              {/* Right side - price summary */}
-              <div className="md:w-48 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 space-y-3">
+              {/* Right side - financial panel (desktop/tablet only) */}
+              <div className="hidden sm:flex flex-col w-52 rounded-xl bg-muted/30 p-5 space-y-4">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Prodejní cena</Label>
-                  <div className="text-title font-bold text-primary">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodejní cena</div>
+                  <div className="text-lg font-bold text-primary">
                     {formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Nákupní cena</Label>
-                  <div className="text-lg font-semibold text-muted-foreground">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákupní cena</div>
+                  <div className="text-base font-semibold text-muted-foreground">
                     {formatPriceCurrency(totalCostPrice, "CZK")}
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Zisk</Label>
-                  <div className={`text-title font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Zisk</div>
+                  <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatPriceCurrency(profit, "CZK")}
                   </div>
                 </div>
