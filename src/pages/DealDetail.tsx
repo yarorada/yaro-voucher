@@ -622,6 +622,7 @@ const DealDetail = () => {
   const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
+  const [activeTab, setActiveTab] = useState("info");
   const [status, setStatus] = useState<"inquiry" | "quote" | "approved" | "confirmed" | "cancelled" | "completed" | "dispatched">("inquiry");
   const [destinationId, setDestinationId] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -2792,8 +2793,24 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <Tabs defaultValue="info" className="mt-2">
-          <TabsList className="mb-4 flex overflow-x-auto scrollbar-hide">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+          {/* Mobile: dropdown select */}
+          <div className="md:hidden mb-4">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">Základní info</SelectItem>
+                <SelectItem value="travelers">Cestující</SelectItem>
+                <SelectItem value="payments">Platební kalendář</SelectItem>
+                <SelectItem value="services">Služby</SelectItem>
+                <SelectItem value="documents">Dokumenty</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Desktop: classic tabs */}
+          <TabsList className="mb-4 hidden md:flex overflow-x-auto scrollbar-hide">
             <TabsTrigger value="info" className="whitespace-nowrap">Základní info</TabsTrigger>
             <TabsTrigger value="travelers" className="whitespace-nowrap">Cestující</TabsTrigger>
             <TabsTrigger value="payments" className="whitespace-nowrap">Platební kalendář</TabsTrigger>
@@ -2811,7 +2828,7 @@ const DealDetail = () => {
           <CardContent>
             <div className="flex flex-col md:flex-row gap-6">
               {/* Left side - form fields */}
-              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
