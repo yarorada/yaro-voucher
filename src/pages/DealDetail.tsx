@@ -2867,7 +2867,7 @@ const DealDetail = () => {
             <CardTitle>Základní informace</CardTitle>
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
-          <CardContent>
+           <CardContent className="overflow-x-hidden">
             {/* Mobile financial metrics row */}
             <div className="grid grid-cols-3 gap-2 mb-4 sm:hidden">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
