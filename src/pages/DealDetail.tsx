@@ -3146,7 +3146,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── SLUŽBY ── */}
-          <TabsContent value="services" className="space-y-6">
+          <TabsContent value="services" className="space-y-6 overflow-x-hidden">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
