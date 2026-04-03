@@ -1473,7 +1473,7 @@ export default function Invoicing() {
             {/* === DATUMY === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Datumy</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <InvoiceDatePicker label="Datum vystavení" value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v, taxable_date: f.taxable_date === f.issue_date || !f.taxable_date ? v : f.taxable_date }))} />
                 {form.invoice_type === "issued" && (
                   <InvoiceDatePicker label="DUZP" value={form.taxable_date} onChange={(v) => setForm((f) => ({ ...f, taxable_date: v }))} />
