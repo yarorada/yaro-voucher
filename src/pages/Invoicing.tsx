@@ -1110,37 +1110,42 @@ export default function Invoicing() {
       )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Fakturace</h1>
+        <Button onClick={() => openNewForm(tab)} size="sm" className="sm:hidden">
+          <Plus className="h-4 w-4 mr-1" /> Nová
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
           <TabsList>
-            <TabsTrigger value="received">Přijaté faktury</TabsTrigger>
-            <TabsTrigger value="issued">Vydané faktury</TabsTrigger>
+            <TabsTrigger value="received">Přijaté</TabsTrigger>
+            <TabsTrigger value="issued">Vydané</TabsTrigger>
           </TabsList>
-          <div className="flex-1" />
-          <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny</SelectItem>
-              <SelectItem value="paid">Zaplacené</SelectItem>
-              <SelectItem value="unpaid">Nezaplacené</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Hledat…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-56"
-            />
+          <div className="hidden sm:block flex-1" />
+          <div className="flex items-center gap-2">
+            <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
+              <SelectTrigger className="w-32 sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny</SelectItem>
+                <SelectItem value="paid">Zaplacené</SelectItem>
+                <SelectItem value="unpaid">Nezaplacené</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Hledat…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-full sm:w-56"
+              />
+            </div>
+            <Button onClick={() => openNewForm(tab)} size="sm" className="hidden sm:inline-flex">
+              <Plus className="h-4 w-4 mr-1" /> Nová faktura
+            </Button>
           </div>
-          <Button onClick={() => openNewForm(tab)} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Nová faktura
-          </Button>
         </div>
 
         <TabsContent value="received">
@@ -1184,7 +1189,7 @@ export default function Invoicing() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Typ faktury</Label>
                 <Select value={form.invoice_type} onValueChange={(v) => setForm((f) => ({ ...f, invoice_type: v }))}>
@@ -1213,7 +1218,7 @@ export default function Invoicing() {
               <>
                 <div className="border rounded-lg p-3 space-y-3">
                   <h3 className="text-sm font-semibold">Odběratel</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Vybrat z partnerů</Label>
                       <Select value={form.supplier_id} onValueChange={handleSupplierSelect}>
@@ -1245,7 +1250,7 @@ export default function Invoicing() {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Název</Label>
                       <Input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} />
@@ -1329,7 +1334,7 @@ export default function Invoicing() {
                 {/* Supplier info */}
                 <div className="border rounded-lg p-3 space-y-3">
                   <h3 className="text-sm font-semibold">Dodavatel</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>IČO dodavatele</Label>
                       <div className="flex gap-1">
@@ -1348,7 +1353,7 @@ export default function Invoicing() {
                       <Input value={form.supplier_name} onChange={(e) => setForm((f) => ({ ...f, supplier_name: e.target.value }))} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>DIČ</Label>
                       <Input value={form.supplier_dic} onChange={(e) => setForm((f) => ({ ...f, supplier_dic: e.target.value }))} />
@@ -1372,7 +1377,8 @@ export default function Invoicing() {
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 text-xs text-muted-foreground font-medium px-1">
+                  {/* Desktop header */}
+                  <div className="hidden sm:grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 text-xs text-muted-foreground font-medium px-1">
                     <span>Popis</span>
                     <span>Množství</span>
                     <span>Cena/ks</span>
@@ -1381,60 +1387,119 @@ export default function Invoicing() {
                     <span></span>
                   </div>
                   {items.map((item, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 items-center">
-                      <Input
-                        value={item.text}
-                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
-                        placeholder="Popis položky"
-                        className="h-8 text-sm"
-                      />
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))}
-                        className="h-8 text-sm"
-                        min={0}
-                      />
-                      <Input
-                        type="number"
-                        value={item.unit_price}
-                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, unit_price: parseFloat(e.target.value) || 0 } : it))}
-                        className="h-8 text-sm"
-                        min={0}
-                      />
-                      <Input
-                        type="number"
-                        value={item.vat_rate}
-                        onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, vat_rate: parseFloat(e.target.value) || 0 } : it))}
-                        className="h-8 text-sm"
-                        min={0}
-                      />
-                      <span className="text-sm tabular-nums text-right pr-1">
-                        {(item.quantity * item.unit_price).toLocaleString("cs-CZ")}
-                      </span>
-                      <div className="flex gap-0.5">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => setItems((prev) => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)])}
-                          title="Duplikovat"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        {items.length > 1 && (
+                    <div key={idx}>
+                      {/* Desktop row */}
+                      <div className="hidden sm:grid grid-cols-[1fr_70px_100px_70px_70px_32px] gap-1.5 items-center">
+                        <Input
+                          value={item.text}
+                          onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
+                          placeholder="Popis položky"
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))}
+                          className="h-8 text-sm"
+                          min={0}
+                        />
+                        <Input
+                          type="number"
+                          value={item.unit_price}
+                          onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, unit_price: parseFloat(e.target.value) || 0 } : it))}
+                          className="h-8 text-sm"
+                          min={0}
+                        />
+                        <Input
+                          type="number"
+                          value={item.vat_rate}
+                          onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, vat_rate: parseFloat(e.target.value) || 0 } : it))}
+                          className="h-8 text-sm"
+                          min={0}
+                        />
+                        <span className="text-sm tabular-nums text-right pr-1">
+                          {(item.quantity * item.unit_price).toLocaleString("cs-CZ")}
+                        </span>
+                        <div className="flex gap-0.5">
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
-                            title="Odebrat"
+                            className="h-7 w-7"
+                            onClick={() => setItems((prev) => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)])}
+                            title="Duplikovat"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Copy className="h-3 w-3" />
                           </Button>
-                        )}
+                          {items.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                              title="Odebrat"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Mobile card row */}
+                      <div className="sm:hidden border rounded-md p-2 space-y-2">
+                        <Input
+                          value={item.text}
+                          onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
+                          placeholder="Popis položky"
+                          className="h-8 text-sm"
+                        />
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Ks</Label>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))}
+                              className="h-8 text-sm"
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Cena/ks</Label>
+                            <Input
+                              type="number"
+                              value={item.unit_price}
+                              onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, unit_price: parseFloat(e.target.value) || 0 } : it))}
+                              className="h-8 text-sm"
+                              min={0}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">DPH %</Label>
+                            <Input
+                              type="number"
+                              value={item.vat_rate}
+                              onChange={(e) => setItems((prev) => prev.map((it, i) => i === idx ? { ...it, vat_rate: parseFloat(e.target.value) || 0 } : it))}
+                              className="h-8 text-sm"
+                              min={0}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium tabular-nums">
+                            = {(item.quantity * item.unit_price).toLocaleString("cs-CZ")} {form.currency}
+                          </span>
+                          <div className="flex gap-0.5">
+                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setItems((prev) => [...prev.slice(0, idx + 1), { ...prev[idx] }, ...prev.slice(idx + 1)])} title="Duplikovat">
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            {items.length > 1 && (
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))} title="Odebrat">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1468,7 +1533,7 @@ export default function Invoicing() {
             {/* === DATUMY === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Datumy</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <InvoiceDatePicker label="Datum vystavení" value={form.issue_date} onChange={(v) => setForm((f) => ({ ...f, issue_date: v, taxable_date: f.taxable_date === f.issue_date || !f.taxable_date ? v : f.taxable_date }))} />
                 {form.invoice_type === "issued" && (
                   <InvoiceDatePicker label="DUZP" value={form.taxable_date} onChange={(v) => setForm((f) => ({ ...f, taxable_date: v }))} />
@@ -1480,7 +1545,7 @@ export default function Invoicing() {
             {/* === SYMBOLY === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Symboly</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Variabilní symbol</Label>
                   <Input
@@ -1504,7 +1569,7 @@ export default function Invoicing() {
             {/* === PLATEBNÍ ÚDAJE === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Platební údaje</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Měna</Label>
                   <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
@@ -1536,7 +1601,7 @@ export default function Invoicing() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {form.invoice_type !== "issued" && (
               <div>
                 <Label>Částka</Label>
@@ -1948,111 +2013,210 @@ function InvoiceTable({
   }
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-               {type === "issued" && <TableHead>Číslo</TableHead>}
-              <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
-              {type === "received" && <TableHead>Smlouva</TableHead>}
-              <TableHead className="text-right">Částka</TableHead>
-              <TableHead>Vystaveno</TableHead>
-              <TableHead>Splatnost</TableHead>
-              <TableHead>VS</TableHead>
-              <TableHead>Stav</TableHead>
-              <TableHead className="text-right">Akce</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.map((inv) => (
-              <TableRow key={inv.id}>
-                {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
-                <TableCell>
-                  {type === "issued" ? inv.client_name : inv.supplier_name}
-                </TableCell>
-                {type === "received" && (
-                  <TableCell>
-                    {inv.contract_number_display ? (
-                      <Badge variant="outline" className="text-xs tabular-nums">
-                        {inv.contract_number_display.replace(/^CS-?/i, "")}
-                      </Badge>
-                    ) : "—"}
-                  </TableCell>
-                )}
-                <TableCell className="text-right tabular-nums">
-                  {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
-                </TableCell>
-                <TableCell>
-                  {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
-                </TableCell>
-                <TableCell>
-                  {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
-                </TableCell>
-                <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
-                <TableCell>
+    <>
+      {/* Mobile card view */}
+      <div className="sm:hidden space-y-3">
+        {invoices.map((inv) => (
+          <Card key={inv.id} className="overflow-hidden">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">
+                    {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
+                  </p>
+                  {type === "issued" && inv.invoice_number && (
+                    <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
+                  )}
+                  {type === "received" && inv.contract_number_display && (
+                    <Badge variant="outline" className="text-xs tabular-nums mt-0.5">
+                      {inv.contract_number_display.replace(/^CS-?/i, "")}
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-semibold tabular-nums text-sm">
+                    {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                  </p>
                   {inv.paid ? (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-xs cursor-pointer" onClick={() => onMarkPaid(inv)}>
                       Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-amber-600 border-amber-300">Nezaplaceno</Badge>
+                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                      Nezaplaceno
+                    </Badge>
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-1">
-                    {!inv.paid && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex gap-3">
+                  {inv.issue_date && <span>Vystaveno: {format(new Date(inv.issue_date), "d.M.yyyy")}</span>}
+                  {inv.due_date && <span>Splatnost: {format(new Date(inv.due_date), "d.M.yyyy")}</span>}
+                </div>
+                {inv.variable_symbol && <span className="tabular-nums">VS: {inv.variable_symbol}</span>}
+              </div>
+              <div className="flex items-center gap-1 pt-1 border-t border-border">
+                {!inv.paid && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600" onClick={() => onMarkPaid(inv)}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                </Button>
+                <div className="flex-1" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {type === "issued" && (
+                      <DropdownMenuItem onClick={() => onEmail(inv)}>
+                        <Send className="h-4 w-4 mr-2" /> Odeslání
+                      </DropdownMenuItem>
                     )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onPdf(inv)}>
-                          <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
-                        </DropdownMenuItem>
-                        {type === "issued" && (
-                          <DropdownMenuItem onClick={() => onEmail(inv)}>
-                            <Send className="h-4 w-4 mr-2" /> Odeslání
-                          </DropdownMenuItem>
+                    {type === "issued" && (
+                      <DropdownMenuItem onClick={() => onDuplicate(inv)}>
+                        <Copy className="h-4 w-4 mr-2" /> Duplikace
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => onEdit(inv)}>
+                      <Pencil className="h-4 w-4 mr-2" /> Editace
+                    </DropdownMenuItem>
+                    {inv.currency === "CZK" && inv.total_amount && (
+                      <DropdownMenuItem onClick={() => onQr(inv)}>
+                        <QrCode className="h-4 w-4 mr-2" /> QR platba
+                      </DropdownMenuItem>
+                    )}
+                    {(inv.file_url || inv.deal_supplier_invoice_id) && (
+                      <DropdownMenuItem onClick={() => onOpenFile(inv)}>
+                        <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
+                      </DropdownMenuItem>
+                    )}
+                    {!inv.deal_supplier_invoice_id && (
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop table view */}
+      <Card className="hidden sm:block">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                   {type === "issued" && <TableHead>Číslo</TableHead>}
+                  <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
+                  {type === "received" && <TableHead>Smlouva</TableHead>}
+                  <TableHead className="text-right">Částka</TableHead>
+                  <TableHead>Vystaveno</TableHead>
+                  <TableHead>Splatnost</TableHead>
+                  <TableHead>VS</TableHead>
+                  <TableHead>Stav</TableHead>
+                  <TableHead className="text-right">Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => (
+                  <TableRow key={inv.id}>
+                    {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
+                    <TableCell>
+                      {type === "issued" ? inv.client_name : inv.supplier_name}
+                    </TableCell>
+                    {type === "received" && (
+                      <TableCell>
+                        {inv.contract_number_display ? (
+                          <Badge variant="outline" className="text-xs tabular-nums">
+                            {inv.contract_number_display.replace(/^CS-?/i, "")}
+                          </Badge>
+                        ) : "—"}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-right tabular-nums">
+                      {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                    </TableCell>
+                    <TableCell>
+                      {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
+                    <TableCell>
+                      {inv.paid ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
+                          Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">Nezaplaceno</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        {!inv.paid && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
                         )}
-                        {type === "issued" && (
-                          <DropdownMenuItem onClick={() => onDuplicate(inv)}>
-                            <Copy className="h-4 w-4 mr-2" /> Duplikace
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => onEdit(inv)}>
-                          <Pencil className="h-4 w-4 mr-2" /> Editace
-                        </DropdownMenuItem>
-                        {inv.currency === "CZK" && inv.total_amount && (
-                          <DropdownMenuItem onClick={() => onQr(inv)}>
-                            <QrCode className="h-4 w-4 mr-2" /> QR platba
-                          </DropdownMenuItem>
-                        )}
-                        {(inv.file_url || inv.deal_supplier_invoice_id) && (
-                          <DropdownMenuItem onClick={() => onOpenFile(inv)}>
-                            <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
-                          </DropdownMenuItem>
-                        )}
-                        {!inv.deal_supplier_invoice_id && (
-                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
-                            <Trash2 className="h-4 w-4 mr-2" /> Smazání
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onPdf(inv)}>
+                              <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
+                            </DropdownMenuItem>
+                            {type === "issued" && (
+                              <DropdownMenuItem onClick={() => onEmail(inv)}>
+                                <Send className="h-4 w-4 mr-2" /> Odeslání
+                              </DropdownMenuItem>
+                            )}
+                            {type === "issued" && (
+                              <DropdownMenuItem onClick={() => onDuplicate(inv)}>
+                                <Copy className="h-4 w-4 mr-2" /> Duplikace
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => onEdit(inv)}>
+                              <Pencil className="h-4 w-4 mr-2" /> Editace
+                            </DropdownMenuItem>
+                            {inv.currency === "CZK" && inv.total_amount && (
+                              <DropdownMenuItem onClick={() => onQr(inv)}>
+                                <QrCode className="h-4 w-4 mr-2" /> QR platba
+                              </DropdownMenuItem>
+                            )}
+                            {(inv.file_url || inv.deal_supplier_invoice_id) && (
+                              <DropdownMenuItem onClick={() => onOpenFile(inv)}>
+                                <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
+                              </DropdownMenuItem>
+                            )}
+                            {!inv.deal_supplier_invoice_id && (
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }
