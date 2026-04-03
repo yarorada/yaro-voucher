@@ -354,7 +354,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 md:size-default"
+            className={triggerClassName || "gap-2 md:size-default"}
             onClick={(e) => {
               if (!shareToken) {
                 e.preventDefault();
