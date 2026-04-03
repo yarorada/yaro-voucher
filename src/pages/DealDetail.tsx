@@ -2441,7 +2441,7 @@ const DealDetail = () => {
     if (!deal) return;
 
     // Prefer lead_client_id (objednatel), fallback to is_lead_traveler in travelers
-    const leadClientId = (deal as any).lead_client_id
+    const leadClientId = deal.lead_client_id
       || deal.deal_travelers.find(t => t.is_lead_traveler)?.client_id;
     if (!leadClientId) {
       toast({
