@@ -12,7 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, BedDouble, Save, Users, X, FileDown, Send, Loader2, GripVertical } from "lucide-react";
+import { Plus, Trash2, BedDouble, Users, X, FileDown, Send, Loader2, GripVertical, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   DndContext,
   closestCenter,
