@@ -222,14 +222,14 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full justify-between"
+              className="min-w-0 flex-1 justify-between overflow-hidden"
               onKeyDown={(e) => {
                 if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
                   setOpen(true);
@@ -237,13 +237,15 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                 }
               }}
             >
-              {selectedClient
-                ? `${selectedClient.first_name} ${selectedClient.last_name}`
-                : "Vyberte klienta..."}
+              <span className="min-w-0 flex-1 truncate text-left">
+                {selectedClient
+                  ? `${selectedClient.first_name} ${selectedClient.last_name}`
+                  : "Vyberte klienta..."}
+              </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-        <PopoverContent className="w-full p-0 bg-background z-50" align="start">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] min-w-0 p-0 bg-background z-50" align="start">
           <Command className="bg-background" shouldFilter={false}>
             <CommandInput 
               placeholder="Hledat klienta..." 
@@ -268,7 +270,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                         setOpen(false);
                         setSearchValue("");
                       }}
-                      className="cursor-pointer"
+                      className="min-w-0 cursor-pointer"
                     >
                       <Check
                         className={cn(
@@ -276,7 +278,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                           value === client.id ? "opacity-100" : "opacity-0"
                         )}
                       />
-                      {client.first_name} {client.last_name}
+                      <span className="min-w-0 truncate">{client.first_name} {client.last_name}</span>
                     </CommandItem>
                   ))}
                 {hasNoMatch && searchValue.trim() && (
@@ -294,10 +296,10 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
                       setDialogOpen(true);
                       setOpen(false);
                     }}
-                    className="cursor-pointer text-primary"
+                    className="min-w-0 cursor-pointer text-primary"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Vytvořit nového klienta: "{searchValue}"
+                    <span className="min-w-0 truncate">Vytvořit nového klienta: "{searchValue}"</span>
                   </CommandItem>
                 )}
               </CommandGroup>
