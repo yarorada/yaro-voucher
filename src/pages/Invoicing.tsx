@@ -1953,111 +1953,210 @@ function InvoiceTable({
   }
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-               {type === "issued" && <TableHead>Číslo</TableHead>}
-              <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
-              {type === "received" && <TableHead>Smlouva</TableHead>}
-              <TableHead className="text-right">Částka</TableHead>
-              <TableHead>Vystaveno</TableHead>
-              <TableHead>Splatnost</TableHead>
-              <TableHead>VS</TableHead>
-              <TableHead>Stav</TableHead>
-              <TableHead className="text-right">Akce</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.map((inv) => (
-              <TableRow key={inv.id}>
-                {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
-                <TableCell>
-                  {type === "issued" ? inv.client_name : inv.supplier_name}
-                </TableCell>
-                {type === "received" && (
-                  <TableCell>
-                    {inv.contract_number_display ? (
-                      <Badge variant="outline" className="text-xs tabular-nums">
-                        {inv.contract_number_display.replace(/^CS-?/i, "")}
-                      </Badge>
-                    ) : "—"}
-                  </TableCell>
-                )}
-                <TableCell className="text-right tabular-nums">
-                  {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
-                </TableCell>
-                <TableCell>
-                  {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
-                </TableCell>
-                <TableCell>
-                  {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
-                </TableCell>
-                <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
-                <TableCell>
+    <>
+      {/* Mobile card view */}
+      <div className="sm:hidden space-y-3">
+        {invoices.map((inv) => (
+          <Card key={inv.id} className="overflow-hidden">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">
+                    {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
+                  </p>
+                  {type === "issued" && inv.invoice_number && (
+                    <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
+                  )}
+                  {type === "received" && inv.contract_number_display && (
+                    <Badge variant="outline" className="text-xs tabular-nums mt-0.5">
+                      {inv.contract_number_display.replace(/^CS-?/i, "")}
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-semibold tabular-nums text-sm">
+                    {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                  </p>
                   {inv.paid ? (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-xs cursor-pointer" onClick={() => onMarkPaid(inv)}>
                       Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-amber-600 border-amber-300">Nezaplaceno</Badge>
+                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                      Nezaplaceno
+                    </Badge>
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-1">
-                    {!inv.paid && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex gap-3">
+                  {inv.issue_date && <span>Vystaveno: {format(new Date(inv.issue_date), "d.M.yyyy")}</span>}
+                  {inv.due_date && <span>Splatnost: {format(new Date(inv.due_date), "d.M.yyyy")}</span>}
+                </div>
+                {inv.variable_symbol && <span className="tabular-nums">VS: {inv.variable_symbol}</span>}
+              </div>
+              <div className="flex items-center gap-1 pt-1 border-t border-border">
+                {!inv.paid && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600" onClick={() => onMarkPaid(inv)}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                </Button>
+                <div className="flex-1" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {type === "issued" && (
+                      <DropdownMenuItem onClick={() => onEmail(inv)}>
+                        <Send className="h-4 w-4 mr-2" /> Odeslání
+                      </DropdownMenuItem>
                     )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onPdf(inv)}>
-                          <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
-                        </DropdownMenuItem>
-                        {type === "issued" && (
-                          <DropdownMenuItem onClick={() => onEmail(inv)}>
-                            <Send className="h-4 w-4 mr-2" /> Odeslání
-                          </DropdownMenuItem>
+                    {type === "issued" && (
+                      <DropdownMenuItem onClick={() => onDuplicate(inv)}>
+                        <Copy className="h-4 w-4 mr-2" /> Duplikace
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => onEdit(inv)}>
+                      <Pencil className="h-4 w-4 mr-2" /> Editace
+                    </DropdownMenuItem>
+                    {inv.currency === "CZK" && inv.total_amount && (
+                      <DropdownMenuItem onClick={() => onQr(inv)}>
+                        <QrCode className="h-4 w-4 mr-2" /> QR platba
+                      </DropdownMenuItem>
+                    )}
+                    {(inv.file_url || inv.deal_supplier_invoice_id) && (
+                      <DropdownMenuItem onClick={() => onOpenFile(inv)}>
+                        <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
+                      </DropdownMenuItem>
+                    )}
+                    {!inv.deal_supplier_invoice_id && (
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                        <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop table view */}
+      <Card className="hidden sm:block">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                   {type === "issued" && <TableHead>Číslo</TableHead>}
+                  <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
+                  {type === "received" && <TableHead>Smlouva</TableHead>}
+                  <TableHead className="text-right">Částka</TableHead>
+                  <TableHead>Vystaveno</TableHead>
+                  <TableHead>Splatnost</TableHead>
+                  <TableHead>VS</TableHead>
+                  <TableHead>Stav</TableHead>
+                  <TableHead className="text-right">Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => (
+                  <TableRow key={inv.id}>
+                    {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
+                    <TableCell>
+                      {type === "issued" ? inv.client_name : inv.supplier_name}
+                    </TableCell>
+                    {type === "received" && (
+                      <TableCell>
+                        {inv.contract_number_display ? (
+                          <Badge variant="outline" className="text-xs tabular-nums">
+                            {inv.contract_number_display.replace(/^CS-?/i, "")}
+                          </Badge>
+                        ) : "—"}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-right tabular-nums">
+                      {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                    </TableCell>
+                    <TableCell>
+                      {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
+                    <TableCell>
+                      {inv.paid ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
+                          Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">Nezaplaceno</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        {!inv.paid && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => onMarkPaid(inv)} title="Označit jako zaplacenou">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
                         )}
-                        {type === "issued" && (
-                          <DropdownMenuItem onClick={() => onDuplicate(inv)}>
-                            <Copy className="h-4 w-4 mr-2" /> Duplikace
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => onEdit(inv)}>
-                          <Pencil className="h-4 w-4 mr-2" /> Editace
-                        </DropdownMenuItem>
-                        {inv.currency === "CZK" && inv.total_amount && (
-                          <DropdownMenuItem onClick={() => onQr(inv)}>
-                            <QrCode className="h-4 w-4 mr-2" /> QR platba
-                          </DropdownMenuItem>
-                        )}
-                        {(inv.file_url || inv.deal_supplier_invoice_id) && (
-                          <DropdownMenuItem onClick={() => onOpenFile(inv)}>
-                            <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
-                          </DropdownMenuItem>
-                        )}
-                        {!inv.deal_supplier_invoice_id && (
-                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
-                            <Trash2 className="h-4 w-4 mr-2" /> Smazání
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onPdf(inv)}>
+                              <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
+                            </DropdownMenuItem>
+                            {type === "issued" && (
+                              <DropdownMenuItem onClick={() => onEmail(inv)}>
+                                <Send className="h-4 w-4 mr-2" /> Odeslání
+                              </DropdownMenuItem>
+                            )}
+                            {type === "issued" && (
+                              <DropdownMenuItem onClick={() => onDuplicate(inv)}>
+                                <Copy className="h-4 w-4 mr-2" /> Duplikace
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => onEdit(inv)}>
+                              <Pencil className="h-4 w-4 mr-2" /> Editace
+                            </DropdownMenuItem>
+                            {inv.currency === "CZK" && inv.total_amount && (
+                              <DropdownMenuItem onClick={() => onQr(inv)}>
+                                <QrCode className="h-4 w-4 mr-2" /> QR platba
+                              </DropdownMenuItem>
+                            )}
+                            {(inv.file_url || inv.deal_supplier_invoice_id) && (
+                              <DropdownMenuItem onClick={() => onOpenFile(inv)}>
+                                <ExternalLink className="h-4 w-4 mr-2" /> Otevřít soubor
+                              </DropdownMenuItem>
+                            )}
+                            {!inv.deal_supplier_invoice_id && (
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(inv.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Smazání
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }
