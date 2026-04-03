@@ -2835,7 +2835,7 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2 overflow-x-hidden">
           {/* Mobile: dropdown select */}
           <div className="md:hidden mb-4">
             <Select value={activeTab} onValueChange={setActiveTab}>
@@ -2861,13 +2861,13 @@ const DealDetail = () => {
           </TabsList>
 
           {/* ── ZÁKLADNÍ INFO ── */}
-          <TabsContent value="info" className="space-y-6">
+          <TabsContent value="info" className="space-y-6 overflow-x-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Základní informace</CardTitle>
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
-          <CardContent>
+           <CardContent className="overflow-x-hidden">
             {/* Mobile financial metrics row */}
             <div className="grid grid-cols-3 gap-2 mb-4 sm:hidden">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -2884,9 +2884,9 @@ const DealDetail = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 min-w-0">
               {/* Left side - form fields */}
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0 overflow-hidden">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
@@ -3023,7 +3023,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── CESTUJÍCÍ ── */}
-          <TabsContent value="travelers" className="space-y-6">
+          <TabsContent value="travelers" className="space-y-6 overflow-x-hidden">
         <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -3132,7 +3132,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── PLATEBNÍ KALENDÁŘ ── */}
-          <TabsContent value="payments" className="space-y-6">
+          <TabsContent value="payments" className="space-y-6 overflow-x-hidden">
         <DealPaymentSchedule
           key={paymentRefreshKey}
           dealId={deal.id}
@@ -3146,7 +3146,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── SLUŽBY ── */}
-          <TabsContent value="services" className="space-y-6">
+          <TabsContent value="services" className="space-y-6 overflow-x-hidden">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -3829,7 +3829,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── DOKUMENTY ── */}
-          <TabsContent value="documents" className="space-y-6">
+          <TabsContent value="documents" className="space-y-6 overflow-x-hidden">
         {/* Cestovní dokumenty section */}
         <DealDocumentsSection
           dealId={deal.id}
