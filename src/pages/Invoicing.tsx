@@ -1509,7 +1509,7 @@ export default function Invoicing() {
             {/* === PLATEBNÍ ÚDAJE === */}
             <div className="border rounded-lg p-3 space-y-3">
               <h3 className="text-sm font-semibold">Platební údaje</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Měna</Label>
                   <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}>
