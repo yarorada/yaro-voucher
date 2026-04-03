@@ -544,9 +544,6 @@ const Deals = () => {
                   if (hotel) descParts.push(hotel.service_name);
                   if (deal.start_date) descParts.push(formatDateShort(deal.start_date));
                   displayDesc = descParts.join(" • ");
-                  if (!ordererInTravelers && leadClientJoin) {
-                    displayDesc += ` (${leadClientJoin.first_name} ${leadClientJoin.last_name})`;
-                  }
                   // Fallback to stored name if no parts could be computed
                   if (!displayDesc && deal.name) {
                     displayDesc = deal.name.replace(/^D-\d{6,}\s*[-–]?\s*/i, "").trim();
