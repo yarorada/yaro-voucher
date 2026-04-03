@@ -81,6 +81,9 @@ interface CreateVouchersFromDealProps {
   clientName: string;
   teeTimes?: TeeTimeData[];
   onComplete?: () => void;
+  triggerClassName?: string;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 // ---- helpers ---------------------------------------------------------------

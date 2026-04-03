@@ -32,6 +32,9 @@ interface ShareOfferButtonProps {
   shareToken: string | null;
   onTokenGenerated: (token: string) => void;
   variants: VariantInfo[];
+  triggerClassName?: string;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 interface ServicePreview {
