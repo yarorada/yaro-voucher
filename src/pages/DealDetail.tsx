@@ -2835,7 +2835,7 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2 overflow-x-hidden">
           {/* Mobile: dropdown select */}
           <div className="md:hidden mb-4">
             <Select value={activeTab} onValueChange={setActiveTab}>
