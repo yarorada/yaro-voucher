@@ -428,37 +428,142 @@ export default function Accounting() {
 
         {isLoading ? (
           <p className="text-muted-foreground">Načítám data…</p>
+        ) : rows.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">Žádné smlouvy pro zvolené období</p>
         ) : (
-          <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Smlouva</TableHead>
-                  <TableHead className="whitespace-nowrap">Klient</TableHead>
-                  <TableHead className="whitespace-nowrap">Země</TableHead>
-                  <TableHead className="whitespace-nowrap">Destinace</TableHead>
-                  <TableHead className="whitespace-nowrap">Od</TableHead>
-                  <TableHead className="whitespace-nowrap">Do</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Prodej zál.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Nákup zál.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Zisk zál.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Prodej vyúčt.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Nákup vyúčt.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Zisk vyúčt.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">DPH zál.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">DPH vyúčt.</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">Rozdíl</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 ? (
+          <>
+            {/* Mobile: card view */}
+            <div className="md:hidden space-y-3">
+              {rows.map((r: any, i: number) => {
+                const highlight = r.highlightRed
+                  ? "border-l-4 border-l-red-400 bg-red-50 dark:bg-red-900/20"
+                  : r.highlightBlue
+                  ? "border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "";
+                return (
+                  <div key={i} className={`rounded-xl border bg-card p-4 space-y-3 ${highlight}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-sm">
+                        {r.dealId ? (
+                          <Link to={`/deals/${r.dealId}`} className="text-primary hover:underline">
+                            {r.contractNumber}
+                          </Link>
+                        ) : r.contractNumber}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateShort(r.from)} – {formatDateShort(r.to)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-foreground">{r.clientName}</div>
+                    <div className="text-xs text-muted-foreground">{r.destination}{r.country ? ` · ${r.country}` : ""}</div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Prodej zál.</div>
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          {formatNum(r.sellDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Nákup zál.</div>
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          {formatNum(r.buyDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Zisk zál.</div>
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          {formatNum(r.profitDeposit)}
+                          {r.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Prodej vyúčt.</div>
+                        <div className="text-sm font-medium">{formatNum(r.sellFinal)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Nákup vyúčt.</div>
+                        <div className="text-sm font-medium">
+                          {editingRow === r.contractId ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="h-7 w-20 text-right text-xs"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleEditSave(r.contractId);
+                                  if (e.key === "Escape") handleEditCancel();
+                                }}
+                              />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditSave(r.contractId)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span
+                              className={`${r.hasOverride ? "text-primary font-semibold" : ""} cursor-pointer`}
+                              onClick={() => handleEditStart(r.contractId, r.buyFinal)}
+                            >
+                              {formatNum(r.buyFinal)} <Pencil className="h-3 w-3 inline opacity-40" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Zisk vyúčt.</div>
+                        <div className="text-sm font-medium">{formatNum(r.profitFinal)}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">DPH zál.</div>
+                        <div className="text-sm">{formatNum(r.vatDeposit)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">DPH vyúčt.</div>
+                        <div className="text-sm">{formatNum(r.vatFinal)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Rozdíl</div>
+                        <div className="text-sm">{formatNum(r.vatDiff)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table view */}
+            <div className="hidden md:block border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={15} className="text-center text-muted-foreground py-8">
-                      Žádné smlouvy pro zvolené období
-                    </TableCell>
+                    <TableHead className="whitespace-nowrap">Smlouva</TableHead>
+                    <TableHead className="whitespace-nowrap">Klient</TableHead>
+                    <TableHead className="whitespace-nowrap">Země</TableHead>
+                    <TableHead className="whitespace-nowrap">Destinace</TableHead>
+                    <TableHead className="whitespace-nowrap">Od</TableHead>
+                    <TableHead className="whitespace-nowrap">Do</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Prodej zál.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Nákup zál.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Zisk zál.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Prodej vyúčt.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Nákup vyúčt.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Zisk vyúčt.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">DPH zál.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">DPH vyúčt.</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Rozdíl</TableHead>
                   </TableRow>
-                ) : (
-                  rows.map((r: any, i: number) => (
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r: any, i: number) => (
                     <TableRow
                       key={i}
                       className={
@@ -471,15 +576,10 @@ export default function Accounting() {
                     >
                       <TableCell className="whitespace-nowrap font-medium">
                         {r.dealId ? (
-                          <Link
-                            to={`/deals/${r.dealId}`}
-                            className="text-primary underline-offset-2 hover:underline"
-                          >
+                          <Link to={`/deals/${r.dealId}`} className="text-primary underline-offset-2 hover:underline">
                             {r.contractNumber}
                           </Link>
-                        ) : (
-                          r.contractNumber
-                        )}
+                        ) : r.contractNumber}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{r.clientName}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.country}</TableCell>
@@ -542,11 +642,11 @@ export default function Accounting() {
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatFinal)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatNum(r.vatDiff)}</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
     </PageShell>
   );
