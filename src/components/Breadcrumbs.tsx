@@ -18,6 +18,7 @@ const routeNames: Record<string, string> = {
   "admin": "Admin",
   "roles": "Roles",
   "email-templates": "Email-templates",
+  "invoicing": "Fakturace",
 };
 
 interface Breadcrumb {
