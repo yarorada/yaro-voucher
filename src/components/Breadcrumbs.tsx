@@ -19,6 +19,7 @@ const routeNames: Record<string, string> = {
   "roles": "Roles",
   "email-templates": "Email-templates",
   "invoicing": "Fakturace",
+  "accounting": "Učetnictví",
 };
 
 interface Breadcrumb {
