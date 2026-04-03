@@ -2547,7 +2547,7 @@ const DealDetail = () => {
       
       if (dealNumberError) throw dealNumberError;
       
-      // Create new deal
+      // Create new deal with lead_client_id and lead_traveler_is_first_passenger
       const { data: newDeal, error: dealError } = await supabase
         .from("deals")
         .insert({
@@ -2562,11 +2562,34 @@ const DealDetail = () => {
           adjustment_amount: deal.adjustment_amount,
           discount_note: deal.discount_note,
           adjustment_note: deal.adjustment_note,
+          lead_client_id: deal.lead_client_id,
+          lead_traveler_is_first_passenger: deal.lead_traveler_is_first_passenger,
+          currency: deal.currency,
         })
         .select()
         .single();
       
       if (dealError) throw dealError;
+
+      // Copy travelers
+      const { data: existingTravelers } = await supabase
+        .from("deal_travelers")
+        .select("*")
+        .eq("deal_id", deal.id)
+        .order("order_index");
+
+      if (existingTravelers && existingTravelers.length > 0) {
+        const newTravelers = existingTravelers.map((t) => ({
+          deal_id: newDeal.id,
+          client_id: t.client_id,
+          is_lead_traveler: t.is_lead_traveler,
+          order_index: t.order_index,
+        }));
+        const { error: travelersError } = await supabase
+          .from("deal_travelers")
+          .insert(newTravelers);
+        if (travelersError) throw travelersError;
+      }
       
       // Copy services with updated person count
       if (services.length > 0) {
