@@ -67,20 +67,13 @@ export function Breadcrumbs() {
             {index > 0 && (
               <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
             )}
-            {isLast ? (
-              <span className="font-medium text-foreground flex items-center">
-                {Icon && <Icon className="h-4 w-4 mr-1" />}
-                {crumb.name}
-              </span>
-            ) : (
-              <Link
-                to={crumb.path}
-                className="hover:text-foreground transition-colors flex items-center"
-              >
-                {Icon && <Icon className="h-4 w-4 mr-1" />}
-                {crumb.name}
-              </Link>
-            )}
+            <Link
+              to={crumb.path}
+              className={`hover:text-foreground transition-colors flex items-center ${isLast ? "font-medium text-foreground" : ""}`}
+            >
+              {Icon && <Icon className="h-4 w-4 mr-1" />}
+              {crumb.name}
+            </Link>
           </div>
         );
       })}
