@@ -2792,8 +2792,24 @@ const DealDetail = () => {
           </div>
         </header>
 
-        <Tabs defaultValue="info" className="mt-2">
-          <TabsList className="mb-4 flex overflow-x-auto scrollbar-hide">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+          {/* Mobile: dropdown select */}
+          <div className="md:hidden mb-4">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">Základní info</SelectItem>
+                <SelectItem value="travelers">Cestující</SelectItem>
+                <SelectItem value="payments">Platební kalendář</SelectItem>
+                <SelectItem value="services">Služby</SelectItem>
+                <SelectItem value="documents">Dokumenty</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Desktop: classic tabs */}
+          <TabsList className="mb-4 hidden md:flex overflow-x-auto scrollbar-hide">
             <TabsTrigger value="info" className="whitespace-nowrap">Základní info</TabsTrigger>
             <TabsTrigger value="travelers" className="whitespace-nowrap">Cestující</TabsTrigger>
             <TabsTrigger value="payments" className="whitespace-nowrap">Platební kalendář</TabsTrigger>
