@@ -3742,7 +3742,7 @@ const DealDetail = () => {
               <p className="text-muted-foreground text-center py-8 text-sm">Zatím nejsou přidány žádné služby</p>
             ) : (
               <div className="space-y-0">
-                <div>
+                <div className="overflow-x-auto">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
