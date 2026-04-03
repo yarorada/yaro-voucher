@@ -17,11 +17,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* Professional ocean blue for travel industry */
-    --primary: 210 90% 35%;
+    /* Light blue unified buttons */
+    --primary: 210 80% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 210 90% 45%;
-    --primary-dark: 210 95% 25%;
+    --primary-light: 210 80% 65%;
+    --primary-dark: 210 85% 45%;
 
     /* Warm gold accent for premium feel */
     --secondary: 45 95% 60%;
