@@ -470,8 +470,6 @@ export function CreateVouchersFromDeal({
     }
   };
 
-  if (services.length === 0) return null;
-
   const handleOpenDialog = async () => {
     const { data: existing } = await supabase
       .from("vouchers")
@@ -485,6 +483,16 @@ export function CreateVouchersFromDeal({
     setOpen(true);
     setResults([]);
   };
+
+  // Handle external open trigger (mobile menu)
+  useEffect(() => {
+    if (externalOpen) {
+      handleOpenDialog();
+      onExternalOpenChange?.(false);
+    }
+  }, [externalOpen]);
+
+  if (services.length === 0) return null;
 
   return (
     <>
