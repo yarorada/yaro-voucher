@@ -12,7 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, BedDouble, Save, Users, X, FileDown, Send, Loader2, GripVertical } from "lucide-react";
+import { Plus, Trash2, BedDouble, Users, X, FileDown, Send, Loader2, GripVertical, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   DndContext,
   closestCenter,
@@ -113,7 +119,6 @@ function SortableRoomItem({ room, index, children }: { room: RoomAssignment; ind
 export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [rooms, setRooms] = useState<RoomAssignment[]>([]);
   const [hotelRoomTypes, setHotelRoomTypes] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -121,6 +126,8 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
   const [customMessage, setCustomMessage] = useState("");
   const pdfRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstLoad = useRef(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -232,21 +239,25 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     );
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from("deals")
-      .update({ rooming_list: rooms as any })
-      .eq("id", dealId);
-
-    if (error) {
-      console.error("Save rooming list error:", error);
-      toast.error("Nepodařilo se uložit rooming list");
-    } else {
-      toast.success("Rooming list uložen");
+  // Auto-save rooming list
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
     }
-    setSaving(false);
-  };
+    if (!loaded) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      const { error } = await supabase
+        .from("deals")
+        .update({ rooming_list: rooms as any })
+        .eq("id", dealId);
+      if (error) {
+        console.error("Auto-save rooming list error:", error);
+      }
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [rooms, loaded, dealId]);
 
   const getAgeCategory = (dateOfBirth: string | null): "adult" | "child" | "infant" => {
     if (!dateOfBirth) return "adult";
@@ -435,26 +446,37 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
                 Přiřaďte cestující k pokojům
               </CardDescription>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {rooms.length > 0 && (
-                <>
-                  <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
-                    <FileDown className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">PDF</span>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Pokoj
+                    {rooms.length > 0 && <ChevronDown className="h-3 w-3 ml-1" />}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const formatD = (d: string | null) => {
-                        if (!d) return "";
-                        const dt = new Date(d);
-                        return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
-                      };
-                      const dateRange = dealInfo?.start_date && dealInfo?.end_date
-                        ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
-                        : "";
-                      setCustomMessage(
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={addRoom}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Přidat pokoj
+                  </DropdownMenuItem>
+                  {rooms.length > 0 && (
+                    <>
+                      <DropdownMenuItem onClick={handleDownloadPdf}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Stáhnout PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const formatD = (d: string | null) => {
+                            if (!d) return "";
+                            const dt = new Date(d);
+                            return `${String(dt.getDate()).padStart(2,"0")}.${String(dt.getMonth()+1).padStart(2,"0")}.${dt.getFullYear()}`;
+                          };
+                          const dateRange = dealInfo?.start_date && dealInfo?.end_date
+                            ? `${formatD(dealInfo.start_date)} - ${formatD(dealInfo.end_date)}`
+                            : "";
+                          setCustomMessage(
 `Dear ${hotelSupplier?.name || "partner"},
 
 Please find attached the rooming list for ${dealInfo?.hotel_name || "the hotel"}${dateRange ? ` for the period ${dateRange}` : ""}.
@@ -465,25 +487,18 @@ Best regards,
 YARO Travel
 Tel.: +420 602 102 108
 zajezdy@yarotravel.cz`
-                      );
-                      setSendDialogOpen(true);
-                    }}
-                    disabled={!hotelSupplier?.email}
-                    title={!hotelSupplier?.email ? "Dodavatel ubytování nemá e-mail" : `Odeslat na ${hotelSupplier.email}`}
-                  >
-                    <Send className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Odeslat</span>
-                  </Button>
-                </>
-              )}
-              <Button size="sm" variant="outline" onClick={addRoom}>
-                <Plus className="h-4 w-4 mr-1" />
-                Pokoj
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />
-                Uložit
-              </Button>
+                          );
+                          setSendDialogOpen(true);
+                        }}
+                        disabled={!hotelSupplier?.email}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Odeslat dodavateli
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
@@ -622,9 +637,11 @@ zajezdy@yarotravel.cz`
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", borderBottom: "2px solid #333", paddingBottom: "15px" }}>
             <div>
               <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px 0" }}>Rooming List</h1>
-              <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>
-                {dealInfo?.deal_number}
-              </p>
+              {(() => {
+                const lead = travelers.find((t) => t.is_lead_traveler);
+                const leadName = lead ? removeDiacritics(`${lead.clients.first_name} ${lead.clients.last_name}`) : dealInfo?.deal_number;
+                return leadName ? <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>{leadName}</p> : null;
+              })()}
             </div>
             <div style={{ textAlign: "right", fontSize: "11px", color: "#555" }}>
               <p style={{ margin: "0 0 2px 0", fontWeight: "bold" }}>YARO s.r.o.</p>
