@@ -3132,7 +3132,7 @@ const DealDetail = () => {
           </TabsContent>
 
           {/* ── PLATEBNÍ KALENDÁŘ ── */}
-          <TabsContent value="payments" className="space-y-6">
+          <TabsContent value="payments" className="space-y-6 overflow-x-hidden">
         <DealPaymentSchedule
           key={paymentRefreshKey}
           dealId={deal.id}
