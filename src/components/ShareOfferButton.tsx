@@ -128,6 +128,15 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     }
   }, [variants]);
 
+  // Handle external open trigger (mobile menu)
+  const handleShareRef = useRef<() => void>();
+  useEffect(() => {
+    if (externalOpen && handleShareRef.current) {
+      handleShareRef.current();
+      onExternalOpenChange?.(false);
+    }
+  }, [externalOpen, onExternalOpenChange]);
+
   const toggleVariant = (id: string) => {
     setSelectedVariantIds(prev => {
       const next = new Set(prev);
