@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [box-shadow:var(--shadow-soft)] hover:bg-primary/85 hover:[box-shadow:var(--shadow-medium)]",
-        destructive: "bg-primary text-destructive hover:bg-primary/85 font-medium [box-shadow:var(--shadow-soft)]",
-        outline: "bg-primary/90 text-primary-foreground border-0 hover:bg-primary/80 [box-shadow:var(--shadow-soft)]",
-        secondary: "bg-primary/90 text-primary-foreground hover:bg-primary/80 [box-shadow:var(--shadow-soft)]",
-        ghost: "bg-primary/10 text-primary hover:bg-primary/20",
+        default: "bg-primary text-primary-foreground [box-shadow:var(--shadow-soft)] hover:bg-primary/90 hover:[box-shadow:var(--shadow-medium)]",
+        destructive: "bg-transparent text-destructive hover:bg-destructive/10 font-medium",
+        outline: "border border-border bg-background hover:bg-muted/60",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent/40 hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        premium: "bg-primary text-primary-foreground hover:bg-primary/85 [box-shadow:var(--shadow-medium)]",
+        premium: "bg-gradient-primary text-primary-foreground hover:opacity-90 [box-shadow:var(--shadow-medium)]",
       },
       size: {
         default: "h-10 px-4 py-2",
