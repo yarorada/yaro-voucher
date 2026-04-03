@@ -889,7 +889,16 @@ const DealDetail = () => {
     leadSyncRef.current = { leadTravelerId, isFirst: leadTravelerIsFirstPassenger, initialized: true };
 
     (async () => {
-      if (!leadTravelerId) return;
+      // Save lead_client_id immediately so fetchDeal doesn't overwrite it
+      await supabase.from("deals").update({
+        lead_client_id: leadTravelerId || null,
+        lead_traveler_is_first_passenger: leadTravelerIsFirstPassenger,
+      }).eq("id", deal.id);
+
+      if (!leadTravelerId) {
+        fetchDeal();
+        return;
+      }
 
       if (leadTravelerIsFirstPassenger) {
         // Ensure this client is in deal_travelers as is_lead_traveler
