@@ -1334,7 +1334,7 @@ export default function Invoicing() {
                 {/* Supplier info */}
                 <div className="border rounded-lg p-3 space-y-3">
                   <h3 className="text-sm font-semibold">Dodavatel</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>IČO dodavatele</Label>
                       <div className="flex gap-1">
