@@ -2982,31 +2982,6 @@ const DealDetail = () => {
                   />
                 </div>
               </div>
-
-              {/* Right side - financial panel (desktop/tablet only) */}
-              <div className="hidden sm:flex flex-col w-52 rounded-xl bg-muted/30 p-5 space-y-4">
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodejní cena</div>
-                  <div className="text-lg font-bold text-primary">
-                    {formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákupní cena</div>
-                  <div className="text-base font-semibold text-muted-foreground">
-                    {formatPriceCurrency(totalCostPrice, "CZK")}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Zisk</div>
-                  <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatPriceCurrency(profit, "CZK")}
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
