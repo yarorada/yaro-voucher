@@ -119,7 +119,6 @@ function SortableRoomItem({ room, index, children }: { room: RoomAssignment; ind
 export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [rooms, setRooms] = useState<RoomAssignment[]>([]);
   const [hotelRoomTypes, setHotelRoomTypes] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -127,6 +126,8 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
   const [customMessage, setCustomMessage] = useState("");
   const pdfRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstLoad = useRef(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
