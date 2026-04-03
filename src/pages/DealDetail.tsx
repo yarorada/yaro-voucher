@@ -3081,6 +3081,7 @@ const DealDetail = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTravelerDragEnd}>
                 <SortableContext items={deal.deal_travelers.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <Table>
@@ -3089,7 +3090,7 @@ const DealDetail = () => {
                         <TableHead className="w-6"></TableHead>
                         <TableHead className="w-6">#</TableHead>
                         <TableHead>Jméno</TableHead>
-                        <TableHead>Datum narození</TableHead>
+                        <TableHead className="hidden sm:table-cell">Datum narození</TableHead>
                         <TableHead className="text-right">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -3106,6 +3107,7 @@ const DealDetail = () => {
                   </Table>
                 </SortableContext>
               </DndContext>
+              </div>
             </CardContent>
           </Card>
 
