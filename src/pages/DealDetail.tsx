@@ -337,7 +337,7 @@ const SortableTravelerRow = ({
       <TableCell className="font-medium text-sm">
         {traveler.clients.first_name} {traveler.clients.last_name}
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">
+      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
         {dob || <span className="text-muted-foreground/40">—</span>}
       </TableCell>
       <TableCell className="text-right">
