@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -81,6 +81,9 @@ interface CreateVouchersFromDealProps {
   clientName: string;
   teeTimes?: TeeTimeData[];
   onComplete?: () => void;
+  triggerClassName?: string;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 // ---- helpers ---------------------------------------------------------------
@@ -189,10 +192,15 @@ export function CreateVouchersFromDeal({
   clientName,
   teeTimes,
   onComplete,
+  triggerClassName,
+  externalOpen,
+  onExternalOpenChange,
 }: CreateVouchersFromDealProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onExternalOpenChange || setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [results, setResults] = useState<
@@ -462,8 +470,6 @@ export function CreateVouchersFromDeal({
     }
   };
 
-  if (services.length === 0) return null;
-
   const handleOpenDialog = async () => {
     const { data: existing } = await supabase
       .from("vouchers")
@@ -478,13 +484,23 @@ export function CreateVouchersFromDeal({
     setResults([]);
   };
 
+  // Handle external open trigger (mobile menu)
+  useEffect(() => {
+    if (externalOpen) {
+      handleOpenDialog();
+      onExternalOpenChange?.(false);
+    }
+  }, [externalOpen]);
+
+  if (services.length === 0) return null;
+
   return (
     <>
       <Button
         variant="outline"
         size="sm"
         onClick={handleOpenDialog}
-        className="gap-2 md:size-default"
+        className={triggerClassName || "gap-2 md:size-default"}
       >
         <FileText className="h-4 w-4" />
         <span className="hidden sm:inline">Vytvořit vouchery</span>

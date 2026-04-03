@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, BookOpen } from "lucide-react";
+import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, BookOpen, MoreVertical, Share2 } from "lucide-react";
 import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
 import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
 import {
@@ -85,6 +85,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -414,6 +415,8 @@ const DealDetail = () => {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [newTravelerId, setNewTravelerId] = useState("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [mobileVoucherOpen, setMobileVoucherOpen] = useState(false);
+  const [mobileShareOpen, setMobileShareOpen] = useState(false);
   const [hotelConfirmOpen, setHotelConfirmOpen] = useState(false);
   const [hotelConfirmResolver, setHotelConfirmResolver] = useState<{ resolve: (v: boolean) => void } | null>(null);
   const [duplicatePersonCount, setDuplicatePersonCount] = useState("1");
@@ -2626,16 +2629,17 @@ const DealDetail = () => {
   usePageToolbar(
     deal ? (
       <>
+        {/* Duplicate dialog (shared by mobile & desktop) */}
         <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
           <DialogTrigger asChild>
             <Button 
               variant="outline" 
               size="sm" 
-              className={toolbarButtonClass}
+              className={`${toolbarButtonClass} hidden md:inline-flex`}
               onClick={() => setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString())}
             >
               <Copy className="h-4 w-4" />
-              <span className="hidden sm:inline">Duplikovat</span>
+              Duplikovat
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-background">
@@ -2666,9 +2670,11 @@ const DealDetail = () => {
             </div>
           </DialogContent>
         </Dialog>
-        <Button variant="outline" size="sm" onClick={handleCreateContract} className={toolbarButtonClass}>
+
+        {/* Desktop buttons */}
+        <Button variant="outline" size="sm" onClick={handleCreateContract} className={`${toolbarButtonClass} hidden md:inline-flex`}>
           <FileSignature className="h-4 w-4" />
-          <span className="hidden sm:inline">Smlouva</span>
+          Smlouva
         </Button>
         <CreateVouchersFromDeal
           dealId={deal.id}
@@ -2680,6 +2686,9 @@ const DealDetail = () => {
           })()}
           teeTimes={deal.tee_times as any}
           onComplete={fetchDeal}
+          triggerClassName={`${toolbarButtonClass} hidden md:inline-flex gap-2`}
+          externalOpen={mobileVoucherOpen}
+          onExternalOpenChange={setMobileVoucherOpen}
         />
         <ShareOfferButton
           dealId={deal.id}
@@ -2687,19 +2696,57 @@ const DealDetail = () => {
           onTokenGenerated={setShareToken}
           variants={dealVariants}
           key={`share-${dealVariants.length}`}
+          triggerClassName={`${toolbarButtonClass} hidden md:inline-flex gap-2`}
+          externalOpen={mobileShareOpen}
+          onExternalOpenChange={setMobileShareOpen}
         />
         <Button
           variant="outline"
           size="sm"
           onClick={handleDelete}
-          className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground`}
+          className={`${toolbarButtonClass} hover:bg-destructive hover:text-destructive-foreground hidden md:inline-flex`}
         >
           <Trash2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Smazat</span>
+          Smazat
         </Button>
+
+        {/* Mobile: three-dot menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8 md:hidden">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => {
+              setDuplicatePersonCount((deal.deal_travelers?.length || 1).toString());
+              setDuplicateDialogOpen(true);
+            }}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplikovat obchodní případ
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCreateContract}>
+              <FileSignature className="h-4 w-4 mr-2" />
+              Vytvořit smlouvu
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMobileVoucherOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Vytvořit vouchery
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMobileShareOpen(true)}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Sdílet nabídku
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Smazat obchodní případ
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </>
     ) : null,
-    [deal, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants]
+    [deal, duplicateDialogOpen, duplicatePersonCount, duplicating, services, shareToken, dealVariants, mobileVoucherOpen, mobileShareOpen]
   );
 
   if (loading) {

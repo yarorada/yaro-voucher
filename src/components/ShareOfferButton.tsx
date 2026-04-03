@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, Check, Link, Loader2, Mail, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,9 @@ interface ShareOfferButtonProps {
   shareToken: string | null;
   onTokenGenerated: (token: string) => void;
   variants: VariantInfo[];
+  triggerClassName?: string;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 interface ServicePreview {
@@ -92,7 +95,7 @@ function formatPrice(n: number, currency = "CZK"): string {
   return currency === "CZK" ? `${fmt} CZK` : `${fmt} ${symbols[currency] || currency}`;
 }
 
-export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants }: ShareOfferButtonProps) {
+export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants, triggerClassName, externalOpen, onExternalOpenChange }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
@@ -124,6 +127,15 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       setSelectedVariantIds(new Set(variants.map(v => v.id)));
     }
   }, [variants]);
+
+  // Handle external open trigger (mobile menu)
+  const handleShareRef = useRef<() => void>();
+  useEffect(() => {
+    if (externalOpen && handleShareRef.current) {
+      handleShareRef.current();
+      onExternalOpenChange?.(false);
+    }
+  }, [externalOpen, onExternalOpenChange]);
 
   const toggleVariant = (id: string) => {
     setSelectedVariantIds(prev => {
@@ -172,6 +184,8 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     const token = await ensureShareToken();
     if (token) await copyToClipboard(getPublicUrl(token));
   };
+
+  handleShareRef.current = handleShare;
 
   // Fetch preview data
   const fetchPreviewData = useCallback(async () => {
@@ -340,7 +354,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 md:size-default"
+            className={triggerClassName || "gap-2 md:size-default"}
             onClick={(e) => {
               if (!shareToken) {
                 e.preventDefault();
