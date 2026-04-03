@@ -2721,75 +2721,70 @@ const DealDetail = () => {
   return (
     <PageShell>
         <header className="mb-8">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+           <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
               <DealStatusBadge status={deal.status} />
               {isEditingName ? (
-                <>
+                <div className="flex items-center gap-1 flex-1 min-w-0">
                   <Input
                     ref={nameInputRef}
                     value={dealName}
                     onChange={(e) => setDealName(e.target.value)}
                     placeholder="Název obchodního případu..."
-                    className="text-heading-1 h-auto py-1 px-2 max-w-md flex-1"
+                    className="text-heading-1 h-auto py-1 px-2 flex-1 min-w-0"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        setIsEditingName(false);
-                      }
-                      if (e.key === "Escape") {
-                        setIsEditingName(false);
-                      }
+                      if (e.key === "Enter") setIsEditingName(false);
+                      if (e.key === "Escape") setIsEditingName(false);
                     }}
                     onBlur={() => setIsEditingName(false)}
                   />
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 flex-shrink-0"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setIsEditingName(false)}
                   >
                     <Check className="h-4 w-4" />
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
-                  <span className="font-bold text-heading-1 text-foreground">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="font-bold text-heading-1 text-foreground flex-shrink-0">
                     {deal.deal_number.match(/^D-\d{6}/)?.[0] || deal.deal_number}
                   </span>
-                  {(() => {
-                    // Always compute description from live data for correct bullets and correct client
-                    const sortedT = [...(deal.deal_travelers || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-                    const orderer = (deal.deal_travelers || []).find(t => t.is_lead_traveler) || sortedT[0];
-                    const primaryName = orderer?.clients ? `${orderer.clients.first_name} ${orderer.clients.last_name}` : "";
-                    const iso = (deal as any).destination?.countries?.iso_code || (deal as any).destinations?.countries?.iso_code || "";
-                    const hotel = services.find((s: any) => s.service_type === "hotel");
-                    const parts: string[] = [];
-                    if (primaryName) parts.push(primaryName);
-                    if (iso) parts.push(iso);
-                    if (hotel?.service_name) parts.push(hotel.service_name);
-                    if (deal.start_date) {
-                      const d = new Date(deal.start_date + "T00:00:00");
-                      parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
-                    }
-                    const desc = parts.join(" • ");
-                    return desc ? <span className="text-foreground">{desc}</span> : null;
-                  })()}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-7 w-7 flex-shrink-0"
                     onClick={() => {
                       setIsEditingName(true);
                       setTimeout(() => nameInputRef.current?.focus(), 0);
                     }}
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                </>
+                </div>
               )}
             </div>
+            {!isEditingName && (() => {
+              const sortedT = [...(deal.deal_travelers || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+              const orderer = (deal.deal_travelers || []).find(t => t.is_lead_traveler) || sortedT[0];
+              const primaryName = orderer?.clients ? `${orderer.clients.first_name} ${orderer.clients.last_name}` : "";
+              const iso = (deal as any).destination?.countries?.iso_code || (deal as any).destinations?.countries?.iso_code || "";
+              const hotel = services.find((s: any) => s.service_type === "hotel");
+              const parts: string[] = [];
+              if (primaryName) parts.push(primaryName);
+              if (iso) parts.push(iso);
+              if (hotel?.service_name) parts.push(hotel.service_name);
+              if (deal.start_date) {
+                const d = new Date(deal.start_date + "T00:00:00");
+                parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+              }
+              const desc = parts.join(" • ");
+              return desc ? <span className="text-sm text-muted-foreground truncate">{desc}</span> : null;
+            })()}
           </div>
         </header>
 
