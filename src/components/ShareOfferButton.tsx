@@ -95,7 +95,7 @@ function formatPrice(n: number, currency = "CZK"): string {
   return currency === "CZK" ? `${fmt} CZK` : `${fmt} ${symbols[currency] || currency}`;
 }
 
-export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants }: ShareOfferButtonProps) {
+export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variants, triggerClassName, externalOpen, onExternalOpenChange }: ShareOfferButtonProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
