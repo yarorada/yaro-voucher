@@ -227,16 +227,16 @@ const SortableServiceRow = ({
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-xs whitespace-nowrap">
+      <TableCell className="text-xs whitespace-nowrap hidden sm:table-cell">
         {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
       </TableCell>
-      <TableCell className="text-center text-sm">
+      <TableCell className="text-center text-sm hidden sm:table-cell">
         {service.person_count || 1}
       </TableCell>
-      <TableCell className="text-center text-sm">
+      <TableCell className="text-center text-sm hidden sm:table-cell">
         {service.quantity || 1}
       </TableCell>
-      <TableCell className="text-xs truncate max-w-[100px]">
+      <TableCell className="text-xs truncate max-w-[100px] hidden md:table-cell">
         {service.suppliers?.name || '-'}
       </TableCell>
       <TableCell className="text-right">
