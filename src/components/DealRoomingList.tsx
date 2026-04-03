@@ -637,9 +637,11 @@ zajezdy@yarotravel.cz`
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", borderBottom: "2px solid #333", paddingBottom: "15px" }}>
             <div>
               <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px 0" }}>Rooming List</h1>
-              <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>
-                {dealInfo?.deal_number}
-              </p>
+              {(() => {
+                const lead = travelers.find((t) => t.is_lead_traveler);
+                const leadName = lead ? removeDiacritics(`${lead.clients.first_name} ${lead.clients.last_name}`) : dealInfo?.deal_number;
+                return leadName ? <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>{leadName}</p> : null;
+              })()}
             </div>
             <div style={{ textAlign: "right", fontSize: "11px", color: "#555" }}>
               <p style={{ margin: "0 0 2px 0", fontWeight: "bold" }}>YARO s.r.o.</p>
