@@ -2886,7 +2886,7 @@ const DealDetail = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 min-w-0">
               {/* Left side - form fields */}
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0 overflow-hidden">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
