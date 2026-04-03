@@ -2873,7 +2873,7 @@ const DealDetail = () => {
                   const hotelServices = services.filter(s => s.service_type === 'hotel');
                   if (hotelServices.length === 0) return null;
                   return (
-                    <div className={`space-y-1 col-span-2 md:col-span-3`}>
+                    <div className={`space-y-1 sm:col-span-2 md:col-span-3`}>
                       {hotelServices.map((hs, idx) => {
                         const details = hs.details as any;
                         const mealPlan = details?.meal_plan || hs.description || '';
