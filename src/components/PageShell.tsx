@@ -8,7 +8,7 @@ interface PageShellProps {
 }
 
 export const PageShell = ({ children, maxWidth = "default", className }: PageShellProps) => (
-  <div className="min-h-screen bg-[var(--gradient-subtle)]">
+  <div className="min-h-screen bg-[var(--gradient-subtle)] overflow-x-hidden">
     <div
       className={cn(
         "mx-auto py-6 md:py-8 px-4 md:px-6",

@@ -227,16 +227,16 @@ const SortableServiceRow = ({
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-xs whitespace-nowrap">
+      <TableCell className="text-xs whitespace-nowrap hidden sm:table-cell">
         {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
       </TableCell>
-      <TableCell className="text-center text-sm">
+      <TableCell className="text-center text-sm hidden sm:table-cell">
         {service.person_count || 1}
       </TableCell>
-      <TableCell className="text-center text-sm">
+      <TableCell className="text-center text-sm hidden sm:table-cell">
         {service.quantity || 1}
       </TableCell>
-      <TableCell className="text-xs truncate max-w-[100px]">
+      <TableCell className="text-xs truncate max-w-[100px] hidden md:table-cell">
         {service.suppliers?.name || '-'}
       </TableCell>
       <TableCell className="text-right">
@@ -337,7 +337,7 @@ const SortableTravelerRow = ({
       <TableCell className="font-medium text-sm">
         {traveler.clients.first_name} {traveler.clients.last_name}
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">
+      <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
         {dob || <span className="text-muted-foreground/40">—</span>}
       </TableCell>
       <TableCell className="text-right">
@@ -3081,6 +3081,7 @@ const DealDetail = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTravelerDragEnd}>
                 <SortableContext items={deal.deal_travelers.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <Table>
@@ -3089,7 +3090,7 @@ const DealDetail = () => {
                         <TableHead className="w-6"></TableHead>
                         <TableHead className="w-6">#</TableHead>
                         <TableHead>Jméno</TableHead>
-                        <TableHead>Datum narození</TableHead>
+                        <TableHead className="hidden sm:table-cell">Datum narození</TableHead>
                         <TableHead className="text-right">Akce</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -3106,6 +3107,7 @@ const DealDetail = () => {
                   </Table>
                 </SortableContext>
               </DndContext>
+              </div>
             </CardContent>
           </Card>
 
@@ -3740,7 +3742,7 @@ const DealDetail = () => {
               <p className="text-muted-foreground text-center py-8 text-sm">Zatím nejsou přidány žádné služby</p>
             ) : (
               <div className="space-y-0">
-                <div>
+                <div className="overflow-x-auto">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -3751,10 +3753,10 @@ const DealDetail = () => {
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
-                          <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Osoby</TableHead>
-                          <TableHead className="text-center">Počet</TableHead>
-                          <TableHead>Dodavatel</TableHead>
+                          <TableHead className="hidden sm:table-cell">Datum</TableHead>
+                          <TableHead className="hidden sm:table-cell text-center">Osoby</TableHead>
+                          <TableHead className="hidden sm:table-cell text-center">Počet</TableHead>
+                          <TableHead className="hidden md:table-cell">Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
                         </TableRow>
