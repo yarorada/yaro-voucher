@@ -2827,7 +2827,7 @@ const DealDetail = () => {
           <CardContent>
             <div className="flex flex-col md:flex-row gap-6">
               {/* Left side - form fields */}
-              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
