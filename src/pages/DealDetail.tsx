@@ -2868,25 +2868,23 @@ const DealDetail = () => {
             <CardDescription>Upravte základní údaje obchodního případu</CardDescription>
           </CardHeader>
            <CardContent className="min-w-0 overflow-x-hidden">
-            {/* Mobile financial metrics row */}
-            <div className="grid grid-cols-3 gap-2 mb-4 sm:hidden">
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodej</div>
-                <div className="text-sm font-bold text-primary mt-0.5">{formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}</div>
+            {/* Financial metrics row - always visible */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+              <div className="rounded-lg bg-muted/50 p-2.5 sm:p-4 text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodejní cena</div>
+                <div className="text-sm sm:text-lg font-bold text-primary mt-0.5">{formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}</div>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákup</div>
-                <div className="text-sm font-bold text-muted-foreground mt-0.5">{formatPriceCurrency(totalCostPrice, "CZK")}</div>
+              <div className="rounded-lg bg-muted/50 p-2.5 sm:p-4 text-center">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákupní cena</div>
+                <div className="text-sm sm:text-lg font-semibold text-muted-foreground mt-0.5">{formatPriceCurrency(totalCostPrice, "CZK")}</div>
               </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
+              <div className="rounded-lg bg-muted/50 p-2.5 sm:p-4 text-center">
                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Zisk</div>
-                <div className={`text-sm font-bold mt-0.5 ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatPriceCurrency(profit, "CZK")}</div>
+                <div className={`text-sm sm:text-lg font-bold mt-0.5 ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatPriceCurrency(profit, "CZK")}</div>
               </div>
             </div>
 
-            <div className="grid min-w-0 grid-cols-1 items-start gap-6 sm:grid-cols-[minmax(0,1fr)_auto]">
-              {/* Left side - form fields */}
-              <div className="min-w-0 space-y-3">
+            <div className="min-w-0 space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Stav</Label>
                   <Select value={status} onValueChange={(value) => setStatus(value as any)}>
@@ -2984,31 +2982,6 @@ const DealDetail = () => {
                   />
                 </div>
               </div>
-
-              {/* Right side - financial panel (desktop/tablet only) */}
-              <div className="hidden sm:flex flex-col w-52 rounded-xl bg-muted/30 p-5 space-y-4">
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodejní cena</div>
-                  <div className="text-lg font-bold text-primary">
-                    {formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákupní cena</div>
-                  <div className="text-base font-semibold text-muted-foreground">
-                    {formatPriceCurrency(totalCostPrice, "CZK")}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Zisk</div>
-                  <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatPriceCurrency(profit, "CZK")}
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
