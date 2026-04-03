@@ -10,7 +10,7 @@ const routeNames: Record<string, string> = {
   "deals": "Obchodní případy",
   "new": "Nový případ",
   "clients": "Klienti",
-  "suppliers": "Dodavatelé",
+  "suppliers": "Partneři",
   "destinations": "Destinace",
   "contracts": "Smlouvy",
   "statistics": "Statistiky",
