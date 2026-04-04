@@ -2031,7 +2031,7 @@ function InvoiceTable({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="truncate text-sm font-medium">{primaryName}</p>
-                    {inv.invoice_number && (
+                    {type === "issued" && inv.invoice_number && (
                       <p className="truncate text-xs text-muted-foreground">{inv.invoice_number}</p>
                     )}
                     {contractNumber && (
