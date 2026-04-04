@@ -401,10 +401,13 @@ export default function Invoicing() {
       // Upload file to storage
       const ext = file.name.split(".").pop() || "png";
       const path = `invoices/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("documents").upload(path, processFile);
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-        setScanFileUrl(urlData?.publicUrl || null);
+      const { error: uploadError } = await supabase.storage.from("supplier-invoices").upload(path, processFile);
+      if (uploadError) {
+        console.warn("Invoice file upload failed:", uploadError.message);
+      }
+      const { data: urlData } = supabase.storage.from("supplier-invoices").getPublicUrl(path);
+      if (!uploadError && urlData?.publicUrl) {
+        setScanFileUrl(urlData.publicUrl);
         setScanFileName(file.name);
       }
 
