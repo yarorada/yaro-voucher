@@ -140,7 +140,7 @@ export function ContractAgencyInfo({
   };
 
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-3 md:p-6 overflow-hidden">
       <div className="flex flex-row items-center justify-between mb-4">
         <h2 className="text-heading-2 text-foreground">
           Dodavatel
