@@ -538,61 +538,96 @@ const Suppliers = () => {
       );
     }
     return (
-      <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-3 font-medium text-primary">Název</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">IČO</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((supplier) => (
-                <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 font-medium text-foreground">{supplier.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {supplier.email
-                      ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
-                      : <span className="text-muted-foreground/40">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {supplier.ico || <span className="text-muted-foreground/40">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(supplier)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Upravit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDelete(supplier.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Smazat
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <>
+        {/* Mobile card view */}
+        <div className="sm:hidden space-y-2">
+          {items.map((supplier) => (
+            <Card key={supplier.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm">{supplier.name}</p>
+                  {supplier.contact_person && (
+                    <p className="text-xs text-muted-foreground">{supplier.contact_person}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
+                    {supplier.email && (
+                      <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors truncate">{supplier.email}</a>
+                    )}
+                    {supplier.ico && <span>IČO: {supplier.ico}</span>}
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(supplier)}>
+                      <Edit className="h-4 w-4 mr-2" /> Upravit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(supplier.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" /> Smazat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </Card>
+          ))}
         </div>
-      </Card>
+
+        {/* Desktop table view */}
+        <Card className="shadow-[var(--shadow-medium)] overflow-hidden hidden sm:block">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-4 py-3 font-medium text-primary">Název</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kontaktní osoba</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">IČO</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((supplier) => (
+                  <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 font-medium text-foreground">{supplier.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {supplier.email
+                        ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
+                        : <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {supplier.ico || <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(supplier)}>
+                            <Edit className="h-4 w-4 mr-2" /> Upravit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(supplier.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Smazat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </>
     );
   }
 };
