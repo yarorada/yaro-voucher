@@ -35,6 +35,12 @@ interface DateRangeFilterProps {
   showArrival?: boolean;
 }
 
+const formatShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  return `${date.getDate()}.${date.getMonth() + 1}.`;
+};
+
 const formatForDisplay = (d: string | null) => {
   if (!d) return "";
   const date = new Date(d + "T00:00:00");
@@ -92,18 +98,18 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
 
   const isActive = value.preset !== "all";
 
-  const getLabel = () => {
-    if (value.preset === "all") return "Datum";
-    const fieldLabel = value.dateField === "departure" ? "Odjezd" : "Příjezd";
-    if (value.preset === "this_month") return `${fieldLabel}: Tento měsíc`;
-    if (value.preset === "last_month") return `${fieldLabel}: Minulý měsíc`;
+  const getLabel = (short = false) => {
+    if (value.preset === "all") return short ? "" : "Datum";
+    if (value.preset === "this_month") return short ? "Teď" : `Tento měsíc`;
+    if (value.preset === "last_month") return short ? "Min." : `Minulý měsíc`;
     if (value.preset === "custom") {
+      const fmt = short ? formatShort : formatForDisplay;
       const parts: string[] = [];
-      if (value.from) parts.push(formatForDisplay(value.from));
-      if (value.to) parts.push(formatForDisplay(value.to));
-      return `${fieldLabel}: ${parts.join(" – ")}`;
+      if (value.from) parts.push(fmt(value.from));
+      if (value.to) parts.push(fmt(value.to));
+      return parts.join("–");
     }
-    return "Datum";
+    return short ? "" : "Datum";
   };
 
   const selected: DateRange | undefined =
@@ -120,10 +126,12 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
         <Button
           variant={isActive ? "default" : "outline"}
           size="sm"
-          className={cn("h-9 gap-2 text-sm", isActive && "pr-2")}
+          className={cn("h-9 gap-1 text-sm shrink-0", isActive && "pr-2")}
+          title={getLabel(false)}
         >
-          <CalendarIcon className="h-3.5 w-3.5" />
-          <span className="truncate max-w-[200px]">{getLabel()}</span>
+          <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline truncate max-w-[200px]">{getLabel()}</span>
+          {isActive && <span className="sm:hidden text-xs">{getLabel(true)}</span>}
           {isActive && (
             <span
               role="button"
