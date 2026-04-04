@@ -3222,7 +3222,7 @@ const DealDetail = () => {
                   setServiceFormFuture([]);
                 }
               }}>
-                <DialogContent className="bg-background max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogContent className="bg-background max-w-2xl max-h-[85vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-auto">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -3440,8 +3440,8 @@ const DealDetail = () => {
                     </div>
 
                     {/* Row 1: Date | Persons | Quantity */}
-                    <div className="flex flex-wrap gap-2 items-end">
-                      <div className="flex-1 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+                      <div className="w-full sm:flex-1 space-y-2">
                         <Label>Datum</Label>
                         <DateRangePicker
                           dateFrom={serviceForm.start_date}
@@ -3484,8 +3484,8 @@ const DealDetail = () => {
                     </div>
 
                      {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
-                    <div className="flex gap-2 items-start">
-                      <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row gap-2 items-start">
+                      <div className="w-full sm:flex-1">
                         <Label>Nákupní cena</Label>
                         <div className="flex gap-1">
                           <Input
@@ -3621,7 +3621,7 @@ const DealDetail = () => {
                       </div>
                       {/* When room types are defined, selling price is auto-derived — hide the field */}
                       {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
-                        <div className="flex-1">
+                        <div className="w-full sm:flex-1">
                           <Label>Prodejní cena</Label>
                           <div className="flex gap-1">
                             <Input
@@ -3672,7 +3672,7 @@ const DealDetail = () => {
                           )}
                         </div>
                       )}
-                      <div className="w-32">
+                      <div className="w-full sm:w-32">
                         <Label>Režim</Label>
                         <Select value={serviceForm.price_mode} onValueChange={(v: "per_person" | "per_service") => setServiceForm(prev => ({ ...prev, price_mode: v }))}>
                           <SelectTrigger>
