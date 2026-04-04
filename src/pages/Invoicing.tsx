@@ -880,7 +880,7 @@ export default function Invoicing() {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-6 shadow-xl"
+        className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-3 sm:p-6 shadow-xl mx-2 sm:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
