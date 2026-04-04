@@ -883,16 +883,17 @@ export default function Invoicing() {
         className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-3 sm:p-6 shadow-xl mx-2 sm:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Náhled faktury</h2>
-            <p className="text-sm text-muted-foreground">
+        <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base sm:text-lg font-semibold truncate">Náhled faktury</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               {filePreviewInvoice.file_name || filePreviewInvoice.invoice_number || "Doklad"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <Button
               size="sm"
+              className="h-8 text-xs sm:text-sm"
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
@@ -916,8 +917,9 @@ export default function Invoicing() {
                 }
               }}
             >
-              <Download className="mr-1.5 h-4 w-4" />
-              Stáhnout PDF
+              <Download className="mr-1 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Stáhnout PDF</span>
+              <span className="sm:hidden">Stáhnout</span>
             </Button>
             <button
               onClick={closeFilePreview}
