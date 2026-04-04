@@ -3775,7 +3775,7 @@ const DealDetail = () => {
                         <div className="flex gap-3">
                           {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? <span>{p[2]}.{p[1]}.{p[0]}</span> : null; })()}
                           {(service.person_count || 1) > 1 && <span>{service.person_count} os.</span>}
-                          {service.suppliers?.name && <span className="truncate max-w-[80px]">{service.suppliers.name}</span>}
+                          {service.suppliers?.name && <span className="truncate max-w-[80px]" title={service.suppliers.name}>{service.suppliers.name}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-border">
