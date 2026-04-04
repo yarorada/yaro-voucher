@@ -3817,11 +3817,11 @@ const DealDetail = () => {
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
-                          <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Osoby</TableHead>
-                          <TableHead className="text-center">Počet</TableHead>
+                          <TableHead className="hidden sm:table-cell">Datum</TableHead>
+                          <TableHead className="text-center hidden sm:table-cell">Osoby</TableHead>
+                          <TableHead className="text-center hidden sm:table-cell">Počet</TableHead>
                           <TableHead className="hidden md:table-cell">Dodavatel</TableHead>
-                          <TableHead className="text-right">Cena</TableHead>
+                          <TableHead className="text-right hidden sm:table-cell">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
                         </TableRow>
                       </TableHeader>
