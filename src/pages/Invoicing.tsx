@@ -2017,10 +2017,10 @@ function InvoiceTable({
   return (
     <>
       {/* Mobile card view */}
-      <div className="sm:hidden space-y-3">
+      <div className="sm:hidden space-y-2">
         {invoices.map((inv) => (
           <Card key={inv.id} className="overflow-hidden">
-            <CardContent className="p-3 space-y-2">
+            <CardContent className="p-3 space-y-1.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">
@@ -2031,51 +2031,51 @@ function InvoiceTable({
                       <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
                     )}
                     {type === "received" && inv.contract_number_display && (
-                      <Badge variant="outline" className="text-xs tabular-nums">
+                      <Badge variant="outline" className="text-[10px] tabular-nums px-1.5 py-0">
                         {inv.contract_number_display.replace(/^CS-?/i, "")}
                       </Badge>
                     )}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-semibold tabular-nums text-sm">
+                  <p className="font-semibold tabular-nums text-sm whitespace-nowrap">
                     {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
                   </p>
                   {inv.paid ? (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-xs cursor-pointer" onClick={() => onMarkPaid(inv)}>
-                      Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-[10px] cursor-pointer px-1.5 py-0" onClick={() => onMarkPaid(inv)}>
+                      Zapl.{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
-                      Nezaplaceno
+                    <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
+                      Nezapl.
                     </Badge>
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                <div className="flex gap-3">
-                  {inv.issue_date && <span>Vyst: {format(new Date(inv.issue_date), "d.M.yy")}</span>}
-                  {inv.due_date && <span>Spl: {format(new Date(inv.due_date), "d.M.yy")}</span>}
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0 text-xs text-muted-foreground">
+                <div className="flex gap-2">
+                  {inv.issue_date && <span>{format(new Date(inv.issue_date), "d.M.yy")}</span>}
+                  {inv.due_date && <span>spl. {format(new Date(inv.due_date), "d.M.yy")}</span>}
                 </div>
-                {inv.variable_symbol && <span className="tabular-nums">VS: {inv.variable_symbol}</span>}
+                {inv.variable_symbol && <span className="tabular-nums">VS {inv.variable_symbol}</span>}
               </div>
-              <div className="flex items-center gap-1 pt-1 border-t border-border flex-wrap">
+              <div className="flex items-center gap-0.5 pt-1 border-t border-border">
                 {!inv.paid && (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600 px-2" onClick={() => onMarkPaid(inv)}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600 px-1.5" onClick={() => onMarkPaid(inv)}>
+                    <CheckCircle2 className="h-3 w-3 mr-0.5" /> Zaplatit
                   </Button>
                 )}
                 {type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onOpenFile(inv)}>
-                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Soubor
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-1.5" onClick={() => onOpenFile(inv)}>
+                    <ExternalLink className="h-3 w-3 mr-0.5" /> Soubor
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onPdf(inv)}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-1.5" onClick={() => onPdf(inv)}>
+                    <FileText className="h-3 w-3 mr-0.5" /> Náhled
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onEdit(inv)}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" /> Editace
+                <Button variant="ghost" size="sm" className="h-7 text-xs px-1.5" onClick={() => onEdit(inv)}>
+                  <Pencil className="h-3 w-3 mr-0.5" /> Edit
                 </Button>
                 <div className="flex-1" />
                 <DropdownMenu>
