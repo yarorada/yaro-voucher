@@ -467,39 +467,66 @@ const Deals = () => {
         ) : (
           <div className="space-y-4">
             {/* Status filter tabs */}
-            <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0 overflow-x-auto">
-              {([
-                { value: "all", label: "Všechny" },
-                { value: "inquiry", label: "Poptávka" },
-                { value: "quote", label: "Nabídka" },
-                { value: "approved", label: "Schváleno" },
-                { value: "confirmed", label: "Potvrzeno" },
-                { value: "dispatched", label: "Odbaveno" },
-                { value: "completed", label: "Dokončeno" },
-                { value: "cancelled", label: "Zrušeno" },
-              ] as const).map((opt) => {
-                const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
-                const isActive = statusFilter === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setStatusFilter(opt.value)}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                    }`}
-                  >
-                    {opt.label}
-                    {count > 0 && (
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-                      }`}>{count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {isMobile ? (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {([
+                    { value: "all", label: "Všechny" },
+                    { value: "inquiry", label: "Poptávka" },
+                    { value: "quote", label: "Nabídka" },
+                    { value: "approved", label: "Schváleno" },
+                    { value: "confirmed", label: "Potvrzeno" },
+                    { value: "dispatched", label: "Odbaveno" },
+                    { value: "completed", label: "Dokončeno" },
+                    { value: "cancelled", label: "Zrušeno" },
+                  ] as const).map((opt) => {
+                    const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label} {count > 0 && `(${count})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0 overflow-x-auto">
+                {([
+                  { value: "all", label: "Všechny" },
+                  { value: "inquiry", label: "Poptávka" },
+                  { value: "quote", label: "Nabídka" },
+                  { value: "approved", label: "Schváleno" },
+                  { value: "confirmed", label: "Potvrzeno" },
+                  { value: "dispatched", label: "Odbaveno" },
+                  { value: "completed", label: "Dokončeno" },
+                  { value: "cancelled", label: "Zrušeno" },
+                ] as const).map((opt) => {
+                  const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
+                  const isActive = statusFilter === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setStatusFilter(opt.value)}
+                      className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                        isActive
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                      }`}
+                    >
+                      {opt.label}
+                      {count > 0 && (
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                        }`}>{count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {filteredDeals.length === 0 ? (
               <Card className="p-12 text-center">
                 <p className="text-muted-foreground">Nenalezeny žádné případy odpovídající vašemu hledání</p>
