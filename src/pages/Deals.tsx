@@ -466,33 +466,61 @@ const Deals = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {/* Status filter dropdown */}
-            <div className="flex items-center gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Stav" />
-                </SelectTrigger>
-                <SelectContent>
-                  {([
-                    { value: "all", label: "Všechny" },
-                    { value: "inquiry", label: "Poptávka" },
-                    { value: "quote", label: "Nabídka odeslána" },
-                    { value: "approved", label: "Schváleno" },
-                    { value: "confirmed", label: "Potvrzeno" },
-                    { value: "dispatched", label: "Odbaveno" },
-                    { value: "completed", label: "Dokončeno" },
-                    { value: "cancelled", label: "Zrušeno" },
-                  ] as const).map((opt) => {
-                    const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
-                    return (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}{count > 0 ? ` (${count})` : ""}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Status filter: dropdown on mobile, tabs on desktop */}
+            {isMobile ? (
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Stav" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {([
+                      { value: "all", label: "Všechny" },
+                      { value: "inquiry", label: "Poptávka" },
+                      { value: "quote", label: "Nabídka odeslána" },
+                      { value: "approved", label: "Schváleno" },
+                      { value: "confirmed", label: "Potvrzeno" },
+                      { value: "dispatched", label: "Odbaveno" },
+                      { value: "completed", label: "Dokončeno" },
+                      { value: "cancelled", label: "Zrušeno" },
+                    ] as const).map((opt) => {
+                      const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
+                      return (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}{count > 0 ? ` (${count})` : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 flex-wrap">
+                {([
+                  { value: "all", label: "Všechny" },
+                  { value: "inquiry", label: "Poptávka" },
+                  { value: "quote", label: "Nabídka odeslána" },
+                  { value: "approved", label: "Schváleno" },
+                  { value: "confirmed", label: "Potvrzeno" },
+                  { value: "dispatched", label: "Odbaveno" },
+                  { value: "completed", label: "Dokončeno" },
+                  { value: "cancelled", label: "Zrušeno" },
+                ] as const).map((opt) => {
+                  const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
+                  return (
+                    <Button
+                      key={opt.value}
+                      variant={statusFilter === opt.value ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setStatusFilter(opt.value)}
+                    >
+                      {opt.label}{count > 0 ? ` (${count})` : ""}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
 
             {filteredDeals.length === 0 ? (
               <Card className="p-12 text-center">
