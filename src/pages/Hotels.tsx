@@ -76,6 +76,7 @@ export default function Hotels() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newHotelName, setNewHotelName] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [showNoDestination, setShowNoDestination] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
 
   useEffect(() => {
@@ -167,11 +168,13 @@ export default function Hotels() {
   const handleSelectCountry = (country: string | null) => {
     setSelectedCountry(country);
     setSelectedDestination(null);
+    setShowNoDestination(false);
   };
 
   const filtered = hotels.filter((h) => {
     const matchesSearch = removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()));
     if (!matchesSearch) return false;
+    if (showNoDestination) return !h.destination_id;
     if (selectedCountry && h.destinations?.countries?.name !== selectedCountry) return false;
     if (selectedDestination && h.destinations?.name !== selectedDestination) return false;
     return true;
@@ -239,9 +242,19 @@ export default function Hotels() {
                 </button>
               ))}
               {hotelsWithoutDestination > 0 && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  + {hotelsWithoutDestination} bez destinace
-                </span>
+                <button
+                  onClick={() => { setShowNoDestination(!showNoDestination); setSelectedCountry(null); setSelectedDestination(null); }}
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    showNoDestination
+                      ? "bg-destructive/10 text-destructive border-destructive/30"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  Bez destinace
+                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${showNoDestination ? "bg-destructive/20" : "bg-muted"}`}>
+                    {hotelsWithoutDestination}
+                  </span>
+                </button>
               )}
             </div>
 
