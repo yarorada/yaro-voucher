@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/select";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { cs } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 export type DateField = "departure" | "arrival";
 export type DatePreset = "all" | "this_month" | "last_month" | "custom";
@@ -75,14 +76,13 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
     onChange({ ...value, dateField });
   };
 
-  const handleFromSelect = (date: Date | undefined) => {
-    if (!date) return;
-    onChange({ ...value, preset: "custom", from: toDateStr(date) });
-  };
-
-  const handleToSelect = (date: Date | undefined) => {
-    if (!date) return;
-    onChange({ ...value, preset: "custom", to: toDateStr(date) });
+  const handleRangeSelect = (range: DateRange | undefined) => {
+    onChange({
+      ...value,
+      preset: "custom",
+      from: range?.from ? toDateStr(range.from) : null,
+      to: range?.to ? toDateStr(range.to) : null,
+    });
   };
 
   const handleClear = () => {
@@ -105,6 +105,14 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
     }
     return "Datum";
   };
+
+  const selected: DateRange | undefined =
+    value.from || value.to
+      ? {
+          from: value.from ? new Date(value.from + "T00:00:00") : undefined,
+          to: value.to ? new Date(value.to + "T00:00:00") : undefined,
+        }
+      : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -130,7 +138,7 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-4 space-y-4" align="start">
+      <PopoverContent className="w-auto p-4 space-y-3" align="start">
         {/* Date field selector */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground whitespace-nowrap">Podle:</span>
@@ -163,31 +171,17 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
           </Button>
         </div>
 
-        {/* Custom range */}
-        <div className="space-y-2">
+        {/* Single calendar with range selection */}
+        <div className="space-y-1">
           <span className="text-sm font-medium">Vlastní rozsah:</span>
-          <div className="flex gap-4">
-            <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">Od</span>
-              <Calendar
-                mode="single"
-                selected={value.from ? new Date(value.from + "T00:00:00") : undefined}
-                onSelect={handleFromSelect}
-                locale={cs}
-                className={cn("p-2 pointer-events-auto border rounded-md")}
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">Do</span>
-              <Calendar
-                mode="single"
-                selected={value.to ? new Date(value.to + "T00:00:00") : undefined}
-                onSelect={handleToSelect}
-                locale={cs}
-                className={cn("p-2 pointer-events-auto border rounded-md")}
-              />
-            </div>
-          </div>
+          <Calendar
+            mode="range"
+            selected={selected}
+            onSelect={handleRangeSelect}
+            locale={cs}
+            numberOfMonths={1}
+            className={cn("p-2 pointer-events-auto border rounded-md")}
+          />
         </div>
 
         <div className="flex justify-between pt-2 border-t">
