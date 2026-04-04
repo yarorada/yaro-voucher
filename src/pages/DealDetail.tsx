@@ -3621,7 +3621,7 @@ const DealDetail = () => {
                       </div>
                       {/* When room types are defined, selling price is auto-derived — hide the field */}
                       {!(serviceForm.service_type === 'hotel' && roomTypes.length > 0) && (
-                        <div className="flex-1">
+                        <div className="w-full sm:flex-1">
                           <Label>Prodejní cena</Label>
                           <div className="flex gap-1">
                             <Input
