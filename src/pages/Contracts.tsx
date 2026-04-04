@@ -48,6 +48,7 @@ const formatDateShort = (dateString: string | null | undefined): string => {
 };
 
 const Contracts = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { scope } = useDataScope();
