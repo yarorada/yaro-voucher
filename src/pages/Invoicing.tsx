@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { PageShell } from "@/components/PageShell";
 import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { createPortal } from "react-dom";
