@@ -962,7 +962,7 @@ const Clients = () => {
             <Button variant="outline" className="mt-3" onClick={() => setFilterConditions([])}>Zrušit filtry</Button>
           </Card>
         ) : (
-          {/* Mobile card view */}
+          <>
           <div className="sm:hidden space-y-2">
             {filteredClients.map((client) => (
               <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5">
