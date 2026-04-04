@@ -560,7 +560,7 @@ const ContractDetail = () => {
                       .map((service: any) => (
                           <tr key={service.id} className="border-b last:border-0">
                             <td className="py-2 text-foreground">
-                              <span className="font-medium truncate block max-w-[200px] sm:max-w-none" title={service.service_name}>{service.service_name}</span>
+                              <span className="font-medium truncate block max-w-[150px] sm:max-w-none" title={service.service_name}>{service.service_name}</span>
                               {service.description && (
                                 <span className="block text-xs text-muted-foreground">{service.description}</span>
                               )}
