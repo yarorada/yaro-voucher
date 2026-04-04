@@ -2953,7 +2953,7 @@ const DealDetail = () => {
                           <div key={hs.id} className={`flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3 ${idx > 0 ? 'mt-1' : ''}`}>
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <Hotel className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                              <span className="text-sm font-medium truncate">{hs.service_name}</span>
+                              <span className="text-sm font-medium truncate" title={hs.service_name}>{hs.service_name}</span>
                               {(hs.quantity || 1) > 1 && (
                                 <span className="text-xs text-muted-foreground">({hs.quantity}×)</span>
                               )}
