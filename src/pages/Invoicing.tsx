@@ -1095,7 +1095,7 @@ export default function Invoicing() {
   return (
     <PageShell maxWidth="wide">
     <div
-      className="space-y-4 relative overflow-x-hidden"
+      className="space-y-4 relative overflow-x-hidden max-w-full"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
