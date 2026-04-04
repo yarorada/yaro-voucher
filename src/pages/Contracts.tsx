@@ -296,36 +296,60 @@ const Contracts = () => {
         ) : (
           <div className="space-y-4">
             {/* Status tabs */}
-            <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
-              {([
-                { value: "all", label: "Všechny" },
-                { value: "draft", label: "Koncept" },
-                { value: "sent", label: "Odesláno" },
-                { value: "signed", label: "Podepsáno" },
-                { value: "cancelled", label: "Zrušeno" },
-              ] as const).map((tab) => {
-                const count = tab.value === "all" ? (contracts?.length || 0) : (contracts?.filter(c => c.status === tab.value).length || 0);
-                const isActive = statusFilter === tab.value;
-                return (
-                  <button
-                    key={tab.value}
-                    onClick={() => setStatusFilter(tab.value)}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                    }`}
-                  >
-                    {tab.label}
-                    {count > 0 && (
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-                      }`}>{count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {isMobile ? (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {([
+                    { value: "all", label: "Všechny" },
+                    { value: "draft", label: "Koncept" },
+                    { value: "sent", label: "Odesláno" },
+                    { value: "signed", label: "Podepsáno" },
+                    { value: "cancelled", label: "Zrušeno" },
+                  ] as const).map((tab) => {
+                    const count = tab.value === "all" ? (contracts?.length || 0) : (contracts?.filter(c => c.status === tab.value).length || 0);
+                    return (
+                      <SelectItem key={tab.value} value={tab.value}>
+                        {tab.label} {count > 0 && `(${count})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
+                {([
+                  { value: "all", label: "Všechny" },
+                  { value: "draft", label: "Koncept" },
+                  { value: "sent", label: "Odesláno" },
+                  { value: "signed", label: "Podepsáno" },
+                  { value: "cancelled", label: "Zrušeno" },
+                ] as const).map((tab) => {
+                  const count = tab.value === "all" ? (contracts?.length || 0) : (contracts?.filter(c => c.status === tab.value).length || 0);
+                  const isActive = statusFilter === tab.value;
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={() => setStatusFilter(tab.value)}
+                      className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                        isActive
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                      }`}
+                    >
+                      {tab.label}
+                      {count > 0 && (
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                        }`}>{count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {filteredContracts && filteredContracts.length === 0 ? (
               <Card className="p-12 text-center">
