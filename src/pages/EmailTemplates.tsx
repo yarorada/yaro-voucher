@@ -204,7 +204,7 @@ export default function EmailTemplates() {
 
       {/* Edit dialog */}
       <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Upravit šablonu: {editingTemplate?.name}</DialogTitle>
           </DialogHeader>
