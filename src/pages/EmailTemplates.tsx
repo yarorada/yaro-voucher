@@ -158,44 +158,44 @@ export default function EmailTemplates() {
 
   return (
     <PageShell>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-heading-1">E-mailové šablony</h1>
-          <p className="text-body text-muted-foreground mt-1">Správa textů odesílaných e-mailů pro vouchery, smlouvy a dokumenty.</p>
+          <p className="text-body text-muted-foreground mt-1 hidden sm:block">Správa textů odesílaných e-mailů pro vouchery, smlouvy a dokumenty.</p>
         </div>
       </div>
 
       <div className="grid gap-4">
         {templates.map(t => (
           <Card key={t.id} className={!t.is_active ? "opacity-60" : ""}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <CardTitle className="text-base">{t.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{t.template_key}</p>
+            <CardHeader className="pb-3 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <CardTitle className="text-sm sm:text-base truncate">{t.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{t.template_key}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {t.trigger_type && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">
                       {TRIGGER_TYPES.find(tt => tt.value === t.trigger_type)?.label || t.trigger_type}
                       {t.trigger_offset_days ? ` (${t.trigger_offset_days}d)` : ""}
                     </Badge>
                   )}
                   <Switch checked={t.is_active} onCheckedChange={() => toggleActive(t)} />
-                  <Button variant="ghost" size="icon" onClick={() => setPreviewTemplate(t)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewTemplate(t)}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(t)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-sm text-muted-foreground"><span className="font-medium">Předmět:</span> {t.subject}</p>
+            <CardContent className="pt-0 px-3 sm:px-6">
+              <p className="text-sm text-muted-foreground truncate"><span className="font-medium">Předmět:</span> {t.subject}</p>
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{t.body}</p>
             </CardContent>
           </Card>
@@ -204,7 +204,7 @@ export default function EmailTemplates() {
 
       {/* Edit dialog */}
       <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Upravit šablonu: {editingTemplate?.name}</DialogTitle>
           </DialogHeader>
