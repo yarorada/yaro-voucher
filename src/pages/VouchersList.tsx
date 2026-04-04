@@ -508,50 +508,22 @@ const VouchersList = () => {
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
+                    className={`p-3 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        {/* Row 1: Status + Code + Name */}
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                          {voucher.sent_at ? (
-                            <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
-                          ) : isExpired ? (
-                            <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
-                          ) : (
-                            <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
-                          )}
-                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
-                          {(displayName || countryIso || hotelName || firstServiceDate) && (
-                            <span className="text-foreground truncate min-w-0 text-sm" title={[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}>
-                              {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
-                            </span>
-                          )}
-                        </div>
-                        {/* Row 2: Metadata grid */}
-                        <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                          {displayName && (
-                            <span className="truncate">
-                              <span className="font-semibold text-foreground">Klient:</span> {displayName}
-                            </span>
-                          )}
-                          {destination && (
-                            <span className="truncate">
-                              <span className="font-semibold text-foreground">Destinace:</span> {destination}
-                            </span>
-                          )}
-                          <span className="truncate">
-                            <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(voucher.created_at)}
-                          </span>
-                          {voucher.sent_at && (
-                            <span className="truncate">
-                              <span className="font-semibold text-foreground">Odesláno:</span> {formatDateTime(voucher.sent_at)}
-                            </span>
-                          )}
-                        </div>
+                    {/* Row 1: Badge + Code + Menu */}
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {voucher.sent_at ? (
+                          <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                        ) : isExpired ? (
+                          <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
+                        ) : (
+                          <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+                        )}
+                        <span className="font-bold text-foreground truncate">{voucher.voucher_code}</span>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -581,6 +553,26 @@ const VouchersList = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    </div>
+                    {/* Row 2: Summary line */}
+                    <div className="text-xs text-muted-foreground truncate mb-1">
+                      {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
+                    </div>
+                    {/* Row 3: Metadata */}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      {destination && (
+                        <span className="truncate">
+                          <span className="font-semibold text-foreground">Destinace:</span> {destination}
+                        </span>
+                      )}
+                      <span className="truncate">
+                        <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(voucher.created_at)}
+                      </span>
+                      {voucher.sent_at && (
+                        <span className="truncate">
+                          <span className="font-semibold text-foreground">Odesláno:</span> {formatDateTime(voucher.sent_at)}
+                        </span>
+                      )}
                     </div>
                   </Card>
                 );
