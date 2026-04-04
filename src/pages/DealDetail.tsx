@@ -3440,7 +3440,7 @@ const DealDetail = () => {
                     </div>
 
                     {/* Row 1: Date | Persons | Quantity */}
-                    <div className="flex gap-2 items-end">
+                    <div className="flex flex-wrap gap-2 items-end">
                       <div className="flex-1 space-y-2">
                         <Label>Datum</Label>
                         <DateRangePicker
