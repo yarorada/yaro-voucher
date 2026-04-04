@@ -410,14 +410,14 @@ const Deals = () => {
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
 
   usePageToolbar(
-    <>
-      <div className="relative w-48 md:w-64">
+    <div className="flex items-center gap-1.5 md:gap-2 w-full min-w-0">
+      <div className="relative flex-1 min-w-0">
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           placeholder="Hledat..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 pr-7 h-8 text-xs"
+          className="pl-8 pr-7 h-8 text-xs w-full"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -426,7 +426,7 @@ const Deals = () => {
         )}
       </div>
       <Select value={sortBy} onValueChange={setSortBy}>
-        <SelectTrigger className="w-[150px] h-8 text-xs">
+        <SelectTrigger className="w-[110px] md:w-[150px] h-8 text-xs shrink-0">
           <SelectValue placeholder="Řazení" />
         </SelectTrigger>
         <SelectContent>
@@ -439,11 +439,10 @@ const Deals = () => {
         </SelectContent>
       </Select>
       <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-      <Button onClick={() => navigate("/deals/new")} className={toolbarButtonClass + " gap-1"}>
-        <Plus className="h-3.5 w-3.5" />
-        Nový případ
+      <Button onClick={() => navigate("/deals/new")} className={toolbarButtonClass + " gap-1 shrink-0"} size="icon" title="Nový případ">
+        <Plus className="h-4 w-4" />
       </Button>
-    </>,
+    </div>,
     [searchQuery, statusFilter, sortBy, dateFilter]
   );
 
