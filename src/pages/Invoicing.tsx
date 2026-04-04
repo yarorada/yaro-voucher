@@ -2052,10 +2052,10 @@ function InvoiceTable({
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                 <div className="flex gap-3">
-                  {inv.issue_date && <span>Vystaveno: {format(new Date(inv.issue_date), "d.M.yyyy")}</span>}
-                  {inv.due_date && <span>Splatnost: {format(new Date(inv.due_date), "d.M.yyyy")}</span>}
+                  {inv.issue_date && <span>Vyst: {format(new Date(inv.issue_date), "d.M.yy")}</span>}
+                  {inv.due_date && <span>Spl: {format(new Date(inv.due_date), "d.M.yy")}</span>}
                 </div>
                 {inv.variable_symbol && <span className="tabular-nums">VS: {inv.variable_symbol}</span>}
               </div>
