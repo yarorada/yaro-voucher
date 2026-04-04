@@ -2026,12 +2026,12 @@ function InvoiceTable({
           const hasReceivedFile = type === "received" && (inv.file_url || inv.deal_supplier_invoice_id);
 
           return (
-            <Card key={inv.id} className="max-w-full overflow-hidden">
-              <CardContent className="space-y-2 p-3">
-                <div className="flex items-start justify-between gap-3">
+            <Card key={inv.id} className="w-full max-w-full overflow-hidden">
+              <CardContent className="min-w-0 space-y-2 p-3">
+                <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_112px] items-start gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="truncate text-sm font-medium">{primaryName}</p>
-                    {inv.invoice_number && (
+                    <p className="truncate text-sm font-medium" title={primaryName}>{primaryName}</p>
+                    {type === "issued" && inv.invoice_number && (
                       <p className="truncate text-xs text-muted-foreground">{inv.invoice_number}</p>
                     )}
                     {contractNumber && (
@@ -2040,9 +2040,14 @@ function InvoiceTable({
                       </p>
                     )}
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="whitespace-nowrap text-sm font-semibold tabular-nums">
-                      {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                  <div className="min-w-0 text-right">
+                    <p className="text-sm font-semibold leading-tight tabular-nums">
+                      <span className="block whitespace-normal break-words">
+                        {inv.total_amount != null ? inv.total_amount.toLocaleString("cs-CZ") : "—"}
+                      </span>
+                      {inv.currency && (
+                        <span className="block text-[11px] font-medium text-muted-foreground">{inv.currency}</span>
+                      )}
                     </p>
                     {inv.paid ? (
                       <Badge className="border-emerald-200 bg-emerald-500/10 px-1.5 py-0 text-[10px] text-emerald-600 cursor-pointer" onClick={() => onMarkPaid(inv)}>
@@ -2056,7 +2061,7 @@ function InvoiceTable({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
+                <div className="grid w-full min-w-0 grid-cols-2 gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
                   <span className="truncate">
                     {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yy") : "—"}
                   </span>
@@ -2068,7 +2073,7 @@ function InvoiceTable({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1 border-t border-border pt-2">
+                <div className="flex w-full flex-wrap items-center gap-1 border-t border-border pt-2">
                   {!inv.paid && (
                     <Button variant="ghost" size="sm" className="h-7 px-1.5 text-xs text-emerald-600" onClick={() => onMarkPaid(inv)}>
                       <CheckCircle2 className="mr-0.5 h-3 w-3" /> Zaplatit
