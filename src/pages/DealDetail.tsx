@@ -213,9 +213,9 @@ const SortableServiceRow = ({
       <TableCell>
         <div className="flex items-center gap-2">
           <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
-          <div className="min-w-0">
-            <p className="font-medium text-sm break-words">{service.service_name}</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate" title={service.service_name}>{service.service_name}</p>
+            <p className="text-xs text-muted-foreground truncate">
               {getServiceTypeLabel(service.service_type)}
               {service.service_type === 'hotel' && service.description && (
                 <span> · {service.description}</span>
@@ -224,6 +224,17 @@ const SortableServiceRow = ({
                 <span> · {(service.details as any).tee_time}</span>
               )}
             </p>
+            {/* Price on next line for mobile */}
+            <div className="sm:hidden mt-1">
+              <span className="text-sm font-medium">
+                {service.price ? formatPriceCurrency(getServiceTotal(service), service.price_currency || "CZK") : '-'}
+              </span>
+              {service.price && getServiceMultiplier(service) > 1 && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  ({formatPriceCurrency(service.price, service.price_currency || "CZK")} × {getServiceMultiplier(service)})
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </TableCell>
@@ -239,7 +250,7 @@ const SortableServiceRow = ({
       <TableCell className="text-xs truncate max-w-[100px] hidden md:table-cell">
         {service.suppliers?.name || '-'}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right hidden sm:table-cell">
         <div className="text-sm font-medium">
         {service.price ? formatPriceCurrency(getServiceTotal(service), service.price_currency || "CZK") : '-'}
         </div>
@@ -3806,11 +3817,11 @@ const DealDetail = () => {
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
-                          <TableHead>Datum</TableHead>
-                          <TableHead className="text-center">Osoby</TableHead>
-                          <TableHead className="text-center">Počet</TableHead>
+                          <TableHead className="hidden sm:table-cell">Datum</TableHead>
+                          <TableHead className="text-center hidden sm:table-cell">Osoby</TableHead>
+                          <TableHead className="text-center hidden sm:table-cell">Počet</TableHead>
                           <TableHead className="hidden md:table-cell">Dodavatel</TableHead>
-                          <TableHead className="text-right">Cena</TableHead>
+                          <TableHead className="text-right hidden sm:table-cell">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
                         </TableRow>
                       </TableHeader>
