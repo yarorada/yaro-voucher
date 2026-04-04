@@ -2961,7 +2961,7 @@ const DealDetail = () => {
                             {mealPlan && (
                               <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground sm:flex-shrink-0">
                                 <Utensils className="h-3 w-3" />
-                                <span className="truncate">{mealPlan}</span>
+                                <span className="truncate" title={mealPlan}>{mealPlan}</span>
                               </div>
                             )}
                           </div>
