@@ -3672,7 +3672,7 @@ const DealDetail = () => {
                           )}
                         </div>
                       )}
-                      <div className="w-32">
+                      <div className="w-full sm:w-32">
                         <Label>Režim</Label>
                         <Select value={serviceForm.price_mode} onValueChange={(v: "per_person" | "per_service") => setServiceForm(prev => ({ ...prev, price_mode: v }))}>
                           <SelectTrigger>
