@@ -880,19 +880,20 @@ export default function Invoicing() {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-6 shadow-xl"
+        className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-lg bg-background p-3 sm:p-6 shadow-xl mx-2 sm:mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Náhled faktury</h2>
-            <p className="text-sm text-muted-foreground">
+        <div className="mb-3 sm:mb-4 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base sm:text-lg font-semibold truncate">Náhled faktury</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               {filePreviewInvoice.file_name || filePreviewInvoice.invoice_number || "Doklad"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <Button
               size="sm"
+              className="h-8 text-xs sm:text-sm"
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
@@ -916,8 +917,9 @@ export default function Invoicing() {
                 }
               }}
             >
-              <Download className="mr-1.5 h-4 w-4" />
-              Stáhnout PDF
+              <Download className="mr-1 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Stáhnout PDF</span>
+              <span className="sm:hidden">Stáhnout</span>
             </Button>
             <button
               onClick={closeFilePreview}
@@ -2024,14 +2026,16 @@ function InvoiceTable({
                   <p className="font-medium text-sm truncate">
                     {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
                   </p>
-                  {type === "issued" && inv.invoice_number && (
-                    <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
-                  )}
-                  {type === "received" && inv.contract_number_display && (
-                    <Badge variant="outline" className="text-xs tabular-nums mt-0.5">
-                      {inv.contract_number_display.replace(/^CS-?/i, "")}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {inv.invoice_number && (
+                      <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
+                    )}
+                    {type === "received" && inv.contract_number_display && (
+                      <Badge variant="outline" className="text-xs tabular-nums">
+                        {inv.contract_number_display.replace(/^CS-?/i, "")}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-semibold tabular-nums text-sm">
@@ -2061,15 +2065,9 @@ function InvoiceTable({
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
                   </Button>
                 )}
-                {type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onOpenFile(inv)}>
-                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Soubor
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                </Button>
                 <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onEdit(inv)}>
                   <Pencil className="h-3.5 w-3.5 mr-1" /> Editace
                 </Button>
