@@ -495,7 +495,7 @@ const Deals = () => {
                 </Select>
               </div>
             ) : (
-              <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
+              <div className="flex items-center gap-1 flex-wrap">
                 {([
                   { value: "all", label: "Všechny" },
                   { value: "inquiry", label: "Poptávka" },
@@ -505,26 +505,18 @@ const Deals = () => {
                   { value: "dispatched", label: "Odbaveno" },
                   { value: "completed", label: "Dokončeno" },
                   { value: "cancelled", label: "Zrušeno" },
-                ] as const).map((tab) => {
-                  const count = tab.value === "all" ? deals.length : deals.filter(d => d.status === tab.value).length;
-                  const isActive = statusFilter === tab.value;
+                ] as const).map((opt) => {
+                  const count = opt.value === "all" ? deals.length : deals.filter(d => d.status === opt.value).length;
                   return (
-                    <button
-                      key={tab.value}
-                      onClick={() => setStatusFilter(tab.value)}
-                      className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                        isActive
-                          ? "border-primary text-primary"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                      }`}
+                    <Button
+                      key={opt.value}
+                      variant={statusFilter === opt.value ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setStatusFilter(opt.value)}
                     >
-                      {tab.label}
-                      {count > 0 && (
-                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-                        }`}>{count}</span>
-                      )}
-                    </button>
+                      {opt.label}{count > 0 ? ` (${count})` : ""}
+                    </Button>
                   );
                 })}
               </div>
