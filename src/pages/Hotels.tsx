@@ -187,18 +187,54 @@ export default function Hotels() {
     return true;
   });
 
+  const countryLabel = showNoDestination
+    ? "Bez destinace"
+    : selectedCountry
+      ? selectedDestination ?? selectedCountry
+      : "Všechny země";
+
   usePageToolbar(
-    <SmartSearchInput
-      value={search}
-      onChange={setSearch}
-      noResults={filtered.length === 0}
-      addLabel={`hotel „{text}"`}
-      onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
-      placeholder="Hledat hotel..."
-      className="w-48 md:w-64"
-      inputClassName="h-8 text-xs"
-    />,
-    [search, filtered.length]
+    <div className="flex items-center gap-2 w-full">
+      <SmartSearchInput
+        value={search}
+        onChange={setSearch}
+        noResults={filtered.length === 0}
+        addLabel={`hotel „{text}"`}
+        onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
+        placeholder="Hledat hotel..."
+        className="flex-1 min-w-0"
+        inputClassName="h-8 text-xs"
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 text-xs shrink-0 max-w-[160px]">
+            <Globe className="h-3.5 w-3.5 mr-1 shrink-0" />
+            <span className="truncate">{countryLabel}</span>
+            <ChevronDown className="h-3 w-3 ml-1 shrink-0 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+          <DropdownMenuItem onClick={() => { handleSelectCountry(null); setShowNoDestination(false); }}>
+            Všechny země <span className="ml-auto text-[10px] opacity-60">{hotels.length}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {countries.map((c) => (
+            <DropdownMenuItem key={c.name} onClick={() => { handleSelectCountry(c.name); setShowNoDestination(false); }}>
+              {c.name} <span className="ml-auto text-[10px] opacity-60">{c.count}</span>
+            </DropdownMenuItem>
+          ))}
+          {hotelsWithoutDestination > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => { setShowNoDestination(true); setSelectedCountry(null); setSelectedDestination(null); }}>
+                Bez destinace <span className="ml-auto text-[10px] opacity-60">{hotelsWithoutDestination}</span>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>,
+    [search, filtered.length, countryLabel, countries, hotelsWithoutDestination]
   );
 
   const imageCount = (h: HotelTemplate) =>
