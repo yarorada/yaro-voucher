@@ -403,7 +403,7 @@ const VoucherDetail = () => {
     <PageShell>
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-1 min-w-0">
             {voucher.sent_at ? (
               <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
             ) : (
@@ -439,7 +439,7 @@ const VoucherDetail = () => {
                 return `${String(dt.getDate()).padStart(2,"0")}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getFullYear()).slice(-2)}`;
               };
               const parts = [clientName, countryIso, hotelName, firstDate ? formatD(firstDate) : null].filter(Boolean);
-              return parts.length > 0 ? <span className="text-foreground">{parts.join(" • ")}</span> : null;
+              return parts.length > 0 ? <span className="text-foreground truncate min-w-0" title={parts.join(" • ")}>{parts.join(" • ")}</span> : null;
             })()}
           </div>
           <p className="text-muted-foreground">
@@ -492,15 +492,15 @@ const VoucherDetail = () => {
           {travelers.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Cestující</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <table className="w-full text-sm min-w-0">
                   <thead>
                     <tr className="border-b">
                       <th className="text-center py-2 text-muted-foreground font-medium w-10">#</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Jméno</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Datum narození</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Číslo pasu</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Kontakt</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Datum narození</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Číslo pasu</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden md:table-cell">Kontakt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -514,11 +514,11 @@ const VoucherDetail = () => {
                             <Badge variant="outline" className="ml-2 text-xs">Hlavní</Badge>
                           )}
                         </td>
-                        <td className="py-2 text-foreground">
+                        <td className="py-2 text-foreground hidden sm:table-cell">
                           {t.clients.date_of_birth ? formatDateShort(t.clients.date_of_birth) : "—"}
                         </td>
-                        <td className="py-2 text-foreground">{t.clients.passport_number || "—"}</td>
-                        <td className="py-2 text-foreground">
+                        <td className="py-2 text-foreground hidden sm:table-cell">{t.clients.passport_number || "—"}</td>
+                        <td className="py-2 text-foreground hidden md:table-cell">
                           {[t.clients.email, t.clients.phone].filter(Boolean).join(", ") || "—"}
                         </td>
                       </tr>
@@ -570,25 +570,32 @@ const VoucherDetail = () => {
           {services.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Služby</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <table className="w-full text-sm min-w-0">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 text-muted-foreground font-medium">Služba</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Od</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Do</th>
-                      <th className="text-center py-2 text-muted-foreground font-medium">Počet</th>
-                      <th className="text-center py-2 text-muted-foreground font-medium">Osoby</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Od</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Do</th>
+                      <th className="text-center py-2 text-muted-foreground font-medium hidden sm:table-cell">Počet</th>
+                      <th className="text-center py-2 text-muted-foreground font-medium hidden sm:table-cell">Osoby</th>
                     </tr>
                   </thead>
                   <tbody>
                     {services.map((service: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0">
-                        <td className="py-2 font-medium text-foreground">{service.name}</td>
-                        <td className="py-2 text-foreground">{service.dateFrom ? formatDateShort(service.dateFrom) : "—"}</td>
-                        <td className="py-2 text-foreground">{service.dateTo ? formatDateShort(service.dateTo) : "—"}</td>
-                        <td className="py-2 text-center text-foreground">{service.qty || "—"}</td>
-                        <td className="py-2 text-center text-foreground">{service.pax || "—"}</td>
+                        <td className="py-2 font-medium text-foreground">
+                          <span className="truncate block max-w-[200px] sm:max-w-none" title={service.name}>{service.name}</span>
+                          <span className="sm:hidden text-xs text-muted-foreground">
+                            {service.dateFrom ? formatDateShort(service.dateFrom) : ""}
+                            {service.dateTo ? ` – ${formatDateShort(service.dateTo)}` : ""}
+                            {service.pax ? ` · ${service.pax}` : ""}
+                          </span>
+                        </td>
+                        <td className="py-2 text-foreground hidden sm:table-cell">{service.dateFrom ? formatDateShort(service.dateFrom) : "—"}</td>
+                        <td className="py-2 text-foreground hidden sm:table-cell">{service.dateTo ? formatDateShort(service.dateTo) : "—"}</td>
+                        <td className="py-2 text-center text-foreground hidden sm:table-cell">{service.qty || "—"}</td>
+                        <td className="py-2 text-center text-foreground hidden sm:table-cell">{service.pax || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

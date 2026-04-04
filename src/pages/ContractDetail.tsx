@@ -291,7 +291,7 @@ const ContractDetail = () => {
   return (
     <PageShell>
         <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0">
             {getStatusBadge(contract.status, true)}
             <span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
             {(() => {
@@ -308,7 +308,7 @@ const ContractDetail = () => {
                 parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
               }
               const displayName = parts.join(" • ");
-              return displayName ? <span className="text-foreground">{displayName}</span> : null;
+              return displayName ? <span className="text-foreground truncate min-w-0" title={displayName}>{displayName}</span> : null;
             })()}
           </div>
         </div>
@@ -507,15 +507,15 @@ const ContractDetail = () => {
           {sortedTravelers.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Cestující</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <table className="w-full text-sm min-w-0">
                   <thead>
                     <tr className="border-b">
                       <th className="text-center py-2 text-muted-foreground font-medium w-10">#</th>
                       <th className="text-left py-2 text-muted-foreground font-medium">Jméno</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Datum narození</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Číslo pasu</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Email</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Datum narození</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Číslo pasu</th>
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden md:table-cell">Email</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -527,11 +527,11 @@ const ContractDetail = () => {
                         <td className="py-2 font-medium text-foreground">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
                         </td>
-                        <td className="py-2 text-foreground">
+                        <td className="py-2 text-foreground hidden sm:table-cell">
                           {t.client?.date_of_birth ? (() => { const d = parseDateSafe(t.client.date_of_birth); return d ? format(d, "d. M. yyyy") : '-'; })() : '-'}
                         </td>
-                        <td className="py-2 text-foreground">{t.client?.passport_number || '-'}</td>
-                        <td className="py-2 text-foreground">{t.client?.email || '-'}</td>
+                        <td className="py-2 text-foreground hidden sm:table-cell">{t.client?.passport_number || '-'}</td>
+                        <td className="py-2 text-foreground hidden md:table-cell">{t.client?.email || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -544,14 +544,13 @@ const ContractDetail = () => {
           {contract.deal?.services?.length > 0 && (
             <Card className="p-4 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Služby</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <table className="w-full text-sm min-w-0">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 text-muted-foreground font-medium">Služba</th>
-                      <th className="text-left py-2 text-muted-foreground font-medium">Termín</th>
-                      <th className="text-center py-2 text-muted-foreground font-medium">Osoby</th>
-                      
+                      <th className="text-left py-2 text-muted-foreground font-medium hidden sm:table-cell">Termín</th>
+                      <th className="text-center py-2 text-muted-foreground font-medium hidden sm:table-cell">Osoby</th>
                       <th className="text-right py-2 text-muted-foreground font-medium">Cena</th>
                     </tr>
                   </thead>
@@ -561,23 +560,29 @@ const ContractDetail = () => {
                       .map((service: any) => (
                           <tr key={service.id} className="border-b last:border-0">
                             <td className="py-2 text-foreground">
-                              <span className="font-medium">{service.service_name}</span>
+                              <span className="font-medium truncate block max-w-[200px] sm:max-w-none" title={service.service_name}>{service.service_name}</span>
                               {service.description && (
                                 <span className="block text-xs text-muted-foreground">{service.description}</span>
                               )}
+                              <span className="sm:hidden text-xs text-muted-foreground">
+                                {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
+                                {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
+                                {(service.person_count && service.person_count > 1) ? ` · ${service.person_count} os.` : ''}
+                              </span>
                             </td>
-                            <td className="py-2 text-foreground whitespace-nowrap">
+                            <td className="py-2 text-foreground whitespace-nowrap hidden sm:table-cell">
                               {service.start_date ? (() => { const d = parseDateSafe(service.start_date); return d ? format(d, "d.M.") : ''; })() : ''}
                               {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                             </td>
-                            <td className="py-2 text-center text-foreground">{service.person_count || '-'}</td>
+                            <td className="py-2 text-center text-foreground hidden sm:table-cell">{service.person_count || '-'}</td>
                             <td className="py-2 text-right font-medium text-foreground">
                               {formatPrice(getServiceTotal(service), true, (contract as any).currency || contract.deal?.currency || "CZK")}
                             </td>
                           </tr>
                         ))}
                     <tr className="bg-muted/50">
-                      <td colSpan={3} className="py-2 text-right font-bold text-foreground">Celkem:</td>
+                      <td colSpan={1} className="py-2 text-right font-bold text-foreground sm:hidden">Celkem:</td>
+                      <td colSpan={3} className="py-2 text-right font-bold text-foreground hidden sm:table-cell">Celkem:</td>
                       <td className="py-2 text-right font-bold text-foreground">{formatPrice(contract.deal.services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0), true, (contract as any).currency || contract.deal?.currency || "CZK")}</td>
                     </tr>
                   </tbody>

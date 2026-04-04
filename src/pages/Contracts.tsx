@@ -337,21 +337,21 @@ const Contracts = () => {
                 return (
                   <Card
                     key={contract.id}
-                    className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer"
+                    className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer w-full max-w-full overflow-hidden"
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         {/* Line 1: Status + Number + Name */}
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-2 min-w-0">
                           <ContractStatusBadge status={contract.status as ContractStatus} />
-                          <span className="font-bold text-foreground">{contract.contract_number}</span>
+                          <span className="font-bold text-foreground shrink-0">{contract.contract_number}</span>
                           {displayName && (
-                            <span className="text-foreground truncate">{displayName}</span>
+                            <span className="text-foreground truncate min-w-0" title={displayName}>{displayName}</span>
                           )}
                         </div>
                         {/* Line 2: Details */}
-                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
                           {client && (
                             <span>
                               <span className="font-semibold text-foreground">Klient:</span> {client.first_name} {client.last_name}
