@@ -242,9 +242,19 @@ export default function Hotels() {
                 </button>
               ))}
               {hotelsWithoutDestination > 0 && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  + {hotelsWithoutDestination} bez destinace
-                </span>
+                <button
+                  onClick={() => { setShowNoDestination(!showNoDestination); setSelectedCountry(null); setSelectedDestination(null); }}
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    showNoDestination
+                      ? "bg-destructive/10 text-destructive border-destructive/30"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  Bez destinace
+                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${showNoDestination ? "bg-destructive/20" : "bg-muted"}`}>
+                    {hotelsWithoutDestination}
+                  </span>
+                </button>
               )}
             </div>
 
