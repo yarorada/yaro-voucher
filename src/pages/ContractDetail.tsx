@@ -611,7 +611,7 @@ const ContractDetail = () => {
 
 
           {/* Ostatní informace a požadavky - tee times */}
-          <Card className="p-4 md:p-6">
+          <Card className="p-3 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-heading-2 text-foreground">Ostatní informace a požadavky</h2>
               <ContractTeeTimesEditor
