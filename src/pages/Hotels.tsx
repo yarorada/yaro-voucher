@@ -76,6 +76,7 @@ export default function Hotels() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newHotelName, setNewHotelName] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [showNoDestination, setShowNoDestination] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
 
   useEffect(() => {
