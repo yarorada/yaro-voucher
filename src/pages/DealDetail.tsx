@@ -3747,12 +3747,12 @@ const DealDetail = () => {
                 {/* Mobile card view */}
                 <div className="sm:hidden space-y-2 p-3">
                   {services.map((service) => (
-                    <div key={service.id} className="border border-border rounded-lg p-3 space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div key={service.id} className="border border-border rounded-lg p-3 space-y-1.5 w-full max-w-full overflow-hidden">
+                      <div className="w-full min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 min-w-0 w-full">
                           <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm truncate">{service.service_name}</p>
+                            <p className="font-medium text-sm truncate" title={service.service_name}>{service.service_name}</p>
                             <p className="text-xs text-muted-foreground truncate">
                               {getServiceTypeLabel(service.service_type)}
                               {service.service_type === 'hotel' && service.description && ` · ${service.description}`}
@@ -3760,22 +3760,22 @@ const DealDetail = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
+                        <div className="flex items-baseline justify-between gap-2">
                           <p className="font-semibold text-sm tabular-nums">
                             {service.price ? formatPriceCurrency(getServiceTotal(service), service.price_currency || "CZK") : '-'}
                           </p>
                           {service.price && getServiceMultiplier(service) > 1 && (
-                            <p className="text-xs text-muted-foreground tabular-nums">
+                            <p className="text-xs text-muted-foreground tabular-nums text-right">
                               {formatPriceCurrency(service.price, service.price_currency || "CZK")} × {getServiceMultiplier(service)}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center text-xs text-muted-foreground">
                         <div className="flex gap-3">
                           {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? <span>{p[2]}.{p[1]}.{p[0]}</span> : null; })()}
                           {(service.person_count || 1) > 1 && <span>{service.person_count} os.</span>}
-                          {service.suppliers?.name && <span className="truncate max-w-[100px]">{service.suppliers.name}</span>}
+                          {service.suppliers?.name && <span className="truncate max-w-[80px]">{service.suppliers.name}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-border">
