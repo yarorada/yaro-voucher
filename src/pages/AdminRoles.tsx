@@ -58,25 +58,26 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
 
   return (
     <div className="rounded-lg border border-border bg-muted/20">
-      <div className="flex items-center justify-between p-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <User className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="min-w-0">
+      <div className="p-3 space-y-2">
+        {/* Row 1: User info */}
+        <div className="flex items-start gap-2 min-w-0">
+          <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{profile.email}</p>
             {editingName ? (
               <div className="flex items-center gap-1 mt-0.5">
                 <Input
                   value={nameValue}
                   onChange={(e) => setNameValue(e.target.value)}
-                  className="h-6 text-xs px-1.5 w-36"
+                  className="h-6 text-xs px-1.5 w-full max-w-[160px]"
                   placeholder="Celé jméno"
                   onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") handleCancelName(); }}
                   autoFocus
                 />
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveName} disabled={savingName}>
+                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={handleSaveName} disabled={savingName}>
                   <Check className="h-3 w-3 text-green-600" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleCancelName}>
+                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={handleCancelName}>
                   <X className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </div>
@@ -90,18 +91,19 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
             )}
           </div>
           {currentRole && (
-            <Badge variant={currentRole === "admin" ? "default" : "secondary"}>
+            <Badge variant={currentRole === "admin" ? "default" : "secondary"} className="shrink-0">
               {currentRole === "admin" ? "Admin" : "Prodejce"}
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Row 2: Role select + expand */}
+        <div className="flex items-center gap-2">
           <Select
             value={currentRole ?? "none"}
             onValueChange={(val) => onRoleChange(profile.id, val)}
             disabled={assigning === profile.id}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="flex-1 h-8 text-xs">
               <SelectValue placeholder="Bez role" />
             </SelectTrigger>
             <SelectContent>
@@ -113,7 +115,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 shrink-0"
             onClick={() => setExpanded((e) => !e)}
             title="Upravit oprávnění"
           >
@@ -123,7 +125,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
       </div>
 
       {expanded && (
-        <div className="border-t border-border px-4 py-3">
+        <div className="border-t border-border px-3 py-3">
           <p className="text-xs text-muted-foreground mb-3">
             Přepisy oprávnění pro tohoto uživatele (přepisují výchozí nastavení role).
           </p>
@@ -132,15 +134,15 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {ALL_SECTIONS.map((section) => {
                 const effective = getEffective(section.key as SectionKey);
                 const isDefault = !(section.key in overrides);
                 const defaultVal = defaults.includes(section.key as SectionKey);
                 return (
                   <div key={section.key} className="flex items-center justify-between rounded-md border border-border/50 bg-background px-3 py-2">
-                    <div>
-                      <p className="text-sm">{section.label}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm truncate">{section.label}</p>
                       {!isDefault && (
                         <p className="text-xs text-amber-500">
                           {effective ? "Přidáno" : "Odebráno"} (výchozí: {defaultVal ? "✓" : "✗"})
@@ -169,10 +171,10 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
             {dataScopeLoading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : (
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 {[
                   { value: "all", label: "Všechna data", desc: "Vidí záznamy všech kolegů" },
-                  { value: "own", label: "Pouze vlastní data", desc: "Vidí jen záznamy, které sám vložil" },
+                  { value: "own", label: "Pouze vlastní", desc: "Vidí jen vlastní záznamy" },
                 ].map((opt) => {
                   const current = getDataScope();
                   return (
