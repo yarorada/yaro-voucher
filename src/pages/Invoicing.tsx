@@ -2031,7 +2031,7 @@ function InvoiceTable({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="truncate text-sm font-medium">{primaryName}</p>
-                    {inv.invoice_number && (
+                    {type === "issued" && inv.invoice_number && (
                       <p className="truncate text-xs text-muted-foreground">{inv.invoice_number}</p>
                     )}
                     {contractNumber && (
@@ -2133,7 +2133,7 @@ function InvoiceTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Číslo</TableHead>
+                  {type === "issued" && <TableHead>Číslo</TableHead>}
                   <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
                   <TableHead className="text-right">Částka</TableHead>
                   <TableHead className="hidden md:table-cell">Vystaveno</TableHead>
@@ -2146,9 +2146,11 @@ function InvoiceTable({
               <TableBody>
                 {invoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {inv.invoice_number || "—"}
-                    </TableCell>
+                    {type === "issued" && (
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {inv.invoice_number || "—"}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="min-w-0">
                         <span className="truncate block">{type === "issued" ? inv.client_name : inv.supplier_name || "—"}</span>
