@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
@@ -6,6 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye, X } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
@@ -55,6 +63,7 @@ interface Voucher {
 }
 
 const VouchersList = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { scope } = useDataScope();
@@ -389,38 +398,64 @@ const VouchersList = () => {
         ) : (
           <div className="space-y-4">
             {/* Status tabs */}
-            <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
-              {([
-                { value: "all", label: "Všechny" },
-                { value: "sent", label: "Odesláno" },
-                { value: "unsent", label: "Neodesláno" },
-              ] as const).map((tab) => {
-                const count = tab.value === "all"
-                  ? vouchers.length
-                  : tab.value === "sent"
-                    ? vouchers.filter(v => !!v.sent_at).length
-                    : vouchers.filter(v => !v.sent_at).length;
-                const isActive = statusFilter === tab.value;
-                return (
-                  <button
-                    key={tab.value}
-                    onClick={() => setStatusFilter(tab.value)}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                    }`}
-                  >
-                    {tab.label}
-                    {count > 0 && (
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                        isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-                      }`}>{count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {isMobile ? (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {([
+                    { value: "all", label: "Všechny" },
+                    { value: "sent", label: "Odesláno" },
+                    { value: "unsent", label: "Neodesláno" },
+                  ] as const).map((tab) => {
+                    const count = tab.value === "all"
+                      ? vouchers.length
+                      : tab.value === "sent"
+                        ? vouchers.filter(v => !!v.sent_at).length
+                        : vouchers.filter(v => !v.sent_at).length;
+                    return (
+                      <SelectItem key={tab.value} value={tab.value}>
+                        {tab.label} {count > 0 && `(${count})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-1 flex-wrap border-b border-border pb-0">
+                {([
+                  { value: "all", label: "Všechny" },
+                  { value: "sent", label: "Odesláno" },
+                  { value: "unsent", label: "Neodesláno" },
+                ] as const).map((tab) => {
+                  const count = tab.value === "all"
+                    ? vouchers.length
+                    : tab.value === "sent"
+                      ? vouchers.filter(v => !!v.sent_at).length
+                      : vouchers.filter(v => !v.sent_at).length;
+                  const isActive = statusFilter === tab.value;
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={() => setStatusFilter(tab.value)}
+                      className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                        isActive
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                      }`}
+                    >
+                      {tab.label}
+                      {count > 0 && (
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                        }`}>{count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {filteredVouchers.length === 0 ? (
               <Card className="p-12 text-center">
@@ -473,15 +508,15 @@ const VouchersList = () => {
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer w-full max-w-full overflow-hidden ${
+                    className={`p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        {/* Line 1: Status + Code + Client + ISO + Hotel + Date */}
-                        <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-2 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {/* Row 1: Status + Code + Name */}
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           {voucher.sent_at ? (
                             <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
                           ) : isExpired ? (
@@ -489,30 +524,30 @@ const VouchersList = () => {
                           ) : (
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
-                          <span className="font-bold text-foreground shrink-0">{voucher.voucher_code}</span>
+                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
                           {(displayName || countryIso || hotelName || firstServiceDate) && (
-                            <span className="text-foreground truncate min-w-0" title={[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}>
+                            <span className="text-foreground truncate min-w-0 text-sm" title={[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}>
                               {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
                             </span>
                           )}
                         </div>
-                        {/* Line 2: Details */}
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
+                        {/* Row 2: Metadata grid */}
+                        <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                           {displayName && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Klient:</span> {displayName}
                             </span>
                           )}
                           {destination && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Destinace:</span> {destination}
                             </span>
                           )}
-                          <span>
+                          <span className="truncate">
                             <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDate(voucher.created_at)}
                           </span>
                           {voucher.sent_at && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Odesláno:</span> {formatDateTime(voucher.sent_at)}
                             </span>
                           )}
