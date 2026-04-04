@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
@@ -6,6 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye, X } from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
