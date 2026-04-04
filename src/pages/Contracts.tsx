@@ -363,33 +363,33 @@ const Contracts = () => {
                 return (
                   <Card
                     key={contract.id}
-                    className="p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer w-full max-w-full overflow-hidden"
+                    className="p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer"
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        {/* Line 1: Status + Number + Name */}
-                        <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-2 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {/* Row 1: Status + Number + Name */}
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                           <ContractStatusBadge status={contract.status as ContractStatus} />
-                          <span className="font-bold text-foreground shrink-0">{contract.contract_number}</span>
+                          <span className="font-bold text-foreground">{contract.contract_number}</span>
                           {displayName && (
-                            <span className="text-foreground truncate min-w-0" title={displayName}>{displayName}</span>
+                            <span className="text-foreground">{displayName}</span>
                           )}
                         </div>
-                        {/* Line 2: Details */}
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
+                        {/* Row 2: Metadata grid */}
+                        <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                           {client && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Klient:</span> {client.first_name} {client.last_name}
                             </span>
                           )}
                           {contract.deal?.destination?.name && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Destinace:</span> {contract.deal.destination.name}
                             </span>
                           )}
                           {contract.deal?.start_date && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Datum:</span> {formatDateShort(contract.deal.start_date)}
                             </span>
                           )}
@@ -398,11 +398,11 @@ const Contracts = () => {
                               <span className="font-semibold text-foreground">Cena:</span> {formatPriceCurrency(contract.total_price, contract.currency || "CZK")}
                             </span>
                           )}
-                          <span>
+                          <span className="truncate">
                             <span className="font-semibold text-foreground">Vytvořeno:</span> {formatDateShort(contract.created_at)}
                           </span>
                           {contract.signed_at && (
-                            <span>
+                            <span className="truncate">
                               <span className="font-semibold text-foreground">Podepsáno:</span> {formatDateShort(contract.signed_at)}
                             </span>
                           )}
@@ -412,7 +412,7 @@ const Contracts = () => {
                         variant="ghost"
                         size="icon"
                         onClick={(e) => handleDeleteClick(e, contract.id, contract.contract_number)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end md:self-start shrink-0"
+                        className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
