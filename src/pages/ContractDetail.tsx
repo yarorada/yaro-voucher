@@ -458,7 +458,7 @@ const ContractDetail = () => {
             />
 
             {/* Zákazník */}
-            <Card className="p-4 md:p-6">
+            <Card className="p-3 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Zákazník / prodejce</h2>
               <div className="space-y-3">
                 <div>
