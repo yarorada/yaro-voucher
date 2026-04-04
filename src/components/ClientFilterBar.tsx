@@ -218,7 +218,7 @@ export function ClientFilterBar({
           value={quickSearch}
           onChange={(e) => onQuickSearchChange(e.target.value)}
           onFocus={() => setFocused(true)}
-          className="h-8 text-xs pl-8 pr-7 w-52"
+          className="h-8 text-xs pl-8 pr-7 w-36 md:w-52"
           onKeyDown={(e) => {
             if (e.key === "Enter" && showSuggestion) { e.preventDefault(); handleAdd(); }
             if (e.key === "Escape") setFocused(false);
