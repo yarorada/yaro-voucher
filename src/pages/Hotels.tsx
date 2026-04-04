@@ -26,7 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin } from "lucide-react";
+import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { HotelEditDialog } from "@/components/HotelEditDialog";
 import { HotelStars } from "@/components/HotelStars";
@@ -180,18 +187,56 @@ export default function Hotels() {
     return true;
   });
 
+  const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
+
+  const countryLabel = showNoDestination
+    ? "Bez destinace"
+    : selectedCountry
+      ? selectedDestination ?? selectedCountry
+      : "Všechny země";
+
   usePageToolbar(
-    <SmartSearchInput
-      value={search}
-      onChange={setSearch}
-      noResults={filtered.length === 0}
-      addLabel={`hotel „{text}"`}
-      onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
-      placeholder="Hledat hotel..."
-      className="w-48 md:w-64"
-      inputClassName="h-8 text-xs"
-    />,
-    [search, filtered.length]
+    <div className="flex items-center gap-2 w-full">
+      <SmartSearchInput
+        value={search}
+        onChange={setSearch}
+        noResults={filtered.length === 0}
+        addLabel={`hotel „{text}"`}
+        onAddNew={(text) => { setNewHotelName(text); setCreateDialogOpen(true); }}
+        placeholder="Hledat hotel..."
+        className="flex-1 min-w-0"
+        inputClassName="h-8 text-xs"
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 text-xs shrink-0 max-w-[160px]">
+            <Globe className="h-3.5 w-3.5 mr-1 shrink-0" />
+            <span className="truncate">{countryLabel}</span>
+            <ChevronDown className="h-3 w-3 ml-1 shrink-0 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+          <DropdownMenuItem onClick={() => { handleSelectCountry(null); setShowNoDestination(false); }}>
+            Všechny země <span className="ml-auto text-[10px] opacity-60">{hotels.length}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {countries.map((c) => (
+            <DropdownMenuItem key={c.name} onClick={() => { handleSelectCountry(c.name); setShowNoDestination(false); }}>
+              {c.name} <span className="ml-auto text-[10px] opacity-60">{c.count}</span>
+            </DropdownMenuItem>
+          ))}
+          {hotelsWithoutDestination > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => { setShowNoDestination(true); setSelectedCountry(null); setSelectedDestination(null); }}>
+                Bez destinace <span className="ml-auto text-[10px] opacity-60">{hotelsWithoutDestination}</span>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>,
+    [search, filtered.length, countryLabel, countries, hotelsWithoutDestination]
   );
 
   const imageCount = (h: HotelTemplate) =>
@@ -199,92 +244,30 @@ export default function Hotels() {
       h.image_url_6, h.image_url_7, h.image_url_8, h.image_url_9, h.image_url_10]
       .filter(Boolean).length;
 
-  const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
+  
 
   return (
     <PageShell className="space-y-4">
         <div />
 
-        {/* Country filter chips */}
-        {!loading && countries.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Destination sub-filter when country is selected */}
+        {!loading && selectedCountry && destinationsForCountry.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            {destinationsForCountry.map((d) => (
               <button
-                onClick={() => handleSelectCountry(null)}
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  selectedCountry === null
-                    ? "bg-primary text-primary-foreground border-primary"
+                key={d.name}
+                onClick={() => setSelectedDestination(selectedDestination === d.name ? null : d.name)}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
+                  selectedDestination === d.name
+                    ? "bg-secondary text-secondary-foreground border-secondary"
                     : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
                 }`}
               >
-                Všechny
-                <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === null ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                  {hotels.length}
-                </span>
+                {d.name}
+                <span className="ml-0.5 text-[10px] opacity-60">{d.count}</span>
               </button>
-              {countries.map((c) => (
-                <button
-                  key={c.name}
-                  onClick={() => handleSelectCountry(selectedCountry === c.name ? null : c.name)}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    selectedCountry === c.name
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  {c.name}
-                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === c.name ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                    {c.count}
-                  </span>
-                </button>
-              ))}
-              {hotelsWithoutDestination > 0 && (
-                <button
-                  onClick={() => { setShowNoDestination(!showNoDestination); setSelectedCountry(null); setSelectedDestination(null); }}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    showNoDestination
-                      ? "bg-destructive/10 text-destructive border-destructive/30"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  Bez destinace
-                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${showNoDestination ? "bg-destructive/20" : "bg-muted"}`}>
-                    {hotelsWithoutDestination}
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {/* Destination sub-filter */}
-            {selectedCountry && destinationsForCountry.length > 1 && (
-              <div className="flex items-center gap-1.5 flex-wrap pl-1">
-                <MapPin className="h-3 w-3 text-muted-foreground" />
-                <button
-                  onClick={() => setSelectedDestination(null)}
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
-                    selectedDestination === null
-                      ? "bg-secondary text-secondary-foreground border-secondary"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  Všechny destinace
-                </button>
-                {destinationsForCountry.map((d) => (
-                  <button
-                    key={d.name}
-                    onClick={() => setSelectedDestination(selectedDestination === d.name ? null : d.name)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
-                      selectedDestination === d.name
-                        ? "bg-secondary text-secondary-foreground border-secondary"
-                        : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                    }`}
-                  >
-                    {d.name}
-                    <span className="ml-0.5 text-[10px] opacity-60">{d.count}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         )}
 
