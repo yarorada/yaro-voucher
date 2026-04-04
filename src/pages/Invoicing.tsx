@@ -1104,6 +1104,34 @@ export default function Invoicing() {
     e.stopPropagation();
   };
 
+  usePageToolbar(
+    <div className="flex items-center gap-2 w-full">
+      <div className="relative flex-1 min-w-0">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Hledat…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-8 text-xs w-full"
+        />
+      </div>
+      <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
+        <SelectTrigger className="w-28 h-8 text-xs shrink-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Všechny</SelectItem>
+          <SelectItem value="paid">Zaplacené</SelectItem>
+          <SelectItem value="unpaid">Nezaplacené</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button onClick={() => openNewForm(tab)} size="icon" variant="default" className="h-8 w-8 shrink-0">
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>,
+    [search, paidFilter, tab]
+  );
+
   return (
     <PageShell maxWidth="wide">
     <div
@@ -1122,43 +1150,17 @@ export default function Invoicing() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-end">
-        <Button onClick={() => openNewForm(tab)} size="sm" className="sm:hidden">
-          <Plus className="h-4 w-4 mr-1" /> Nová
-        </Button>
-      </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+        <div className="flex items-center gap-2">
           <TabsList>
             <TabsTrigger value="received">Přijaté</TabsTrigger>
             <TabsTrigger value="issued">Vydané</TabsTrigger>
           </TabsList>
-          <div className="hidden sm:block flex-1" />
-          <div className="flex items-center gap-2">
-            <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
-              <SelectTrigger className="w-32 sm:w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Všechny</SelectItem>
-                <SelectItem value="paid">Zaplacené</SelectItem>
-                <SelectItem value="unpaid">Nezaplacené</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Hledat…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full sm:w-56"
-              />
-            </div>
-            <Button onClick={() => openNewForm(tab)} size="sm" className="hidden sm:inline-flex">
-              <Plus className="h-4 w-4 mr-1" /> Nová faktura
-            </Button>
-          </div>
+          <div className="flex-1" />
+          <Button onClick={() => openNewForm(tab)} size="sm" className="hidden sm:inline-flex">
+            <Plus className="h-4 w-4 mr-1" /> Nová faktura
+          </Button>
         </div>
 
         <TabsContent value="received">
