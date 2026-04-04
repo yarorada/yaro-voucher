@@ -26,7 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin } from "lucide-react";
+import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { HotelEditDialog } from "@/components/HotelEditDialog";
 import { HotelStars } from "@/components/HotelStars";
