@@ -2042,12 +2042,20 @@ function InvoiceTable({
             : null;
           const hasReceivedFile = type === "received" && (inv.file_url || inv.deal_supplier_invoice_id);
 
+          const openDetail = () => {
+            if (type === "received" && hasReceivedFile) {
+              onOpenFile(inv);
+            } else {
+              onPdf(inv);
+            }
+          };
+
           return (
             <Card key={inv.id} className="w-full max-w-full overflow-hidden">
               <CardContent className="min-w-0 space-y-2 p-3">
                 <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_112px] items-start gap-3">
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p className="truncate text-sm font-medium" title={primaryName}>{primaryName}</p>
+                  <div className="min-w-0 flex-1 space-y-1 cursor-pointer" onClick={openDetail}>
+                    <p className="truncate text-sm font-medium hover:text-primary hover:underline" title={primaryName}>{primaryName}</p>
                     {type === "issued" && inv.invoice_number && (
                       <p className="truncate text-xs text-muted-foreground">{inv.invoice_number}</p>
                     )}
