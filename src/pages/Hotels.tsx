@@ -248,86 +248,24 @@ export default function Hotels() {
     <PageShell className="space-y-4">
         <div />
 
-        {/* Country filter chips */}
-        {!loading && countries.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Destination sub-filter when country is selected */}
+        {!loading && selectedCountry && destinationsForCountry.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            {destinationsForCountry.map((d) => (
               <button
-                onClick={() => handleSelectCountry(null)}
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  selectedCountry === null
-                    ? "bg-primary text-primary-foreground border-primary"
+                key={d.name}
+                onClick={() => setSelectedDestination(selectedDestination === d.name ? null : d.name)}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
+                  selectedDestination === d.name
+                    ? "bg-secondary text-secondary-foreground border-secondary"
                     : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
                 }`}
               >
-                Všechny
-                <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === null ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                  {hotels.length}
-                </span>
+                {d.name}
+                <span className="ml-0.5 text-[10px] opacity-60">{d.count}</span>
               </button>
-              {countries.map((c) => (
-                <button
-                  key={c.name}
-                  onClick={() => handleSelectCountry(selectedCountry === c.name ? null : c.name)}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    selectedCountry === c.name
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  {c.name}
-                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${selectedCountry === c.name ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                    {c.count}
-                  </span>
-                </button>
-              ))}
-              {hotelsWithoutDestination > 0 && (
-                <button
-                  onClick={() => { setShowNoDestination(!showNoDestination); setSelectedCountry(null); setSelectedDestination(null); }}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    showNoDestination
-                      ? "bg-destructive/10 text-destructive border-destructive/30"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  Bez destinace
-                  <span className={`ml-0.5 px-1 rounded-full text-[10px] ${showNoDestination ? "bg-destructive/20" : "bg-muted"}`}>
-                    {hotelsWithoutDestination}
-                  </span>
-                </button>
-              )}
-            </div>
-
-            {/* Destination sub-filter */}
-            {selectedCountry && destinationsForCountry.length > 1 && (
-              <div className="flex items-center gap-1.5 flex-wrap pl-1">
-                <MapPin className="h-3 w-3 text-muted-foreground" />
-                <button
-                  onClick={() => setSelectedDestination(null)}
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
-                    selectedDestination === null
-                      ? "bg-secondary text-secondary-foreground border-secondary"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                  }`}
-                >
-                  Všechny destinace
-                </button>
-                {destinationsForCountry.map((d) => (
-                  <button
-                    key={d.name}
-                    onClick={() => setSelectedDestination(selectedDestination === d.name ? null : d.name)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
-                      selectedDestination === d.name
-                        ? "bg-secondary text-secondary-foreground border-secondary"
-                        : "bg-background text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground"
-                    }`}
-                  >
-                    {d.name}
-                    <span className="ml-0.5 text-[10px] opacity-60">{d.count}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         )}
 
