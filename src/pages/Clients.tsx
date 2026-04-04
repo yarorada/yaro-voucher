@@ -1082,6 +1082,7 @@ const Clients = () => {
               </table>
             </div>
           </Card>
+          </>
         )}
 
         {/* Document Preview Dialog */}
