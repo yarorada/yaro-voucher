@@ -290,12 +290,12 @@ export default function AdminRoles() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-muted-foreground">
-            Uživatelé — klikněte na šipku pro přepis oprávnění konkrétního uživatele
+        <CardHeader className="px-3 md:px-6">
+          <CardTitle className="text-sm md:text-base font-medium text-muted-foreground">
+            Uživatelé — klikněte na šipku pro přepis oprávnění
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 md:px-6">
           <div className="space-y-2">
             {profiles.map((profile) => (
               <UserPermissionRow
