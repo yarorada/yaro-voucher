@@ -1121,8 +1121,7 @@ export default function Invoicing() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Fakturace</h1>
+      <div className="flex items-center justify-end">
         <Button onClick={() => openNewForm(tab)} size="sm" className="sm:hidden">
           <Plus className="h-4 w-4 mr-1" /> Nová
         </Button>
