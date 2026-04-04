@@ -2059,16 +2059,22 @@ function InvoiceTable({
                 </div>
                 {inv.variable_symbol && <span className="tabular-nums">VS: {inv.variable_symbol}</span>}
               </div>
-              <div className="flex items-center gap-1 pt-1 border-t border-border">
+              <div className="flex items-center gap-1 pt-1 border-t border-border flex-wrap">
                 {!inv.paid && (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600" onClick={() => onMarkPaid(inv)}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600 px-2" onClick={() => onMarkPaid(inv)}>
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
-                  <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onEdit(inv)}>
+                {type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onOpenFile(inv)}>
+                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Soubor
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onPdf(inv)}>
+                    <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => onEdit(inv)}>
                   <Pencil className="h-3.5 w-3.5 mr-1" /> Editace
                 </Button>
                 <div className="flex-1" />
