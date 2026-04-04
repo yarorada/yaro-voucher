@@ -3484,7 +3484,7 @@ const DealDetail = () => {
                     </div>
 
                      {/* Row 2: Cost Price + Currency | Sale Price + Currency | Price Mode */}
-                    <div className="flex gap-2 items-start">
+                    <div className="flex flex-col sm:flex-row gap-2 items-start">
                       <div className="flex-1">
                         <Label>Nákupní cena</Label>
                         <div className="flex gap-1">
