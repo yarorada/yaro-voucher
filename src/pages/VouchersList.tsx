@@ -574,7 +574,7 @@ const VouchersList = () => {
                         </span>
                       )}
                     </div>
-                  </Card>)
+                  </Card>
                 );
               })
             )}
