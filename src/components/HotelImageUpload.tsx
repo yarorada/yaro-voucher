@@ -345,7 +345,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       // Run both scrape and search in parallel
       const [scrapeResult, searchResult] = await Promise.allSettled([
         supabase.functions.invoke("scrape-hotel-images", {
-          body: { hotelName, golfCourseName },
+          body: { hotelName, golfCourseName, websiteUrl: websiteUrl || undefined },
         }),
         perplexityImagesRef.current.length > 0
           ? Promise.resolve({ data: { imageUrls: perplexityImagesRef.current }, error: null })
