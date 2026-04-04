@@ -2128,13 +2128,12 @@ function InvoiceTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                   {type === "issued" && <TableHead>Číslo</TableHead>}
+                  <TableHead>Číslo</TableHead>
                   <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
-                  {type === "received" && <TableHead>Smlouva</TableHead>}
                   <TableHead className="text-right">Částka</TableHead>
-                  <TableHead>Vystaveno</TableHead>
+                  <TableHead className="hidden md:table-cell">Vystaveno</TableHead>
                   <TableHead>Splatnost</TableHead>
-                  <TableHead>VS</TableHead>
+                  <TableHead className="hidden lg:table-cell">VS</TableHead>
                   <TableHead>Stav</TableHead>
                   <TableHead className="text-right">Akce</TableHead>
                 </TableRow>
@@ -2142,36 +2141,36 @@ function InvoiceTable({
               <TableBody>
                 {invoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    {type === "issued" && <TableCell className="font-medium">{inv.invoice_number || "—"}</TableCell>}
-                    <TableCell>
-                      {type === "issued" ? inv.client_name : inv.supplier_name}
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {inv.invoice_number || "—"}
                     </TableCell>
-                    {type === "received" && (
-                      <TableCell>
-                        {inv.contract_number_display ? (
-                          <Badge variant="outline" className="text-xs tabular-nums">
+                    <TableCell>
+                      <div className="min-w-0">
+                        <span className="truncate block">{type === "issued" ? inv.client_name : inv.supplier_name || "—"}</span>
+                        {type === "received" && inv.contract_number_display && (
+                          <Badge variant="outline" className="text-[10px] tabular-nums mt-0.5">
                             {inv.contract_number_display.replace(/^CS-?/i, "")}
                           </Badge>
-                        ) : "—"}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right tabular-nums">
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums whitespace-nowrap">
                       {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell whitespace-nowrap">
                       {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "—"}
                     </TableCell>
-                    <TableCell className="tabular-nums text-xs">{inv.variable_symbol || "—"}</TableCell>
+                    <TableCell className="tabular-nums text-xs hidden lg:table-cell">{inv.variable_symbol || "—"}</TableCell>
                     <TableCell>
                       {inv.paid ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20" onClick={() => onMarkPaid(inv)}>
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-500/20 whitespace-nowrap" onClick={() => onMarkPaid(inv)}>
                           Zaplaceno{inv.paid_at ? ` ${format(new Date(inv.paid_at), "d.M.")}` : ""}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300">Nezaplaceno</Badge>
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 whitespace-nowrap">Nezaplaceno</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -2188,7 +2187,7 @@ function InvoiceTable({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onPdf(inv)}>
+                            <DropdownMenuItem onClick={() => type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? onOpenFile(inv) : onPdf(inv)}>
                               <FileText className="h-4 w-4 mr-2" /> Zobrazení faktury
                             </DropdownMenuItem>
                             {type === "issued" && (
