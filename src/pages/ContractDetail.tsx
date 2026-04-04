@@ -290,27 +290,27 @@ const ContractDetail = () => {
 
   return (
     <PageShell>
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0">
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0 overflow-hidden">
             {getStatusBadge(contract.status, true)}
-            <span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
-            {(() => {
-              const parts: string[] = [];
-              const client = (contract as any).client;
-              if (client) parts.push(`${client.first_name} ${client.last_name}`);
-              const iso = (contract.deal?.destination as any)?.country?.iso_code || (contract.deal?.destination as any)?.countries?.iso_code;
-              if (iso) parts.push(iso);
-              const hotel = (contract.deal as any)?.services?.find((s: any) => s.service_type === "hotel") || (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
-              if (hotel) parts.push(hotel.service_name);
-              const depDate = (contract.deal as any)?.start_date;
-              if (depDate) {
-                const d = new Date(depDate + "T00:00:00");
-                parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
-              }
-              const displayName = parts.join(" • ");
-              return displayName ? <span className="text-foreground truncate min-w-0" title={displayName}>{displayName}</span> : null;
-            })()}
+            <span className="font-bold text-lg md:text-heading-1 text-foreground shrink-0">{contract.contract_number}</span>
           </div>
+          {(() => {
+            const parts: string[] = [];
+            const client = (contract as any).client;
+            if (client) parts.push(`${client.first_name} ${client.last_name}`);
+            const iso = (contract.deal?.destination as any)?.country?.iso_code || (contract.deal?.destination as any)?.countries?.iso_code;
+            if (iso) parts.push(iso);
+            const hotel = (contract.deal as any)?.services?.find((s: any) => s.service_type === "hotel") || (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
+            if (hotel) parts.push(hotel.service_name);
+            const depDate = (contract.deal as any)?.start_date;
+            if (depDate) {
+              const d = new Date(depDate + "T00:00:00");
+              parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+            }
+            const displayName = parts.join(" • ");
+            return displayName ? <p className="text-sm text-muted-foreground mt-1 truncate" title={displayName}>{displayName}</p> : null;
+          })()}
         </div>
 
 
