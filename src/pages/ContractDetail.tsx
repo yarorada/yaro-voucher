@@ -391,7 +391,7 @@ const ContractDetail = () => {
                   return date ? format(date, 'd.M.yy') : d;
                 };
                 return (
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 min-w-0">
                     <p className="text-sm text-muted-foreground mb-2">Itinerář letů</p>
                     <div className="space-y-2">
                       {allSegments.map((group, gi) => (
@@ -399,19 +399,21 @@ const ContractDetail = () => {
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{group.label}</p>
                           <div className="space-y-1">
                             {group.segments.map((seg: any, si: number) => (
-                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-foreground bg-muted/40 rounded px-2 py-1 overflow-hidden">
-                                {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
-                                {(seg.airline_name || seg.airline) && (
-                                  <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
-                                )}
-                                {(seg.flight_number || seg.airline) && (
-                                  <span className="text-muted-foreground text-xs">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
-                                )}
+                              <div key={si} className="text-xs text-foreground bg-muted/40 rounded px-2 py-1.5 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                  {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
+                                  {(seg.airline_name || seg.airline) && (
+                                    <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
+                                  )}
+                                  {(seg.flight_number || seg.airline) && (
+                                    <span className="text-muted-foreground">{[seg.airline, seg.flight_number].filter(Boolean).join(' ')}</span>
+                                  )}
+                                </div>
                                 {(seg.departure || seg.arrival) && (
-                                  <span className="font-semibold">{airportLabel(seg.departure)} → {airportLabel(seg.arrival)}</span>
+                                  <div className="font-semibold truncate">{airportLabel(seg.departure)} → {airportLabel(seg.arrival)}</div>
                                 )}
                                 {(seg.departure_time || seg.arrival_time) && (
-                                  <span className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</span>
+                                  <div className="text-muted-foreground">{seg.departure_time}{seg.arrival_time ? ` – ${seg.arrival_time}` : ''}</div>
                                 )}
                               </div>
                             ))}
