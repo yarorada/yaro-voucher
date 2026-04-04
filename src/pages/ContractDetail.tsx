@@ -399,7 +399,7 @@ const ContractDetail = () => {
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{group.label}</p>
                           <div className="space-y-1">
                             {group.segments.map((seg: any, si: number) => (
-                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-foreground bg-muted/40 rounded px-2 py-1">
+                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-foreground bg-muted/40 rounded px-2 py-1 overflow-hidden">
                                 {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
                                 {(seg.airline_name || seg.airline) && (
                                   <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
