@@ -174,6 +174,7 @@ export default function Hotels() {
   const filtered = hotels.filter((h) => {
     const matchesSearch = removeDiacritics(h.name.toLowerCase()).includes(removeDiacritics(search.toLowerCase()));
     if (!matchesSearch) return false;
+    if (showNoDestination) return !h.destination_id;
     if (selectedCountry && h.destinations?.countries?.name !== selectedCountry) return false;
     if (selectedDestination && h.destinations?.name !== selectedDestination) return false;
     return true;
