@@ -640,7 +640,7 @@ const ContractDetail = () => {
           </Card>
 
           {/* Právní podmínky */}
-          <Card className="p-4 md:p-6">
+          <Card className="p-3 md:p-6">
             <h2 className="text-heading-2 text-foreground mb-4">Právní podmínky</h2>
             <div className="prose prose-sm max-w-none">
               <p className="text-muted-foreground">
