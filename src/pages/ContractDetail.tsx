@@ -507,10 +507,10 @@ const ContractDetail = () => {
 
           {/* Cestující */}
           {sortedTravelers.length > 0 && (
-            <Card className="p-4 md:p-6">
+            <Card className="p-3 md:p-6 overflow-hidden">
               <h2 className="text-heading-2 text-foreground mb-4">Cestující</h2>
-              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                <table className="w-full text-sm min-w-0">
+              <div className="-mx-3 px-3 md:mx-0 md:px-0">
+                <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b">
                       <th className="text-center py-2 text-muted-foreground font-medium w-10">#</th>
