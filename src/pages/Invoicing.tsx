@@ -151,6 +151,14 @@ function base64ToBlobUrl(base64: string, contentType: string) {
 
 const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
 
+/** Normalize currency – treat "Kč" as "CZK" */
+function normCurrency(c: string | null | undefined): string {
+  if (!c) return "CZK";
+  const v = c.trim();
+  if (v === "Kč" || v === "kč" || v === "KČ") return "CZK";
+  return v;
+}
+
 const emptyForm = {
   invoice_type: "issued" as string,
   invoice_number: "",
