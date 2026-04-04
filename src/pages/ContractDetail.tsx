@@ -445,7 +445,7 @@ const ContractDetail = () => {
           </Card>
 
           {/* Dodavatel + Zákazník vedle sebe */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             {/* Dodavatel služeb */}
             <ContractAgencyInfo
               contractId={contract.id}
