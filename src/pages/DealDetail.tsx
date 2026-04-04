@@ -3440,8 +3440,8 @@ const DealDetail = () => {
                     </div>
 
                     {/* Row 1: Date | Persons | Quantity */}
-                    <div className="flex flex-wrap gap-2 items-end">
-                      <div className="flex-1 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+                      <div className="w-full sm:flex-1 space-y-2">
                         <Label>Datum</Label>
                         <DateRangePicker
                           dateFrom={serviceForm.start_date}
