@@ -290,27 +290,27 @@ const ContractDetail = () => {
 
   return (
     <PageShell>
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0">
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 min-w-0 overflow-hidden">
             {getStatusBadge(contract.status, true)}
-            <span className="font-bold text-heading-1 text-foreground">{contract.contract_number}</span>
-            {(() => {
-              const parts: string[] = [];
-              const client = (contract as any).client;
-              if (client) parts.push(`${client.first_name} ${client.last_name}`);
-              const iso = (contract.deal?.destination as any)?.country?.iso_code || (contract.deal?.destination as any)?.countries?.iso_code;
-              if (iso) parts.push(iso);
-              const hotel = (contract.deal as any)?.services?.find((s: any) => s.service_type === "hotel") || (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
-              if (hotel) parts.push(hotel.service_name);
-              const depDate = (contract.deal as any)?.start_date;
-              if (depDate) {
-                const d = new Date(depDate + "T00:00:00");
-                parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
-              }
-              const displayName = parts.join(" • ");
-              return displayName ? <span className="text-foreground truncate min-w-0" title={displayName}>{displayName}</span> : null;
-            })()}
+            <span className="font-bold text-lg md:text-heading-1 text-foreground shrink-0">{contract.contract_number}</span>
           </div>
+          {(() => {
+            const parts: string[] = [];
+            const client = (contract as any).client;
+            if (client) parts.push(`${client.first_name} ${client.last_name}`);
+            const iso = (contract.deal?.destination as any)?.country?.iso_code || (contract.deal?.destination as any)?.countries?.iso_code;
+            if (iso) parts.push(iso);
+            const hotel = (contract.deal as any)?.services?.find((s: any) => s.service_type === "hotel") || (contract.deal as any)?.deal_services?.find((s: any) => s.service_type === "hotel");
+            if (hotel) parts.push(hotel.service_name);
+            const depDate = (contract.deal as any)?.start_date;
+            if (depDate) {
+              const d = new Date(depDate + "T00:00:00");
+              parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
+            }
+            const displayName = parts.join(" • ");
+            return displayName ? <p className="text-sm text-muted-foreground mt-1 truncate" title={displayName}>{displayName}</p> : null;
+          })()}
         </div>
 
 
@@ -399,7 +399,7 @@ const ContractDetail = () => {
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{group.label}</p>
                           <div className="space-y-1">
                             {group.segments.map((seg: any, si: number) => (
-                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-foreground bg-muted/40 rounded px-2 py-1">
+                              <div key={si} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-foreground bg-muted/40 rounded px-2 py-1 overflow-hidden">
                                 {seg.date && <span className="font-medium">{fmtDate(seg.date)}</span>}
                                 {(seg.airline_name || seg.airline) && (
                                   <span className="font-medium text-foreground">{seg.airline_name || seg.airline}</span>
@@ -560,7 +560,7 @@ const ContractDetail = () => {
                       .map((service: any) => (
                           <tr key={service.id} className="border-b last:border-0">
                             <td className="py-2 text-foreground">
-                              <span className="font-medium truncate block max-w-[200px] sm:max-w-none" title={service.service_name}>{service.service_name}</span>
+                              <span className="font-medium truncate block max-w-[150px] sm:max-w-none" title={service.service_name}>{service.service_name}</span>
                               {service.description && (
                                 <span className="block text-xs text-muted-foreground">{service.description}</span>
                               )}
