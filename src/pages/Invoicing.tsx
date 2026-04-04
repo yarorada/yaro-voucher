@@ -2183,7 +2183,12 @@ function InvoiceTable({
                      )}
                     <TableCell>
                       <div className="min-w-0">
-                        <span className="truncate block">{type === "issued" ? inv.client_name : inv.supplier_name || "—"}</span>
+                        <span
+                          className="truncate block cursor-pointer hover:text-primary hover:underline"
+                          onClick={() => type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? onOpenFile(inv) : onPdf(inv)}
+                        >
+                          {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
+                        </span>
                         {type === "received" && inv.contract_number_display && (
                           <Badge variant="outline" className="text-[10px] tabular-nums mt-0.5">
                             {inv.contract_number_display.replace(/^CS-?/i, "")}
