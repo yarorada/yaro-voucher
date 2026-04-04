@@ -2155,7 +2155,7 @@ function InvoiceTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Číslo</TableHead>
+                  {type === "issued" && <TableHead>Číslo</TableHead>}
                   <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
                   <TableHead className="text-right">Částka</TableHead>
                   <TableHead className="hidden md:table-cell">Vystaveno</TableHead>
