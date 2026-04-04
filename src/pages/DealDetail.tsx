@@ -3753,7 +3753,7 @@ const DealDetail = () => {
                           <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate" title={service.service_name}>{service.service_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-xs text-muted-foreground truncate" title={`${getServiceTypeLabel(service.service_type)}${service.service_type === 'hotel' && service.description ? ` · ${service.description}` : ''}${service.service_type === 'golf' && (service.details as any)?.tee_time ? ` · ${(service.details as any).tee_time}` : ''}`}>
                               {getServiceTypeLabel(service.service_type)}
                               {service.service_type === 'hotel' && service.description && ` · ${service.description}`}
                               {service.service_type === 'golf' && (service.details as any)?.tee_time && ` · ${(service.details as any).tee_time}`}
