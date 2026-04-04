@@ -242,7 +242,7 @@ export default function Hotels() {
       h.image_url_6, h.image_url_7, h.image_url_8, h.image_url_9, h.image_url_10]
       .filter(Boolean).length;
 
-  const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
+  
 
   return (
     <PageShell className="space-y-4">
