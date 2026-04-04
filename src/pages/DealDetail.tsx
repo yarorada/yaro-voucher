@@ -3142,9 +3142,10 @@ const DealDetail = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Přidat službu
-                    <ChevronDown className="h-4 w-4 ml-2" />
+                    <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Přidat službu</span>
+                    <span className="sm:hidden">Služba</span>
+                    <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-background w-48">
