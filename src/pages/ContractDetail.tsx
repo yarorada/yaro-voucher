@@ -497,7 +497,7 @@ const ContractDetail = () => {
                 }
                 <div>
                   <p className="text-sm text-muted-foreground">Kontakt</p>
-                  <p className="text-foreground">
+                  <p className="text-foreground break-all">
                     {[contract.client?.email, contract.client?.phone].filter(Boolean).join(", ") || '-'}
                   </p>
                 </div>
