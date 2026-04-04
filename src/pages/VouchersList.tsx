@@ -473,15 +473,15 @@ const VouchersList = () => {
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
+                    className={`p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer w-full max-w-full overflow-hidden ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         {/* Line 1: Status + Code + Client + ISO + Hotel + Date */}
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-2 min-w-0">
                           {voucher.sent_at ? (
                             <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
                           ) : isExpired ? (
@@ -489,15 +489,15 @@ const VouchersList = () => {
                           ) : (
                             <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
                           )}
-                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
+                          <span className="font-bold text-foreground shrink-0">{voucher.voucher_code}</span>
                           {(displayName || countryIso || hotelName || firstServiceDate) && (
-                            <span className="text-foreground truncate">
+                            <span className="text-foreground truncate min-w-0" title={[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}>
                               {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
                             </span>
                           )}
                         </div>
                         {/* Line 2: Details */}
-                        <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
                           {displayName && (
                             <span>
                               <span className="font-semibold text-foreground">Klient:</span> {displayName}
