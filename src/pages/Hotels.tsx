@@ -203,10 +203,7 @@ export default function Hotels() {
 
   return (
     <PageShell className="space-y-4">
-        <div>
-          <h1 className="text-heading-1">Hotely</h1>
-          <p className="text-body text-muted-foreground">Správa hotelů, fotek a popisů pro CRM i webové stránky</p>
-        </div>
+        <div />
 
         {/* Country filter chips */}
         {!loading && countries.length > 0 && (
