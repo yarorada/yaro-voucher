@@ -2841,7 +2841,7 @@ const DealDetail = () => {
                 parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
               }
               const desc = parts.join(" • ");
-              return desc ? <span className="block max-w-full truncate text-sm text-muted-foreground">{desc}</span> : null;
+              return desc ? <span className="block max-w-full truncate text-sm text-muted-foreground" title={desc}>{desc}</span> : null;
             })()}
           </div>
         </header>
