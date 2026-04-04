@@ -319,7 +319,7 @@ const ContractDetail = () => {
           {/* Základní informace */}
           <Card className="p-4 md:p-6">
             <h2 className="text-heading-2 text-foreground mb-4">Základní informace</h2>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 min-w-0">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Číslo smlouvy</p>
                 <p className="font-medium text-foreground">{contract.contract_number}</p>
