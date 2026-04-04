@@ -168,6 +168,7 @@ export default function Hotels() {
   const handleSelectCountry = (country: string | null) => {
     setSelectedCountry(country);
     setSelectedDestination(null);
+    setShowNoDestination(false);
   };
 
   const filtered = hotels.filter((h) => {
