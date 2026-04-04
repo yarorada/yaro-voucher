@@ -548,7 +548,7 @@ export default function Invoicing() {
   };
 
   const handleShowQr = async (inv: Invoice) => {
-    if (!inv.total_amount || inv.currency !== "CZK") {
+    if (!inv.total_amount || normCurrency(inv.currency) !== "CZK") {
       toast.error("QR kód lze generovat pouze pro CZK faktury s částkou");
       return;
     }
@@ -625,7 +625,7 @@ export default function Invoicing() {
 
   const buildInvoiceQrUrl = async (inv: Invoice) => {
     const effectiveTotal = getInvoiceTotal(inv);
-    if (inv.currency !== "CZK" || !effectiveTotal) return null;
+    if (normCurrency(inv.currency) !== "CZK" || !effectiveTotal) return null;
 
     const account = inv.bank_account || DEFAULT_BANK_ACCOUNT;
     const iban = inv.iban || bankAccountToIban(account);
@@ -1971,7 +1971,7 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
 
 function buildDefaultEmailBody(inv: Invoice): string {
   const amount = inv.total_amount
-    ? `${inv.total_amount.toLocaleString("cs-CZ")} ${inv.currency || "CZK"}`
+    ? `${inv.total_amount.toLocaleString("cs-CZ")} ${normCurrency(inv.currency)}`
     : "";
   const dueDate = inv.due_date ? format(new Date(inv.due_date), "d.M.yyyy") : "";
   const vs = inv.variable_symbol || "";
@@ -2053,8 +2053,8 @@ function InvoiceTable({
                       <span className="block whitespace-normal break-words">
                         {inv.total_amount != null ? inv.total_amount.toLocaleString("cs-CZ") : "—"}
                       </span>
-                      {inv.currency && (
-                        <span className="block text-[11px] font-medium text-muted-foreground">{inv.currency}</span>
+                      {inv.currency && normCurrency(inv.currency) && (
+                        <span className="block text-[11px] font-medium text-muted-foreground">{normCurrency(inv.currency)}</span>
                       )}
                     </p>
                     {inv.paid ? (
@@ -2114,7 +2114,7 @@ function InvoiceTable({
                         <DropdownMenuItem onClick={() => onEdit(inv)}>
                           <Pencil className="h-4 w-4 mr-2" /> Editace
                         </DropdownMenuItem>
-                        {inv.currency === "CZK" && inv.total_amount && (
+                         {normCurrency(inv.currency) === "CZK" && inv.total_amount && (
                           <DropdownMenuItem onClick={() => onQr(inv)}>
                             <QrCode className="h-4 w-4 mr-2" /> QR platba
                           </DropdownMenuItem>
@@ -2173,7 +2173,7 @@ function InvoiceTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums whitespace-nowrap">
-                      {inv.total_amount?.toLocaleString("cs-CZ")} {inv.currency}
+                      {inv.total_amount?.toLocaleString("cs-CZ")} {normCurrency(inv.currency)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell whitespace-nowrap">
                       {inv.issue_date ? format(new Date(inv.issue_date), "d.M.yyyy") : "—"}
@@ -2221,7 +2221,7 @@ function InvoiceTable({
                             <DropdownMenuItem onClick={() => onEdit(inv)}>
                               <Pencil className="h-4 w-4 mr-2" /> Editace
                             </DropdownMenuItem>
-                            {inv.currency === "CZK" && inv.total_amount && (
+                             {normCurrency(inv.currency) === "CZK" && inv.total_amount && (
                               <DropdownMenuItem onClick={() => onQr(inv)}>
                                 <QrCode className="h-4 w-4 mr-2" /> QR platba
                               </DropdownMenuItem>
