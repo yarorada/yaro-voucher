@@ -3568,7 +3568,7 @@ const DealDetail = () => {
                           </p>
                         )}
                       </div>
-                      <div className="w-20">
+                      <div className="flex gap-2 sm:contents"><div className="w-20">
                         <Label>Marže %</Label>
                         <Input
                           type="number"
