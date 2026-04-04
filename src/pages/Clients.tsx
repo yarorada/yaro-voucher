@@ -962,7 +962,53 @@ const Clients = () => {
             <Button variant="outline" className="mt-3" onClick={() => setFilterConditions([])}>Zrušit filtry</Button>
           </Card>
         ) : (
-          <Card className="shadow-[var(--shadow-medium)] overflow-hidden">
+          {/* Mobile card view */}
+          <div className="sm:hidden space-y-2">
+            {filteredClients.map((client) => (
+              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-medium text-sm">{client.first_name} {client.last_name}</p>
+                      {client.passport_number && (() => {
+                        const status = getExpiryStatus(client.passport_expiry);
+                        return (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${getExpiryBadgeClass(status)}`}>PAS</span>
+                        );
+                      })()}
+                      {client.id_card_number && (() => {
+                        const status = getExpiryStatus(client.id_card_expiry);
+                        return (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${getExpiryBadgeClass(status)}`}>OP</span>
+                        );
+                      })()}
+                      {client.document_urls && client.document_urls.length > 0 && (
+                        <button onClick={() => setDocumentPreviewClient(client)} className="text-muted-foreground hover:text-foreground">
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    {client.email && <p className="text-xs text-muted-foreground truncate">{client.email}</p>}
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      {client.phone && <span>{client.phone}</span>}
+                      {client.date_of_birth && <span>{(() => { const d = parseDateSafe(client.date_of_birth); return d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}` : "–"; })()}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => handleEdit(client)} className="text-primary hover:text-primary/70 transition-colors" title="Upravit">
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleDelete(client.id)} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop table view */}
+          <Card className="shadow-[var(--shadow-medium)] overflow-hidden hidden sm:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
