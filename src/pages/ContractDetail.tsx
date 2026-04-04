@@ -315,9 +315,9 @@ const ContractDetail = () => {
 
 
 
-        <div className="grid gap-6">
+        <div className="grid gap-4 md:gap-6 min-w-0 overflow-hidden">
           {/* Základní informace */}
-          <Card className="p-4 md:p-6">
+          <Card className="p-3 md:p-6 overflow-hidden">
             <h2 className="text-heading-2 text-foreground mb-4">Základní informace</h2>
             <div className="grid md:grid-cols-2 gap-4 min-w-0">
               <div>
@@ -445,7 +445,7 @@ const ContractDetail = () => {
           </Card>
 
           {/* Dodavatel + Zákazník vedle sebe */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             {/* Dodavatel služeb */}
             <ContractAgencyInfo
               contractId={contract.id}
@@ -458,7 +458,7 @@ const ContractDetail = () => {
             />
 
             {/* Zákazník */}
-            <Card className="p-4 md:p-6">
+            <Card className="p-3 md:p-6">
               <h2 className="text-heading-2 text-foreground mb-4">Zákazník / prodejce</h2>
               <div className="space-y-3">
                 <div>
@@ -497,7 +497,7 @@ const ContractDetail = () => {
                 }
                 <div>
                   <p className="text-sm text-muted-foreground">Kontakt</p>
-                  <p className="text-foreground">
+                  <p className="text-foreground break-all">
                     {[contract.client?.email, contract.client?.phone].filter(Boolean).join(", ") || '-'}
                   </p>
                 </div>
@@ -507,10 +507,10 @@ const ContractDetail = () => {
 
           {/* Cestující */}
           {sortedTravelers.length > 0 && (
-            <Card className="p-4 md:p-6">
+            <Card className="p-3 md:p-6 overflow-hidden">
               <h2 className="text-heading-2 text-foreground mb-4">Cestující</h2>
-              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                <table className="w-full text-sm min-w-0">
+              <div className="-mx-3 px-3 md:mx-0 md:px-0">
+                <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b">
                       <th className="text-center py-2 text-muted-foreground font-medium w-10">#</th>
@@ -526,7 +526,7 @@ const ContractDetail = () => {
                         <td className="py-2 text-center font-medium text-foreground">
                           {idx + 1}
                         </td>
-                        <td className="py-2 font-medium text-foreground">
+                        <td className="py-2 font-medium text-foreground truncate">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
                         </td>
                         <td className="py-2 text-foreground hidden sm:table-cell">
@@ -544,10 +544,10 @@ const ContractDetail = () => {
 
           {/* Služby */}
           {contract.deal?.services?.length > 0 && (
-            <Card className="p-4 md:p-6">
+            <Card className="p-3 md:p-6 overflow-hidden">
               <h2 className="text-heading-2 text-foreground mb-4">Služby</h2>
-              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                <table className="w-full text-sm min-w-0">
+              <div className="-mx-3 px-3 md:mx-0 md:px-0">
+                <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 text-muted-foreground font-medium">Služba</th>
@@ -611,7 +611,7 @@ const ContractDetail = () => {
 
 
           {/* Ostatní informace a požadavky - tee times */}
-          <Card className="p-4 md:p-6">
+          <Card className="p-3 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-heading-2 text-foreground">Ostatní informace a požadavky</h2>
               <ContractTeeTimesEditor
@@ -640,7 +640,7 @@ const ContractDetail = () => {
           </Card>
 
           {/* Právní podmínky */}
-          <Card className="p-4 md:p-6">
+          <Card className="p-3 md:p-6">
             <h2 className="text-heading-2 text-foreground mb-4">Právní podmínky</h2>
             <div className="prose prose-sm max-w-none">
               <p className="text-muted-foreground">

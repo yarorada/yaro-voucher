@@ -364,26 +364,27 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-heading-2 flex items-center gap-2">
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 space-y-0 pb-4 px-3 md:px-6">
+          <CardTitle className="text-heading-2 flex items-center gap-2 shrink-0">
             <Wallet className="h-5 w-5" />
             Platební kalendář
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {dealId && (
               <Button variant="outline" size="sm" onClick={handleSyncFromDeal} disabled={syncing}>
-                {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Synchronizovat z obchodního případu
+                {syncing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                <span className="hidden sm:inline">Synchronizovat z OP</span>
+                <span className="sm:hidden">Sync</span>
               </Button>
             )}
             <Button onClick={() => { resetSchedule(); setScheduleDialogOpen(true); }} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Přidat platbu
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-3 md:px-6">
           {loading ? (
             <p className="text-body text-muted-foreground">Načítání...</p>
           ) : payments.length === 0 ? (

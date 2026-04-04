@@ -140,7 +140,7 @@ export function ContractAgencyInfo({
   };
 
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-3 md:p-6 overflow-hidden">
       <div className="flex flex-row items-center justify-between mb-4">
         <h2 className="text-heading-2 text-foreground">
           Dodavatel
@@ -261,7 +261,7 @@ export function ContractAgencyInfo({
             {formData.agency_contact && (
               <div>
                 <p className="text-sm text-muted-foreground">Kontakt</p>
-                <p className="text-foreground">{formData.agency_contact}</p>
+                <p className="text-foreground break-all">{formData.agency_contact}</p>
               </div>
             )}
           </div>
