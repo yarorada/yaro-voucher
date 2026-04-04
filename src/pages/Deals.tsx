@@ -79,6 +79,7 @@ const Deals = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { scope } = useDataScope();
+  const isMobile = useIsMobile();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
