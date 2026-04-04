@@ -35,6 +35,12 @@ interface DateRangeFilterProps {
   showArrival?: boolean;
 }
 
+const formatShort = (d: string | null) => {
+  if (!d) return "";
+  const date = new Date(d + "T00:00:00");
+  return `${date.getDate()}.${date.getMonth() + 1}.`;
+};
+
 const formatForDisplay = (d: string | null) => {
   if (!d) return "";
   const date = new Date(d + "T00:00:00");
