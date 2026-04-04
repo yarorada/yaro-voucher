@@ -2024,14 +2024,16 @@ function InvoiceTable({
                   <p className="font-medium text-sm truncate">
                     {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
                   </p>
-                  {type === "issued" && inv.invoice_number && (
-                    <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
-                  )}
-                  {type === "received" && inv.contract_number_display && (
-                    <Badge variant="outline" className="text-xs tabular-nums mt-0.5">
-                      {inv.contract_number_display.replace(/^CS-?/i, "")}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {inv.invoice_number && (
+                      <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
+                    )}
+                    {type === "received" && inv.contract_number_display && (
+                      <Badge variant="outline" className="text-xs tabular-nums">
+                        {inv.contract_number_display.replace(/^CS-?/i, "")}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-semibold tabular-nums text-sm">
@@ -2061,15 +2063,9 @@ function InvoiceTable({
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplatit
                   </Button>
                 )}
-                {type === "received" && (inv.file_url || inv.deal_supplier_invoice_id) ? (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onOpenFile(inv)}>
-                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Soubor
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onPdf(inv)}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Náhled
+                </Button>
                 <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onEdit(inv)}>
                   <Pencil className="h-3.5 w-3.5 mr-1" /> Editace
                 </Button>
