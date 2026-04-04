@@ -3142,9 +3142,10 @@ const DealDetail = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Přidat službu
-                    <ChevronDown className="h-4 w-4 ml-2" />
+                    <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Přidat službu</span>
+                    <span className="sm:hidden">Služba</span>
+                    <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-background w-48">
@@ -3439,7 +3440,7 @@ const DealDetail = () => {
                     </div>
 
                     {/* Row 1: Date | Persons | Quantity */}
-                    <div className="flex gap-2 items-end">
+                    <div className="flex flex-wrap gap-2 items-end">
                       <div className="flex-1 space-y-2">
                         <Label>Datum</Label>
                         <DateRangePicker
@@ -3743,7 +3744,58 @@ const DealDetail = () => {
               <p className="text-muted-foreground text-center py-8 text-sm">Zatím nejsou přidány žádné služby</p>
             ) : (
               <div className="space-y-0">
-                <div className="overflow-x-auto">
+                {/* Mobile card view */}
+                <div className="sm:hidden space-y-2 p-3">
+                  {services.map((service) => (
+                    <div key={service.id} className="border border-border rounded-lg p-3 space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{service.service_name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {getServiceTypeLabel(service.service_type)}
+                              {service.service_type === 'hotel' && service.description && ` · ${service.description}`}
+                              {service.service_type === 'golf' && (service.details as any)?.tee_time && ` · ${(service.details as any).tee_time}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-semibold text-sm tabular-nums">
+                            {service.price ? formatPriceCurrency(getServiceTotal(service), service.price_currency || "CZK") : '-'}
+                          </p>
+                          {service.price && getServiceMultiplier(service) > 1 && (
+                            <p className="text-xs text-muted-foreground tabular-nums">
+                              {formatPriceCurrency(service.price, service.price_currency || "CZK")} × {getServiceMultiplier(service)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex gap-3">
+                          {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? <span>{p[2]}.{p[1]}.{p[0]}</span> : null; })()}
+                          {(service.person_count || 1) > 1 && <span>{service.person_count} os.</span>}
+                          {service.suppliers?.name && <span className="truncate max-w-[100px]">{service.suppliers.name}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 pt-1 border-t border-border">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => openEditService(service)}>
+                          <Edit className="h-3 w-3 mr-1" /> Upravit
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => handleDuplicateService(service)}>
+                          <Copy className="h-3 w-3 mr-1" /> Kopie
+                        </Button>
+                        <div className="flex-1" />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteService(service.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="overflow-x-auto hidden sm:block">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -3754,9 +3806,9 @@ const DealDetail = () => {
                         <TableRow>
                           <TableHead className="w-8"></TableHead>
                           <TableHead>Služba</TableHead>
-                          <TableHead className="hidden sm:table-cell">Datum</TableHead>
-                          <TableHead className="hidden sm:table-cell text-center">Osoby</TableHead>
-                          <TableHead className="hidden sm:table-cell text-center">Počet</TableHead>
+                          <TableHead>Datum</TableHead>
+                          <TableHead className="text-center">Osoby</TableHead>
+                          <TableHead className="text-center">Počet</TableHead>
                           <TableHead className="hidden md:table-cell">Dodavatel</TableHead>
                           <TableHead className="text-right">Cena</TableHead>
                           <TableHead className="text-right">Akce</TableHead>
