@@ -1124,9 +1124,9 @@ export default function Invoicing() {
             <TabsTrigger value="issued">Vydané</TabsTrigger>
           </TabsList>
           <div className="hidden sm:block flex-1" />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as "all" | "paid" | "unpaid")}>
-              <SelectTrigger className="w-32 sm:w-40">
+              <SelectTrigger className="w-28 sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1135,7 +1135,7 @@ export default function Invoicing() {
                 <SelectItem value="unpaid">Nezaplacené</SelectItem>
               </SelectContent>
             </Select>
-            <div className="relative flex-1 sm:flex-none">
+            <div className="relative min-w-0 flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Hledat…"
