@@ -470,7 +470,7 @@ export default function Invoicing() {
       supplier_dic: form.supplier_dic || null,
       supplier_address: form.supplier_address || null,
       total_amount: finalTotal,
-      currency: form.currency,
+      currency: normCurrency(form.currency),
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
       variable_symbol: form.variable_symbol || null,
