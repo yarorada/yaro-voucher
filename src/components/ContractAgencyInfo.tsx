@@ -261,7 +261,7 @@ export function ContractAgencyInfo({
             {formData.agency_contact && (
               <div>
                 <p className="text-sm text-muted-foreground">Kontakt</p>
-                <p className="text-foreground">{formData.agency_contact}</p>
+                <p className="text-foreground break-all">{formData.agency_contact}</p>
               </div>
             )}
           </div>
