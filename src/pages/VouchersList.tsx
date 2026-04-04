@@ -63,6 +63,7 @@ interface Voucher {
 }
 
 const VouchersList = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { scope } = useDataScope();
