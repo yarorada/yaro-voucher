@@ -526,7 +526,7 @@ const ContractDetail = () => {
                         <td className="py-2 text-center font-medium text-foreground">
                           {idx + 1}
                         </td>
-                        <td className="py-2 font-medium text-foreground">
+                        <td className="py-2 font-medium text-foreground truncate">
                           {t.client?.title ? `${t.client.title} ` : ''}{t.client?.first_name} {t.client?.last_name}
                         </td>
                         <td className="py-2 text-foreground hidden sm:table-cell">
