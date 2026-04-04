@@ -542,8 +542,9 @@ const Clients = () => {
   };
 
   usePageToolbar(
-    <div className="flex flex-wrap items-center gap-2">
-      <ClientFilterBar
+    <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+      <div className="flex-1 min-w-0">
+        <ClientFilterBar
           conditions={filterConditions}
           onChange={setFilterConditions}
           quickSearch={quickSearch}
@@ -551,11 +552,13 @@ const Clients = () => {
           noResults={clients.length > 0 && filteredClients.length === 0}
           onAddNew={handleAddNewFromSearch}
         />
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+          <Button variant="outline" size="sm" className="gap-1 h-8 text-xs shrink-0 px-2 md:px-3">
             <ChevronDown className="h-3 w-3" />
-            Hromadné operace
+            <span className="hidden sm:inline">Hromadné operace</span>
+            <span className="sm:hidden">Více</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-background p-1">
