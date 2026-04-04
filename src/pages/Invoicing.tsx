@@ -1600,6 +1600,13 @@ export default function Invoicing() {
                     </SelectContent>
                   </Select>
                 </div>
+                {form.invoice_type === "issued" && normCurrency(form.currency) === "EUR" ? (
+                <div>
+                  <Label>IBAN</Label>
+                  <Input value={EUR_BANK.iban} readOnly className="bg-muted" />
+                </div>
+                ) : (
+                <>
                 <div>
                   <Label>Bankovní účet</Label>
                   <Input value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} placeholder="123456789/0100" />
@@ -1608,6 +1615,8 @@ export default function Invoicing() {
                   <Label>IBAN</Label>
                   <Input value={form.iban} onChange={(e) => setForm((f) => ({ ...f, iban: e.target.value }))} placeholder="CZ..." />
                 </div>
+                </>
+                )}
               </div>
             </div>
 
