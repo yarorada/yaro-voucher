@@ -2155,7 +2155,7 @@ function InvoiceTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Číslo</TableHead>
+                  {type === "issued" && <TableHead>Číslo</TableHead>}
                   <TableHead>{type === "issued" ? "Odběratel" : "Dodavatel"}</TableHead>
                   <TableHead className="text-right">Částka</TableHead>
                   <TableHead className="hidden md:table-cell">Vystaveno</TableHead>
@@ -2168,9 +2168,11 @@ function InvoiceTable({
               <TableBody>
                 {invoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {inv.invoice_number || "—"}
-                    </TableCell>
+                     {type === "issued" && (
+                       <TableCell className="font-medium whitespace-nowrap">
+                         {inv.invoice_number || "—"}
+                       </TableCell>
+                     )}
                     <TableCell>
                       <div className="min-w-0">
                         <span className="truncate block">{type === "issued" ? inv.client_name : inv.supplier_name || "—"}</span>
