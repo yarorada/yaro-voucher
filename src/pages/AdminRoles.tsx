@@ -259,20 +259,20 @@ export default function AdminRoles() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto overflow-hidden">
       <div className="flex items-center gap-3 mb-6">
-        <ShieldCheck className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Správa rolí a oprávnění</h1>
+        <ShieldCheck className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
+        <h1 className="text-xl md:text-2xl font-bold">Správa rolí a oprávnění</h1>
       </div>
 
       <Card className="mb-4">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 px-3 md:px-6">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Výchozí přístupy dle role
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-3 text-sm">
+        <CardContent className="px-3 md:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
             <div>
               <p className="font-semibold mb-1">Admin</p>
               <p className="text-muted-foreground text-xs">Vše</p>
