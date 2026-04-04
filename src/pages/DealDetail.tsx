@@ -2841,7 +2841,7 @@ const DealDetail = () => {
                 parts.push(`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getFullYear()).slice(-2)}`);
               }
               const desc = parts.join(" • ");
-              return desc ? <span className="block max-w-full truncate text-sm text-muted-foreground">{desc}</span> : null;
+              return desc ? <span className="block max-w-full truncate text-sm text-muted-foreground" title={desc}>{desc}</span> : null;
             })()}
           </div>
         </header>
@@ -2953,7 +2953,7 @@ const DealDetail = () => {
                           <div key={hs.id} className={`flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3 ${idx > 0 ? 'mt-1' : ''}`}>
                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                               <Hotel className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                              <span className="text-sm font-medium truncate">{hs.service_name}</span>
+                              <span className="text-sm font-medium truncate" title={hs.service_name}>{hs.service_name}</span>
                               {(hs.quantity || 1) > 1 && (
                                 <span className="text-xs text-muted-foreground">({hs.quantity}×)</span>
                               )}
@@ -2961,7 +2961,7 @@ const DealDetail = () => {
                             {mealPlan && (
                               <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground sm:flex-shrink-0">
                                 <Utensils className="h-3 w-3" />
-                                <span className="truncate">{mealPlan}</span>
+                                <span className="truncate" title={mealPlan}>{mealPlan}</span>
                               </div>
                             )}
                           </div>
@@ -3753,7 +3753,7 @@ const DealDetail = () => {
                           <div className="flex-shrink-0">{getServiceIcon(service.service_type)}</div>
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate" title={service.service_name}>{service.service_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-xs text-muted-foreground truncate" title={`${getServiceTypeLabel(service.service_type)}${service.service_type === 'hotel' && service.description ? ` · ${service.description}` : ''}${service.service_type === 'golf' && (service.details as any)?.tee_time ? ` · ${(service.details as any).tee_time}` : ''}`}>
                               {getServiceTypeLabel(service.service_type)}
                               {service.service_type === 'hotel' && service.description && ` · ${service.description}`}
                               {service.service_type === 'golf' && (service.details as any)?.tee_time && ` · ${(service.details as any).tee_time}`}
@@ -3775,7 +3775,7 @@ const DealDetail = () => {
                         <div className="flex gap-3">
                           {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? <span>{p[2]}.{p[1]}.{p[0]}</span> : null; })()}
                           {(service.person_count || 1) > 1 && <span>{service.person_count} os.</span>}
-                          {service.suppliers?.name && <span className="truncate max-w-[80px]">{service.suppliers.name}</span>}
+                          {service.suppliers?.name && <span className="truncate max-w-[80px]" title={service.suppliers.name}>{service.suppliers.name}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-border">
