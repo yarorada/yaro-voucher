@@ -187,6 +187,8 @@ export default function Hotels() {
     return true;
   });
 
+  const hotelsWithoutDestination = hotels.filter((h) => !h.destinations).length;
+
   const countryLabel = showNoDestination
     ? "Bez destinace"
     : selectedCountry
