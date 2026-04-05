@@ -622,9 +622,10 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
               <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
                 <td className="py-1.5 px-1 text-slate-700 font-medium">
                   {c.name}
+                  {getHoleCount(c) && <span className="text-slate-400 font-normal"> ({getHoleCount(c)})</span>}
                   {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
                 </td>
-                <td className="py-1.5 px-1 text-right text-slate-600">{(c.length || c.length_m) ? `${Number(c.length || c.length_m).toLocaleString("cs-CZ")}` : "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{parseLength(c.length ?? c.length_m) != null ? parseLength(c.length ?? c.length_m)!.toLocaleString("cs-CZ") : "–"}</td>
                 <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
                 <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
                 <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
