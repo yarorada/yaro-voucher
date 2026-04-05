@@ -789,29 +789,17 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
         {(() => {
           let lines = computePerPersonPrices(variant.deal_variant_services);
 
-          // Fallback: if no room_types prices but variant has total_price, derive per-person from total
           if (lines.length === 0 && totalPrice > 0) {
             const persons = variant.deal_variant_services.find(s => s.person_count && s.person_count > 0)?.person_count || 1;
             lines = [{
-              label: "Celkem na osobu",
+              label: persons <= 2 ? getPerPersonPriceLabel(persons) : "Celkem na osobu",
               personCount: persons,
               pricePerPerson: Math.round(totalPrice / persons),
               currency,
             }];
           }
 
-          if (lines.length === 0) return null;
-          return (
-            <div className="border-t pt-3 space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
-              {lines.map((line, i) => (
-                <div key={i} className="flex items-baseline justify-between text-sm">
-                  <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
-                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
-                </div>
-              ))}
-            </div>
-          );
+          return <PerPersonPriceRecap lines={lines} />;
         })()}
 
         {/* Price — only when hide_price is false */}
