@@ -1051,17 +1051,24 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           )}
 
           <ScrollArea className="h-[55vh]">
-            {foundImages?.hotel && foundImages.hotel.length > 0 && (
-              <div className="space-y-2">
+            {([
+              { key: "website" as const, label: "🌐 Web hotelu", urls: foundImages?.website },
+              { key: "booking" as const, label: "📘 Booking.com", urls: foundImages?.booking },
+              { key: "tripadvisor" as const, label: "🦉 TripAdvisor", urls: foundImages?.tripadvisor },
+              { key: "general" as const, label: "🔍 Obecné hledání", urls: foundImages?.general },
+              { key: "golf" as const, label: "⛳ Golf", urls: foundImages?.golf },
+              { key: "search" as const, label: "🔍 Další z vyhledávání", urls: foundImages?.search },
+            ]).map(({ key, label, urls }) => urls && urls.length > 0 ? (
+              <div key={key} className="space-y-2 mt-4 first:mt-0">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  🏨 Fotky hotelu ({foundImages.hotel.length})
+                  {label} ({urls.length})
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
-                  {foundImages.hotel.map((url, i) => (
+                  {urls.map((url, i) => (
                     <ProxiedImageButton
-                      key={`hotel-${i}-${url}`}
+                      key={`${key}-${i}-${url}`}
                       url={url}
-                      alt={`Hotel ${i + 1}`}
+                      alt={`${label} ${i + 1}`}
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
@@ -1073,55 +1080,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                   ))}
                 </div>
               </div>
-            )}
-
-            {foundImages?.golf && foundImages.golf.length > 0 && (
-              <div className="space-y-2 mt-4">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  ⛳ Fotky golfového hřiště ({foundImages.golf.length})
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {foundImages.golf.map((url, i) => (
-                    <ProxiedImageButton
-                      key={`golf-${i}-${url}`}
-                      url={url}
-                      alt={`Golf ${i + 1}`}
-                      disabled={!selectedSlot || savingUrl === url}
-                      saving={savingUrl === url}
-                      onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                      meta={imageMeta[url]}
-                      multiMode={multiSelectMode}
-                      selected={selectedUrls.has(url)}
-                      onSelect={() => toggleUrlSelection(url)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {foundImages?.search && foundImages.search.length > 0 && (
-              <div className="space-y-2 mt-4 pt-4 border-t">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  🔍 Fotky z vyhledávání ({foundImages.search.length})
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {foundImages.search.map((url, i) => (
-                    <ProxiedImageButton
-                      key={`search-${i}-${url}`}
-                      url={url}
-                      alt={`Search ${i + 1}`}
-                      disabled={!selectedSlot || savingUrl === url}
-                      saving={savingUrl === url}
-                      onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                      meta={imageMeta[url]}
-                      multiMode={multiSelectMode}
-                      selected={selectedUrls.has(url)}
-                      onSelect={() => toggleUrlSelection(url)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            ) : null)}
           </ScrollArea>
         </DialogContent>
       </Dialog>
