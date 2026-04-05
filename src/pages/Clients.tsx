@@ -968,7 +968,7 @@ const Clients = () => {
           <>
           <div className="sm:hidden space-y-2">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5">
+              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleEdit(client)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -986,7 +986,7 @@ const Clients = () => {
                         );
                       })()}
                       {client.document_urls && client.document_urls.length > 0 && (
-                        <button onClick={() => setDocumentPreviewClient(client)} className="text-muted-foreground hover:text-foreground">
+                        <button onClick={(e) => { e.stopPropagation(); setDocumentPreviewClient(client); }} className="text-muted-foreground hover:text-foreground">
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                       )}
@@ -1001,7 +1001,7 @@ const Clients = () => {
                     <button onClick={() => handleEdit(client)} className="text-primary hover:text-primary/70 transition-colors" title="Upravit">
                       <Edit className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleDelete(client.id)} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -1025,7 +1025,7 @@ const Clients = () => {
                 </thead>
                 <tbody>
                   {filteredClients.map((client) => (
-                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => handleEdit(client)}>
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleEdit(client)} className="hover:text-primary transition-colors cursor-pointer">{client.first_name} {client.last_name}</button>
@@ -1071,7 +1071,7 @@ const Clients = () => {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(client.id)}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}
                             className="text-destructive hover:text-destructive/70 transition-colors"
                             title="Smazat"
                           >
