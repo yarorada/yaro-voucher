@@ -592,7 +592,7 @@ const Suppliers = () => {
               <tbody>
                 {items.map((supplier) => (
                   <tr key={supplier.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">{supplier.name}</td>
+                    <td className="px-4 py-3 font-medium text-foreground"><button onClick={() => handleEdit(supplier)} className="hover:text-primary transition-colors cursor-pointer">{supplier.name}</button></td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {supplier.contact_person || <span className="text-muted-foreground/40">—</span>}
                     </td>

@@ -1028,7 +1028,7 @@ const Clients = () => {
                     <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
-                          {client.first_name} {client.last_name}
+                          <button onClick={() => handleEdit(client)} className="hover:text-primary transition-colors cursor-pointer">{client.first_name} {client.last_name}</button>
                           {client.passport_number && (() => {
                             const status = getExpiryStatus(client.passport_expiry);
                             return (
