@@ -342,18 +342,12 @@ function PerPersonPriceRecap({ lines }: { lines: PerPersonLine[] }) {
   return (
     <div className="border-t pt-3 space-y-1">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
-      {lines.map((line, i) => {
-        const showPersonCount = !line.label.toLowerCase().startsWith("cena za osobu");
-        return (
-          <div key={`${line.label}-${line.personCount}-${i}`} className="flex items-baseline justify-between gap-4 text-sm">
-            <span className="text-slate-600">
-              {line.label}
-              {showPersonCount && <span className="text-slate-400"> ({line.personCount} os.)</span>}
-            </span>
-            <span className="font-semibold text-slate-700 whitespace-nowrap">{formatPrice(line.pricePerPerson, line.currency)}</span>
-          </div>
-        );
-      })}
+      {lines.map((line, i) => (
+        <div key={`${line.personCount}-${i}`} className="flex items-baseline justify-between gap-4 text-sm">
+          <span className="text-slate-600">{line.label}</span>
+          <span className="font-semibold text-slate-700 whitespace-nowrap">{formatPrice(line.pricePerPerson, line.currency)}</span>
+        </div>
+      ))}
     </div>
   );
 }
