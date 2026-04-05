@@ -607,6 +607,17 @@ export default function PublicOffer() {
   );
 }
 
+function enrichGolfCourseName(name: string, courses: any[] | null | undefined): string {
+  if (!name || !courses || courses.length === 0) return name;
+  const match = courses.find((c: any) => c.name && name.toLowerCase().includes(c.name.toLowerCase()));
+  if (!match) return name;
+  const parts: string[] = [];
+  const lengthNum = parseLength(match.length_m ?? match.length);
+  if (lengthNum) parts.push(`${lengthNum.toLocaleString("cs-CZ")} m`);
+  if (match.par) parts.push(`PAR ${match.par}`);
+  return parts.length > 0 ? `${name} (${parts.join(", ")})` : name;
+}
+
 function parseLength(val: any): number | null {
   if (val == null) return null;
   if (typeof val === "number") return val;
