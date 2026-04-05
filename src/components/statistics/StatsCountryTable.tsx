@@ -74,30 +74,31 @@ export const StatsCountryTable = ({ data }: StatsCountryTableProps) => {
         <CardTitle className="text-base">Prodeje podle zemí</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <Table className="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>Země</TableHead>
-              <TableHead className="text-right">Počet</TableHead>
-              <TableHead className="text-right">Obrat</TableHead>
-              <TableHead className="text-right">Zisk</TableHead>
-              <TableHead className="w-[120px]">Podíl</TableHead>
+              <TableHead className="px-1.5 sm:px-2">Země</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2 hidden sm:table-cell">Počet</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Obrat</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Zisk</TableHead>
+              <TableHead className="w-[80px] sm:w-[120px] px-1.5 sm:px-2">Podíl</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((row) => (
               <TableRow key={row.name}>
-                <TableCell className="font-medium">
-                  <span className="mr-1.5">{getCountryFlag(row.name)}</span>
+                <TableCell className="font-medium whitespace-nowrap px-1.5 sm:px-2">
+                  <span className="mr-1">{getCountryFlag(row.name)}</span>
                   {row.name}
                 </TableCell>
-                <TableCell className="text-right">{row.dealCount}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.profit)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
+                <TableCell className="text-right px-1.5 sm:px-2 hidden sm:table-cell">{row.dealCount}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.revenue)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.profit)}</TableCell>
+                <TableCell className="px-1.5 sm:px-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <Progress value={row.share} className="h-2 flex-1" />
-                    <span className="text-xs text-muted-foreground w-10 text-right">
+                    <span className="text-xs text-muted-foreground w-8 sm:w-10 text-right">
                       {row.share.toFixed(0)}%
                     </span>
                   </div>
@@ -106,6 +107,7 @@ export const StatsCountryTable = ({ data }: StatsCountryTableProps) => {
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

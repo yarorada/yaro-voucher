@@ -106,26 +106,27 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
         <CardTitle className="text-base">Porovnání období</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <Table className="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>Období</TableHead>
-              <TableHead className="text-right">Obrat</TableHead>
-              <TableHead className="text-right">Náklady</TableHead>
-              <TableHead className="text-right">Zisk</TableHead>
-              <TableHead className="text-right">Marže</TableHead>
-              <TableHead className="text-right">Změna</TableHead>
+              <TableHead className="px-1.5 sm:px-2">Období</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Obrat</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2 hidden sm:table-cell">Náklady</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Zisk</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Marže</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Změna</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((row) => (
               <TableRow key={row.label}>
-                <TableCell className="font-medium">{row.label}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.costs)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.profit)}</TableCell>
-                <TableCell className="text-right">{row.margin.toFixed(0)}%</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="font-medium whitespace-nowrap px-1.5 sm:px-2">{row.label}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.revenue)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2 hidden sm:table-cell">{formatCurrency(row.costs)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.profit)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{row.margin.toFixed(0)}%</TableCell>
+                <TableCell className="text-right px-1.5 sm:px-2">
                   {row.change === null ? (
                     <span className="text-muted-foreground">—</span>
                   ) : (
@@ -145,6 +146,7 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );
