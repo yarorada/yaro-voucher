@@ -10,10 +10,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock } from "lucide-react";
+import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock, MoreHorizontal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const EU_COUNTRIES = [
   "Belgie", "Bulharsko", "Česko", "Dánsko", "Estonsko", "Finsko", "Francie",
@@ -351,80 +358,99 @@ export default function Accounting() {
     URL.revokeObjectURL(url);
   };
 
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  usePageToolbar(
+    <div className="flex items-center gap-1.5 w-full min-w-0">
+      <Select value={year} onValueChange={setYear}>
+        <SelectTrigger className="w-[80px] h-8 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {years.map((y) => (
+            <SelectItem key={y} value={y}>{y}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={month} onValueChange={setMonth}>
+        <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {months.map((m) => (
+            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {/* Desktop: separate buttons */}
+      <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 text-xs gap-1 shrink-0" onClick={exportCsv}>
+        <Download className="h-3.5 w-3.5" /> Export CSV
+      </Button>
+      <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 text-xs gap-1 shrink-0" onClick={() => setShareDialogOpen(true)}>
+        <Share2 className="h-3.5 w-3.5" /> Sdílet
+      </Button>
+      {/* Mobile: merged dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8 sm:hidden shrink-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={exportCsv}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
+            <Share2 className="h-4 w-4 mr-2" /> Sdílet
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>,
+    [year, month, years, existingShares.length]
+  );
+
   return (
     <PageShell maxWidth="wide" className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3 justify-between">
-          <h1 className="text-heading-1">Účetnictví</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {months.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={exportCsv}>
-              <Download className="h-4 w-4 mr-1" /> Export CSV
-            </Button>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Share2 className="h-4 w-4 mr-1" /> Sdílet
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Sdílet účetnictví</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Vytvořte veřejný odkaz pro účetního. Odkaz zobrazí data pro vybraný rok a měsíc (read-only).
-                  </p>
-                  <Button onClick={() => createShareMutation.mutate()} disabled={createShareMutation.isPending}>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Vytvořit odkaz pro {year} / {month === "all" ? "všechny měsíce" : months.find(m => m.value === month)?.label}
-                  </Button>
-                  {existingShares.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Existující odkazy:</p>
-                      {existingShares.map((s: any) => (
-                        <div key={s.id} className="flex items-center gap-2 text-sm bg-muted p-2 rounded">
-                          <span className="flex-1 truncate">
-                            {s.year} / {s.month === "all" ? "vše" : MONTHS_MAP[s.month] || s.month}
-                          </span>
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7"
-                            onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/accounting/share/${s.share_token}`);
-                              toast.success("Zkopírováno");
-                            }}
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 text-destructive"
-                            onClick={() => deleteShareMutation.mutate(s.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      ))}
+        {/* Share dialog */}
+        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Sdílet účetnictví</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vytvořte veřejný odkaz pro účetního. Odkaz zobrazí data pro vybraný rok a měsíc (read-only).
+              </p>
+              <Button onClick={() => createShareMutation.mutate()} disabled={createShareMutation.isPending}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Vytvořit odkaz pro {year} / {month === "all" ? "všechny měsíce" : months.find(m => m.value === month)?.label}
+              </Button>
+              {existingShares.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Existující odkazy:</p>
+                  {existingShares.map((s: any) => (
+                    <div key={s.id} className="flex items-center gap-2 text-sm bg-muted p-2 rounded">
+                      <span className="flex-1 truncate">
+                        {s.year} / {s.month === "all" ? "vše" : MONTHS_MAP[s.month] || s.month}
+                      </span>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/accounting/share/${s.share_token}`);
+                          toast.success("Zkopírováno");
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                        onClick={() => deleteShareMutation.mutate(s.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <p className="text-muted-foreground">Načítám data…</p>
