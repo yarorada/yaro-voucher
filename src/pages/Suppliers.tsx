@@ -627,7 +627,7 @@ const Suppliers = () => {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {supplier.email
-                        ? <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors">{supplier.email}</a>
+                        ? <a href={`mailto:${supplier.email}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">{supplier.email}</a>
                         : <span className="text-muted-foreground/40">—</span>}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
