@@ -1,63 +1,59 @@
 
 
-# Plán: Optimalizace rozložení finančních metrik v sekci Základní informace
+## Plan: Vylepšení stahování a nahrávání fotek hotelů
 
-## Současný stav
-Řádky 2871–2993: Layout je `flex-col md:flex-row` — vlevo formulářová pole (grid 3 sloupce), vpravo úzký panel 48px (`md:w-48`) s Prodejní cenou, Nákupní cenou a Ziskem oddělený bordrem. Na mobilu se panel zobrazuje pod formulářem přes celou šířku.
+### Současné problémy
+- Scraper často stahuje thumbnaily a malé verze obrázků místo plného rozlišení
+- Některé obrázky se nenačtou (CORS, hotlink ochrana, mrtvé URL)
+- Není vidět rozlišení/velikost obrázku před výběrem
+- Nelze snadno naplnit všechny sloty najednou
 
-**Problém**: Na desktopu panel zabírá pravou část, ale je příliš úzký a vytváří nerovnoměrný layout. Na iPadu a mobilu je rozložení neoptimální.
+### Co se změní
 
-## Nové rozložení
+**1. Lepší extrakce velkých obrázků v Edge funkci `scrape-hotel-images`**
+- Přidat rozpoznávání URL vzorů pro vysoké rozlišení (Booking.com `max1280x900` → `max1920x1080`, WordPress `-150x150` → originál)
+- Extrahovat `data-original`, `data-lazy-src`, `data-hi-res` atributy
+- Z `srcset` brát vždy největší variantu (podle `w` deskriptoru)
+- Přidat filtr na minimální rozměry v URL (vyhodit explicitně malé jako `_thumb`, `_small`, `100x100`)
 
-### Desktop (md+)
-Dvousloupcový grid: levý sloupec = Stav + Objednatel + Destinace (pod sebou, plná šířka), pravý sloupec = finanční panel (Prodejní cena, Nákupní cena, Zisk) v kartě/boxu s jemným pozadím.
+**2. Ověření kvality obrázků přes proxy (nový endpoint)**
+- Rozšířit `proxy-image` o mode `head-only` — vrátí pouze rozměry a velikost souboru bez stahování celého obrázku
+- Ve výběru fotek zobrazit rozměry a velikost u každé fotky
+- Barevně označit kvalitu: zelená (≥1200px), žlutá (800–1200px), červená (<800px)
 
+**3. Automatické naplnění slotů ("Auto-fill")**
+- Nové tlačítko "Automaticky vyplnit" v pickeru
+- Vybere N nejlepších obrázků (podle rozlišení/velikosti) a přiřadí je do prázdných slotů
+- Stáhne a uloží je paralelně
+
+**4. UX vylepšení pickeru**
+- Zobrazit rozlišení a velikost souboru pod každou fotkou
+- Přidat možnost označit více fotek najednou (checkbox mód) a uložit hromadně
+- Přidat řazení fotek podle kvality (největší první)
+
+### Soubory k úpravě
+- `supabase/functions/scrape-hotel-images/index.ts` — vylepšení URL extrakce
+- `supabase/functions/proxy-image/index.ts` — přidat head-only mód
+- `src/components/HotelImageUpload.tsx` — UI: auto-fill, rozměry, multi-select
+
+### Technické detaily
+
+**URL upgrade patterns (scraper):**
 ```text
-┌────────────────────────────────┬──────────────────────┐
-│ Stav         [Select ▼]       │  Prodejní   123 000  │
-│ Objednatel   [Combobox]       │  Nákupní     98 000  │
-│  ☐ Je prvním cestujícím       │  Zisk     ✓  25 000  │
-│ Destinace    [Combobox      ] │                      │
-├────────────────────────────────┴──────────────────────┤
-│ Hotel / Datum / Poznámky (plná šířka)                │
-└──────────────────────────────────────────────────────┘
+Booking.com: /max500/ → /max1920x1080/
+WordPress:   -150x150.jpg → .jpg (strip dimensions)
+Cloudinary:  /w_400/ → /w_1920,q_auto/
+General:     _thumb, _small → strip suffix
+srcset:      pick highest "w" descriptor
 ```
 
-### iPad (sm–md)
-Stejný dvousloupcový layout, finanční box se zúží ale zůstane vedle.
-
-### Mobil (<sm)
-Finanční metriky se zobrazí **nahoře** jako kompaktní řádek 3 hodnot vedle sebe (každá ve vlastním mini-boxu), pod nimi formulářová pole pod sebou.
-
-```text
-┌──────────┬──────────┬──────────┐
-│ Prodej   │ Nákup    │ Zisk     │
-│ 123 000  │  98 000  │  25 000  │
-└──────────┴──────────┴──────────┘
-  Stav         [Select ▼]
-  Objednatel   [Combobox]
-  Destinace    [Combobox]
-  ...
+**Head-only proxy response:**
+```json
+{ "width": 1920, "height": 1080, "size": 524288, "contentType": "image/jpeg" }
 ```
 
-## Technické změny
-
-### Soubor: `src/pages/DealDetail.tsx` (řádky ~2871–2993)
-
-1. **Mobilní finanční řádek** (nový blok, viditelný jen `sm:hidden`):
-   - `grid grid-cols-3 gap-2 mb-4` s třemi mini-boxy (`rounded-lg bg-muted/50 p-3 text-center`)
-   - Každý box: label nahoře (text-xs), hodnota dole (text-sm font-bold)
-
-2. **Hlavní layout** změnit z `flex-col md:flex-row` na:
-   - `grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6`
-   - Levý sloupec: Stav, Objednatel, Destinace — každý na vlastním řádku (`space-y-3`, bez vnitřního gridu pro tyto 3 pole)
-   - Pravý sloupec (`hidden sm:block`, `w-52`): finanční panel se zaoblenými rohy a jemným pozadím (`rounded-xl bg-muted/30 p-5 space-y-4`)
-
-3. **Spodní pole** (Hotel, Datum, Poznámky): zůstanou pod gridem na plné šířce (`col-span-full` nebo mimo grid)
-
-4. Odstranit starý `md:w-48 border-l` panel
-
-## Rozsah
-- 1 soubor (`DealDetail.tsx`), ~30 řádků změn
-- Žádné databázové změny
+**Auto-fill logic:**
+1. Seřadit nalezené fotky podle sizeScore (URL hints) + skutečné velikosti
+2. Vzít top N (= počet prázdných slotů)
+3. Stáhnout přes proxy → ensureMinimumQuality → upload → uložit do DB
 
