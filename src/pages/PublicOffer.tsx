@@ -534,7 +534,7 @@ export default function PublicOffer() {
             ))}
           </div>
         ) : directServices.length > 0 ? (
-          <DirectServicesCard services={directServices} hotelImages={hotelImages} totalPrice={deal.total_price} />
+          <DirectServicesCard services={directServices} hotelImages={hotelImages} totalPrice={deal.total_price} teeTimesData={data.deal.tee_times} />
         ) : (
           <div className="text-center py-12 text-slate-400">Žádné služby</div>
         )}
