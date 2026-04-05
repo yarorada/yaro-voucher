@@ -572,6 +572,7 @@ const Suppliers = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               </div>
             </Card>
           ))}
