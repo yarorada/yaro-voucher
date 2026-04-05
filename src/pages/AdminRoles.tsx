@@ -178,7 +178,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
                 ].map((opt) => {
                   const current = getDataScope();
                   return (
-                    <label key={opt.value} className={`flex-1 cursor-pointer rounded-md border px-3 py-2 transition-colors ${current === opt.value ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <label key={opt.value} className={`flex-1 cursor-pointer rounded-md border px-2 sm:px-3 py-2 transition-colors min-w-0 ${current === opt.value ? "border-primary bg-primary/5" : "border-border"}`}>
                       <input
                         type="radio"
                         className="sr-only"
