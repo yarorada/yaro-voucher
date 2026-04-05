@@ -24,7 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useHeaderActions } from "@/hooks/usePageToolbar";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const STORAGE_KEY = "yaro-dashboard-order";
