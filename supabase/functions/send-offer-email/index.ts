@@ -338,12 +338,30 @@ Deno.serve(async (req) => {
         </td></tr>`;
     }
 
+    // Enrich golf course name with length + PAR from hotel's golf_courses_data
+    function enrichGolfName(name: string, courses: any[] | null): string {
+      if (!name || !courses || courses.length === 0) return name;
+      const match = courses.find((c: any) => c.name && name.toLowerCase().includes(c.name.toLowerCase()));
+      if (!match) return name;
+      const parts: string[] = [];
+      const rawLen = match.length_m ?? match.length;
+      if (rawLen) {
+        const num = typeof rawLen === 'number' ? rawLen : parseInt(String(rawLen).replace(/\D/g, ''), 10);
+        if (num) parts.push(`${num.toLocaleString('cs-CZ')} m`);
+      }
+      if (match.par) parts.push(`PAR ${match.par}`);
+      return parts.length > 0 ? `${name} (${parts.join(', ')})` : name;
+    }
+
     // Render "Cena zahrnuje" section with consolidated hotel + green fee lines
-    function renderIncludesHtml(services: any[], startDate?: string, endDate?: string): string {
+    function renderIncludesHtml(services: any[], startDate?: string, endDate?: string, golfCoursesData?: any[] | null): string {
       const hotelSvc = services.find((s: any) => s.service_type === 'hotel');
       const golfServices = services.filter((s: any) => s.service_type === 'golf');
       const totalGreenFees = golfServices.reduce((sum: number, s: any) => sum + (s.quantity || 1), 0);
-      const golfCourseNames = golfServices.map((s: any) => s.description).filter(Boolean).join(', ');
+      const golfCourseNames = golfServices
+        .map((s: any) => enrichGolfName(s.description || s.service_name, golfCoursesData || null))
+        .filter(Boolean)
+        .join(', ');
       const otherServices = services.filter((s: any) => s.service_type !== 'hotel' && s.service_type !== 'golf');
 
       const nightsSrc = { start: startDate || hotelSvc?.start_date, end: endDate || hotelSvc?.end_date };
