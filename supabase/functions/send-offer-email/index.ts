@@ -213,14 +213,14 @@ Deno.serve(async (req) => {
       if (s.service_type === 'hotel') hotelNames.add(s.service_name);
     });
 
-    let hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
+    let hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null; golf_courses_data: any[] | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')
-        .select('name, image_url, image_url_2, image_url_3, description')
+        .select('name, image_url, image_url_2, image_url_3, description, golf_courses_data')
         .in('name', Array.from(hotelNames));
       (hotels || []).forEach((h: any) => {
-        hotelData[h.name] = { image_url: h.image_url, image_url_2: h.image_url_2, image_url_3: h.image_url_3, description: h.description };
+        hotelData[h.name] = { image_url: h.image_url, image_url_2: h.image_url_2, image_url_3: h.image_url_3, description: h.description, golf_courses_data: h.golf_courses_data || null };
       });
     }
 
