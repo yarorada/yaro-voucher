@@ -245,33 +245,30 @@ function computePerPersonPrices(services: Array<{
   const nonHotels = services.filter(s => s.service_type !== "hotel");
   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
-  const calcNonHotelPerPerson = (s: typeof services[0], fallbackPersons?: number) => {
+  // Sum only non-hotel services that are priced per_person (their price is already per person)
+  const nonHotelPerPersonTotal = nonHotels.reduce((sum, s) => {
     const priceMode = s.details?.price_mode || "per_service";
-    const price = s.price || 0;
-    const persons = s.person_count || fallbackPersons || 1;
-    const qty = s.quantity || 1;
-    return priceMode === "per_person" ? price : (price * qty) / persons;
-  };
+    if (priceMode === "per_person") {
+      return sum + (s.price || 0);
+    }
+    return sum;
+  }, 0);
 
-  // Fallback: no hotel services — aggregate all services per person count group
+  // Fallback: no hotel services
   if (hotels.length === 0) {
-    if (nonHotels.length === 0) return [];
-    const groups: Record<number, number> = {};
-    nonHotels.forEach(s => {
-      const persons = s.person_count || 1;
-      groups[persons] = (groups[persons] || 0) + calcNonHotelPerPerson(s);
-    });
-    return Object.entries(groups)
-      .map(([persons, total]) => ({
-        label: `Celkem na osobu`,
-        personCount: Number(persons),
-        pricePerPerson: Math.round(total),
-        currency,
-      }))
-      .filter(l => l.pricePerPerson > 0);
+    if (nonHotelPerPersonTotal <= 0) return [];
+    return [{
+      label: "Celkem na osobu",
+      personCount: 1,
+      pricePerPerson: Math.round(nonHotelPerPersonTotal),
+      currency,
+    }];
   }
 
   const lines: PerPersonLine[] = [];
+
+  const roomLabel = (persons: number) =>
+    persons === 1 ? "Jednolůžkový pokoj" : persons === 2 ? "Dvoulůžkový pokoj" : `Pokoj pro ${persons} osoby`;
 
   hotels.forEach(h => {
     const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
@@ -279,43 +276,36 @@ function computePerPersonPrices(services: Array<{
         ? h.details.room_types
         : null;
 
-    const roomLabel = (persons: number) =>
-      persons === 1 ? "Jednolůžkový pokoj" : persons === 2 ? "Dvoulůžkový pokoj" : `Pokoj pro ${persons} osoby`;
-
     if (roomTypes) {
-      // Generate one line per room type
       roomTypes.forEach(rt => {
         if (!rt.price || rt.price <= 0) return;
         const personsInRoom = rt.persons_per_room || 1;
-        let sharedCost = 0;
-        nonHotels.forEach(s => { sharedCost += calcNonHotelPerPerson(s, personsInRoom); });
-        const pricePerPerson = Math.round(rt.price / personsInRoom + sharedCost);
+        const pricePerPerson = Math.round(rt.price / personsInRoom + nonHotelPerPersonTotal);
         if (pricePerPerson > 0) {
-          lines.push({
-            label: roomLabel(personsInRoom),
-            personCount: personsInRoom,
-            pricePerPerson,
-            currency,
-          });
+          lines.push({ label: roomLabel(personsInRoom), personCount: personsInRoom, pricePerPerson, currency });
         }
       });
     } else {
-      // No room types — use service price directly
       const priceMode = h.details?.price_mode || "per_service";
-      const price = h.price || 0;
-      const persons = h.person_count || 1;
-      const qty = h.quantity || 1;
-      const hotelPerPerson = priceMode === "per_person" ? price : (price * qty) / persons;
-      let sharedCost = 0;
-      nonHotels.forEach(s => { sharedCost += calcNonHotelPerPerson(s, persons); });
-      const pricePerPerson = Math.round(hotelPerPerson + sharedCost);
-      if (pricePerPerson > 0) {
-        lines.push({
-          label: roomLabel(persons),
-          personCount: persons,
-          pricePerPerson,
-          currency,
-        });
+      const hotelPrice = h.price || 0;
+
+      if (priceMode === "per_person") {
+        // Price is already per person — single and double are the same
+        const pp = Math.round(hotelPrice + nonHotelPerPersonTotal);
+        if (pp > 0) {
+          lines.push({ label: roomLabel(1), personCount: 1, pricePerPerson: pp, currency });
+          lines.push({ label: roomLabel(2), personCount: 2, pricePerPerson: pp, currency });
+        }
+      } else {
+        // Price is per room — single = full price, double = half
+        const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
+        const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
+        if (singlePP > 0) {
+          lines.push({ label: roomLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
+        }
+        if (doublePP > 0) {
+          lines.push({ label: roomLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
+        }
       }
     }
   });
