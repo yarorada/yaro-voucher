@@ -121,12 +121,12 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
           <TableBody>
             {tableData.map((row) => (
               <TableRow key={row.label}>
-                <TableCell className="font-medium">{row.label}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.costs)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(row.profit)}</TableCell>
-                <TableCell className="text-right">{row.margin.toFixed(0)}%</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="font-medium whitespace-nowrap px-1.5 sm:px-2">{row.label}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.revenue)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2 hidden sm:table-cell">{formatCurrency(row.costs)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{formatCurrency(row.profit)}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1.5 sm:px-2">{row.margin.toFixed(0)}%</TableCell>
+                <TableCell className="text-right px-1.5 sm:px-2">
                   {row.change === null ? (
                     <span className="text-muted-foreground">—</span>
                   ) : (
@@ -146,6 +146,7 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

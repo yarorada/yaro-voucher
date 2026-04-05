@@ -216,45 +216,47 @@ export function StatsClientTable({ excludeFlights, flightCosts }: StatsClientTab
   const clientTableBody = (
     stats: typeof sortedLeadStats
   ) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[40px] text-center">#</TableHead>
-          <TableHead>Klient</TableHead>
-          <TableHead className="text-center">Cest</TableHead>
-          <TableHead className="text-right">Obrat</TableHead>
-          <TableHead className="text-right">Zisk</TableHead>
-          <TableHead className="text-right">Marže</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {stats.map((stat, index) => {
-          const margin = stat.totalRevenue > 0
-            ? (stat.profit / stat.totalRevenue) * 100
-            : 0;
-          return (
-            <TableRow key={stat.clientId}>
-              <TableCell className="text-center text-muted-foreground font-medium text-sm">{index + 1}.</TableCell>
-              <TableCell className="text-body font-medium break-words">{stat.clientName}</TableCell>
-              <TableCell className="text-center text-body">{stat.dealCount}</TableCell>
-              <TableCell className="text-right text-body">
-                {Math.round(stat.totalRevenue).toLocaleString("cs-CZ")} Kč
-              </TableCell>
-              <TableCell className="text-right text-body">
-                <span className={stat.profit > 0 ? "text-green-600 dark:text-green-400" : stat.profit < 0 ? "text-destructive" : ""}>
-                  {Math.round(stat.profit).toLocaleString("cs-CZ")} Kč
-                </span>
-              </TableCell>
-              <TableCell className="text-right text-body">
-                <span className={margin > 0 ? "text-green-600 dark:text-green-400" : margin < 0 ? "text-destructive" : ""}>
-                  {margin.toFixed(0)} %
-                </span>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <Table className="text-xs sm:text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-8 text-center px-1 sm:px-2">#</TableHead>
+            <TableHead className="px-1 sm:px-2">Klient</TableHead>
+            <TableHead className="text-center px-1 sm:px-2 hidden sm:table-cell">Cest</TableHead>
+            <TableHead className="text-right px-1 sm:px-2">Obrat</TableHead>
+            <TableHead className="text-right px-1 sm:px-2">Zisk</TableHead>
+            <TableHead className="text-right px-1 sm:px-2">Marže</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stats.map((stat, index) => {
+            const margin = stat.totalRevenue > 0
+              ? (stat.profit / stat.totalRevenue) * 100
+              : 0;
+            return (
+              <TableRow key={stat.clientId}>
+                <TableCell className="text-center text-muted-foreground font-medium px-1 sm:px-2">{index + 1}.</TableCell>
+                <TableCell className="font-medium px-1 sm:px-2 max-w-[100px] sm:max-w-none truncate">{stat.clientName}</TableCell>
+                <TableCell className="text-center px-1 sm:px-2 hidden sm:table-cell">{stat.dealCount}</TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1 sm:px-2">
+                  {Math.round(stat.totalRevenue).toLocaleString("cs-CZ")}
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1 sm:px-2">
+                  <span className={stat.profit > 0 ? "text-green-600 dark:text-green-400" : stat.profit < 0 ? "text-destructive" : ""}>
+                    {Math.round(stat.profit).toLocaleString("cs-CZ")}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap px-1 sm:px-2">
+                  <span className={margin > 0 ? "text-green-600 dark:text-green-400" : margin < 0 ? "text-destructive" : ""}>
+                    {margin.toFixed(0)}%
+                  </span>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   if (loading) {
