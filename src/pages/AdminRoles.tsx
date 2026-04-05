@@ -265,7 +265,7 @@ export default function AdminRoles() {
         <h1 className="text-xl md:text-2xl font-bold">Správa rolí a oprávnění</h1>
       </div>
 
-      <Card className="mb-4">
+      <Card className="mb-4 overflow-hidden">
         <CardHeader className="pb-2 px-3 md:px-6">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Výchozí přístupy dle role
