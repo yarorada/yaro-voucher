@@ -144,7 +144,6 @@ const LayoutHeader = () => {
           <SaveIndicator />
         </div>
       </div>
-      </div>
     </header>
   );
 };
