@@ -1025,7 +1025,7 @@ const Clients = () => {
                 </thead>
                 <tbody>
                   {filteredClients.map((client) => (
-                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => handleEdit(client)}>
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleEdit(client)} className="hover:text-primary transition-colors cursor-pointer">{client.first_name} {client.last_name}</button>
