@@ -9,7 +9,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingTaskButton } from "@/components/FloatingTaskButton";
-import { PageToolbarProvider, usePageToolbarContent } from "@/hooks/usePageToolbar";
+import { PageToolbarProvider, usePageToolbarContent, useHeaderActionsContent } from "@/hooks/usePageToolbar";
 import { GlobalHistoryProvider, useGlobalHistory } from "@/hooks/useGlobalHistory";
 import { Menu, Undo2, Redo2, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -125,6 +125,7 @@ const UndoRedoButtons = () => {
 
 const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
+  const headerActions = useHeaderActionsContent();
   return (
     <header className="border-b bg-background print:hidden">
       <div className="px-4 py-2">
@@ -140,6 +141,7 @@ const LayoutHeader = () => {
               </div>
             )}
           </div>
+          {headerActions}
           <NotificationBell />
           <UndoRedoButtons />
           <SaveIndicator />

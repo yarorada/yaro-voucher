@@ -24,7 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePageToolbar } from "@/hooks/usePageToolbar";
+import { useHeaderActions } from "@/hooks/usePageToolbar";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 const STORAGE_KEY = "yaro-dashboard-order";
@@ -283,7 +283,7 @@ const Index = () => {
 
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
 
-  usePageToolbar(
+  useHeaderActions(
     <Button
       variant={editing ? "default" : "outline"}
       size="sm"
@@ -291,7 +291,7 @@ const Index = () => {
       onClick={() => setEditing((e) => !e)}
     >
       {editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-      {editing ? "Hotovo" : "Upravit plochu"}
+      <span className="hidden sm:inline">{editing ? "Hotovo" : "Upravit plochu"}</span>
     </Button>,
     [editing]
   );
