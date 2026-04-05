@@ -268,9 +268,6 @@ function computePerPersonPrices(services: Array<{
 
   const lines: PerPersonLine[] = [];
 
-  // When multiple hotel services exist, each represents a room config — derive persons_per_room
-  const multipleHotels = hotels.length > 1;
-
   hotels.forEach(h => {
     const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
       Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
@@ -297,57 +294,27 @@ function computePerPersonPrices(services: Array<{
     const priceMode = h.details?.price_mode || "per_service";
     const hotelPrice = h.price || 0;
 
-    if (multipleHotels) {
-      // Multiple hotel services = each one is a distinct room configuration
-      const qty = h.quantity || 1;
-      const pc = h.person_count || qty;
-      const personsPerRoom = Math.max(1, Math.round(pc / qty));
-
-      let hotelPP: number;
-      if (priceMode === "per_person") {
-        hotelPP = hotelPrice;
-      } else {
-        hotelPP = hotelPrice / personsPerRoom;
-      }
-
-      const pp = Math.round(hotelPP + nonHotelPerPersonTotal);
-      if (pp > 0) {
-        lines.push({ label: getPerPersonPriceLabel(personsPerRoom), personCount: personsPerRoom, pricePerPerson: pp, currency });
-      }
-      return;
-    }
-
-    // Single hotel service — generate both single and double lines
     if (priceMode === "per_person") {
       const pp = Math.round(hotelPrice + nonHotelPerPersonTotal);
       if (pp > 0) {
         lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: pp, currency });
         lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: pp, currency });
       }
-    } else {
-      const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
-      const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
-      if (singlePP > 0) {
-        lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
-      }
-      if (doublePP > 0) {
-        lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
-      }
+      return;
+    }
+
+    const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
+    const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
+
+    if (singlePP > 0) {
+      lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
+    }
+    if (doublePP > 0) {
+      lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
     }
   });
 
-  // Deduplicate by personCount — keep the first occurrence
-  const seen = new Set<number>();
-  const deduped = lines.filter(l => {
-    if (seen.has(l.personCount)) return false;
-    seen.add(l.personCount);
-    return true;
-  });
-
-  // Sort: single first, then double
-  deduped.sort((a, b) => a.personCount - b.personCount);
-
-  return deduped;
+  return lines;
 }
 
 function PerPersonPriceRecap({ lines }: { lines: PerPersonLine[] }) {
@@ -607,26 +574,9 @@ export default function PublicOffer() {
   );
 }
 
-function enrichGolfCourseName(name: string, courses: any[] | null | undefined): string {
-  if (!name || !courses || courses.length === 0) return name;
-  const match = courses.find((c: any) => c.name && name.toLowerCase().includes(c.name.toLowerCase()));
-  if (!match) return name;
-  const parts: string[] = [];
-  const lengthNum = parseLength(match.length_m ?? match.length);
-  if (lengthNum) parts.push(`${lengthNum.toLocaleString("cs-CZ")} m`);
-  if (match.par) parts.push(`PAR ${match.par}`);
-  return parts.length > 0 ? `${name} (${parts.join(", ")})` : name;
-}
-
-function parseLength(val: any): number | null {
-  if (val == null) return null;
-  if (typeof val === "number") return val;
-  const m = String(val).replace(/\s/g, "").match(/(\d+)/);
-  return m ? parseInt(m[1], 10) : null;
-}
-
 function GolfCoursesTable({ courses }: { courses: any[] }) {
   if (!courses || courses.length === 0) return null;
+  // Show up to 5 courses, sorted by distance
   const sorted = [...courses]
     .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
     .slice(0, 5);
@@ -642,7 +592,6 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="text-left font-medium py-1.5 px-1">Hřiště</th>
-              <th className="text-right font-medium py-1.5 px-1">PAR</th>
               <th className="text-right font-medium py-1.5 px-1 whitespace-nowrap">Délka (m)</th>
               <th className="text-right font-medium py-1.5 px-1">Rating</th>
               <th className="text-left font-medium py-1.5 px-1">Architekt</th>
@@ -650,24 +599,20 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((c, i) => {
-              const lengthNum = parseLength(c.length_m ?? c.length);
-              return (
-                <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
-                  <td className="py-1.5 px-1 text-slate-700 font-medium">
-                    {c.name}
-                    {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
-                  </td>
-                  <td className="py-1.5 px-1 text-right text-slate-600">{c.par || "–"}</td>
-                  <td className="py-1.5 px-1 text-right text-slate-600">{lengthNum ? lengthNum.toLocaleString("cs-CZ") : "–"}</td>
-                  <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
-                  <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
-                  <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
-                    {c.is_hotel_course ? "resort" : c.distance_km ? `${c.distance_km} km` : "–"}
-                  </td>
-                </tr>
-              );
-            })}
+            {sorted.map((c, i) => (
+              <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
+                <td className="py-1.5 px-1 text-slate-700 font-medium">
+                  {c.name}
+                  {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
+                </td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{(c.length || c.length_m) ? `${Number(c.length || c.length_m).toLocaleString("cs-CZ")}` : "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
+                <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
+                  {c.is_hotel_course ? "resort" : c.distance_km ? `${c.distance_km} km` : "–"}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -779,7 +724,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
           const golfServices = services.filter(s => s.service_type === "golf");
           const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
           const golfCourseNames = golfServices
-            .map(s => enrichGolfCourseName(s.description || s.service_name, hotelImgData?.golf_courses_data))
+            .map(s => s.description)
             .filter(Boolean)
             .join(", ");
           const nightsFrom = variant.start_date && variant.end_date
