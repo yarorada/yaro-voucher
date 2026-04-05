@@ -235,6 +235,12 @@ export default function Hotels() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button size="icon" className="h-8 w-8 sm:hidden shrink-0" onClick={() => { setNewHotelName(""); setCreateDialogOpen(true); }}>
+        <Plus className="h-4 w-4" />
+      </Button>
+      <Button className="hidden sm:inline-flex h-8 text-xs shrink-0 gap-1" onClick={() => { setNewHotelName(""); setCreateDialogOpen(true); }}>
+        <Plus className="h-3.5 w-3.5" /> Přidat hotel
+      </Button>
     </div>,
     [search, filtered.length, countryLabel, countries, hotelsWithoutDestination]
   );
