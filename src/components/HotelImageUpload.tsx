@@ -530,7 +530,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   // Auto-fill: pick best images and fill empty slots
   const handleAutoFill = async () => {
     if (!foundImages) return;
-    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    const allUrls = [...foundImages.website, ...foundImages.booking, ...foundImages.tripadvisor, ...foundImages.general, ...foundImages.golf, ...foundImages.search];
     if (allUrls.length === 0) return;
 
     const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
