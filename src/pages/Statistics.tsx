@@ -314,12 +314,10 @@ const Statistics = () => {
     };
   }, [statsData, deals, profitability, selectedYear, statusFilter, excludeFlights, flightCosts]);
 
-  const toolbarSelectClass = "w-[130px] h-8 text-xs";
-
   usePageToolbar(
-    <>
+    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
       <Select value={selectedYear} onValueChange={setSelectedYear}>
-        <SelectTrigger className={toolbarSelectClass}>
+        <SelectTrigger className="w-[90px] sm:w-[130px] h-8 text-xs">
           <SelectValue placeholder="Rok" />
         </SelectTrigger>
         <SelectContent>
@@ -333,7 +331,7 @@ const Statistics = () => {
       </Select>
 
       <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
-        <SelectTrigger className={toolbarSelectClass}>
+        <SelectTrigger className="w-[85px] sm:w-[130px] h-8 text-xs">
           <SelectValue placeholder="Období" />
         </SelectTrigger>
         <SelectContent>
@@ -344,17 +342,17 @@ const Statistics = () => {
       </Select>
 
       <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-        <SelectTrigger className="w-[150px] h-8 text-xs">
+        <SelectTrigger className="w-[85px] sm:w-[150px] h-8 text-xs">
           <SelectValue placeholder="Stav" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Všechny (bez zruš.)</SelectItem>
+          <SelectItem value="all">Bez zruš.</SelectItem>
           <SelectItem value="confirmed">Potvrzené</SelectItem>
           <SelectItem value="completed">Dokončené</SelectItem>
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-2 border rounded-md px-3 py-1 h-8 bg-primary/10 border-primary/20">
+      <div className="flex items-center gap-1.5 border rounded-md px-2 sm:px-3 py-1 h-8 bg-primary/10 border-primary/20">
         <Switch
           id="exclude-flights"
           checked={excludeFlights}
@@ -362,10 +360,11 @@ const Statistics = () => {
           className="scale-75"
         />
         <Label htmlFor="exclude-flights" className="text-xs cursor-pointer whitespace-nowrap text-primary">
-          Bez letenek
+          <span className="hidden sm:inline">Bez letenek</span>
+          <span className="sm:hidden">✈️</span>
         </Label>
       </div>
-    </>,
+    </div>,
     [selectedYear, periodType, statusFilter, excludeFlights, availableYears]
   );
 
