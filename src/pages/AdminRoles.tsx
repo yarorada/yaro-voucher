@@ -140,7 +140,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
                 const isDefault = !(section.key in overrides);
                 const defaultVal = defaults.includes(section.key as SectionKey);
                 return (
-                  <div key={section.key} className="flex items-center justify-between rounded-md border border-border/50 bg-background px-3 py-2">
+                  <div key={section.key} className="flex items-center justify-between rounded-md border border-border/50 bg-background px-2 sm:px-3 py-2 gap-2 min-w-0">
                     <div className="min-w-0">
                       <p className="text-sm truncate">{section.label}</p>
                       {!isDefault && (
