@@ -878,7 +878,12 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider pt-2">Cena zahrnuje</h4>
         {(() => {
           const hotelSvc = services.find(s => s.service_type === "hotel");
-          const totalGreenFees = services.filter(s => s.service_type === "golf").reduce((sum, s) => sum + (s.quantity || 1), 0);
+          const golfServices = services.filter(s => s.service_type === "golf");
+          const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
+          const golfCourseNames = golfServices
+            .map(s => s.description)
+            .filter(Boolean)
+            .join(", ");
           const nightsFrom = hotelSvc?.start_date && hotelSvc?.end_date
             ? Math.round((new Date(hotelSvc.end_date).getTime() - new Date(hotelSvc.start_date).getTime()) / 86400000)
             : null;
@@ -899,7 +904,10 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
               {totalGreenFees > 0 && (
                 <div className="flex items-start gap-3 text-sm">
                   <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                  <span className="font-medium text-slate-700">{totalGreenFees}× green fee</span>
+                  <span className="font-medium text-slate-700">
+                    {totalGreenFees}× green fee
+                    {golfCourseNames && <span className="font-normal text-slate-500"> ({golfCourseNames})</span>}
+                  </span>
                 </div>
               )}
               {otherServices.map((service) => {
