@@ -875,10 +875,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   );
 }
 
-function DirectServicesCard({ services, hotelImages, totalPrice }: {
+function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }: {
   services: OfferData["directServices"];
   hotelImages: OfferData["hotelImages"];
   totalPrice: number | null;
+  teeTimesData?: any[] | null;
 }) {
   const hotelService = services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
