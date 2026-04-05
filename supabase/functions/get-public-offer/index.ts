@@ -210,6 +210,7 @@ Deno.serve(async (req) => {
         total_price: deal.total_price,
         destination: deal.destination,
         lead_client_name: leadClientName,
+        tee_times: deal.tee_times,
       },
       variants: displayVariants.map((v: any) => ({
         ...v,
