@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, FileText, Edit, Copy, Search, Trash2, Mail, MoreHorizontal, Eye, X } from "lucide-react";
+import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +74,7 @@ const VouchersList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [dateFilter, setDateFilter] = useState<DateRangeFilterValue>(defaultDateRangeFilter);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -85,7 +87,7 @@ const VouchersList = () => {
 
   useEffect(() => {
     filterVouchers();
-  }, [searchQuery, statusFilter, sortBy, vouchers]);
+  }, [searchQuery, statusFilter, sortBy, dateFilter, vouchers]);
 
   const fetchVouchers = async () => {
     try {
@@ -151,21 +153,28 @@ const VouchersList = () => {
       filtered = filtered.filter(v => !v.sent_at);
     }
 
-    if (!searchQuery.trim()) {
-      setFilteredVouchers(filtered);
-      return;
+    // Filter by date range
+    if (dateFilter.preset !== "all" && dateFilter.from) {
+      filtered = filtered.filter(v => {
+        const d = v.issue_date;
+        if (!d) return false;
+        if (dateFilter.from && d < dateFilter.from) return false;
+        if (dateFilter.to && d > dateFilter.to) return false;
+        return true;
+      });
     }
 
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter((voucher) => {
-      const clientName = voucher.clients
-        ? `${voucher.clients.first_name} ${voucher.clients.last_name}`.toLowerCase()
-        : voucher.client_name.toLowerCase();
-      const hotelName = (voucher.hotel_name || "").toLowerCase();
-      const voucherCode = voucher.voucher_code.toLowerCase();
-
-      return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
-    });
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((voucher) => {
+        const clientName = voucher.clients
+          ? `${voucher.clients.first_name} ${voucher.clients.last_name}`.toLowerCase()
+          : voucher.client_name.toLowerCase();
+        const hotelName = (voucher.hotel_name || "").toLowerCase();
+        const voucherCode = voucher.voucher_code.toLowerCase();
+        return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
+      });
+    }
 
     // Sort
     if (sortBy === "newest") {
@@ -383,6 +392,7 @@ const VouchersList = () => {
           </button>
         )}
       </div>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} showArrival={false} />
       <Select value={sortBy} onValueChange={setSortBy}>
         <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
           <SelectValue placeholder="Řazení" />
@@ -402,7 +412,7 @@ const VouchersList = () => {
         Přidat voucher
       </Button>
     </div>,
-    [searchQuery, sortBy]
+    [searchQuery, sortBy, dateFilter]
   );
 
   return (
