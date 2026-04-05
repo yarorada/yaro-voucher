@@ -106,15 +106,16 @@ export const StatsPeriodTable = ({ data, periodType }: StatsPeriodTableProps) =>
         <CardTitle className="text-base">Porovnání období</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <Table className="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>Období</TableHead>
-              <TableHead className="text-right">Obrat</TableHead>
-              <TableHead className="text-right">Náklady</TableHead>
-              <TableHead className="text-right">Zisk</TableHead>
-              <TableHead className="text-right">Marže</TableHead>
-              <TableHead className="text-right">Změna</TableHead>
+              <TableHead className="px-1.5 sm:px-2">Období</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Obrat</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2 hidden sm:table-cell">Náklady</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Zisk</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Marže</TableHead>
+              <TableHead className="text-right px-1.5 sm:px-2">Změna</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
