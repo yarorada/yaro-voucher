@@ -87,7 +87,7 @@ const VouchersList = () => {
 
   useEffect(() => {
     filterVouchers();
-  }, [searchQuery, statusFilter, sortBy, vouchers]);
+  }, [searchQuery, statusFilter, sortBy, dateFilter, vouchers]);
 
   const fetchVouchers = async () => {
     try {
