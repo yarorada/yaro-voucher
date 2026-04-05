@@ -167,6 +167,17 @@ const VouchersList = () => {
       return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
     });
 
+    // Sort
+    if (sortBy === "newest") {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === "oldest") {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    } else if (sortBy === "number_desc") {
+      filtered.sort((a, b) => b.voucher_number - a.voucher_number);
+    } else if (sortBy === "number_asc") {
+      filtered.sort((a, b) => a.voucher_number - b.voucher_number);
+    }
+
     setFilteredVouchers(filtered);
   };
 
