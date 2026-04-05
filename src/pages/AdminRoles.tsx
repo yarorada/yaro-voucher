@@ -259,7 +259,7 @@ export default function AdminRoles() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto overflow-hidden">
+    <div className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto overflow-hidden min-w-0 w-full">
       <div className="flex items-center gap-3 mb-6">
         <ShieldCheck className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
         <h1 className="text-xl md:text-2xl font-bold">Správa rolí a oprávnění</h1>
