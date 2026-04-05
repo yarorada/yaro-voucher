@@ -285,6 +285,9 @@ function computePerPersonPrices(services: Array<{
 
   const lines: PerPersonLine[] = [];
 
+  // Aggregate hotel prices by personCount
+  const hotelPriceMap = new Map<number, number>(); // personCount -> total hotel price per person
+
   hotels.forEach(h => {
     const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
       Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
@@ -295,15 +298,8 @@ function computePerPersonPrices(services: Array<{
       roomTypes.forEach(rt => {
         if (!rt.price || rt.price <= 0) return;
         const personsInRoom = rt.persons_per_room || 1;
-        const pricePerPerson = Math.round(rt.price / personsInRoom + nonHotelPerPersonTotal);
-        if (pricePerPerson > 0) {
-          lines.push({
-            label: getPerPersonPriceLabel(personsInRoom),
-            personCount: personsInRoom,
-            pricePerPerson,
-            currency,
-          });
-        }
+        const pricePerPerson = rt.price / personsInRoom;
+        hotelPriceMap.set(personsInRoom, (hotelPriceMap.get(personsInRoom) || 0) + pricePerPerson);
       });
       return;
     }
@@ -312,24 +308,30 @@ function computePerPersonPrices(services: Array<{
     const hotelPrice = h.price || 0;
 
     if (priceMode === "per_person") {
-      const pp = Math.round(hotelPrice + nonHotelPerPersonTotal);
-      if (pp > 0) {
-        lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: pp, currency });
-        lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: pp, currency });
-      }
-      return;
-    }
-
-    const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
-    const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
-
-    if (singlePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
-    }
-    if (doublePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
+      hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
+      hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice);
+    } else {
+      // per_service (per room)
+      hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
+      hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice / 2);
     }
   });
+
+  // Build deduplicated lines
+  for (const [personCount, hotelPP] of hotelPriceMap.entries()) {
+    const total = Math.round(hotelPP + nonHotelPerPersonTotal);
+    if (total > 0) {
+      lines.push({
+        label: getPerPersonPriceLabel(personCount),
+        personCount,
+        pricePerPerson: total,
+        currency,
+      });
+    }
+  }
+
+  // Sort: single first, then double
+  lines.sort((a, b) => a.personCount - b.personCount);
 
   return lines;
 }
