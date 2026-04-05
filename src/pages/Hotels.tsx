@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Hotel, Globe, Image as ImageIcon, MapPin, ChevronDown, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
