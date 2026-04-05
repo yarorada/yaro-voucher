@@ -233,9 +233,25 @@ interface PerPersonLine {
 }
 
 function getPerPersonPriceLabel(persons: number) {
-  if (persons === 1) return "Cena za osobu v jednolůžkovém pokoji";
-  if (persons === 2) return "Cena za osobu ve dvoulůžkovém pokoji";
-  return `Cena za osobu v pokoji pro ${persons} osoby`;
+  if (persons === 1) return "Jednolůžkový pokoj (os.)";
+  if (persons === 2) return "Dvoulůžkový pokoj (os.)";
+  return `Pokoj pro ${persons} osoby (os.)`;
+}
+
+function parseLength(val: any): number | null {
+  if (val == null) return null;
+  const num = Number(String(val).replace(/[\s\u00a0]/g, ''));
+  return isNaN(num) ? null : num;
+}
+
+function getHoleCount(course: any): number | null {
+  if (course.holes) return Number(course.holes);
+  if (course.par) {
+    const par = Number(course.par);
+    if (par >= 60) return 18;
+    if (par >= 30) return 9;
+  }
+  return null;
 }
 
 function computePerPersonPrices(services: Array<{
