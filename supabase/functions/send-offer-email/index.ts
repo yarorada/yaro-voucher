@@ -498,7 +498,7 @@ Deno.serve(async (req) => {
             ${variantDates}
             ${descHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-              ${renderIncludesHtml(vServices, v.start_date, v.end_date)}
+              ${renderIncludesHtml(vServices, v.start_date, v.end_date, images?.golf_courses_data)}
             </table>
             ${notesHtml}
             ${renderPerPersonHtml(vServices)}
