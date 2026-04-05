@@ -972,7 +972,7 @@ const Clients = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-medium text-sm">{client.first_name} {client.last_name}</p>
+                      <button onClick={() => handleEdit(client)} className="font-medium text-sm text-left hover:text-primary transition-colors cursor-pointer">{client.first_name} {client.last_name}</button>
                       {client.passport_number && (() => {
                         const status = getExpiryStatus(client.passport_expiry);
                         return (
