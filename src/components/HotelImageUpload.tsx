@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2, Globe } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ImagePlus, X, Loader2, Search, Check, Link, FileText, Code, Eye, Bold, Italic, Underline, List, ListOrdered, Heading2, Globe, Wand2, CheckSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage, ensureMinimumQuality, isImageFile } from "@/lib/imageCompression";
@@ -14,21 +15,37 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Quality badge color based on image width
+function qualityColor(w: number | null): string {
+  if (w === null) return "bg-muted text-muted-foreground";
+  if (w >= 1200) return "bg-green-500/20 text-green-700 dark:text-green-400";
+  if (w >= 800) return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400";
+  return "bg-red-500/20 text-red-700 dark:text-red-400";
+}
+
+function formatSize(bytes: number | null): string {
+  if (bytes === null) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+type ImageMeta = { width: number | null; height: number | null; size: number | null };
+
 // Component to display images through proxy (avoids CORS/hotlink blocking)
-const ProxiedImageButton = ({ url, alt, disabled, saving, onClick }: {
+const ProxiedImageButton = ({ url, alt, disabled, saving, onClick, meta, selected, onSelect, multiMode }: {
   url: string; alt: string; disabled: boolean; saving: boolean; onClick: () => void;
+  meta?: ImageMeta; selected?: boolean; onSelect?: () => void; multiMode?: boolean;
 }) => {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    // Try direct load first, fall back to proxy
     const img = new Image();
     img.onload = () => { if (!cancelled) setSrc(url); };
     img.onerror = () => {
       if (cancelled) return;
-      // Load via proxy
       supabase.functions.invoke("proxy-image", { body: { url } }).then(({ data, error }) => {
         if (cancelled) return;
         if (!error && data?.base64) {
@@ -45,25 +62,41 @@ const ProxiedImageButton = ({ url, alt, disabled, saving, onClick }: {
   if (failed) return null;
 
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      onClick={onClick}
-    >
-      {saving && (
-        <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-white" />
+    <div className="relative">
+      {multiMode && (
+        <div className="absolute top-1 left-1 z-20" onClick={(e) => { e.stopPropagation(); onSelect?.(); }}>
+          <Checkbox checked={selected} className="h-5 w-5 bg-background/80 backdrop-blur-sm" />
         </div>
       )}
-      {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-muted">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      )}
-    </button>
+      <button
+        type="button"
+        disabled={disabled && !multiMode}
+        className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full ${
+          selected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-primary"
+        }`}
+        onClick={multiMode ? onSelect : onClick}
+      >
+        {saving && (
+          <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-white" />
+          </div>
+        )}
+        {src ? (
+          <img src={src} alt={alt} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {/* Quality badge */}
+        {meta && (meta.width !== null || meta.size !== null) && (
+          <div className={`absolute bottom-0 inset-x-0 px-1.5 py-0.5 text-[10px] font-medium flex justify-between ${qualityColor(meta.width)} backdrop-blur-sm`}>
+            <span>{meta.width && meta.height ? `${meta.width}×${meta.height}` : ""}</span>
+            <span>{formatSize(meta.size)}</span>
+          </div>
+        )}
+      </button>
+    </div>
   );
 };
 
@@ -122,12 +155,16 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   const [savingWebsite, setSavingWebsite] = useState(false);
   const [htmlMode, setHtmlMode] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  // New state for quality/multi-select
+  const [imageMeta, setImageMeta] = useState<Record<string, ImageMeta>>({});
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
+  const [autoFilling, setAutoFilling] = useState(false);
 
   // Auto-trigger scrape + description when component mounts with autoScrape prop
   useEffect(() => {
     if (autoScrapeProp && hotelName && !autoScrapeDone.current) {
       autoScrapeDone.current = true;
-      // Run both in parallel
       handleScrape();
       handleGenerateDescription();
     }
@@ -145,6 +182,38 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     image_url_9: imageUrl9 || null,
     image_url_10: imageUrl10 || null,
   };
+
+  // Probe image metadata when found images change
+  useEffect(() => {
+    if (!foundImages) return;
+    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    // Probe in batches of 5
+    let cancelled = false;
+    const probe = async () => {
+      for (let i = 0; i < allUrls.length; i += 5) {
+        if (cancelled) break;
+        const batch = allUrls.slice(i, i + 5);
+        const results = await Promise.allSettled(
+          batch.map(url =>
+            supabase.functions.invoke("proxy-image", { body: { url, mode: "head-only" } })
+              .then(({ data }) => ({ url, meta: data as ImageMeta }))
+          )
+        );
+        if (cancelled) break;
+        setImageMeta(prev => {
+          const next = { ...prev };
+          for (const r of results) {
+            if (r.status === "fulfilled" && r.value.meta) {
+              next[r.value.url] = r.value.meta;
+            }
+          }
+          return next;
+        });
+      }
+    };
+    probe();
+    return () => { cancelled = true; };
+  }, [foundImages]);
 
   const handleUpload = async (field: string, file: File) => {
     if (!isImageFile(file)) {
@@ -205,7 +274,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     
     setSavingUrlInput(field);
     try {
-      // Download via proxy to avoid CORS
       const { data: proxyData, error: proxyError } = await supabase.functions.invoke("proxy-image", {
         body: { url: url.trim() },
       });
@@ -223,7 +291,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
       const file = new File([blob], "downloaded.jpg", { type: blob.type });
 
-      // Upscale small web images, then compress if too large
       const upscaled = await ensureMinimumQuality(file, 1024, 1024, 300 * 1024);
       let finalBlob = upscaled.blob;
       if (upscaled.width > 1920 || upscaled.height > 1920) {
@@ -297,16 +364,11 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       if (error) throw error;
 
       if (data?.success && data.description) {
-        // Strip citation numbers like [1], [2][3]
         let cleanDesc = data.description.replace(/\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim();
-        // Convert markdown bold **text** and __text__ to <strong>
         cleanDesc = cleanDesc.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
         cleanDesc = cleanDesc.replace(/__(.+?)__/g, "<strong>$1</strong>");
-        // Convert markdown italic *text* and _text_ to <em>
         cleanDesc = cleanDesc.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
-        // Convert markdown headings ## to bold paragraphs
         cleanDesc = cleanDesc.replace(/^#{1,6}\s+(.+)$/gm, "<strong>$1</strong>");
-        // Convert plain text paragraphs to HTML
         const htmlDesc = cleanDesc.split(/\n{2,}/).map((p: string) => `<p>${p.trim()}</p>`).join("\n");
         await supabase
           .from("hotel_templates")
@@ -314,7 +376,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           .eq("id", hotelId);
         setEditDescription(htmlDesc);
         setDescriptionOpen(true);
-        // Store image URLs from Perplexity as fallback for scraping
         if (data.imageUrls?.length > 0) {
           perplexityImagesRef.current = data.imageUrls;
         }
@@ -331,7 +392,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     }
   };
 
-  // Store Perplexity images as fallback
   const perplexityImagesRef = useRef<string[]>([]);
 
   const handleScrape = async () => {
@@ -341,8 +401,8 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     }
 
     setScraping(true);
+    setImageMeta({});
     try {
-      // Run both scrape and search in parallel
       const [scrapeResult, searchResult] = await Promise.allSettled([
         supabase.functions.invoke("scrape-hotel-images", {
           body: { hotelName, golfCourseName, websiteUrl: websiteUrl || undefined },
@@ -400,13 +460,12 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       });
 
       if (proxyError || !proxyData?.base64) {
-        // Remove the broken URL from found images so user doesn't try again
         setFoundImages(prev => prev ? {
           hotel: prev.hotel.filter(u => u !== url),
           golf: prev.golf.filter(u => u !== url),
           search: prev.search.filter(u => u !== url),
         } : null);
-        toast.error("Tento obrázek není dostupný (neplatná URL). Zkuste jiný.");
+        toast.error("Tento obrázek není dostupný. Zkuste jiný.");
         setSavingUrl(null);
         return;
       }
@@ -420,7 +479,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       const blob = new Blob([ab], { type: proxyData.contentType || "image/jpeg" });
       const file = new File([blob], "downloaded.jpg", { type: blob.type });
       
-      // Upscale small web images, then compress if too large
       const upscaled = await ensureMinimumQuality(file, 1024, 1024, 300 * 1024);
       let finalBlob = upscaled.blob;
       if (upscaled.width > 1920 || upscaled.height > 1920) {
@@ -457,6 +515,90 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
     } finally {
       setSavingUrl(null);
     }
+  };
+
+  // Auto-fill: pick best images and fill empty slots
+  const handleAutoFill = async () => {
+    if (!foundImages) return;
+    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    if (allUrls.length === 0) return;
+
+    const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
+    if (emptySlots.length === 0) {
+      toast.info("Všechny sloty jsou obsazené.");
+      return;
+    }
+
+    // Sort by quality (metadata width, then URL score)
+    const sorted = [...allUrls].sort((a, b) => {
+      const ma = imageMeta[a];
+      const mb = imageMeta[b];
+      const wa = ma?.width ?? 0;
+      const wb = mb?.width ?? 0;
+      return wb - wa;
+    });
+
+    const toFill = sorted.slice(0, emptySlots.length);
+    setAutoFilling(true);
+    toast.info(`Automaticky vyplňuji ${toFill.length} slotů...`);
+
+    let filled = 0;
+    for (let i = 0; i < toFill.length; i++) {
+      try {
+        await handleSelectImage(toFill[i], emptySlots[i]);
+        filled++;
+      } catch {
+        // continue with next
+      }
+    }
+
+    setAutoFilling(false);
+    if (filled > 0) {
+      toast.success(`Automaticky vyplněno ${filled} fotek`);
+    }
+  };
+
+  // Multi-select: save all selected to empty slots
+  const handleSaveMultiSelect = async () => {
+    const urls = Array.from(selectedUrls);
+    if (urls.length === 0) return;
+
+    const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
+    const toSave = urls.slice(0, emptySlots.length);
+
+    if (toSave.length === 0) {
+      toast.info("Žádné volné sloty.");
+      return;
+    }
+
+    setAutoFilling(true);
+    toast.info(`Ukládám ${toSave.length} vybraných fotek...`);
+
+    let saved = 0;
+    for (let i = 0; i < toSave.length; i++) {
+      try {
+        await handleSelectImage(toSave[i], emptySlots[i]);
+        saved++;
+      } catch {
+        // continue
+      }
+    }
+
+    setAutoFilling(false);
+    setSelectedUrls(new Set());
+    setMultiSelectMode(false);
+    if (saved > 0) {
+      toast.success(`Uloženo ${saved} fotek`);
+    }
+  };
+
+  const toggleUrlSelection = (url: string) => {
+    setSelectedUrls(prev => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
   };
 
   return (
@@ -521,7 +663,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
               className="h-6 px-2 text-xs gap-1"
               onClick={() => {
                 if (!htmlMode && editorRef.current) {
-                  // Switching to HTML mode - sync from contentEditable
                   setEditDescription(editorRef.current.innerHTML);
                 }
                 setHtmlMode(!htmlMode);
@@ -541,7 +682,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             />
           ) : (
             <>
-              {/* Formatting toolbar */}
               <div className="flex gap-0.5 border border-input border-b-0 rounded-t-md bg-muted/50 px-1 py-0.5">
                 {[
                   { cmd: "bold", icon: Bold, label: "Tučné (⌘B)" },
@@ -594,20 +734,16 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                   if (e.metaKey || e.ctrlKey) {
                     const key = e.key.toLowerCase();
                     if (key === 'b') {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      e.preventDefault(); e.stopPropagation();
                       document.execCommand("bold", false);
                     } else if (key === 'i') {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      e.preventDefault(); e.stopPropagation();
                       document.execCommand("italic", false);
                     } else if (key === 'u') {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      e.preventDefault(); e.stopPropagation();
                       document.execCommand("underline", false);
                     } else if (e.shiftKey && key === 'h') {
-                      e.preventDefault();
-                      e.stopPropagation();
+                      e.preventDefault(); e.stopPropagation();
                       document.execCommand("formatBlock", false, "h3");
                     }
                   }
@@ -644,7 +780,6 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           e.preventDefault(); e.stopPropagation(); setDragOver(null);
           const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
           if (files.length === 0) return;
-          // Find empty slots
           const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
           const toUpload = files.slice(0, emptySlots.length);
           if (toUpload.length === 0) {
@@ -791,15 +926,15 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
       </div>
 
       {/* Image picker dialog */}
-      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+      <Dialog open={pickerOpen} onOpenChange={(open) => { setPickerOpen(open); if (!open) { setMultiSelectMode(false); setSelectedUrls(new Set()); } }}>
         <DialogContent className="max-w-3xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Nalezené fotky – klikněte pro přiřazení</DialogTitle>
           </DialogHeader>
           
-          {/* Slot selector */}
+          {/* Slot selector + actions */}
           <div className="flex gap-2 flex-wrap items-center">
-            {IMAGE_LABELS.map(({ key, label }) => (
+            {!multiSelectMode && IMAGE_LABELS.map(({ key, label }) => (
               <Button
                 key={key}
                 size="sm"
@@ -812,6 +947,41 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
               </Button>
             ))}
             <div className="ml-auto flex gap-2">
+              {/* Auto-fill button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs gap-1"
+                onClick={handleAutoFill}
+                disabled={autoFilling || !foundImages}
+              >
+                {autoFilling ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                Auto-fill
+              </Button>
+              {/* Multi-select toggle */}
+              <Button
+                size="sm"
+                variant={multiSelectMode ? "default" : "outline"}
+                className="text-xs gap-1"
+                onClick={() => {
+                  setMultiSelectMode(!multiSelectMode);
+                  setSelectedUrls(new Set());
+                }}
+              >
+                <CheckSquare className="h-3 w-3" />
+                {multiSelectMode ? `Vybráno (${selectedUrls.size})` : "Hromadně"}
+              </Button>
+              {multiSelectMode && selectedUrls.size > 0 && (
+                <Button
+                  size="sm"
+                  className="text-xs gap-1"
+                  onClick={handleSaveMultiSelect}
+                  disabled={autoFilling}
+                >
+                  {autoFilling ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                  Uložit {selectedUrls.size}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -864,9 +1034,9 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             </div>
           )}
 
-          {!selectedSlot && (
+          {!selectedSlot && !multiSelectMode && (
             <p className="text-sm text-muted-foreground">
-              Nejdříve vyberte slot (hlavní foto, pokoj, golf) a pak klikněte na fotku.
+              Nejdříve vyberte slot (hlavní foto, pokoj, golf) a pak klikněte na fotku, nebo použijte „Hromadně" / „Auto-fill".
             </p>
           )}
 
@@ -885,6 +1055,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
+                      meta={imageMeta[url]}
+                      multiMode={multiSelectMode}
+                      selected={selectedUrls.has(url)}
+                      onSelect={() => toggleUrlSelection(url)}
                     />
                   ))}
                 </div>
@@ -905,6 +1079,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
+                      meta={imageMeta[url]}
+                      multiMode={multiSelectMode}
+                      selected={selectedUrls.has(url)}
+                      onSelect={() => toggleUrlSelection(url)}
                     />
                   ))}
                 </div>
@@ -925,6 +1103,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
+                      meta={imageMeta[url]}
+                      multiMode={multiSelectMode}
+                      selected={selectedUrls.has(url)}
+                      onSelect={() => toggleUrlSelection(url)}
                     />
                   ))}
                 </div>
