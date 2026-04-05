@@ -551,7 +551,7 @@ const Suppliers = () => {
                   )}
                   <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
                     {supplier.email && (
-                      <a href={`mailto:${supplier.email}`} className="hover:text-primary transition-colors truncate">{supplier.email}</a>
+                      <a href={`mailto:${supplier.email}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors truncate">{supplier.email}</a>
                     )}
                     {supplier.ico && <span>IČO: {supplier.ico}</span>}
                   </div>
