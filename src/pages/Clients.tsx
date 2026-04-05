@@ -986,7 +986,7 @@ const Clients = () => {
                         );
                       })()}
                       {client.document_urls && client.document_urls.length > 0 && (
-                        <button onClick={() => setDocumentPreviewClient(client)} className="text-muted-foreground hover:text-foreground">
+                        <button onClick={(e) => { e.stopPropagation(); setDocumentPreviewClient(client); }} className="text-muted-foreground hover:text-foreground">
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                       )}
