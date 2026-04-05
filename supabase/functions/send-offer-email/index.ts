@@ -543,7 +543,7 @@ Deno.serve(async (req) => {
           <div style="padding:20px;">
             ${dDescHtml}
             <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-              ${renderIncludesHtml(sortedDirectServices)}
+              ${renderIncludesHtml(sortedDirectServices, undefined, undefined, dHotelSvc ? hotelData[dHotelSvc.service_name]?.golf_courses_data : null)}
             </table>
             ${deal.total_price && deal.total_price > 0 ? `
               <div style="border-top:1px solid #e2e8f0; padding-top:16px; margin-top:12px;">
