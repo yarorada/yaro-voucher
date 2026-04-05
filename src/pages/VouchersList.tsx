@@ -165,17 +165,16 @@ const VouchersList = () => {
     }
 
     if (searchQuery.trim()) {
-
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter((voucher) => {
-      const clientName = voucher.clients
-        ? `${voucher.clients.first_name} ${voucher.clients.last_name}`.toLowerCase()
-        : voucher.client_name.toLowerCase();
-      const hotelName = (voucher.hotel_name || "").toLowerCase();
-      const voucherCode = voucher.voucher_code.toLowerCase();
-
-      return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
-    });
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((voucher) => {
+        const clientName = voucher.clients
+          ? `${voucher.clients.first_name} ${voucher.clients.last_name}`.toLowerCase()
+          : voucher.client_name.toLowerCase();
+        const hotelName = (voucher.hotel_name || "").toLowerCase();
+        const voucherCode = voucher.voucher_code.toLowerCase();
+        return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
+      });
+    }
 
     // Sort
     if (sortBy === "newest") {
