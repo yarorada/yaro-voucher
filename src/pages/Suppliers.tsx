@@ -325,22 +325,20 @@ const Suppliers = () => {
           inputClassName="h-8 text-xs"
         />
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1 h-8 text-xs shrink-0 px-2 md:px-3">
-            <ChevronDown className="h-3 w-3" />
-            <span className="hidden sm:inline">Hromadné operace</span>
-            <span className="sm:hidden">Více</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-background p-1">
-          {activeTab === "supplier" && (
-            <DropdownMenuItem asChild>
-              <BulkSupplierUpload onComplete={fetchSuppliers} />
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {activeTab === "supplier" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1 h-8 text-xs shrink-0 px-2 md:px-3">
+              <ChevronDown className="h-3 w-3" />
+              <span className="hidden sm:inline">Hromadné operace</span>
+              <span className="sm:hidden">Více</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+            <BulkSupplierUpload onComplete={fetchSuppliers} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <Button size="icon" className="h-8 w-8 sm:hidden shrink-0" onClick={handleAddNew}>
         <Plus className="h-4 w-4" />
       </Button>
