@@ -289,7 +289,7 @@ export default function AdminRoles() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="px-3 md:px-6">
           <CardTitle className="text-sm md:text-base font-medium text-muted-foreground">
             Uživatelé — klikněte na šipku pro přepis oprávnění
