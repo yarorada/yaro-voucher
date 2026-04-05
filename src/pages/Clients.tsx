@@ -1001,7 +1001,7 @@ const Clients = () => {
                     <button onClick={() => handleEdit(client)} className="text-primary hover:text-primary/70 transition-colors" title="Upravit">
                       <Edit className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleDelete(client.id)} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
