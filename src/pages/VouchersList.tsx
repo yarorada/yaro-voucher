@@ -392,6 +392,7 @@ const VouchersList = () => {
           </button>
         )}
       </div>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} showArrival={false} />
       <Select value={sortBy} onValueChange={setSortBy}>
         <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
           <SelectValue placeholder="Řazení" />
@@ -411,7 +412,7 @@ const VouchersList = () => {
         Přidat voucher
       </Button>
     </div>,
-    [searchQuery, sortBy]
+    [searchQuery, sortBy, dateFilter]
   );
 
   return (
