@@ -18,6 +18,7 @@ interface OfferData {
     total_price: number | null;
     destination: { id: string; name: string; country: { name: string; iso_code: string } } | null;
     lead_client_name: string | null;
+    tee_times: any[] | null;
   };
   variants: Array<{
     id: string;
