@@ -140,7 +140,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
                 const isDefault = !(section.key in overrides);
                 const defaultVal = defaults.includes(section.key as SectionKey);
                 return (
-                  <div key={section.key} className="flex items-center justify-between rounded-md border border-border/50 bg-background px-3 py-2">
+                  <div key={section.key} className="flex items-center justify-between rounded-md border border-border/50 bg-background px-2 sm:px-3 py-2 gap-2 min-w-0">
                     <div className="min-w-0">
                       <p className="text-sm truncate">{section.label}</p>
                       {!isDefault && (
@@ -178,7 +178,7 @@ function UserPermissionRow({ profile, currentRole, onRoleChange, onNameChange, a
                 ].map((opt) => {
                   const current = getDataScope();
                   return (
-                    <label key={opt.value} className={`flex-1 cursor-pointer rounded-md border px-3 py-2 transition-colors ${current === opt.value ? "border-primary bg-primary/5" : "border-border"}`}>
+                    <label key={opt.value} className={`flex-1 cursor-pointer rounded-md border px-2 sm:px-3 py-2 transition-colors min-w-0 ${current === opt.value ? "border-primary bg-primary/5" : "border-border"}`}>
                       <input
                         type="radio"
                         className="sr-only"
@@ -259,13 +259,13 @@ export default function AdminRoles() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto overflow-hidden">
+    <div className="p-3 sm:p-4 md:p-6 max-w-3xl mx-auto overflow-hidden min-w-0 w-full">
       <div className="flex items-center gap-3 mb-6">
         <ShieldCheck className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
         <h1 className="text-xl md:text-2xl font-bold">Správa rolí a oprávnění</h1>
       </div>
 
-      <Card className="mb-4">
+      <Card className="mb-4 overflow-hidden">
         <CardHeader className="pb-2 px-3 md:px-6">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Výchozí přístupy dle role
@@ -289,7 +289,7 @@ export default function AdminRoles() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="px-3 md:px-6">
           <CardTitle className="text-sm md:text-base font-medium text-muted-foreground">
             Uživatelé — klikněte na šipku pro přepis oprávnění
