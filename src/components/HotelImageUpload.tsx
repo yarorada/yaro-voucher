@@ -138,7 +138,7 @@ type ImageSlot = "image_url" | "image_url_2" | "image_url_3" | "image_url_4" | "
 export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, websiteUrl, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
-  const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[]; search: string[] } | null>(null);
+  const [foundImages, setFoundImages] = useState<{ website: string[]; booking: string[]; tripadvisor: string[]; general: string[]; golf: string[]; search: string[] } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<ImageSlot | null>(null);
   const [savingUrl, setSavingUrl] = useState<string | null>(null);
@@ -186,7 +186,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   // Probe image metadata when found images change
   useEffect(() => {
     if (!foundImages) return;
-    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    const allUrls = [...foundImages.website, ...foundImages.booking, ...foundImages.tripadvisor, ...foundImages.general, ...foundImages.golf, ...foundImages.search];
     // Probe in batches of 5
     let cancelled = false;
     const probe = async () => {
@@ -414,15 +414,22 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             }),
       ]);
 
-      const hotelImgs: string[] = [];
+      const websiteImgs: string[] = [];
+      const bookingImgs: string[] = [];
+      const tripadvisorImgs: string[] = [];
+      const generalImgs: string[] = [];
       const golfImgs: string[] = [];
       const searchImgs: string[] = [];
 
       if (scrapeResult.status === "fulfilled" && scrapeResult.value.data?.success) {
-        hotelImgs.push(...(scrapeResult.value.data.hotelImages || []));
-        golfImgs.push(...(scrapeResult.value.data.golfImages || []));
-        if (scrapeResult.value.data.detectedWebsiteUrl && !websiteUrl) {
-          setDetectedWebsite(scrapeResult.value.data.detectedWebsiteUrl);
+        const d = scrapeResult.value.data;
+        websiteImgs.push(...(d.websiteImages || d.hotelImages || []));
+        bookingImgs.push(...(d.bookingImages || []));
+        tripadvisorImgs.push(...(d.tripadvisorImages || []));
+        generalImgs.push(...(d.generalImages || []));
+        golfImgs.push(...(d.golfImages || []));
+        if (d.detectedWebsiteUrl && !websiteUrl) {
+          setDetectedWebsite(d.detectedWebsiteUrl);
         }
       }
 
@@ -431,16 +438,16 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         const urls = searchData?.imageUrls || [];
         if (urls.length > 0) {
           perplexityImagesRef.current = urls;
-          const existing = new Set([...hotelImgs, ...golfImgs]);
+          const existing = new Set([...websiteImgs, ...bookingImgs, ...tripadvisorImgs, ...generalImgs, ...golfImgs]);
           searchImgs.push(...urls.filter((u: string) => !existing.has(u)));
         }
       }
 
-      const totalFound = hotelImgs.length + golfImgs.length + searchImgs.length;
+      const totalFound = websiteImgs.length + bookingImgs.length + tripadvisorImgs.length + generalImgs.length + golfImgs.length + searchImgs.length;
       if (totalFound === 0) {
         toast.info("Nepodařilo se najít fotky. Zkuste nahrát fotky ručně.");
       } else {
-        setFoundImages({ hotel: hotelImgs, golf: golfImgs, search: searchImgs });
+        setFoundImages({ website: websiteImgs, booking: bookingImgs, tripadvisor: tripadvisorImgs, general: generalImgs, golf: golfImgs, search: searchImgs });
         setPickerOpen(true);
         toast.success(`Nalezeno ${totalFound} fotek`);
       }
@@ -461,7 +468,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
 
       if (proxyError || !proxyData?.base64) {
         setFoundImages(prev => prev ? {
-          hotel: prev.hotel.filter(u => u !== url),
+          website: prev.website.filter(u => u !== url),
+          booking: prev.booking.filter(u => u !== url),
+          tripadvisor: prev.tripadvisor.filter(u => u !== url),
+          general: prev.general.filter(u => u !== url),
           golf: prev.golf.filter(u => u !== url),
           search: prev.search.filter(u => u !== url),
         } : null);
@@ -520,7 +530,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   // Auto-fill: pick best images and fill empty slots
   const handleAutoFill = async () => {
     if (!foundImages) return;
-    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    const allUrls = [...foundImages.website, ...foundImages.booking, ...foundImages.tripadvisor, ...foundImages.general, ...foundImages.golf, ...foundImages.search];
     if (allUrls.length === 0) return;
 
     const emptySlots = IMAGE_LABELS.map(l => l.key).filter(k => !images[k]) as ImageSlot[];
@@ -1041,17 +1051,24 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
           )}
 
           <ScrollArea className="h-[55vh]">
-            {foundImages?.hotel && foundImages.hotel.length > 0 && (
-              <div className="space-y-2">
+            {([
+              { key: "website" as const, label: "🌐 Web hotelu", urls: foundImages?.website },
+              { key: "booking" as const, label: "📘 Booking.com", urls: foundImages?.booking },
+              { key: "tripadvisor" as const, label: "🦉 TripAdvisor", urls: foundImages?.tripadvisor },
+              { key: "general" as const, label: "🔍 Obecné hledání", urls: foundImages?.general },
+              { key: "golf" as const, label: "⛳ Golf", urls: foundImages?.golf },
+              { key: "search" as const, label: "🔍 Další z vyhledávání", urls: foundImages?.search },
+            ]).map(({ key, label, urls }) => urls && urls.length > 0 ? (
+              <div key={key} className="space-y-2 mt-4 first:mt-0">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  🏨 Fotky hotelu ({foundImages.hotel.length})
+                  {label} ({urls.length})
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
-                  {foundImages.hotel.map((url, i) => (
+                  {urls.map((url, i) => (
                     <ProxiedImageButton
-                      key={`hotel-${i}-${url}`}
+                      key={`${key}-${i}-${url}`}
                       url={url}
-                      alt={`Hotel ${i + 1}`}
+                      alt={`${label} ${i + 1}`}
                       disabled={!selectedSlot || savingUrl === url}
                       saving={savingUrl === url}
                       onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
@@ -1063,55 +1080,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
                   ))}
                 </div>
               </div>
-            )}
-
-            {foundImages?.golf && foundImages.golf.length > 0 && (
-              <div className="space-y-2 mt-4">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  ⛳ Fotky golfového hřiště ({foundImages.golf.length})
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {foundImages.golf.map((url, i) => (
-                    <ProxiedImageButton
-                      key={`golf-${i}-${url}`}
-                      url={url}
-                      alt={`Golf ${i + 1}`}
-                      disabled={!selectedSlot || savingUrl === url}
-                      saving={savingUrl === url}
-                      onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                      meta={imageMeta[url]}
-                      multiMode={multiSelectMode}
-                      selected={selectedUrls.has(url)}
-                      onSelect={() => toggleUrlSelection(url)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {foundImages?.search && foundImages.search.length > 0 && (
-              <div className="space-y-2 mt-4 pt-4 border-t">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  🔍 Fotky z vyhledávání ({foundImages.search.length})
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {foundImages.search.map((url, i) => (
-                    <ProxiedImageButton
-                      key={`search-${i}-${url}`}
-                      url={url}
-                      alt={`Search ${i + 1}`}
-                      disabled={!selectedSlot || savingUrl === url}
-                      saving={savingUrl === url}
-                      onClick={() => selectedSlot && handleSelectImage(url, selectedSlot)}
-                      meta={imageMeta[url]}
-                      multiMode={multiSelectMode}
-                      selected={selectedUrls.has(url)}
-                      onSelect={() => toggleUrlSelection(url)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            ) : null)}
           </ScrollArea>
         </DialogContent>
       </Dialog>

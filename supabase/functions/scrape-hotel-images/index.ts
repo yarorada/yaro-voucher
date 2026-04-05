@@ -28,13 +28,9 @@ Deno.serve(async (req) => {
     // --- URL upgrade: convert thumbnail URLs to high-res versions ---
     function upgradeUrl(url: string): string {
       let u = url;
-      // Booking.com: /max500/ → /max1920x1080/
       u = u.replace(/\/max\d+(?:x\d+)?\//, "/max1920x1080/");
-      // WordPress thumbnails: -150x150.jpg → .jpg
       u = u.replace(/-\d{2,4}x\d{2,4}(\.(jpg|jpeg|png|webp))/i, "$1");
-      // Cloudinary: /w_400/ → /w_1920,q_auto/
       u = u.replace(/\/w_\d+(?:,h_\d+)?(?:,c_\w+)?(?:,q_\w+)?\//, "/w_1920,q_auto/");
-      // Cloudinary: /t_thumb/ or /t_small/ → remove transform
       u = u.replace(/\/t_(?:thumb|small|medium|square)\//i, "/");
       return u;
     }
@@ -42,15 +38,12 @@ Deno.serve(async (req) => {
     // --- Helpers ---
     function extractImgsFromHtml(html: string): string[] {
       const urls: string[] = [];
-
-      // Standard src
       const srcRegex = /<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
       let m: RegExpExecArray | null;
       while ((m = srcRegex.exec(html)) !== null) {
         if (!shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
       }
 
-      // srcset — pick highest resolution
       const srcsetRegex = /<img[^>]+srcset=["']([^"']+)/gi;
       while ((m = srcsetRegex.exec(html)) !== null) {
         const entries = m[1].split(",").map((s) => s.trim());
@@ -62,15 +55,11 @@ Deno.serve(async (req) => {
           const descriptor = parts[1] || "";
           const wMatch = descriptor.match(/^(\d+)w$/);
           const w = wMatch ? parseInt(wMatch[1]) : 0;
-          if (w > bestW) {
-            bestW = w;
-            bestUrl = entryUrl;
-          }
+          if (w > bestW) { bestW = w; bestUrl = entryUrl; }
         }
         if (bestUrl && /\.(jpg|jpeg|png|webp)/i.test(bestUrl) && !shouldSkip(bestUrl)) {
           urls.push(upgradeUrl(bestUrl));
         }
-        // Also add all srcset entries as fallback
         for (const entry of entries) {
           const entryUrl = entry.split(/\s+/)[0];
           if (/\.(jpg|jpeg|png|webp)/i.test(entryUrl) && !shouldSkip(entryUrl) && entryUrl !== bestUrl) {
@@ -79,7 +68,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // data-src, data-original, data-lazy-src, data-hi-res
       const lazyAttrs = ["data-src", "data-original", "data-lazy-src", "data-hi-res", "data-zoom-image", "data-large"];
       for (const attr of lazyAttrs) {
         const lazyRegex = new RegExp(`${attr}=["']([^"']+\\.(?:jpg|jpeg|png|webp)[^"']*)`, "gi");
@@ -88,13 +76,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // OG image
       const ogRegex = /<meta[^>]+(?:property=["']og:image["']|name=["']og:image["'])[^>]+content=["']([^"']+)/gi;
       while ((m = ogRegex.exec(html)) !== null) {
         if (/\.(jpg|jpeg|png|webp)/i.test(m[1]) && !shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
       }
 
-      // CSS background-image
       const bgRegex = /background(?:-image)?\s*:\s*url\(["']?([^"')]+\.(?:jpg|jpeg|png|webp)[^"')]*)/gi;
       while ((m = bgRegex.exec(html)) !== null) {
         if (!shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
@@ -129,7 +115,6 @@ Deno.serve(async (req) => {
           score = Math.max(score, hints.length - i);
         }
       }
-      // Penalize known small patterns
       if (/(?:_|\/)(?:xs|sm|tiny|mini|micro)\b/i.test(lower)) score -= 5;
       if (/\/(?:100|150|200|250|300)(?:x|\/)/i.test(lower)) score -= 3;
       return score;
@@ -152,10 +137,7 @@ Deno.serve(async (req) => {
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ url, formats: ["rawHtml"], onlyMainContent: false }),
         });
-        if (!r.ok) {
-          console.error("Firecrawl scrape error:", r.status);
-          return "";
-        }
+        if (!r.ok) { console.error("Firecrawl scrape error:", r.status); return ""; }
         const d = await r.json();
         return d?.data?.rawHtml || d?.rawHtml || "";
       } catch (e) {
@@ -171,10 +153,7 @@ Deno.serve(async (req) => {
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ query, limit, scrapeOptions: { formats: ["rawHtml"] } }),
         });
-        if (!r.ok) {
-          console.error("Firecrawl search error:", r.status);
-          return [];
-        }
+        if (!r.ok) { console.error("Firecrawl search error:", r.status); return []; }
         const d = await r.json();
         return (d?.data || []).map((item: any) => ({ url: item.url, html: item.rawHtml || "" }));
       } catch (e) {
@@ -183,25 +162,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    const hotelImages: string[] = [];
+    const websiteImages: string[] = [];
+    const bookingImages: string[] = [];
+    const tripadvisorImages: string[] = [];
+    const generalImages: string[] = [];
     let detectedWebsiteUrl: string | null = websiteUrl || null;
 
-    // ====== PHASE 1: Official website (highest priority) ======
+    // ====== PHASE 1: Official website ======
     if (websiteUrl) {
       console.log("Phase 1: Scraping official website:", websiteUrl);
       const galleryPaths = ["/gallery", "/photos", "/images", "/galerie", "/fotky", "/photo-gallery", "/media"];
       const pagesToScrape = [websiteUrl, ...galleryPaths.map(p => websiteUrl.replace(/\/+$/, "") + p)];
-
-      const results = await Promise.allSettled(
-        pagesToScrape.slice(0, 4).map(url => firecrawlScrape(url))
-      );
-
+      const results = await Promise.allSettled(pagesToScrape.slice(0, 4).map(url => firecrawlScrape(url)));
       for (const r of results) {
         if (r.status === "fulfilled" && r.value) {
-          hotelImages.push(...extractImgsFromHtml(r.value));
+          websiteImages.push(...extractImgsFromHtml(r.value));
         }
       }
-      console.log(`Phase 1: Found ${hotelImages.length} images from official website`);
+      console.log(`Phase 1: Found ${websiteImages.length} images from official website`);
     } else {
       console.log("Phase 1: Searching for official website");
       const officialResults = await firecrawlSearch(`"${hotelName}" hotel official website`, 2);
@@ -215,33 +193,49 @@ Deno.serve(async (req) => {
           }
         } catch { /* ignore */ }
         for (const result of officialResults) {
-          hotelImages.push(...extractImgsFromHtml(result.html || ""));
+          websiteImages.push(...extractImgsFromHtml(result.html || ""));
         }
       }
-      console.log(`Phase 1: Found ${hotelImages.length} images from search`);
+      console.log(`Phase 1: Found ${websiteImages.length} images from search`);
     }
 
     // ====== PHASE 2: Booking.com ======
     console.log("Phase 2: Searching Booking.com");
-    const bookingResults = await firecrawlSearch(`site:booking.com "${hotelName}"`, 2);
+    const bookingResults = await firecrawlSearch(`site:booking.com "${hotelName}"`, 3);
     for (const result of bookingResults) {
       const imgs = extractImgsFromHtml(result.html || "");
-      const bookingImgs = imgs.filter((u) => u.includes("bstatic") || u.includes("booking"));
-      hotelImages.push(...bookingImgs);
+      const bImgs = imgs.filter((u) => u.includes("bstatic") || u.includes("booking"));
+      bookingImages.push(...bImgs);
     }
-    console.log(`Phase 2: Total images so far: ${hotelImages.length}`);
+    console.log(`Phase 2: Found ${bookingImages.length} Booking.com images`);
 
-    // ====== PHASE 3: General fallback (only if we have few images) ======
-    if (new Set(hotelImages).size < 10) {
-      console.log("Phase 3: General search fallback");
+    // ====== PHASE 3: TripAdvisor ======
+    console.log("Phase 3: Searching TripAdvisor");
+    const tripResults = await firecrawlSearch(`site:tripadvisor.com "${hotelName}" hotel`, 2);
+    for (const result of tripResults) {
+      const imgs = extractImgsFromHtml(result.html || "");
+      const tImgs = imgs.filter((u) => u.includes("tripadvisor") || u.includes("tacdn"));
+      tripadvisorImages.push(...tImgs);
+    }
+    console.log(`Phase 3: Found ${tripadvisorImages.length} TripAdvisor images`);
+
+    // ====== PHASE 4: General fallback ======
+    const totalSoFar = new Set([...websiteImages, ...bookingImages, ...tripadvisorImages]).size;
+    if (totalSoFar < 10) {
+      console.log("Phase 4: General search fallback");
       const generalResults = await firecrawlSearch(`${hotelName} hotel photos rooms exterior`, 3);
+      const existing = new Set([...websiteImages, ...bookingImages, ...tripadvisorImages]);
       for (const result of generalResults) {
-        hotelImages.push(...extractImgsFromHtml(result.html || ""));
+        const imgs = extractImgsFromHtml(result.html || "");
+        generalImages.push(...imgs.filter(u => !existing.has(u)));
       }
-      console.log(`Phase 3: Total images so far: ${hotelImages.length}`);
+      console.log(`Phase 4: Found ${generalImages.length} general images`);
     }
 
-    const uniqueHotelImages = preferLarger([...new Set(hotelImages)]).slice(0, 30);
+    const uniqueWebsite = preferLarger([...new Set(websiteImages)]).slice(0, 30);
+    const uniqueBooking = preferLarger([...new Set(bookingImages)]).slice(0, 30);
+    const uniqueTripadvisor = preferLarger([...new Set(tripadvisorImages)]).slice(0, 20);
+    const uniqueGeneral = preferLarger([...new Set(generalImages)]).slice(0, 20);
 
     // --- Golf course images ---
     const golfImages: string[] = [];
@@ -254,12 +248,18 @@ Deno.serve(async (req) => {
     }
     const uniqueGolfImages = preferLarger([...new Set(golfImages)]).slice(0, 15);
 
-    console.log(`Done: ${uniqueHotelImages.length} hotel images, ${uniqueGolfImages.length} golf images`);
+    const total = uniqueWebsite.length + uniqueBooking.length + uniqueTripadvisor.length + uniqueGeneral.length;
+    console.log(`Done: ${total} hotel images (website:${uniqueWebsite.length}, booking:${uniqueBooking.length}, tripadvisor:${uniqueTripadvisor.length}, general:${uniqueGeneral.length}), ${uniqueGolfImages.length} golf images`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        hotelImages: uniqueHotelImages,
+        websiteImages: uniqueWebsite,
+        bookingImages: uniqueBooking,
+        tripadvisorImages: uniqueTripadvisor,
+        generalImages: uniqueGeneral,
+        // Backward compat
+        hotelImages: [...uniqueWebsite, ...uniqueBooking, ...uniqueTripadvisor, ...uniqueGeneral].slice(0, 30),
         golfImages: uniqueGolfImages,
         detectedWebsiteUrl: detectedWebsiteUrl,
       }),
