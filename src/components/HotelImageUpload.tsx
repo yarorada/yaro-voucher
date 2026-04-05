@@ -186,7 +186,7 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
   // Probe image metadata when found images change
   useEffect(() => {
     if (!foundImages) return;
-    const allUrls = [...foundImages.hotel, ...foundImages.golf, ...foundImages.search];
+    const allUrls = [...foundImages.website, ...foundImages.booking, ...foundImages.tripadvisor, ...foundImages.general, ...foundImages.golf, ...foundImages.search];
     // Probe in batches of 5
     let cancelled = false;
     const probe = async () => {
