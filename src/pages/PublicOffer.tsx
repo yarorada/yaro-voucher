@@ -779,7 +779,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
           const golfServices = services.filter(s => s.service_type === "golf");
           const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
           const golfCourseNames = golfServices
-            .map(s => s.description)
+            .map(s => enrichGolfCourseName(s.description || s.service_name, hotelImgData?.golf_courses_data))
             .filter(Boolean)
             .join(", ");
           const nightsFrom = variant.start_date && variant.end_date
