@@ -10,10 +10,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock } from "lucide-react";
+import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock, MoreHorizontal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { usePageToolbar } from "@/hooks/usePageToolbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const EU_COUNTRIES = [
   "Belgie", "Bulharsko", "Česko", "Dánsko", "Estonsko", "Finsko", "Francie",
