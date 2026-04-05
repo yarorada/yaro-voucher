@@ -153,10 +153,18 @@ const VouchersList = () => {
       filtered = filtered.filter(v => !v.sent_at);
     }
 
-    if (!searchQuery.trim()) {
-      setFilteredVouchers(filtered);
-      return;
+    // Filter by date range
+    if (dateFilter.preset !== "all" && dateFilter.from) {
+      filtered = filtered.filter(v => {
+        const d = v.issue_date;
+        if (!d) return false;
+        if (dateFilter.from && d < dateFilter.from) return false;
+        if (dateFilter.to && d > dateFilter.to) return false;
+        return true;
+      });
     }
+
+    if (searchQuery.trim()) {
 
     const query = searchQuery.toLowerCase();
     filtered = filtered.filter((voucher) => {
