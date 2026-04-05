@@ -268,6 +268,9 @@ function computePerPersonPrices(services: Array<{
 
   const lines: PerPersonLine[] = [];
 
+  // When multiple hotel services exist, each represents a room config — derive persons_per_room
+  const multipleHotels = hotels.length > 1;
+
   hotels.forEach(h => {
     const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
       Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
@@ -294,27 +297,57 @@ function computePerPersonPrices(services: Array<{
     const priceMode = h.details?.price_mode || "per_service";
     const hotelPrice = h.price || 0;
 
+    if (multipleHotels) {
+      // Multiple hotel services = each one is a distinct room configuration
+      const qty = h.quantity || 1;
+      const pc = h.person_count || qty;
+      const personsPerRoom = Math.max(1, Math.round(pc / qty));
+
+      let hotelPP: number;
+      if (priceMode === "per_person") {
+        hotelPP = hotelPrice;
+      } else {
+        hotelPP = hotelPrice / personsPerRoom;
+      }
+
+      const pp = Math.round(hotelPP + nonHotelPerPersonTotal);
+      if (pp > 0) {
+        lines.push({ label: getPerPersonPriceLabel(personsPerRoom), personCount: personsPerRoom, pricePerPerson: pp, currency });
+      }
+      return;
+    }
+
+    // Single hotel service — generate both single and double lines
     if (priceMode === "per_person") {
       const pp = Math.round(hotelPrice + nonHotelPerPersonTotal);
       if (pp > 0) {
         lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: pp, currency });
         lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: pp, currency });
       }
-      return;
-    }
-
-    const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
-    const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
-
-    if (singlePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
-    }
-    if (doublePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
+    } else {
+      const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
+      const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
+      if (singlePP > 0) {
+        lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
+      }
+      if (doublePP > 0) {
+        lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
+      }
     }
   });
 
-  return lines;
+  // Deduplicate by personCount — keep the first occurrence
+  const seen = new Set<number>();
+  const deduped = lines.filter(l => {
+    if (seen.has(l.personCount)) return false;
+    seen.add(l.personCount);
+    return true;
+  });
+
+  // Sort: single first, then double
+  deduped.sort((a, b) => a.personCount - b.personCount);
+
+  return deduped;
 }
 
 function PerPersonPriceRecap({ lines }: { lines: PerPersonLine[] }) {
