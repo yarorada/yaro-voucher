@@ -1071,7 +1071,7 @@ const Clients = () => {
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(client.id)}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}
                             className="text-destructive hover:text-destructive/70 transition-colors"
                             title="Smazat"
                           >
