@@ -16,7 +16,7 @@ import { DiacriticsChecker } from "@/components/DiacriticsChecker";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useGlobalHistory } from "@/hooks/useGlobalHistory";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Plus } from "lucide-react";
 import {
   Select,
   SelectContent,
