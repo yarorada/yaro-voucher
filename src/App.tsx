@@ -134,15 +134,16 @@ const LayoutHeader = () => {
           </SidebarTrigger>
           <Breadcrumbs />
           <div className="flex-1" />
+          {toolbarContent && (
+            <div className="flex items-center gap-2">
+              {toolbarContent}
+            </div>
+          )}
           <NotificationBell />
           <UndoRedoButtons />
           <SaveIndicator />
         </div>
-        {toolbarContent && (
-          <div className="flex flex-wrap items-center gap-2">
-            {toolbarContent}
-          </div>
-        )}
+      </div>
       </div>
     </header>
   );
