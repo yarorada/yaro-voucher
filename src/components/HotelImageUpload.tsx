@@ -414,15 +414,22 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
             }),
       ]);
 
-      const hotelImgs: string[] = [];
+      const websiteImgs: string[] = [];
+      const bookingImgs: string[] = [];
+      const tripadvisorImgs: string[] = [];
+      const generalImgs: string[] = [];
       const golfImgs: string[] = [];
       const searchImgs: string[] = [];
 
       if (scrapeResult.status === "fulfilled" && scrapeResult.value.data?.success) {
-        hotelImgs.push(...(scrapeResult.value.data.hotelImages || []));
-        golfImgs.push(...(scrapeResult.value.data.golfImages || []));
-        if (scrapeResult.value.data.detectedWebsiteUrl && !websiteUrl) {
-          setDetectedWebsite(scrapeResult.value.data.detectedWebsiteUrl);
+        const d = scrapeResult.value.data;
+        websiteImgs.push(...(d.websiteImages || d.hotelImages || []));
+        bookingImgs.push(...(d.bookingImages || []));
+        tripadvisorImgs.push(...(d.tripadvisorImages || []));
+        generalImgs.push(...(d.generalImages || []));
+        golfImgs.push(...(d.golfImages || []));
+        if (d.detectedWebsiteUrl && !websiteUrl) {
+          setDetectedWebsite(d.detectedWebsiteUrl);
         }
       }
 
@@ -431,16 +438,16 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
         const urls = searchData?.imageUrls || [];
         if (urls.length > 0) {
           perplexityImagesRef.current = urls;
-          const existing = new Set([...hotelImgs, ...golfImgs]);
+          const existing = new Set([...websiteImgs, ...bookingImgs, ...tripadvisorImgs, ...generalImgs, ...golfImgs]);
           searchImgs.push(...urls.filter((u: string) => !existing.has(u)));
         }
       }
 
-      const totalFound = hotelImgs.length + golfImgs.length + searchImgs.length;
+      const totalFound = websiteImgs.length + bookingImgs.length + tripadvisorImgs.length + generalImgs.length + golfImgs.length + searchImgs.length;
       if (totalFound === 0) {
         toast.info("Nepodařilo se najít fotky. Zkuste nahrát fotky ručně.");
       } else {
-        setFoundImages({ hotel: hotelImgs, golf: golfImgs, search: searchImgs });
+        setFoundImages({ website: websiteImgs, booking: bookingImgs, tripadvisor: tripadvisorImgs, general: generalImgs, golf: golfImgs, search: searchImgs });
         setPickerOpen(true);
         toast.success(`Nalezeno ${totalFound} fotek`);
       }
