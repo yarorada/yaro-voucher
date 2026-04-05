@@ -25,30 +25,81 @@ Deno.serve(async (req) => {
 
     console.log("Searching images for hotel:", hotelName, "websiteUrl:", websiteUrl || "none");
 
-    // --- Helpers ---
+    // --- URL upgrade: convert thumbnail URLs to high-res versions ---
+    function upgradeUrl(url: string): string {
+      let u = url;
+      // Booking.com: /max500/ → /max1920x1080/
+      u = u.replace(/\/max\d+(?:x\d+)?\//, "/max1920x1080/");
+      // WordPress thumbnails: -150x150.jpg → .jpg
+      u = u.replace(/-\d{2,4}x\d{2,4}(\.(jpg|jpeg|png|webp))/i, "$1");
+      // Cloudinary: /w_400/ → /w_1920,q_auto/
+      u = u.replace(/\/w_\d+(?:,h_\d+)?(?:,c_\w+)?(?:,q_\w+)?\//, "/w_1920,q_auto/");
+      // Cloudinary: /t_thumb/ or /t_small/ → remove transform
+      u = u.replace(/\/t_(?:thumb|small|medium|square)\//i, "/");
+      return u;
+    }
 
+    // --- Helpers ---
     function extractImgsFromHtml(html: string): string[] {
       const urls: string[] = [];
+
+      // Standard src
       const srcRegex = /<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
       let m: RegExpExecArray | null;
       while ((m = srcRegex.exec(html)) !== null) {
-        if (!shouldSkip(m[1])) urls.push(m[1]);
+        if (!shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
       }
+
+      // srcset — pick highest resolution
       const srcsetRegex = /<img[^>]+srcset=["']([^"']+)/gi;
       while ((m = srcsetRegex.exec(html)) !== null) {
-        const parts = m[1].split(",").map((s) => s.trim().split(" ")[0]);
-        for (const p of parts) {
-          if (/\.(jpg|jpeg|png|webp)/i.test(p) && !shouldSkip(p)) urls.push(p);
+        const entries = m[1].split(",").map((s) => s.trim());
+        let bestUrl = "";
+        let bestW = 0;
+        for (const entry of entries) {
+          const parts = entry.split(/\s+/);
+          const entryUrl = parts[0];
+          const descriptor = parts[1] || "";
+          const wMatch = descriptor.match(/^(\d+)w$/);
+          const w = wMatch ? parseInt(wMatch[1]) : 0;
+          if (w > bestW) {
+            bestW = w;
+            bestUrl = entryUrl;
+          }
+        }
+        if (bestUrl && /\.(jpg|jpeg|png|webp)/i.test(bestUrl) && !shouldSkip(bestUrl)) {
+          urls.push(upgradeUrl(bestUrl));
+        }
+        // Also add all srcset entries as fallback
+        for (const entry of entries) {
+          const entryUrl = entry.split(/\s+/)[0];
+          if (/\.(jpg|jpeg|png|webp)/i.test(entryUrl) && !shouldSkip(entryUrl) && entryUrl !== bestUrl) {
+            urls.push(upgradeUrl(entryUrl));
+          }
         }
       }
-      const dataSrcRegex = /data-src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi;
-      while ((m = dataSrcRegex.exec(html)) !== null) {
-        if (!shouldSkip(m[1])) urls.push(m[1]);
+
+      // data-src, data-original, data-lazy-src, data-hi-res
+      const lazyAttrs = ["data-src", "data-original", "data-lazy-src", "data-hi-res", "data-zoom-image", "data-large"];
+      for (const attr of lazyAttrs) {
+        const lazyRegex = new RegExp(`${attr}=["']([^"']+\\.(?:jpg|jpeg|png|webp)[^"']*)`, "gi");
+        while ((m = lazyRegex.exec(html)) !== null) {
+          if (!shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
+        }
       }
+
+      // OG image
       const ogRegex = /<meta[^>]+(?:property=["']og:image["']|name=["']og:image["'])[^>]+content=["']([^"']+)/gi;
       while ((m = ogRegex.exec(html)) !== null) {
-        if (/\.(jpg|jpeg|png|webp)/i.test(m[1]) && !shouldSkip(m[1])) urls.push(m[1]);
+        if (/\.(jpg|jpeg|png|webp)/i.test(m[1]) && !shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
       }
+
+      // CSS background-image
+      const bgRegex = /background(?:-image)?\s*:\s*url\(["']?([^"')]+\.(?:jpg|jpeg|png|webp)[^"')]*)/gi;
+      while ((m = bgRegex.exec(html)) !== null) {
+        if (!shouldSkip(m[1])) urls.push(upgradeUrl(m[1]));
+      }
+
       return urls;
     }
 
@@ -58,7 +109,10 @@ Deno.serve(async (req) => {
         lower.includes("icon") || lower.includes("logo") || lower.includes("favicon") ||
         lower.includes("avatar") || lower.includes("sprite") || lower.includes("1x1") ||
         lower.includes("pixel") || lower.includes("map") || lower.includes("flag") ||
-        lower.includes("star") || /[_-](\d{1,2}x\d{1,2})[_.]/.test(lower) || url.length > 600
+        lower.includes("star") || lower.includes("_thumb") || lower.includes("_small") ||
+        lower.includes("/thumb/") || lower.includes("/small/") || lower.includes("placeholder") ||
+        lower.includes("spacer") || lower.includes("blank.") || lower.includes("loading") ||
+        /[_-](\d{1,2}x\d{1,2})[_.]/.test(lower) || url.length > 600
       );
     }
 
@@ -67,12 +121,18 @@ Deno.serve(async (req) => {
     }
 
     function sizeScore(url: string): number {
-      const hints = ["1920", "1600", "1400", "1280", "1024", "800", "original", "full", "large", "xl", "big"];
+      const hints = ["1920", "1600", "1400", "1280", "1024", "800", "original", "full", "large", "xl", "big", "hi-res", "hires"];
       const lower = url.toLowerCase();
+      let score = 0;
       for (let i = 0; i < hints.length; i++) {
-        if (lower.includes(hints[i])) return hints.length - i;
+        if (lower.includes(hints[i])) {
+          score = Math.max(score, hints.length - i);
+        }
       }
-      return 0;
+      // Penalize known small patterns
+      if (/(?:_|\/)(?:xs|sm|tiny|mini|micro)\b/i.test(lower)) score -= 5;
+      if (/\/(?:100|150|200|250|300)(?:x|\/)/i.test(lower)) score -= 3;
+      return score;
     }
 
     async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 15000): Promise<Response> {
@@ -129,8 +189,7 @@ Deno.serve(async (req) => {
     // ====== PHASE 1: Official website (highest priority) ======
     if (websiteUrl) {
       console.log("Phase 1: Scraping official website:", websiteUrl);
-      // Scrape main page + gallery pages in parallel
-      const galleryPaths = ["/gallery", "/photos", "/images", "/galerie", "/fotky"];
+      const galleryPaths = ["/gallery", "/photos", "/images", "/galerie", "/fotky", "/photo-gallery", "/media"];
       const pagesToScrape = [websiteUrl, ...galleryPaths.map(p => websiteUrl.replace(/\/+$/, "") + p)];
 
       const results = await Promise.allSettled(
@@ -144,7 +203,6 @@ Deno.serve(async (req) => {
       }
       console.log(`Phase 1: Found ${hotelImages.length} images from official website`);
     } else {
-      // No website URL — try to find it via search
       console.log("Phase 1: Searching for official website");
       const officialResults = await firecrawlSearch(`"${hotelName}" hotel official website`, 2);
       if (officialResults.length > 0) {
