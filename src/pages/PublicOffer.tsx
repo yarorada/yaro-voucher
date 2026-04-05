@@ -932,19 +932,19 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
         )}
         {/* Per-person price recap */}
         {(() => {
-          const lines = computePerPersonPrices(services);
-          if (lines.length === 0) return null;
-          return (
-            <div className="border-t pt-3 space-y-1">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
-              {lines.map((line, i) => (
-                <div key={i} className="flex items-baseline justify-between text-sm">
-                  <span className="text-slate-600">{line.label} <span className="text-slate-400">({line.personCount} os.)</span></span>
-                  <span className="font-semibold text-slate-700">{formatPrice(line.pricePerPerson, line.currency)}</span>
-                </div>
-              ))}
-            </div>
-          );
+          let lines = computePerPersonPrices(services);
+
+          if (lines.length === 0 && totalPrice && totalPrice > 0) {
+            const persons = services.find(s => s.person_count && s.person_count > 0)?.person_count || 1;
+            lines = [{
+              label: persons <= 2 ? getPerPersonPriceLabel(persons) : "Celkem na osobu",
+              personCount: persons,
+              pricePerPerson: Math.round(totalPrice / persons),
+              currency,
+            }];
+          }
+
+          return <PerPersonPriceRecap lines={lines} />;
         })()}
       </div>
     </div>
