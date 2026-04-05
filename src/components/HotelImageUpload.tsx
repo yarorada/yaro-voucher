@@ -468,7 +468,10 @@ export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl,
 
       if (proxyError || !proxyData?.base64) {
         setFoundImages(prev => prev ? {
-          hotel: prev.hotel.filter(u => u !== url),
+          website: prev.website.filter(u => u !== url),
+          booking: prev.booking.filter(u => u !== url),
+          tripadvisor: prev.tripadvisor.filter(u => u !== url),
+          general: prev.general.filter(u => u !== url),
           golf: prev.golf.filter(u => u !== url),
           search: prev.search.filter(u => u !== url),
         } : null);
