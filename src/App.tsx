@@ -125,6 +125,7 @@ const UndoRedoButtons = () => {
 
 const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
+  const headerActions = useHeaderActionsContent();
   return (
     <header className="border-b bg-background print:hidden">
       <div className="px-4 py-2">
@@ -140,6 +141,7 @@ const LayoutHeader = () => {
               </div>
             )}
           </div>
+          {headerActions}
           <NotificationBell />
           <UndoRedoButtons />
           <SaveIndicator />
