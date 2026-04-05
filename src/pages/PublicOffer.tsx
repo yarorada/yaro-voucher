@@ -745,10 +745,13 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
           const hotelSvc = services.find(s => s.service_type === "hotel");
           const golfServices = services.filter(s => s.service_type === "golf");
           const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
-          const golfCourseNames = golfServices
-            .map(s => s.description)
-            .filter(Boolean)
-            .join(", ");
+          // Get course names from tee times first, fallback to service descriptions
+          const teeTimeCourseNames = teeTimesData
+            ? [...new Set((teeTimesData as any[]).map((tt: any) => tt.club).filter(Boolean))]
+            : [];
+          const golfCourseNames = teeTimeCourseNames.length > 0
+            ? teeTimeCourseNames.join(", ")
+            : golfServices.map(s => s.description).filter(Boolean).join(", ");
           const nightsFrom = variant.start_date && variant.end_date
             ? Math.round((new Date(variant.end_date).getTime() - new Date(variant.start_date).getTime()) / 86400000)
             : hotelSvc?.start_date && hotelSvc?.end_date
