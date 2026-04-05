@@ -542,7 +542,7 @@ const Suppliers = () => {
         {/* Mobile card view */}
         <div className="sm:hidden space-y-2">
           {items.map((supplier) => (
-            <Card key={supplier.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1">
+            <Card key={supplier.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleEdit(supplier)}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <button onClick={() => handleEdit(supplier)} className="font-medium text-sm text-left hover:text-primary transition-colors cursor-pointer">{supplier.name}</button>
