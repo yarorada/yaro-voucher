@@ -545,7 +545,7 @@ const Suppliers = () => {
             <Card key={supplier.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm">{supplier.name}</p>
+                  <button onClick={() => handleEdit(supplier)} className="font-medium text-sm text-left hover:text-primary transition-colors cursor-pointer">{supplier.name}</button>
                   {supplier.contact_person && (
                     <p className="text-xs text-muted-foreground">{supplier.contact_person}</p>
                   )}
