@@ -1,59 +1,55 @@
-## Plan: Zobrazení zdrojů u nalezených fotek
 
-### Co se změní
 
-Scraper aktuálně vrací jeden pole `hotelImages` bez informace o zdroji. Upravíme scraper i UI tak, aby se fotky zobrazovaly ve 4 kategoriích:
+## Plan: Oprava výpočtu ceny na osobu ve veřejné nabídce
 
-- **🌐 Web hotelu** — fotky z oficiálního webu
-- **📘 Booking.com** — fotky z [Booking.com](http://Booking.com) (vyber jich minimalne 20)
-- **🦉 TripAdvisor** — fotky z TripAdvisoru (nový zdroj)
-- **🔍 Obecné hledání** — fallback z obecného vyhledávání
+### Současný problém
+Funkce `computePerPersonPrices` v `PublicOffer.tsx` špatně počítá cenu na osobu:
+- Ne vždy zobrazuje oba řádky (jednolůžkový i dvoulůžkový pokoj)
+- Non-hotel služby s režimem `per_service` nesprávně dělí počtem osob — měly by se přičítat jen služby s `per_person`
 
-### Změny v souborech
+### Nová logika
 
-**1. `supabase/functions/scrape-hotel-images/index.ts**`
+**Vždy zobrazit 2 řádky:**
+- **Jednolůžkový pokoj** = cena hotelu na 1 osobu + součet všech non-hotel služeb s `price_mode === "per_person"`
+- **Dvoulůžkový pokoj** = cena hotelu na 1 osobu (při 2 osobách v pokoji) + stejný součet per-person služeb
 
-- Místo jednoho pole `hotelImages` vracet objekt se 4 poli: `websiteImages`, `bookingImages`, `tripadvisorImages`, `generalImages`
-- Přidat novou PHASE pro TripAdvisor: `site:tripadvisor.com "{hotelName}"` (podobně jako Booking.com)
-- Každá fáze ukládá do svého pole
-- Response formát:
-  &nbsp;
+**Výpočet hotelové ceny na osobu:**
+- Pokud hotel má `price_mode === "per_person"` → cena je již na osobu, použít přímo
+- Pokud hotel má `price_mode === "per_service"` (= cena za pokoj) → single: celá cena, double: cena / 2
+- Pokud jsou definovány `room_types` → použít cenu z room_type / persons_per_room
 
-```json
-{
-  "success": true,
-  "websiteImages": [...],
-  "bookingImages": [...],
-  "tripadvisorImages": [...],
-  "generalImages": [...],
-  "golfImages": [...],
-  "detectedWebsiteUrl": "..."
-}
-```
+**Non-hotel služby (transfery, golf, atd.):**
+- Přičíst **pouze** služby s `price_mode === "per_person"` — jejich cena je již za osobu
+- Služby s `per_service` se do per-person výpočtu nezapočítávají
 
-**2. `src/components/HotelImageUpload.tsx**`
-
-- Aktualizovat state `foundImages` na novou strukturu: `{ website: string[], booking: string[], tripadvisor: string[], general: string[], golf: string[], search: string[] }`
-- Zobrazit 4+2 sekcí v pickeru místo současných 3 (hotel/golf/search)
-- Zachovat zpětnou kompatibilitu s `search` (z Perplexity)
-- Aktualizovat `handleAutoFill` a metadata probing pro novou strukturu
+### Soubor k úpravě
+`src/pages/PublicOffer.tsx` — funkce `computePerPersonPrices` (řádky 234–324)
 
 ### Technické detaily
 
-Scraper — nová fáze TripAdvisor (mezi Phase 2 a 3):
+```text
+calcNonHotelPerPersonTotal():
+  sum = 0
+  for each non-hotel service:
+    if price_mode === "per_person":
+      sum += service.price
+  return sum
 
-```
-firecrawlSearch(`site:tripadvisor.com "${hotelName}" hotel`, 2)
-→ filtrovat URL obsahující "tripadvisor" nebo "tacdn"
+For each hotel:
+  nonHotelCost = calcNonHotelPerPersonTotal()
+  
+  if room_types defined:
+    use room_types (each has persons_per_room and price)
+    per_person = rt.price / rt.persons_per_room + nonHotelCost
+  else:
+    if price_mode === "per_person":
+      singlePrice = hotelPrice + nonHotelCost
+      doublePrice = hotelPrice + nonHotelCost  (same — already per person)
+    else (per_service / per room):
+      singlePrice = hotelPrice + nonHotelCost
+      doublePrice = hotelPrice / 2 + nonHotelCost
+    
+    → emit line "Jednolůžkový pokoj" with singlePrice
+    → emit line "Dvoulůžkový pokoj" with doublePrice
 ```
 
-UI sekce v pickeru:
-
-```
-🌐 Web hotelu (N)        — websiteImages
-📘 Booking.com (N)       — bookingImages  
-🦉 TripAdvisor (N)       — tripadvisorImages
-🔍 Obecné hledání (N)    — generalImages
-⛳ Golf (N)              — golfImages
-🔍 Další z vyhledávání (N) — search (Perplexity)
-```
