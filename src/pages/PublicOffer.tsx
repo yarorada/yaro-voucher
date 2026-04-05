@@ -933,7 +933,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
                 <div className="flex items-start gap-3 text-sm">
                   <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                   <span className="font-medium text-slate-700">
-                    {totalGreenFees}× green fee
+                    {totalGreenFees} green fee
                     {golfCourseNames && <span className="font-normal text-slate-500"> ({golfCourseNames})</span>}
                   </span>
                 </div>
