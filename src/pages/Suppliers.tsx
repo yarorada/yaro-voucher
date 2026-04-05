@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2, Search } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal, AlertTriangle, Check, Loader2, Search, Plus, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { removeDiacritics } from "@/lib/utils";
 import { formatPhone } from "@/lib/phoneFormat";
@@ -301,23 +301,50 @@ const Suppliers = () => {
   const currentLabelTitle = activeTab === "customer" ? "Odběratel" : "Dodavatel";
   const isCustomerForm = editingSupplier ? editingSupplier.partner_type === "customer" : activeTab === "customer";
 
+  const handleAddNew = () => {
+    setFormData(emptyForm);
+    setEditingSupplier(null);
+    setIsDialogOpen(true);
+  };
+
   usePageToolbar(
-    <div className="flex items-center gap-2">
-      <SmartSearchInput
-        value={searchText}
-        onChange={setSearchText}
-        noResults={filteredSuppliers.length === 0 && !loading}
-        addLabel={`${currentLabel} „{text}"`}
-        onAddNew={(text) => {
-          setFormData({ ...emptyForm, name: text });
-          setEditingSupplier(null);
-          setIsDialogOpen(true);
-        }}
-        placeholder={`Hledat ${currentLabel}...`}
-        className="w-48 md:w-64"
-        inputClassName="h-8 text-xs"
-      />
-      {activeTab === "supplier" && <BulkSupplierUpload onComplete={fetchSuppliers} />}
+    <div className="flex items-center gap-1.5 w-full min-w-0">
+      <div className="flex-1 min-w-0">
+        <SmartSearchInput
+          value={searchText}
+          onChange={setSearchText}
+          noResults={filteredSuppliers.length === 0 && !loading}
+          addLabel={`${currentLabel} „{text}"`}
+          onAddNew={(text) => {
+            setFormData({ ...emptyForm, name: text });
+            setEditingSupplier(null);
+            setIsDialogOpen(true);
+          }}
+          placeholder={`Hledat ${currentLabel}...`}
+          className="w-full"
+          inputClassName="h-8 text-xs"
+        />
+      </div>
+      {activeTab === "supplier" && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1 h-8 text-xs shrink-0 px-2 md:px-3">
+              <ChevronDown className="h-3 w-3" />
+              <span className="hidden sm:inline">Hromadné operace</span>
+              <span className="sm:hidden">Více</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-background p-1">
+            <BulkSupplierUpload onComplete={fetchSuppliers} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <Button size="icon" className="h-8 w-8 sm:hidden shrink-0" onClick={handleAddNew}>
+        <Plus className="h-4 w-4" />
+      </Button>
+      <Button className="hidden sm:inline-flex h-8 text-xs shrink-0 gap-1" onClick={handleAddNew}>
+        <Plus className="h-3.5 w-3.5" /> Přidat partnera
+      </Button>
     </div>,
     [searchText, filteredSuppliers.length, loading, activeTab]
   );

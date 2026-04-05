@@ -128,7 +128,7 @@ export const BulkSupplierUpload = ({ onComplete }: BulkSupplierUploadProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); else setIsOpen(true); }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="ghost" className="w-full justify-start text-sm px-2 py-1.5 h-auto font-normal gap-2">
           <Upload className="h-4 w-4" />
           Import z textu
         </Button>
