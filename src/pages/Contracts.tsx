@@ -241,7 +241,7 @@ const Contracts = () => {
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
 
   usePageToolbar(
-    <div className="flex items-center gap-1.5 w-full">
+    <div className="flex items-center gap-1.5 w-full min-w-0">
       <div className="relative flex-1 min-w-0">
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
@@ -259,8 +259,7 @@ const Contracts = () => {
       <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
       <Select value={sortBy} onValueChange={setSortBy}>
         <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
-          <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
-          <span className="hidden sm:inline"><SelectValue placeholder="Řazení" /></span>
+          <SelectValue placeholder="Řazení" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="number_desc">Číslo ↓</SelectItem>
@@ -272,9 +271,9 @@ const Contracts = () => {
       <Button onClick={() => navigate("/contracts/new")} size="icon" className="h-8 w-8 shrink-0 sm:hidden">
         <Plus className="h-4 w-4" />
       </Button>
-      <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " gap-1 hidden sm:inline-flex"}>
+      <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " gap-1 hidden sm:inline-flex shrink-0"}>
         <Plus className="h-3.5 w-3.5" />
-        Nová smlouva
+        Přidat smlouvu
       </Button>
     </div>,
     [searchQuery, dateFilter, sortBy]

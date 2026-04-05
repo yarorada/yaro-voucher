@@ -72,6 +72,7 @@ const VouchersList = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -84,7 +85,7 @@ const VouchersList = () => {
 
   useEffect(() => {
     filterVouchers();
-  }, [searchQuery, statusFilter, vouchers]);
+  }, [searchQuery, statusFilter, sortBy, vouchers]);
 
   const fetchVouchers = async () => {
     try {
@@ -165,6 +166,17 @@ const VouchersList = () => {
 
       return clientName.includes(query) || hotelName.includes(query) || voucherCode.includes(query);
     });
+
+    // Sort
+    if (sortBy === "newest") {
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === "oldest") {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    } else if (sortBy === "number_desc") {
+      filtered.sort((a, b) => b.voucher_number - a.voucher_number);
+    } else if (sortBy === "number_asc") {
+      filtered.sort((a, b) => a.voucher_number - b.voucher_number);
+    }
 
     setFilteredVouchers(filtered);
   };
@@ -356,14 +368,14 @@ const VouchersList = () => {
   const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
 
   usePageToolbar(
-    <>
-      <div className="relative w-48 md:w-64">
+    <div className="flex items-center gap-1.5 w-full min-w-0">
+      <div className="relative flex-1 min-w-0">
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           placeholder="Hledat..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 pr-7 h-8 text-xs"
+          className="pl-8 pr-7 h-8 text-xs w-full"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -371,12 +383,26 @@ const VouchersList = () => {
           </button>
         )}
       </div>
-      <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " gap-1"}>
-        <Plus className="h-3.5 w-3.5" />
-        Nový voucher
+      <Select value={sortBy} onValueChange={setSortBy}>
+        <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
+          <SelectValue placeholder="Řazení" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="newest">Nejnovější</SelectItem>
+          <SelectItem value="oldest">Nejstarší</SelectItem>
+          <SelectItem value="number_desc">Číslo ↓</SelectItem>
+          <SelectItem value="number_asc">Číslo ↑</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button onClick={() => navigate("/create")} size="icon" className="h-8 w-8 shrink-0 sm:hidden">
+        <Plus className="h-4 w-4" />
       </Button>
-    </>,
-    [searchQuery]
+      <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " gap-1 hidden sm:inline-flex shrink-0"}>
+        <Plus className="h-3.5 w-3.5" />
+        Přidat voucher
+      </Button>
+    </div>,
+    [searchQuery, sortBy]
   );
 
   return (
