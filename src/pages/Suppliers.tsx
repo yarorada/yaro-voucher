@@ -606,7 +606,7 @@ const Suppliers = () => {
                     <td className="px-4 py-3 text-muted-foreground">
                       {supplier.ico || <span className="text-muted-foreground/40">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="icon" variant="ghost" className="h-8 w-8">
