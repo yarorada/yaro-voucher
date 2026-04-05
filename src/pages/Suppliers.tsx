@@ -556,6 +556,7 @@ const Suppliers = () => {
                     {supplier.ico && <span>IČO: {supplier.ico}</span>}
                   </div>
                 </div>
+                <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0">
