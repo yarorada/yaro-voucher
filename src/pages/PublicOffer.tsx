@@ -607,9 +607,15 @@ export default function PublicOffer() {
   );
 }
 
+function parseLength(val: any): number | null {
+  if (val == null) return null;
+  if (typeof val === "number") return val;
+  const m = String(val).replace(/\s/g, "").match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 function GolfCoursesTable({ courses }: { courses: any[] }) {
   if (!courses || courses.length === 0) return null;
-  // Show up to 5 courses, sorted by distance
   const sorted = [...courses]
     .sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999))
     .slice(0, 5);
@@ -625,6 +631,7 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="text-left font-medium py-1.5 px-1">Hřiště</th>
+              <th className="text-right font-medium py-1.5 px-1">PAR</th>
               <th className="text-right font-medium py-1.5 px-1 whitespace-nowrap">Délka (m)</th>
               <th className="text-right font-medium py-1.5 px-1">Rating</th>
               <th className="text-left font-medium py-1.5 px-1">Architekt</th>
@@ -632,20 +639,24 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((c, i) => (
-              <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
-                <td className="py-1.5 px-1 text-slate-700 font-medium">
-                  {c.name}
-                  {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
-                </td>
-                <td className="py-1.5 px-1 text-right text-slate-600">{c.length_m ? `${c.length_m.toLocaleString("cs-CZ")}` : "–"}</td>
-                <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
-                <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
-                <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
-                  {c.is_hotel_course ? "resort" : c.distance_km ? `${c.distance_km} km` : "–"}
-                </td>
-              </tr>
-            ))}
+            {sorted.map((c, i) => {
+              const lengthNum = parseLength(c.length_m ?? c.length);
+              return (
+                <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
+                  <td className="py-1.5 px-1 text-slate-700 font-medium">
+                    {c.name}
+                    {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
+                  </td>
+                  <td className="py-1.5 px-1 text-right text-slate-600">{c.par || "–"}</td>
+                  <td className="py-1.5 px-1 text-right text-slate-600">{lengthNum ? lengthNum.toLocaleString("cs-CZ") : "–"}</td>
+                  <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
+                  <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
+                  <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
+                    {c.is_hotel_course ? "resort" : c.distance_km ? `${c.distance_km} km` : "–"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
