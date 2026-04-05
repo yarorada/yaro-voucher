@@ -127,22 +127,23 @@ const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
   return (
     <header className="border-b bg-background print:hidden">
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-4 py-3">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-2 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
           <Breadcrumbs />
-          <div className="flex-1" />
+          <div className="flex-1 min-w-0">
+            {toolbarContent && (
+              <div className="flex items-center gap-2 justify-end">
+                {toolbarContent}
+              </div>
+            )}
+          </div>
           <NotificationBell />
           <UndoRedoButtons />
           <SaveIndicator />
         </div>
-        {toolbarContent && (
-          <div className="flex flex-wrap items-center gap-2">
-            {toolbarContent}
-          </div>
-        )}
       </div>
     </header>
   );
