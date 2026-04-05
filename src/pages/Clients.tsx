@@ -968,7 +968,7 @@ const Clients = () => {
           <>
           <div className="sm:hidden space-y-2">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5">
+              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleEdit(client)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
