@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const { data: deal, error: dealError } = await supabase
       .from('deals')
       .select(`
-        id, deal_number, name, status, start_date, end_date, total_price,
+        id, deal_number, name, status, start_date, end_date, total_price, tee_times,
         destination:destinations(id, name, country:countries(id, name, iso_code))
       `)
       .eq('share_token', token)
@@ -210,6 +210,7 @@ Deno.serve(async (req) => {
         total_price: deal.total_price,
         destination: deal.destination,
         lead_client_name: leadClientName,
+        tee_times: deal.tee_times,
       },
       variants: displayVariants.map((v: any) => ({
         ...v,

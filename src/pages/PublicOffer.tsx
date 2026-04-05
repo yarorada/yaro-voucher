@@ -18,6 +18,7 @@ interface OfferData {
     total_price: number | null;
     destination: { id: string; name: string; country: { name: string; iso_code: string } } | null;
     lead_client_name: string | null;
+    tee_times: any[] | null;
   };
   variants: Array<{
     id: string;
@@ -232,9 +233,25 @@ interface PerPersonLine {
 }
 
 function getPerPersonPriceLabel(persons: number) {
-  if (persons === 1) return "Cena za osobu v jednolůžkovém pokoji";
-  if (persons === 2) return "Cena za osobu ve dvoulůžkovém pokoji";
-  return `Cena za osobu v pokoji pro ${persons} osoby`;
+  if (persons === 1) return "Jednolůžkový pokoj (os.)";
+  if (persons === 2) return "Dvoulůžkový pokoj (os.)";
+  return `Pokoj pro ${persons} osoby (os.)`;
+}
+
+function parseLength(val: any): number | null {
+  if (val == null) return null;
+  const num = Number(String(val).replace(/[\s\u00a0]/g, ''));
+  return isNaN(num) ? null : num;
+}
+
+function getHoleCount(course: any): number | null {
+  if (course.holes) return Number(course.holes);
+  if (course.par) {
+    const par = Number(course.par);
+    if (par >= 60) return 18;
+    if (par >= 30) return 9;
+  }
+  return null;
 }
 
 function computePerPersonPrices(services: Array<{
@@ -268,6 +285,9 @@ function computePerPersonPrices(services: Array<{
 
   const lines: PerPersonLine[] = [];
 
+  // Aggregate hotel prices by personCount
+  const hotelPriceMap = new Map<number, number>(); // personCount -> total hotel price per person
+
   hotels.forEach(h => {
     const roomTypes: Array<{ name: string; rooms: number; persons_per_room: number; price: number }> | null =
       Array.isArray(h.details?.room_types) && h.details.room_types.length > 0
@@ -278,15 +298,8 @@ function computePerPersonPrices(services: Array<{
       roomTypes.forEach(rt => {
         if (!rt.price || rt.price <= 0) return;
         const personsInRoom = rt.persons_per_room || 1;
-        const pricePerPerson = Math.round(rt.price / personsInRoom + nonHotelPerPersonTotal);
-        if (pricePerPerson > 0) {
-          lines.push({
-            label: getPerPersonPriceLabel(personsInRoom),
-            personCount: personsInRoom,
-            pricePerPerson,
-            currency,
-          });
-        }
+        const pricePerPerson = rt.price / personsInRoom;
+        hotelPriceMap.set(personsInRoom, (hotelPriceMap.get(personsInRoom) || 0) + pricePerPerson);
       });
       return;
     }
@@ -295,24 +308,30 @@ function computePerPersonPrices(services: Array<{
     const hotelPrice = h.price || 0;
 
     if (priceMode === "per_person") {
-      const pp = Math.round(hotelPrice + nonHotelPerPersonTotal);
-      if (pp > 0) {
-        lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: pp, currency });
-        lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: pp, currency });
-      }
-      return;
-    }
-
-    const singlePP = Math.round(hotelPrice + nonHotelPerPersonTotal);
-    const doublePP = Math.round(hotelPrice / 2 + nonHotelPerPersonTotal);
-
-    if (singlePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(1), personCount: 1, pricePerPerson: singlePP, currency });
-    }
-    if (doublePP > 0) {
-      lines.push({ label: getPerPersonPriceLabel(2), personCount: 2, pricePerPerson: doublePP, currency });
+      hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
+      hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice);
+    } else {
+      // per_service (per room)
+      hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
+      hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice / 2);
     }
   });
+
+  // Build deduplicated lines
+  for (const [personCount, hotelPP] of hotelPriceMap.entries()) {
+    const total = Math.round(hotelPP + nonHotelPerPersonTotal);
+    if (total > 0) {
+      lines.push({
+        label: getPerPersonPriceLabel(personCount),
+        personCount,
+        pricePerPerson: total,
+        currency,
+      });
+    }
+  }
+
+  // Sort: single first, then double
+  lines.sort((a, b) => a.personCount - b.personCount);
 
   return lines;
 }
@@ -323,18 +342,12 @@ function PerPersonPriceRecap({ lines }: { lines: PerPersonLine[] }) {
   return (
     <div className="border-t pt-3 space-y-1">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cena na osobu</p>
-      {lines.map((line, i) => {
-        const showPersonCount = !line.label.toLowerCase().startsWith("cena za osobu");
-        return (
-          <div key={`${line.label}-${line.personCount}-${i}`} className="flex items-baseline justify-between gap-4 text-sm">
-            <span className="text-slate-600">
-              {line.label}
-              {showPersonCount && <span className="text-slate-400"> ({line.personCount} os.)</span>}
-            </span>
-            <span className="font-semibold text-slate-700 whitespace-nowrap">{formatPrice(line.pricePerPerson, line.currency)}</span>
-          </div>
-        );
-      })}
+      {lines.map((line, i) => (
+        <div key={`${line.personCount}-${i}`} className="flex items-baseline justify-between gap-4 text-sm">
+          <span className="text-slate-600">{line.label}</span>
+          <span className="font-semibold text-slate-700 whitespace-nowrap">{formatPrice(line.pricePerPerson, line.currency)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -510,11 +523,12 @@ export default function PublicOffer() {
                 onSubmit={() => submitResponse(variant.variant_name, variant.id)}
                 isSubmitting={variantSubmitting[variant.id] || false}
                 isSubmitted={variantSubmitted[variant.id] || false}
+                teeTimesData={data.deal.tee_times}
               />
             ))}
           </div>
         ) : directServices.length > 0 ? (
-          <DirectServicesCard services={directServices} hotelImages={hotelImages} totalPrice={deal.total_price} />
+          <DirectServicesCard services={directServices} hotelImages={hotelImages} totalPrice={deal.total_price} teeTimesData={data.deal.tee_times} />
         ) : (
           <div className="text-center py-12 text-slate-400">Žádné služby</div>
         )}
@@ -603,9 +617,10 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
               <tr key={i} className={`border-b border-slate-100 ${c.is_hotel_course ? "bg-emerald-50/50" : ""}`}>
                 <td className="py-1.5 px-1 text-slate-700 font-medium">
                   {c.name}
+                  {getHoleCount(c) && <span className="text-slate-400 font-normal"> ({getHoleCount(c)})</span>}
                   {c.is_hotel_course && <span className="ml-1 text-emerald-600 text-[10px]">⛳</span>}
                 </td>
-                <td className="py-1.5 px-1 text-right text-slate-600">{(c.length || c.length_m) ? `${Number(c.length || c.length_m).toLocaleString("cs-CZ")}` : "–"}</td>
+                <td className="py-1.5 px-1 text-right text-slate-600">{parseLength(c.length ?? c.length_m) != null ? parseLength(c.length ?? c.length_m)!.toLocaleString("cs-CZ") : "–"}</td>
                 <td className="py-1.5 px-1 text-right text-slate-600">{c.rating ? c.rating.toFixed(1) : "–"}</td>
                 <td className="py-1.5 px-1 text-slate-500">{c.architect || "–"}</td>
                 <td className="py-1.5 px-1 text-right text-slate-500 whitespace-nowrap">
@@ -620,7 +635,7 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
   );
 }
 
-function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted }: {
+function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted, teeTimesData }: {
   variant: OfferData["variants"][0];
   hotelImages: OfferData["hotelImages"];
   isSelected: boolean;
@@ -631,6 +646,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   onSubmit?: () => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  teeTimesData?: any[] | null;
 }) {
   const hotelService = variant.deal_variant_services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
@@ -723,10 +739,13 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
           const hotelSvc = services.find(s => s.service_type === "hotel");
           const golfServices = services.filter(s => s.service_type === "golf");
           const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
-          const golfCourseNames = golfServices
-            .map(s => s.description)
-            .filter(Boolean)
-            .join(", ");
+          // Get course names from tee times first, fallback to service descriptions
+          const teeTimeCourseNames = teeTimesData
+            ? [...new Set((teeTimesData as any[]).map((tt: any) => tt.club).filter(Boolean))]
+            : [];
+          const golfCourseNames = teeTimeCourseNames.length > 0
+            ? teeTimeCourseNames.join(", ")
+            : golfServices.map(s => s.description).filter(Boolean).join(", ");
           const nightsFrom = variant.start_date && variant.end_date
             ? Math.round((new Date(variant.end_date).getTime() - new Date(variant.start_date).getTime()) / 86400000)
             : hotelSvc?.start_date && hotelSvc?.end_date
@@ -750,7 +769,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
                 <div className="flex items-start gap-3 text-sm">
                   <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                   <span className="font-medium text-slate-700">
-                    {totalGreenFees}× green fee
+                    {totalGreenFees} green fee
                     {golfCourseNames && <span className="font-normal text-slate-500"> ({golfCourseNames})</span>}
                   </span>
                 </div>
@@ -850,10 +869,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   );
 }
 
-function DirectServicesCard({ services, hotelImages, totalPrice }: {
+function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }: {
   services: OfferData["directServices"];
   hotelImages: OfferData["hotelImages"];
   totalPrice: number | null;
+  teeTimesData?: any[] | null;
 }) {
   const hotelService = services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
@@ -880,10 +900,12 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
           const hotelSvc = services.find(s => s.service_type === "hotel");
           const golfServices = services.filter(s => s.service_type === "golf");
           const totalGreenFees = golfServices.reduce((sum, s) => sum + (s.quantity || 1), 0);
-          const golfCourseNames = golfServices
-            .map(s => s.description)
-            .filter(Boolean)
-            .join(", ");
+          const teeTimeCourseNames = teeTimesData
+            ? [...new Set((teeTimesData as any[]).map((tt: any) => tt.club).filter(Boolean))]
+            : [];
+          const golfCourseNames = teeTimeCourseNames.length > 0
+            ? teeTimeCourseNames.join(", ")
+            : golfServices.map(s => s.description).filter(Boolean).join(", ");
           const nightsFrom = hotelSvc?.start_date && hotelSvc?.end_date
             ? Math.round((new Date(hotelSvc.end_date).getTime() - new Date(hotelSvc.start_date).getTime()) / 86400000)
             : null;
@@ -905,7 +927,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice }: {
                 <div className="flex items-start gap-3 text-sm">
                   <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                   <span className="font-medium text-slate-700">
-                    {totalGreenFees}× green fee
+                    {totalGreenFees} green fee
                     {golfCourseNames && <span className="font-normal text-slate-500"> ({golfCourseNames})</span>}
                   </span>
                 </div>
