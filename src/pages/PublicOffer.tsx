@@ -641,7 +641,7 @@ function GolfCoursesTable({ courses }: { courses: any[] }) {
   );
 }
 
-function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted }: {
+function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponseForm, comment, onCommentChange, onSubmit, isSubmitting, isSubmitted, teeTimesData }: {
   variant: OfferData["variants"][0];
   hotelImages: OfferData["hotelImages"];
   isSelected: boolean;
@@ -652,6 +652,7 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
   onSubmit?: () => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  teeTimesData?: any[] | null;
 }) {
   const hotelService = variant.deal_variant_services.find(s => s.service_type === "hotel");
   const hotelImgData = hotelService ? hotelImages[hotelService.service_name] : null;
