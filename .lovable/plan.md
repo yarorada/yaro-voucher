@@ -1,59 +1,59 @@
-
-
-## Plan: Vylepšení stahování a nahrávání fotek hotelů
-
-### Současné problémy
-- Scraper často stahuje thumbnaily a malé verze obrázků místo plného rozlišení
-- Některé obrázky se nenačtou (CORS, hotlink ochrana, mrtvé URL)
-- Není vidět rozlišení/velikost obrázku před výběrem
-- Nelze snadno naplnit všechny sloty najednou
+## Plan: Zobrazení zdrojů u nalezených fotek
 
 ### Co se změní
 
-**1. Lepší extrakce velkých obrázků v Edge funkci `scrape-hotel-images`**
-- Přidat rozpoznávání URL vzorů pro vysoké rozlišení (Booking.com `max1280x900` → `max1920x1080`, WordPress `-150x150` → originál)
-- Extrahovat `data-original`, `data-lazy-src`, `data-hi-res` atributy
-- Z `srcset` brát vždy největší variantu (podle `w` deskriptoru)
-- Přidat filtr na minimální rozměry v URL (vyhodit explicitně malé jako `_thumb`, `_small`, `100x100`)
+Scraper aktuálně vrací jeden pole `hotelImages` bez informace o zdroji. Upravíme scraper i UI tak, aby se fotky zobrazovaly ve 4 kategoriích:
 
-**2. Ověření kvality obrázků přes proxy (nový endpoint)**
-- Rozšířit `proxy-image` o mode `head-only` — vrátí pouze rozměry a velikost souboru bez stahování celého obrázku
-- Ve výběru fotek zobrazit rozměry a velikost u každé fotky
-- Barevně označit kvalitu: zelená (≥1200px), žlutá (800–1200px), červená (<800px)
+- **🌐 Web hotelu** — fotky z oficiálního webu
+- **📘 Booking.com** — fotky z [Booking.com](http://Booking.com) (vyber jich minimalne 20)
+- **🦉 TripAdvisor** — fotky z TripAdvisoru (nový zdroj)
+- **🔍 Obecné hledání** — fallback z obecného vyhledávání
 
-**3. Automatické naplnění slotů ("Auto-fill")**
-- Nové tlačítko "Automaticky vyplnit" v pickeru
-- Vybere N nejlepších obrázků (podle rozlišení/velikosti) a přiřadí je do prázdných slotů
-- Stáhne a uloží je paralelně
+### Změny v souborech
 
-**4. UX vylepšení pickeru**
-- Zobrazit rozlišení a velikost souboru pod každou fotkou
-- Přidat možnost označit více fotek najednou (checkbox mód) a uložit hromadně
-- Přidat řazení fotek podle kvality (největší první)
+**1. `supabase/functions/scrape-hotel-images/index.ts**`
 
-### Soubory k úpravě
-- `supabase/functions/scrape-hotel-images/index.ts` — vylepšení URL extrakce
-- `supabase/functions/proxy-image/index.ts` — přidat head-only mód
-- `src/components/HotelImageUpload.tsx` — UI: auto-fill, rozměry, multi-select
+- Místo jednoho pole `hotelImages` vracet objekt se 4 poli: `websiteImages`, `bookingImages`, `tripadvisorImages`, `generalImages`
+- Přidat novou PHASE pro TripAdvisor: `site:tripadvisor.com "{hotelName}"` (podobně jako Booking.com)
+- Každá fáze ukládá do svého pole
+- Response formát:
+  &nbsp;
+
+```json
+{
+  "success": true,
+  "websiteImages": [...],
+  "bookingImages": [...],
+  "tripadvisorImages": [...],
+  "generalImages": [...],
+  "golfImages": [...],
+  "detectedWebsiteUrl": "..."
+}
+```
+
+**2. `src/components/HotelImageUpload.tsx**`
+
+- Aktualizovat state `foundImages` na novou strukturu: `{ website: string[], booking: string[], tripadvisor: string[], general: string[], golf: string[], search: string[] }`
+- Zobrazit 4+2 sekcí v pickeru místo současných 3 (hotel/golf/search)
+- Zachovat zpětnou kompatibilitu s `search` (z Perplexity)
+- Aktualizovat `handleAutoFill` a metadata probing pro novou strukturu
 
 ### Technické detaily
 
-**URL upgrade patterns (scraper):**
-```text
-Booking.com: /max500/ → /max1920x1080/
-WordPress:   -150x150.jpg → .jpg (strip dimensions)
-Cloudinary:  /w_400/ → /w_1920,q_auto/
-General:     _thumb, _small → strip suffix
-srcset:      pick highest "w" descriptor
+Scraper — nová fáze TripAdvisor (mezi Phase 2 a 3):
+
+```
+firecrawlSearch(`site:tripadvisor.com "${hotelName}" hotel`, 2)
+→ filtrovat URL obsahující "tripadvisor" nebo "tacdn"
 ```
 
-**Head-only proxy response:**
-```json
-{ "width": 1920, "height": 1080, "size": 524288, "contentType": "image/jpeg" }
+UI sekce v pickeru:
+
 ```
-
-**Auto-fill logic:**
-1. Seřadit nalezené fotky podle sizeScore (URL hints) + skutečné velikosti
-2. Vzít top N (= počet prázdných slotů)
-3. Stáhnout přes proxy → ensureMinimumQuality → upload → uložit do DB
-
+🌐 Web hotelu (N)        — websiteImages
+📘 Booking.com (N)       — bookingImages  
+🦉 TripAdvisor (N)       — tripadvisorImages
+🔍 Obecné hledání (N)    — generalImages
+⛳ Golf (N)              — golfImages
+🔍 Další z vyhledávání (N) — search (Perplexity)
+```
