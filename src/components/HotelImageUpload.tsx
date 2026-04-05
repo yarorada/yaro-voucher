@@ -138,7 +138,7 @@ type ImageSlot = "image_url" | "image_url_2" | "image_url_3" | "image_url_4" | "
 export function HotelImageUpload({ hotelId, hotelName, golfCourseName, imageUrl, imageUrl2, imageUrl3, imageUrl4, imageUrl5, imageUrl6, imageUrl7, imageUrl8, imageUrl9, imageUrl10, description, websiteUrl, onUpdate, autoScrape: autoScrapeProp }: HotelImageUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [scraping, setScraping] = useState(false);
-  const [foundImages, setFoundImages] = useState<{ hotel: string[]; golf: string[]; search: string[] } | null>(null);
+  const [foundImages, setFoundImages] = useState<{ website: string[]; booking: string[]; tripadvisor: string[]; general: string[]; golf: string[]; search: string[] } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<ImageSlot | null>(null);
   const [savingUrl, setSavingUrl] = useState<string | null>(null);
