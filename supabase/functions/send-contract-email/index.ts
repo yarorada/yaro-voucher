@@ -263,11 +263,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Update sent_at
-    await supabase
-      .from("travel_contracts")
-      .update({ sent_at: new Date().toISOString(), status: contract.status === 'draft' ? 'sent' : contract.status })
-      .eq("id", contractId);
+    // Update sent_at (skip for test emails)
+    if (!testEmailOverride) {
+      await supabase
+        .from("travel_contracts")
+        .update({ sent_at: new Date().toISOString(), status: contract.status === 'draft' ? 'sent' : contract.status })
+        .eq("id", contractId);
+    }
 
     const allSuccessful = emailResults.every((r) => r.success);
 
