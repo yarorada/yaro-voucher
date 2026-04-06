@@ -281,8 +281,15 @@ function computePerPersonPrices(services: Array<{
   const currency = services.find(s => s.price_currency)?.price_currency || "CZK";
 
   const nonHotelPerPersonTotal = nonHotels.reduce((sum, s) => {
+    const price = s.price || 0;
+    if (price <= 0) return sum;
     const priceMode = s.details?.price_mode || "per_service";
-    return priceMode === "per_person" ? sum + (s.price || 0) : sum;
+    if (priceMode === "per_person") {
+      return sum + price;
+    } else {
+      const persons = s.person_count || 1;
+      return sum + price / persons;
+    }
   }, 0);
 
   if (hotels.length === 0) {
