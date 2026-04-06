@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import yaroLogoWide from "@/assets/yaro-logo-wide.png";
-import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight, CheckCircle2, Send, MapPin } from "lucide-react";
+import { Plane, Hotel, Navigation, Car, Shield, FileText, ChevronLeft, ChevronRight, CheckCircle2, Send, MapPin, UtensilsCrossed } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -179,6 +179,7 @@ const serviceIcons: Record<string, typeof Plane> = {
   golf: Navigation,
   transfer: Car,
   insurance: Shield,
+  meal: UtensilsCrossed,
   other: FileText,
 };
 
