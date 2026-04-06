@@ -447,7 +447,7 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                     onClick={() =>
                       setFormData((f) => ({
                         ...f,
-                        golf_courses_data: [...f.golf_courses_data, { name: "", par: null, length: null, architect: null, is_hotel_course: true, distance_km: null, rating: null }],
+                        golf_courses_data: [...f.golf_courses_data, { name: "", par: null, holes: null, length: null, architect: null, is_hotel_course: true, distance_km: null, rating: null }],
                       }))
                     }
                   >
