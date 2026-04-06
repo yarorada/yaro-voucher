@@ -363,9 +363,9 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 <tr>
                   <th style={thStyle}>Služba</th>
                   <th style={{ ...thStyle, width: '15%' }}>Termín</th>
-                  <th style={{ ...thStyle, width: '8%', textAlign: 'center' }}>Osoby</th>
-                  
-                  <th style={{ ...thStyle, width: '14%', textAlign: 'right' }}>Cena</th>
+                  <th style={{ ...thStyle, width: '6%', textAlign: 'center' }}>Osoby</th>
+                  <th style={{ ...thStyle, width: '13%', textAlign: 'right' }}>Cena/os.</th>
+                  <th style={{ ...thStyle, width: '13%', textAlign: 'right' }}>Cena</th>
                 </tr>
               </thead>
               <tbody>
