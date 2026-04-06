@@ -49,6 +49,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 
 interface FlightSegment {
   departure: string;
@@ -204,6 +205,7 @@ export const VariantDetailDialog = ({
   const [editingService, setEditingService] = useState<VariantService | null>(null);
   const [preselectedServiceType, setPreselectedServiceType] = useState<VariantService["service_type"]>("hotel");
   const [preselectedServiceName, setPreselectedServiceName] = useState<string>("");
+  const [teeTimeItems, setTeeTimeItems] = useState<Array<{ date: string | null; club: string; time: string }>>([]);
 
   useEffect(() => {
     if (variant) {
@@ -213,6 +215,7 @@ export const VariantDetailDialog = ({
       setEndDate(variant.end_date ? new Date(variant.end_date) : undefined);
       setNotes(variant.notes || "");
       setHidePrice(variant.hide_price || false);
+      setTeeTimeItems(Array.isArray(variant.tee_times) ? variant.tee_times.map((t: any) => ({ ...t })) : []);
       fetchServices(variant.id);
     } else {
       resetForm();
@@ -226,6 +229,7 @@ export const VariantDetailDialog = ({
     setEndDate(dealEndDate ? new Date(dealEndDate) : undefined);
     setNotes("");
     setHidePrice(false);
+    setTeeTimeItems([]);
     setServices([]);
   };
 
@@ -283,6 +287,12 @@ export const VariantDetailDialog = ({
           .eq("id", variant.id);
 
         if (error) throw error;
+
+        // Save tee_times separately
+        await supabase
+          .from("deal_variants")
+          .update({ tee_times: teeTimeItems.length > 0 ? teeTimeItems : null } as any)
+          .eq("id", variant.id);
       } else {
         // Create new variant
         const { data, error } = await supabase
