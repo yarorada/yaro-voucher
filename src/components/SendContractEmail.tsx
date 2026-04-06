@@ -290,23 +290,43 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>
-            Zrušit
-          </Button>
-          <Button onClick={handleSend} disabled={sending || !clientEmail}>
-            {sending ? (
+        <div className="flex justify-between gap-2 mt-6">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSendTest}
+            disabled={sending || sendingTest}
+          >
+            {sendingTest ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Odesílám...
+                Odesílám test...
               </>
             ) : (
               <>
-                <Send className="h-4 w-4 mr-2" />
-                Odeslat
+                <TestTube className="h-4 w-4 mr-2" />
+                Testovací e-mail
               </>
             )}
           </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={sending || sendingTest}>
+              Zrušit
+            </Button>
+            <Button onClick={handleSend} disabled={sending || sendingTest || !clientEmail}>
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Odesílám...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Odeslat
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
