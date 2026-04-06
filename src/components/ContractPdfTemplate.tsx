@@ -363,9 +363,9 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 <tr>
                   <th style={thStyle}>Služba</th>
                   <th style={{ ...thStyle, width: '15%' }}>Termín</th>
-                  <th style={{ ...thStyle, width: '8%', textAlign: 'center' }}>Osoby</th>
-                  
-                  <th style={{ ...thStyle, width: '14%', textAlign: 'right' }}>Cena</th>
+                  <th style={{ ...thStyle, width: '6%', textAlign: 'center' }}>Osoby</th>
+                  <th style={{ ...thStyle, width: '13%', textAlign: 'right' }}>Cena/os.</th>
+                  <th style={{ ...thStyle, width: '13%', textAlign: 'right' }}>Cena</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,12 +399,13 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                           {service.end_date ? ` – ${(() => { const d = parseDateSafe(service.end_date); return d ? format(d, "d.M.") : ''; })()}` : ''}
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{service.person_count || '-'}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right' }}>{service.price != null ? formatPrice(service.price, true, currency) : '-'}</td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{formatPrice(getServiceTotal(service), true, currency)}</td>
                       </tr>
                     );
                   })}
                 <tr style={{ backgroundColor: '#f0f4f8' }}>
-                  <td colSpan={3} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
+                  <td colSpan={4} style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '9px', verticalAlign: 'middle' }}>Celkem:</td>
                   <td style={{ padding: '6px 6px', fontWeight: 'bold', textAlign: 'right', fontSize: '11px', verticalAlign: 'middle' }}>{formatPrice(services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0), true, currency)}</td>
                 </tr>
               </tbody>
