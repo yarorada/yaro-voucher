@@ -938,22 +938,27 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
           const Golf = serviceIcons["golf"] || FileText;
           return (
             <div className="space-y-2">
-              {hotelSvc && (
-                <div className="flex items-start gap-3 text-sm">
-                  <Hotel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-medium text-slate-700">
-                      {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
-                      {hotelSvc.description && `, ${hotelSvc.description}`}
-                    </span>
-                    {Array.isArray(hotelSvc.details?.room_types) && hotelSvc.details.room_types.length > 0 && (
-                      <p className="text-slate-500 text-xs mt-0.5">
-                        {hotelSvc.details.room_types.map((rt: any) => rt.name).filter(Boolean).join(", ")}
-                      </p>
-                    )}
+              {hotelSvc && (() => {
+                const allHotelSvcs = services.filter(s => s.service_type === "hotel");
+                const roomTypeNames = allHotelSvcs.map(s => s.description).filter(Boolean);
+                const detailRoomTypes = allHotelSvcs.flatMap(s => Array.isArray(s.details?.room_types) ? s.details.room_types.map((rt: any) => rt.name) : []).filter(Boolean);
+                const displayRoomTypes = roomTypeNames.length > 0 ? [...new Set(roomTypeNames)] : [...new Set(detailRoomTypes)];
+                return (
+                  <div className="flex items-start gap-3 text-sm">
+                    <Hotel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-medium text-slate-700">
+                        {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
+                      </span>
+                      {displayRoomTypes.length > 0 && (
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          {displayRoomTypes.join(", ")}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {totalGreenFees > 0 && (
                 <div className="flex items-start gap-3 text-sm">
                   <Golf className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
