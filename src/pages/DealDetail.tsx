@@ -228,7 +228,17 @@ const SortableServiceRow = ({
         </div>
       </TableCell>
       <TableCell className="text-xs whitespace-nowrap hidden sm:table-cell">
-        {service.start_date && (() => { const p = service.start_date.split('-'); return p.length === 3 ? `${p[2]}.${p[1]}` : ''; })()}
+        {(() => {
+          const fmt = (d: string | null) => {
+            if (!d) return '';
+            const p = d.split('-');
+            return p.length === 3 ? `${p[2]}.${p[1]}.${p[0].slice(-2)}` : '';
+          };
+          const from = fmt(service.start_date);
+          const to = fmt(service.end_date);
+          if (from && to) return `${from} - ${to}`;
+          return from || to || '';
+        })()}
       </TableCell>
       <TableCell className="text-center text-sm hidden sm:table-cell">
         {service.person_count || 1}
