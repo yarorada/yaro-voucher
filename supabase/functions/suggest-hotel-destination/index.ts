@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
 4. A short catchy subtitle in Czech for marketing purposes (e.g. "5* golf resort v srdci Beleku", "Luxusní retreat na břehu Rudého moře"). Keep it under 60 characters. Include star rating if known.
 5. Golf courses: ALWAYS list ALL of the hotel's own courses AND enough nearby courses so that the TOTAL is at least 5 courses. For example, if the hotel has 3 own courses, add at least 2 nearby courses. If the hotel has no own courses, list the 5 nearest. For each course provide:
    - "name": course name
+   - "holes": number of holes (number, e.g. 18 or 9). If unknown, use 18 as default.
    - "par": par value (number, e.g. 72). If unknown, use null.
    - "length": course length as string ALWAYS in meters (e.g. "6321 m"). If the source data is in yards, convert to meters (1 yard = 0.9144 m) and round to whole number. If unknown, use null.
    - "architect": course architect/designer name. If unknown, use null.
@@ -95,6 +96,7 @@ Use the tool to return your answer.`,
                       type: "object",
                       properties: {
                         name: { type: "string", description: "Course name" },
+                        holes: { type: ["number", "null"], description: "Number of holes, e.g. 18 or 9" },
                         par: { type: ["number", "null"], description: "Par value, e.g. 72" },
                         length: { type: ["string", "null"], description: "Course length, e.g. '6321 m'" },
                         architect: { type: ["string", "null"], description: "Course architect/designer" },
