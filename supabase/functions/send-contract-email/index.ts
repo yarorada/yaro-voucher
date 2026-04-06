@@ -11,6 +11,7 @@ interface SendContractEmailRequest {
   pdfPath?: string | null;
   ccSupplierEmail?: string | null;
   customEmailText?: string | null;
+  testEmailOverride?: string | null;
 }
 
 const buildClientEmailTextFallback = (salutation: string, dateFrom: string, dateTo: string, destination: string) => {
