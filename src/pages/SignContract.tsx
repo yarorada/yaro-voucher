@@ -430,7 +430,7 @@ const SignContract = () => {
                       : "—";
                     return (
                       <p key={i}>
-                        {dateStr} – {tt.course || "—"}{tt.time ? ` – ${tt.time}` : ""}{tt.players ? ` (${tt.players}x)` : ""}
+                        {dateStr} – {tt.club || tt.course || "—"}{tt.time ? ` – ${tt.time}` : ""}{tt.players ? ` (${tt.players}x)` : ""}
                       </p>
                     );
                   })}
