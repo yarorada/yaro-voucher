@@ -240,7 +240,17 @@ function getPerPersonPriceLabel(persons: number) {
 
 function parseLength(val: any): number | null {
   if (val == null) return null;
-  const num = Number(String(val).replace(/[\s\u00a0]/g, ''));
+  const raw = String(val).trim();
+  if (!raw) return null;
+
+  if (typeof val === "number") {
+    return Number.isFinite(val) ? val : null;
+  }
+
+  const digitsOnly = raw.replace(/[^\d]/g, "");
+  if (!digitsOnly) return null;
+
+  const num = Number(digitsOnly);
   return isNaN(num) ? null : num;
 }
 
