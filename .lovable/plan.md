@@ -1,46 +1,37 @@
 
 
-## Oprava výpočtu ceny na osobu ve veřejné nabídce
+## Oprava: hotel per_person přiřazovat podle person_count
 
 ### Problém
+Na řádcích 329–331 se u hotelu s `per_person` režimem přidává cena do **obou** bucketů (jednolůžkový i dvoulůžkový). Tedy hotel pro 2 osoby (person_count=2) se chybně započítá i do jednolůžkového pokoje a naopak.
 
-Aktuální logika v `computePerPersonPrices` u ne-hotelových služeb přičítá **pouze** služby s režimem `per_person` a zcela ignoruje služby s režimem `per_service`. To znamená, že např. transfery nebo jiné služby oceněné za celek se do ceny na osobu vůbec nezapočítají.
+### Oprava
+**Soubor:** `src/pages/PublicOffer.tsx`, řádky 329–331
 
-### Nová logika
-
-**Soubor:** `src/pages/PublicOffer.tsx` — funkce `computePerPersonPrices`
-
-Změna výpočtu `nonHotelPerPersonTotal`:
-
-- **per_person** → přičti `price` přímo (cena je už za osobu)
-- **per_service** → přičti `price / person_count` (celková cena služby vydělená počtem účastníků)
-
-**Hotel:**
-- **per_person** → cena je už za osobu, použij přímo pro jednolůžkový i dvoulůžkový
-- **per_service** → jednolůžkový = celá cena; dvoulůžkový = cena / 2
-
-(Tato hotelová logika je již správně implementována, mění se pouze ne-hotelová část.)
-
-### Konkrétní změna
-
-Řádky 283–286 — nahradit reduce tak, aby u `per_service` služeb dělil cenu počtem osob (`person_count`):
-
+Nahradit:
 ```typescript
-const nonHotelPerPersonTotal = nonHotels.reduce((sum, s) => {
-  const price = s.price || 0;
-  if (price <= 0) return sum;
-  const priceMode = s.details?.price_mode || "per_service";
-  if (priceMode === "per_person") {
-    return sum + price;
-  } else {
-    // per_service: rozděl cenu na počet účastníků
-    const persons = s.person_count || 1;
-    return sum + price / persons;
-  }
-}, 0);
+if (priceMode === "per_person") {
+  hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
+  hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice);
+}
 ```
 
-### Rozsah
+Za:
+```typescript
+if (priceMode === "per_person") {
+  // Cena je za osobu – přiřaď do bucketu podle skutečného person_count služby
+  const pc = h.person_count || 1;
+  const occupancy = h.quantity && h.quantity > 0 ? Math.round(pc / h.quantity) : pc;
+  hotelPriceMap.set(occupancy, (hotelPriceMap.get(occupancy) || 0) + hotelPrice);
+}
+```
 
-Jedna změna v jednom souboru (`src/pages/PublicOffer.tsx`), cca 5 řádků.
+Tím se hotel s 2 osobami / 1 pokoj přiřadí jen do dvoulůžkového bucketu a hotel s 1 osobou / 1 pokoj jen do jednolůžkového.
+
+### Výsledek pro deal 260034
+- Jednolůžkový: 15 600 + 9 850 = **25 450 CZK**
+- Dvoulůžkový: 8 000 + 9 850 = **17 850 CZK**
+
+### Rozsah
+3 řádky v jednom souboru.
 
