@@ -387,11 +387,24 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                         if (parts.length > 0) baggageLine = parts.join(', ');
                       }
                     }
+                    // For hotel services, determine room type from person_count and quantity
+                    let serviceName = service.service_name;
+                    let descriptionText = service.description || '';
+                    if (service.service_type === 'hotel') {
+                      serviceName = `Ubytování ${service.service_name}`;
+                      if (descriptionText) {
+                        const personCount = service.person_count || 1;
+                        const quantity = service.quantity || 1;
+                        const personsPerRoom = quantity > 0 ? Math.round(personCount / quantity) : personCount;
+                        const roomTypeLabel = personsPerRoom >= 2 ? 'dvoulůžkový' : 'jednolůžkový';
+                        descriptionText = `${descriptionText} (${roomTypeLabel})`;
+                      }
+                    }
                     return (
                       <tr key={service.id}>
                         <td style={tdStyle}>
-                          {service.service_name}
-                          {service.description && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{service.description}</span>}
+                          {serviceName}
+                          {descriptionText && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{descriptionText}</span>}
                           {baggageLine && <span style={{ display: 'block', fontSize: '7px', color: '#888', lineHeight: '1.2', marginTop: '1px' }}>{baggageLine}</span>}
                         </td>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontSize: '8px' }}>
