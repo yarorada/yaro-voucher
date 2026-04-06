@@ -43,6 +43,7 @@ interface OfferData {
       quantity: number | null;
       details: any;
     }>;
+    tee_times?: any[] | null;
   }>;
   directServices: Array<{
     id: string;
@@ -533,7 +534,7 @@ export default function PublicOffer() {
                 onSubmit={() => submitResponse(variant.variant_name, variant.id)}
                 isSubmitting={variantSubmitting[variant.id] || false}
                 isSubmitted={variantSubmitted[variant.id] || false}
-                teeTimesData={data.deal.tee_times}
+                teeTimesData={variant.tee_times || data.deal.tee_times}
               />
             ))}
           </div>
