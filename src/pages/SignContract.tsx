@@ -334,12 +334,49 @@ const SignContract = () => {
                 const priceMode = s.details?.price_mode || "per_service";
                 const multiplier = priceMode === "per_person" ? (s.person_count || 1) : (s.quantity || 1);
                 const total = (s.price || 0) * multiplier;
+
+                // Parse flight legs
+                let flightLegs: { text: string }[] = [];
+                if (s.service_type === "flight" && s.details) {
+                  const det = typeof s.details === "string" ? JSON.parse(s.details) : s.details;
+                  const parseLeg = (seg: any) => {
+                    const parts: string[] = [];
+                    if (seg.date) {
+                      try { parts.push(new Date(seg.date).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "2-digit" })); } catch { parts.push(seg.date); }
+                    }
+                    const flightId = [seg.airline && seg.flight_number ? `${seg.airline}${seg.flight_number}` : (seg.flight_number || ""), seg.airline_name || ""].filter(Boolean).join(" ");
+                    if (flightId) parts.push(flightId);
+                    const dep = seg.departure_airport || seg.departure;
+                    const arr = seg.arrival_airport || seg.arrival;
+                    if (dep || arr) parts.push(`${dep || "?"} → ${arr || "?"}`);
+                    if (seg.departure_time) parts.push(`Odlet: ${seg.departure_time}`);
+                    if (seg.arrival_time) parts.push(`Přílet: ${seg.arrival_time}`);
+                    return parts.join(" • ");
+                  };
+                  if (det.outbound_segments || det.return_segments) {
+                    for (const seg of (det.outbound_segments || [])) flightLegs.push({ text: parseLeg(seg) });
+                    for (const seg of (det.return_segments || [])) flightLegs.push({ text: parseLeg(seg) });
+                  } else if (det.segments) {
+                    for (const seg of det.segments) flightLegs.push({ text: parseLeg(seg) });
+                  } else {
+                    if (det.outbound) flightLegs.push({ text: parseLeg({ ...det.outbound, date: s.start_date }) });
+                    if (det.return) flightLegs.push({ text: parseLeg({ ...det.return, date: s.end_date }) });
+                  }
+                }
+
                 return (
                   <div key={i} className="flex justify-between items-start py-1 border-b last:border-0">
                     <div>
                       <p className="font-medium">{s.service_name}</p>
                       {s.description && <p className="text-muted-foreground text-xs">{s.description}</p>}
-                      {s.start_date && <p className="text-muted-foreground text-xs">{formatDate(s.start_date)}{s.end_date ? ` – ${formatDate(s.end_date)}` : ""}</p>}
+                      {flightLegs.length > 0 && (
+                        <div className="text-muted-foreground text-xs space-y-0.5 mt-0.5">
+                          {flightLegs.map((leg, idx) => <p key={idx}>{leg.text}</p>)}
+                        </div>
+                      )}
+                      {flightLegs.length === 0 && s.start_date && (
+                        <p className="text-muted-foreground text-xs">{formatDate(s.start_date)}{s.end_date ? ` – ${formatDate(s.end_date)}` : ""}</p>
+                      )}
                     </div>
                     {s.price ? (
                       <div className="text-right whitespace-nowrap">
