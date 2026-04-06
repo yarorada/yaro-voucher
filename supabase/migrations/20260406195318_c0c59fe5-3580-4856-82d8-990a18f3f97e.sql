@@ -1,0 +1,1 @@
+ALTER TABLE public.deal_variants ADD COLUMN tee_times jsonb DEFAULT NULL;

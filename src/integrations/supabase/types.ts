@@ -784,6 +784,7 @@ export type Database = {
           is_selected: boolean
           notes: string | null
           start_date: string | null
+          tee_times: Json | null
           total_price: number | null
           updated_at: string
           user_id: string
@@ -799,6 +800,7 @@ export type Database = {
           is_selected?: boolean
           notes?: string | null
           start_date?: string | null
+          tee_times?: Json | null
           total_price?: number | null
           updated_at?: string
           user_id?: string
@@ -814,6 +816,7 @@ export type Database = {
           is_selected?: boolean
           notes?: string | null
           start_date?: string | null
+          tee_times?: Json | null
           total_price?: number | null
           updated_at?: string
           user_id?: string
