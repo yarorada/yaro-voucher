@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Send, Loader2, Mail } from "lucide-react";
+import { Send, Loader2, Mail, TestTube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
@@ -49,6 +49,7 @@ děkujeme Vám za důvěru projevenou naší společnosti a věříme, že s na�
 export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContractEmailProps) => {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [ccSupplier, setCcSupplier] = useState(false);
   const [supplierEmail, setSupplierEmail] = useState("");
   const [emailText, setEmailText] = useState("");
@@ -77,6 +78,56 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
     setOpen(isOpen);
   };
 
+  const generateAndUploadPdf = async (): Promise<string | null> => {
+    const element = pdfContentRef.current;
+    if (!element) return null;
+
+    await new Promise<void>((resolve) => {
+      if (element.getAttribute('data-qr-ready') === 'true') { resolve(); return; }
+      const timeout = setTimeout(resolve, 2000);
+      const interval = setInterval(() => {
+        if (element.getAttribute('data-qr-ready') === 'true') {
+          clearInterval(interval); clearTimeout(timeout); resolve();
+        }
+      }, 100);
+    });
+
+    const opt = {
+      margin: [10, 10, 10, 10] as [number, number, number, number],
+      image: { type: 'jpeg' as const, quality: 0.85 },
+      html2canvas: {
+        scale: 1.5, useCORS: true, allowTaint: true, letterRendering: false,
+        onclone: (clonedDoc: Document) => {
+          clonedDoc.documentElement.classList.remove('dark');
+          const clonedElement = clonedDoc.getElementById('contract-pdf-content');
+          if (clonedElement) {
+            clonedElement.style.backgroundColor = '#ffffff';
+            clonedElement.style.color = '#000000';
+            clonedElement.style.display = 'block';
+            const logos = clonedElement.querySelectorAll('.logo-dark-mode');
+            logos.forEach(el => { (el as HTMLElement).style.filter = 'none'; });
+          }
+        },
+      },
+      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['[data-pdf-section]'] },
+    };
+
+    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+    const fileName = `contract-${contract.contract_number}-${Date.now()}.pdf`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("voucher-pdfs")
+      .upload(fileName, pdfBlob, { contentType: "application/pdf" });
+
+    if (uploadError) {
+      console.error("PDF upload error:", uploadError);
+      toast.error("Chyba při nahrávání PDF");
+      return null;
+    }
+    return fileName;
+  };
+
   const handleSend = async () => {
     if (!clientEmail) {
       toast.error("Klient nemá nastavenou e-mailovou adresu");
@@ -85,72 +136,8 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
 
     setSending(true);
     try {
-      // Generate PDF
-      let pdfPath: string | null = null;
-      const element = pdfContentRef.current;
+      const pdfPath = await generateAndUploadPdf();
 
-      if (element) {
-        // Wait for QR codes to be generated (up to 2 seconds)
-        await new Promise<void>((resolve) => {
-          if (element.getAttribute('data-qr-ready') === 'true') {
-            resolve();
-            return;
-          }
-          const timeout = setTimeout(resolve, 2000);
-          const interval = setInterval(() => {
-            if (element.getAttribute('data-qr-ready') === 'true') {
-              clearInterval(interval);
-              clearTimeout(timeout);
-              resolve();
-            }
-          }, 100);
-        });
-
-        const opt = {
-          margin: [10, 10, 10, 10] as [number, number, number, number],
-          image: { type: 'jpeg' as const, quality: 0.85 },
-          html2canvas: {
-            scale: 1.5,
-            useCORS: true,
-            allowTaint: true,
-            letterRendering: false,
-            onclone: (clonedDoc: Document) => {
-              clonedDoc.documentElement.classList.remove('dark');
-              const clonedElement = clonedDoc.getElementById('contract-pdf-content');
-              if (clonedElement) {
-                clonedElement.style.backgroundColor = '#ffffff';
-                clonedElement.style.color = '#000000';
-                clonedElement.style.display = 'block';
-                const logos = clonedElement.querySelectorAll('.logo-dark-mode');
-                logos.forEach(el => { (el as HTMLElement).style.filter = 'none'; });
-              }
-            },
-          },
-          jsPDF: {
-            unit: 'mm' as const,
-            format: 'a4' as const,
-            orientation: 'portrait' as const,
-          },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['[data-pdf-section]'] },
-        };
-
-        const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
-        const fileName = `contract-${contract.contract_number}-${Date.now()}.pdf`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("voucher-pdfs")
-          .upload(fileName, pdfBlob, { contentType: "application/pdf" });
-
-        if (uploadError) {
-          console.error("PDF upload error:", uploadError);
-          toast.error("Chyba při nahrávání PDF");
-          return;
-        }
-
-        pdfPath = fileName;
-      }
-
-      // Send email via edge function
       const { data, error } = await supabase.functions.invoke("send-contract-email", {
         body: {
           contractId: contract.id,
@@ -175,6 +162,36 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
       toast.error("Chyba při odesílání smlouvy");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    try {
+      const pdfPath = await generateAndUploadPdf();
+
+      const { data, error } = await supabase.functions.invoke("send-contract-email", {
+        body: {
+          contractId: contract.id,
+          pdfPath,
+          ccSupplierEmail: null,
+          customEmailText: emailText.trim() || null,
+          testEmailOverride: "info@yarotravel.cz",
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Testovací e-mail odeslán na info@yarotravel.cz");
+      } else {
+        toast.error(data?.error || "Chyba při odesílání testovacího e-mailu");
+      }
+    } catch (err: any) {
+      console.error("Error sending test email:", err);
+      toast.error("Chyba při odesílání testovacího e-mailu");
+    } finally {
+      setSendingTest(false);
     }
   };
 
@@ -273,23 +290,43 @@ export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContr
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>
-            Zrušit
-          </Button>
-          <Button onClick={handleSend} disabled={sending || !clientEmail}>
-            {sending ? (
+        <div className="flex justify-between gap-2 mt-6">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSendTest}
+            disabled={sending || sendingTest}
+          >
+            {sendingTest ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Odesílám...
+                Odesílám test...
               </>
             ) : (
               <>
-                <Send className="h-4 w-4 mr-2" />
-                Odeslat
+                <TestTube className="h-4 w-4 mr-2" />
+                Testovací e-mail
               </>
             )}
           </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={sending || sendingTest}>
+              Zrušit
+            </Button>
+            <Button onClick={handleSend} disabled={sending || sendingTest || !clientEmail}>
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Odesílám...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Odeslat
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

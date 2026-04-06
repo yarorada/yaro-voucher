@@ -11,6 +11,7 @@ interface SendContractEmailRequest {
   pdfPath?: string | null;
   ccSupplierEmail?: string | null;
   customEmailText?: string | null;
+  testEmailOverride?: string | null;
 }
 
 const buildClientEmailTextFallback = (salutation: string, dateFrom: string, dateTo: string, destination: string) => {
@@ -71,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
+    const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl, testEmailOverride }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!contractId || !uuidRegex.test(contractId)) {
@@ -202,11 +203,12 @@ const handler = async (req: Request): Promise<Response> => {
       clientEmailText = buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
     }
 
+    const actualRecipient = testEmailOverride || clientEmail;
     const clientEmailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
-      to: [clientEmail],
-      bcc: ["zajezdy@yarotravel.cz"],
-      subject,
+      to: [actualRecipient],
+      bcc: testEmailOverride ? [] : ["zajezdy@yarotravel.cz"],
+      subject: testEmailOverride ? `[TEST] ${subject}` : subject,
       text: clientEmailText,
     };
     if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
@@ -261,16 +263,18 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Update sent_at
-    await supabase
-      .from("travel_contracts")
-      .update({ sent_at: new Date().toISOString(), status: contract.status === 'draft' ? 'sent' : contract.status })
-      .eq("id", contractId);
+    // Update sent_at (skip for test emails)
+    if (!testEmailOverride) {
+      await supabase
+        .from("travel_contracts")
+        .update({ sent_at: new Date().toISOString(), status: contract.status === 'draft' ? 'sent' : contract.status })
+        .eq("id", contractId);
+    }
 
     const allSuccessful = emailResults.every((r) => r.success);
 
     // Sync to Airtable (fire and forget - don't block the response)
-    if (allSuccessful) {
+    if (allSuccessful && !testEmailOverride) {
       try {
         const airtableSyncUrl = `${supabaseUrl}/functions/v1/sync-contract-airtable`;
         fetch(airtableSyncUrl, {
