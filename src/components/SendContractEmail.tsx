@@ -49,6 +49,7 @@ děkujeme Vám za důvěru projevenou naší společnosti a věříme, že s na�
 export const SendContractEmail = ({ contract, pdfContentRef, onSent }: SendContractEmailProps) => {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [ccSupplier, setCcSupplier] = useState(false);
   const [supplierEmail, setSupplierEmail] = useState("");
   const [emailText, setEmailText] = useState("");

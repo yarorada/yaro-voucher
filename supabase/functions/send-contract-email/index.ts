@@ -274,7 +274,7 @@ const handler = async (req: Request): Promise<Response> => {
     const allSuccessful = emailResults.every((r) => r.success);
 
     // Sync to Airtable (fire and forget - don't block the response)
-    if (allSuccessful) {
+    if (allSuccessful && !testEmailOverride) {
       try {
         const airtableSyncUrl = `${supabaseUrl}/functions/v1/sync-contract-airtable`;
         fetch(airtableSyncUrl, {
