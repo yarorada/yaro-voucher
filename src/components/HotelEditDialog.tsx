@@ -492,7 +492,11 @@ export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEdi
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                        <div>
+                          <Label className="text-xs">Jamky</Label>
+                          <Input type="number" value={gc.holes ?? ""} onChange={(e) => { const u = [...formData.golf_courses_data]; u[idx] = { ...u[idx], holes: e.target.value ? Number(e.target.value) : null }; setFormData((f) => ({ ...f, golf_courses_data: u })); }} placeholder="18" />
+                        </div>
                         <div>
                           <Label className="text-xs">PAR</Label>
                           <Input type="number" value={gc.par ?? ""} onChange={(e) => { const u = [...formData.golf_courses_data]; u[idx] = { ...u[idx], par: e.target.value ? Number(e.target.value) : null }; setFormData((f) => ({ ...f, golf_courses_data: u })); }} placeholder="72" />
