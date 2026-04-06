@@ -785,6 +785,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
                           {displayRoomTypes.join(", ")}
                         </p>
                       )}
+                      {hotelSvc.start_date && hotelSvc.end_date && (
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {formatDateShort(hotelSvc.start_date)} – {formatDateShort(hotelSvc.end_date)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
