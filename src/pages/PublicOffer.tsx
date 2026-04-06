@@ -771,10 +771,17 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
               {hotelSvc && (
                 <div className="flex items-start gap-3 text-sm">
                   <Hotel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                  <span className="font-medium text-slate-700">
-                    {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
-                    {hotelSvc.description && `, ${hotelSvc.description}`}
-                  </span>
+                  <div>
+                    <span className="font-medium text-slate-700">
+                      {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
+                      {hotelSvc.description && `, ${hotelSvc.description}`}
+                    </span>
+                    {Array.isArray(hotelSvc.details?.room_types) && hotelSvc.details.room_types.length > 0 && (
+                      <p className="text-slate-500 text-xs mt-0.5">
+                        {hotelSvc.details.room_types.map((rt: any) => rt.name).filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               {totalGreenFees > 0 && (
