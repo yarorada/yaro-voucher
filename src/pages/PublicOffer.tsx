@@ -934,7 +934,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
             ? Math.round((new Date(hotelSvc.end_date).getTime() - new Date(hotelSvc.start_date).getTime()) / 86400000)
             : null;
           const otherServices = services.filter(s => s.service_type !== "hotel" && s.service_type !== "golf");
-          const Hotel = serviceIcons["hotel"] || FileText;
+          const HotelIcon = serviceIcons["hotel"] || FileText;
           const Golf = serviceIcons["golf"] || FileText;
           return (
             <div className="space-y-2">
@@ -945,7 +945,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
                 const displayRoomTypes = roomTypeNames.length > 0 ? [...new Set(roomTypeNames)] : [...new Set(detailRoomTypes)];
                 return (
                   <div className="flex items-start gap-3 text-sm">
-                    <Hotel className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                    <HotelIcon className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                     <div>
                       <span className="font-medium text-slate-700">
                         {nightsFrom ? `${nightsFrom} nocí — ubytování v hotelu ${hotelSvc.service_name}` : `ubytování v hotelu ${hotelSvc.service_name}`}
@@ -953,6 +953,11 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
                       {displayRoomTypes.length > 0 && (
                         <p className="text-slate-500 text-xs mt-0.5">
                           {displayRoomTypes.join(", ")}
+                        </p>
+                      )}
+                      {hotelSvc.start_date && hotelSvc.end_date && (
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {formatDateShort(hotelSvc.start_date)} – {formatDateShort(hotelSvc.end_date)}
                         </p>
                       )}
                     </div>
@@ -981,6 +986,11 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
                       {service.service_type === "flight" && service.details && (
                         <FlightInfo details={service.details} />
                       )}
+                      {service.start_date && service.end_date && service.service_type !== "flight" && (
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {formatDateShort(service.start_date)} – {formatDateShort(service.end_date)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -988,14 +998,7 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
             </div>
           );
         })()}
-        {totalPrice && totalPrice > 0 && (
-          <div className="border-t pt-4">
-            <div className="flex justify-between items-baseline">
-              <span className="text-sm text-slate-500">Celková cena</span>
-              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
-            </div>
-          </div>
-        )}
+
         {/* Per-person price recap */}
         {(() => {
           let lines = computePerPersonPrices(services);
@@ -1012,6 +1015,15 @@ function DirectServicesCard({ services, hotelImages, totalPrice, teeTimesData }:
 
           return <PerPersonPriceRecap lines={lines} />;
         })()}
+
+        {totalPrice && totalPrice > 0 && (
+          <div className="border-t pt-4">
+            <div className="flex justify-between items-baseline">
+              <span className="text-sm text-slate-500">Celková cena</span>
+              <span className="text-2xl font-bold text-slate-800">{formatPrice(totalPrice, currency)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
