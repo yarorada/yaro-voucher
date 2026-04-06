@@ -22,6 +22,7 @@ import { useGlobalHistory } from "@/hooks/useGlobalHistory";
 interface GolfCourseData {
   name: string;
   par: number | null;
+  holes: number | null;
   length: string | null;
   architect: string | null;
   is_hotel_course: boolean;
