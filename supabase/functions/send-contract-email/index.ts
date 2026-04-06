@@ -203,11 +203,12 @@ const handler = async (req: Request): Promise<Response> => {
       clientEmailText = buildClientEmailTextFallback(fullSalutation, dateFrom, dateTo, destination) + signLinkText + attachmentNote;
     }
 
+    const actualRecipient = testEmailOverride || clientEmail;
     const clientEmailPayload: any = {
       from: "YARO Travel <radek@yarogolf.cz>",
-      to: [clientEmail],
-      bcc: ["zajezdy@yarotravel.cz"],
-      subject,
+      to: [actualRecipient],
+      bcc: testEmailOverride ? [] : ["zajezdy@yarotravel.cz"],
+      subject: testEmailOverride ? `[TEST] ${subject}` : subject,
       text: clientEmailText,
     };
     if (pdfAttachment.length > 0) clientEmailPayload.attachments = pdfAttachment;
