@@ -816,6 +816,11 @@ function VariantCard({ variant, hotelImages, isSelected, showBadge, showResponse
                       {service.service_type === "flight" && service.details && (
                         <FlightInfo details={service.details} />
                       )}
+                      {service.start_date && service.end_date && service.service_type !== "flight" && (
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {formatDateShort(service.start_date)} – {formatDateShort(service.end_date)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
