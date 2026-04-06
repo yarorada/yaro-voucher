@@ -909,6 +909,73 @@ export const VariantDetailDialog = ({
               </p>
             )}
 
+            {/* Tee Times Editor */}
+            {variant && services.some(s => s.service_type === "golf") && (
+              <div className="space-y-3">
+                <h4 className="font-semibold">Startovací časy (Tee Times)</h4>
+                <GolfAiImport onImport={(parsed: ParsedTeeTime[]) => {
+                  const newItems = parsed
+                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                    .map(tt => ({
+                      date: tt.date || null,
+                      club: tt.club || '',
+                      time: tt.time || '',
+                    }));
+                  setTeeTimeItems(prev => [...prev, ...newItems]);
+                }} />
+                {teeTimeItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Žádné startovací časy
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {teeTimeItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={item.date || ""}
+                        onChange={e => {
+                          const updated = [...teeTimeItems];
+                          updated[idx] = { ...updated[idx], date: e.target.value || null };
+                          setTeeTimeItems(updated);
+                        }}
+                        className="w-[140px] shrink-0 h-8 text-xs"
+                      />
+                      <Input
+                        placeholder="Název hřiště"
+                        value={item.club}
+                        onChange={e => {
+                          const updated = [...teeTimeItems];
+                          updated[idx] = { ...updated[idx], club: e.target.value };
+                          setTeeTimeItems(updated);
+                        }}
+                        className="flex-1 h-8 text-xs"
+                      />
+                      <Input
+                        placeholder="HH:MM - HH:MM"
+                        value={item.time}
+                        onChange={e => {
+                          const updated = [...teeTimeItems];
+                          updated[idx] = { ...updated[idx], time: e.target.value };
+                          setTeeTimeItems(updated);
+                        }}
+                        className="w-[120px] shrink-0 h-8 text-xs"
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        setTeeTimeItems(prev => prev.filter((_, i) => i !== idx));
+                      }} className="shrink-0 h-7 w-7">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setTeeTimeItems(prev => [...prev, { date: "", club: "", time: "" }])} className="w-full">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Přidat tee time
+                </Button>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => onClose()}>
                 Zrušit
