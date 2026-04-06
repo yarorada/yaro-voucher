@@ -96,6 +96,7 @@ Use the tool to return your answer.`,
                       type: "object",
                       properties: {
                         name: { type: "string", description: "Course name" },
+                        holes: { type: ["number", "null"], description: "Number of holes, e.g. 18 or 9" },
                         par: { type: ["number", "null"], description: "Par value, e.g. 72" },
                         length: { type: ["string", "null"], description: "Course length, e.g. '6321 m'" },
                         architect: { type: ["string", "null"], description: "Course architect/designer" },
