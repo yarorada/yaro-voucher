@@ -327,8 +327,9 @@ function computePerPersonPrices(services: Array<{
     const hotelPrice = h.price || 0;
 
     if (priceMode === "per_person") {
-      hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
-      hotelPriceMap.set(2, (hotelPriceMap.get(2) || 0) + hotelPrice);
+      const pc = h.person_count || 1;
+      const occupancy = h.quantity && h.quantity > 0 ? Math.round(pc / h.quantity) : pc;
+      hotelPriceMap.set(occupancy, (hotelPriceMap.get(occupancy) || 0) + hotelPrice);
     } else {
       // per_service (per room)
       hotelPriceMap.set(1, (hotelPriceMap.get(1) || 0) + hotelPrice);
