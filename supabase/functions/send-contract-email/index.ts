@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
+    const { contractId, pdfPath, ccSupplierEmail, customEmailText, siteUrl, testEmailOverride }: SendContractEmailRequest & { siteUrl?: string } = await req.json();
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!contractId || !uuidRegex.test(contractId)) {
