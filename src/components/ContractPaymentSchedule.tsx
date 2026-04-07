@@ -59,6 +59,7 @@ interface ContractPaymentScheduleProps {
   contractNumber?: string;
   bankAccount?: string;
   currency?: string;
+  isPartl?: boolean;
   onPaymentsChange?: () => void;
 }
 
