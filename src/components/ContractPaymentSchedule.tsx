@@ -59,10 +59,11 @@ interface ContractPaymentScheduleProps {
   contractNumber?: string;
   bankAccount?: string;
   currency?: string;
+  isPartl?: boolean;
   onPaymentsChange?: () => void;
 }
 
-export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK', onPaymentsChange }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK', isPartl = false, onPaymentsChange }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,6 +145,13 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
   useEffect(() => {
     fetchPayments();
   }, [contractId]);
+
+  // Auto-sync from deal if contract has no payments yet
+  useEffect(() => {
+    if (!loading && payments.length === 0 && dealId) {
+      handleSyncFromDeal();
+    }
+  }, [loading, payments.length, dealId]);
 
   // Calculate final payment automatically
   useEffect(() => {
@@ -476,11 +484,34 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
                         <QrCode className="h-4 w-4" />
                         Platební údaje
                       </p>
+                      {isPartl && (
+                        <p className="text-sm text-muted-foreground">
+                          Banka: <span className="font-medium text-foreground">RaiffeisenBank</span>
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Číslo účtu: <span className="font-medium text-foreground">{bankAccount}</span>
                       </p>
+                      {!isPartl && (
+                        <p className="text-sm text-muted-foreground">
+                          IBAN: <span className="font-medium text-foreground">{iban}</span>
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
-                        IBAN: <span className="font-medium text-foreground">{iban}</span>
+                        Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
+                      </p>
+                    </div>
+                  ) : isPartl ? (
+                    <div className="border-t mt-2 pt-3 space-y-1">
+                      <p className="text-sm font-semibold flex items-center gap-1.5">
+                        <Wallet className="h-4 w-4" />
+                        Platební údaje
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Banka: <span className="font-medium text-foreground">RaiffeisenBank</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        IBAN: <span className="font-medium text-foreground">CZ3955000000006180898002</span> · SWIFT: <span className="font-medium text-foreground">RZBCCZPP</span>
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>

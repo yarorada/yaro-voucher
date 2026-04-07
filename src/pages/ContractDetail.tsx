@@ -614,6 +614,7 @@ const ContractDetail = () => {
                 : (contract as any).agency_bank_account
             }
             currency={(contract as any).currency || contract.deal?.currency || "CZK"}
+            isPartl={contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl'}
             onPaymentsChange={refetch}
           />
 
