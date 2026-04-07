@@ -484,12 +484,19 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
                         <QrCode className="h-4 w-4" />
                         Platební údaje
                       </p>
+                      {isPartl && (
+                        <p className="text-sm text-muted-foreground">
+                          Banka: <span className="font-medium text-foreground">RaiffeisenBank</span>
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Číslo účtu: <span className="font-medium text-foreground">{bankAccount}</span>
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        IBAN: <span className="font-medium text-foreground">{iban}</span>
-                      </p>
+                      {!isPartl && (
+                        <p className="text-sm text-muted-foreground">
+                          IBAN: <span className="font-medium text-foreground">{iban}</span>
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
                       </p>
