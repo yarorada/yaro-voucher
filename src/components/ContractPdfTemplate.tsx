@@ -56,8 +56,12 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const payments: PaymentRecord[] = (contract.payments || [])
       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
-    const bankAccount = (contract as any).agency_bank_account || '227993932/0600';
-    const iban = bankAccountToIban(bankAccount);
+    // Roman Partl → Raiffeisenbank, ostatní → výchozí YARO účet
+    const isPartl = contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl';
+    const bankAccount = isPartl ? '6180898002/5500' : ((contract as any).agency_bank_account || '227993932/0600');
+    const iban = isPartl ? 'CZ3955000000006180898002' : bankAccountToIban(bankAccount);
+    const partlEurIban = 'CZ3955000000006180898002';
+    const partlEurSwift = 'RZBCCZPP';
     const contractNumber = contract.contract_number || '';
     const variableSymbol = extractVariableSymbol(contractNumber);
 
@@ -493,10 +497,20 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 ) : (
                   <div style={{ padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
                     <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
-                    <p style={{ margin: '1px 0' }}>Příjemce: <strong>YARO s.r.o.</strong></p>
-                    <p style={{ margin: '1px 0' }}>IBAN: <strong>DE89202208000051200891</strong> · SWIFT: <strong>SXPYDEHH</strong></p>
-                    <p style={{ margin: '1px 0' }}>Banka: <strong>BANKING CIRCLE S.A.</strong> <span style={{ fontSize: '7px', color: '#666' }}>(Maximilanstr 54, München, 80538, Germany)</span></p>
-                    <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                    {isPartl ? (
+                      <>
+                        <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
+                        <p style={{ margin: '1px 0' }}>IBAN: <strong>{partlEurIban}</strong> · SWIFT: <strong>{partlEurSwift}</strong></p>
+                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ margin: '1px 0' }}>Příjemce: <strong>YARO s.r.o.</strong></p>
+                        <p style={{ margin: '1px 0' }}>IBAN: <strong>DE89202208000051200891</strong> · SWIFT: <strong>SXPYDEHH</strong></p>
+                        <p style={{ margin: '1px 0' }}>Banka: <strong>BANKING CIRCLE S.A.</strong> <span style={{ fontSize: '7px', color: '#666' }}>(Maximilanstr 54, München, 80538, Germany)</span></p>
+                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
