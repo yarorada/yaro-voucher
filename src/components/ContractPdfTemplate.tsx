@@ -487,7 +487,24 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
             {/* Platební údaje + QR kódy vedle sebe */}
             <div style={{ display: 'flex', gap: '12px', marginTop: '4px', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
-                {isCzk ? (
+                {isPartl ? (
+                  <div style={{ padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
+                    <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
+                    <p style={{ margin: '1px 0' }}>Banka: <strong>RaiffeisenBank</strong></p>
+                    {isCzk ? (
+                      <>
+                        <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>6180898002/5500</strong></p>
+                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ margin: '1px 0' }}>IBAN: <strong>CZ3955000000006180898002</strong></p>
+                        <p style={{ margin: '1px 0' }}>SWIFT: <strong>RZBCCZPP</strong></p>
+                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
+                      </>
+                    )}
+                  </div>
+                ) : isCzk ? (
                   <div style={{ padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
                     <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
                     <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
@@ -497,20 +514,10 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
                 ) : (
                   <div style={{ padding: '4px 6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '8px' }}>
                     <p style={{ margin: '0 0 2px', fontWeight: 'bold', fontSize: '8px' }}>Platební údaje</p>
-                    {isPartl ? (
-                      <>
-                        <p style={{ margin: '1px 0' }}>Číslo účtu: <strong>{bankAccount}</strong></p>
-                        <p style={{ margin: '1px 0' }}>IBAN: <strong>{partlEurIban}</strong> · SWIFT: <strong>{partlEurSwift}</strong></p>
-                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
-                      </>
-                    ) : (
-                      <>
-                        <p style={{ margin: '1px 0' }}>Příjemce: <strong>YARO s.r.o.</strong></p>
-                        <p style={{ margin: '1px 0' }}>IBAN: <strong>DE89202208000051200891</strong> · SWIFT: <strong>SXPYDEHH</strong></p>
-                        <p style={{ margin: '1px 0' }}>Banka: <strong>BANKING CIRCLE S.A.</strong> <span style={{ fontSize: '7px', color: '#666' }}>(Maximilanstr 54, München, 80538, Germany)</span></p>
-                        <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
-                      </>
-                    )}
+                    <p style={{ margin: '1px 0' }}>Příjemce: <strong>YARO s.r.o.</strong></p>
+                    <p style={{ margin: '1px 0' }}>IBAN: <strong>DE89202208000051200891</strong> · SWIFT: <strong>SXPYDEHH</strong></p>
+                    <p style={{ margin: '1px 0' }}>Banka: <strong>BANKING CIRCLE S.A.</strong> <span style={{ fontSize: '7px', color: '#666' }}>(Maximilanstr 54, München, 80538, Germany)</span></p>
+                    <p style={{ margin: '1px 0' }}>Variabilní symbol: <strong>{variableSymbol}</strong></p>
                   </div>
                 )}
               </div>
