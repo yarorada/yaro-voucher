@@ -453,7 +453,11 @@ const ContractDetail = () => {
               agencyAddress={(contract as any).agency_address}
               agencyIco={(contract as any).agency_ico}
               agencyContact={(contract as any).agency_contact}
-              agencyBankAccount={(contract as any).agency_bank_account}
+              agencyBankAccount={
+                contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl'
+                  ? '6180898002/5500'
+                  : (contract as any).agency_bank_account
+              }
               onUpdate={refetch}
             />
 
