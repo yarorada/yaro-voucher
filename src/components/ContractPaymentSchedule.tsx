@@ -487,6 +487,22 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
                         Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
                       </p>
                     </div>
+                  ) : isPartl ? (
+                    <div className="border-t mt-2 pt-3 space-y-1">
+                      <p className="text-sm font-semibold flex items-center gap-1.5">
+                        <Wallet className="h-4 w-4" />
+                        Platební údaje
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Banka: <span className="font-medium text-foreground">RaiffeisenBank</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        IBAN: <span className="font-medium text-foreground">CZ3955000000006180898002</span> · SWIFT: <span className="font-medium text-foreground">RZBCCZPP</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Variabilní symbol: <span className="font-medium text-foreground">{variableSymbol}</span>
+                      </p>
+                    </div>
                   ) : (
                     <div className="border-t mt-2 pt-3 space-y-1">
                       <p className="text-sm font-semibold flex items-center gap-1.5">
