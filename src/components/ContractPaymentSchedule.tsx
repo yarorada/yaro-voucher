@@ -146,6 +146,13 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
     fetchPayments();
   }, [contractId]);
 
+  // Auto-sync from deal if contract has no payments yet
+  useEffect(() => {
+    if (!loading && payments.length === 0 && dealId) {
+      handleSyncFromDeal();
+    }
+  }, [loading, payments.length, dealId]);
+
   // Calculate final payment automatically
   useEffect(() => {
     const depositsTotal = scheduleItems
