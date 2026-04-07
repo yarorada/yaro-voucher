@@ -75,27 +75,29 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
 
     useEffect(() => {
       if (!isCzk || unpaidPayments.length === 0 || !contractNumber) {
-        // Mark as ready even when no QR codes needed
         const el = document.getElementById('contract-pdf-content');
         if (el) el.setAttribute('data-qr-ready', 'true');
         return;
       }
+      console.log('Generating QR codes for', unpaidPayments.length, 'payments, bankAccount:', bankAccount, 'isPartl:', isPartl);
       const generate = async () => {
         const urls: Record<string, string> = {};
         for (const p of unpaidPayments) {
           try {
-            urls[p.id] = await generatePaymentQrDataUrl({
+            const url = await generatePaymentQrDataUrl({
               amount: p.amount,
               contractNumber,
               bankAccount,
               size: 160,
             });
-          } catch (e) { console.error(e); }
+            urls[p.id] = url;
+            console.log('QR generated for payment', p.id, '→', url ? 'OK' : 'EMPTY');
+          } catch (e) { console.error('QR generation error:', e); }
         }
         setPaymentQrUrls(urls);
       };
       generate();
-    }, [unpaidPayments.length, contractNumber, bankAccount]);
+    }, [unpaidPayments.length, contractNumber, bankAccount, isPartl]);
 
     // Mark as ready after QR codes are generated
     useEffect(() => {
