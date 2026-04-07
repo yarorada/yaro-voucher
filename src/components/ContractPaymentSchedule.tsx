@@ -63,7 +63,7 @@ interface ContractPaymentScheduleProps {
   onPaymentsChange?: () => void;
 }
 
-export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK', onPaymentsChange }: ContractPaymentScheduleProps) {
+export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, departureDate, contractNumber = '', bankAccount = '227993932/0600', currency = 'CZK', isPartl = false, onPaymentsChange }: ContractPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
