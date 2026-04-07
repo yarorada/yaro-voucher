@@ -56,8 +56,12 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     const payments: PaymentRecord[] = (contract.payments || [])
       .sort((a: PaymentRecord, b: PaymentRecord) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
-    const bankAccount = (contract as any).agency_bank_account || '227993932/0600';
-    const iban = bankAccountToIban(bankAccount);
+    // Roman Partl → Raiffeisenbank, ostatní → výchozí YARO účet
+    const isPartl = contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl';
+    const bankAccount = isPartl ? '6180898002/5500' : ((contract as any).agency_bank_account || '227993932/0600');
+    const iban = isPartl ? 'CZ3955000000006180898002' : bankAccountToIban(bankAccount);
+    const partlEurIban = 'CZ3955000000006180898002';
+    const partlEurSwift = 'RZBCCZPP';
     const contractNumber = contract.contract_number || '';
     const variableSymbol = extractVariableSymbol(contractNumber);
 
