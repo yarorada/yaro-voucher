@@ -455,6 +455,85 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
         )}
       </Popover>
 
+      {/* Share dialog (used when triggered externally with hidden trigger) */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5" />
+              Sdílet nabídku
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {hasMultipleVariants && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Varianty k odeslání:</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 py-0 text-xs"
+                    onClick={allSelected ? () => {
+                      const sel = variants.find(v => v.is_selected);
+                      setSelectedVariantIds(new Set([sel?.id || variants[0].id]));
+                    } : selectAll}
+                  >
+                    {allSelected ? "Jen vybraná" : "Vybrat vše"}
+                  </Button>
+                </div>
+                {variants.map(v => (
+                  <div key={v.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`dlg-variant-${v.id}`}
+                      checked={selectedVariantIds.has(v.id)}
+                      onCheckedChange={() => toggleVariant(v.id)}
+                    />
+                    <Label htmlFor={`dlg-variant-${v.id}`} className="text-sm cursor-pointer flex-1">
+                      {v.variant_name}
+                      {v.is_selected && (
+                        <span className="ml-1 text-xs text-muted-foreground">(vybraná)</span>
+                      )}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            )}
+            {publicUrl && (
+              <div className="flex gap-2">
+                <Input
+                  value={publicUrl}
+                  readOnly
+                  className="text-xs"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <Button size="sm" variant="outline" onClick={() => copyToClipboard(publicUrl)}>
+                  {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <Button
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => { setShareDialogOpen(false); handleOpenEmailDialog(); }}
+              disabled={sendingEmail}
+            >
+              <Mail className="h-4 w-4" />
+              Odeslat mailem
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {allSelected && hasMultipleVariants
+                ? "Klient uvidí všechny varianty nabídky"
+                : hasMultipleVariants
+                  ? `Klient uvidí: ${selectedNames.join(", ")}`
+                  : "Klient uvidí vybranou variantu nabídky s fotkami hotelů"}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Email compose dialog */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
