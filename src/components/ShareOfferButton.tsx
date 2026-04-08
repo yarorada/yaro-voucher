@@ -129,11 +129,15 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
   }, [variants]);
 
   // Handle external open trigger (mobile menu)
-  const handleShareRef = useRef<() => void>();
   useEffect(() => {
-    if (externalOpen && handleShareRef.current) {
-      handleShareRef.current();
-      onExternalOpenChange?.(false);
+    if (externalOpen) {
+      (async () => {
+        const token = await ensureShareToken();
+        if (token) {
+          setOpen(true);
+        }
+        onExternalOpenChange?.(false);
+      })();
     }
   }, [externalOpen, onExternalOpenChange]);
 
