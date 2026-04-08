@@ -189,7 +189,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     if (token) await copyToClipboard(getPublicUrl(token));
   };
 
-  handleShareRef.current = handleShare;
+  
 
   // Fetch preview data
   const fetchPreviewData = useCallback(async () => {
