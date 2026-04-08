@@ -130,16 +130,20 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
 
   // Handle external open trigger (mobile menu)
   useEffect(() => {
-    if (externalOpen) {
-      (async () => {
-        const token = await ensureShareToken();
-        if (token) {
-          setOpen(true);
-        }
-        onExternalOpenChange?.(false);
-      })();
-    }
-  }, [externalOpen, onExternalOpenChange]);
+    if (!externalOpen) return;
+    let cancelled = false;
+    (async () => {
+      onExternalOpenChange?.(false);
+      const token = await ensureShareToken();
+      if (!cancelled && token) {
+        // Delay opening so the parent re-render (externalOpen→false) settles first
+        requestAnimationFrame(() => {
+          if (!cancelled) setOpen(true);
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [externalOpen]);
 
   const toggleVariant = (id: string) => {
     setSelectedVariantIds(prev => {
