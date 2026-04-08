@@ -1,7 +1,5 @@
 import { Undo2, Redo2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
 
 interface DraftControlsProps {
   canUndo: boolean;
@@ -47,7 +45,7 @@ export function DraftControls({
       {showTimestamp && lastSaved && (
         <span className="text-xs text-muted-foreground ml-2">
           <Save className="h-3 w-3 inline mr-1" />
-          {format(lastSaved, "HH:mm:ss", { locale: cs })}
+          Uloženo
         </span>
       )}
     </div>
@@ -69,7 +67,7 @@ export function DraftBanner({ onRestore, onDiscard, lastSaved }: DraftBannerProp
           Nalezen rozpracovaný formulář
           {lastSaved && (
             <span className="text-muted-foreground ml-1">
-              ({format(lastSaved, "d.M. HH:mm", { locale: cs })})
+              (rozpracováno)
             </span>
           )}
         </span>

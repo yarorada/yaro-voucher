@@ -13,8 +13,6 @@ import { PageToolbarProvider, usePageToolbarContent, useHeaderActionsContent } f
 import { GlobalHistoryProvider, useGlobalHistory } from "@/hooks/useGlobalHistory";
 import { Menu, Undo2, Redo2, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
 import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
 import CreateVoucher from "./pages/CreateVoucher";
@@ -64,7 +62,7 @@ const SaveIndicator = () => {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
         <Check className="h-3 w-3 text-emerald-500" />
-        {format(lastSaved, "HH:mm:ss", { locale: cs })}
+        Uloženo
       </span>
     );
   }
