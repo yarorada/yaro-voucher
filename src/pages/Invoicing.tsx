@@ -1635,10 +1635,20 @@ export default function Invoicing() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {form.invoice_type !== "issued" && (
+              <>
               <div>
-                <Label>Částka</Label>
+                <Label>Základ (bez DPH)</Label>
+                <Input type="number" value={form.net_amount} onChange={(e) => setForm((f) => ({ ...f, net_amount: e.target.value }))} />
+              </div>
+              <div>
+                <Label>DPH</Label>
+                <Input type="number" value={form.vat_amount} onChange={(e) => setForm((f) => ({ ...f, vat_amount: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Částka celkem</Label>
                 <Input type="number" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
               </div>
+              </>
               )}
             </div>
 
