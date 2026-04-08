@@ -67,7 +67,7 @@ export function DraftBanner({ onRestore, onDiscard, lastSaved }: DraftBannerProp
           Nalezen rozpracovaný formulář
           {lastSaved && (
             <span className="text-muted-foreground ml-1">
-              ({format(lastSaved, "d.M. HH:mm", { locale: cs })})
+              (rozpracováno)
             </span>
           )}
         </span>
