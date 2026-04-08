@@ -173,6 +173,8 @@ const emptyForm = {
   supplier_dic: "",
   supplier_address: "",
   total_amount: "",
+  net_amount: "",
+  vat_amount: "",
   currency: "CZK",
   issue_date: format(new Date(), "yyyy-MM-dd"),
   taxable_date: format(new Date(), "yyyy-MM-dd"),
@@ -474,6 +476,8 @@ export default function Invoicing() {
       supplier_dic: form.supplier_dic || null,
       supplier_address: form.supplier_address || null,
       total_amount: finalTotal,
+      net_amount: form.net_amount ? parseFloat(form.net_amount) : null,
+      vat_amount: form.vat_amount ? parseFloat(form.vat_amount) : null,
       currency: normCurrency(form.currency),
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
@@ -506,6 +510,8 @@ export default function Invoicing() {
       supplier_dic: inv.supplier_dic || "",
       supplier_address: inv.supplier_address || "",
       total_amount: inv.total_amount?.toString() || "",
+      net_amount: (inv as any).net_amount?.toString() || "",
+      vat_amount: (inv as any).vat_amount?.toString() || "",
       currency: inv.currency || "CZK",
       issue_date: inv.issue_date || "",
       due_date: inv.due_date || "",
@@ -536,6 +542,8 @@ export default function Invoicing() {
       supplier_dic: inv.supplier_dic || "",
       supplier_address: inv.supplier_address || "",
       total_amount: inv.total_amount?.toString() || "",
+      net_amount: (inv as any).net_amount?.toString() || "",
+      vat_amount: (inv as any).vat_amount?.toString() || "",
       currency: inv.currency || "CZK",
       issue_date: format(new Date(), "yyyy-MM-dd"),
       due_date: "",
@@ -1627,10 +1635,20 @@ export default function Invoicing() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {form.invoice_type !== "issued" && (
+              <>
               <div>
-                <Label>Částka</Label>
+                <Label>Základ (bez DPH)</Label>
+                <Input type="number" value={form.net_amount} onChange={(e) => setForm((f) => ({ ...f, net_amount: e.target.value }))} />
+              </div>
+              <div>
+                <Label>DPH</Label>
+                <Input type="number" value={form.vat_amount} onChange={(e) => setForm((f) => ({ ...f, vat_amount: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Částka celkem</Label>
                 <Input type="number" value={form.total_amount} onChange={(e) => setForm((f) => ({ ...f, total_amount: e.target.value }))} />
               </div>
+              </>
               )}
             </div>
 

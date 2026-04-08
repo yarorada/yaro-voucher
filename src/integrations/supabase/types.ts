@@ -1288,6 +1288,7 @@ export type Database = {
           invoice_type: string
           issue_date: string | null
           items: Json | null
+          net_amount: number | null
           notes: string | null
           paid: boolean | null
           paid_at: string | null
@@ -1303,6 +1304,7 @@ export type Database = {
           updated_at: string
           user_id: string
           variable_symbol: string | null
+          vat_amount: number | null
         }
         Insert: {
           bank_account?: string | null
@@ -1324,6 +1326,7 @@ export type Database = {
           invoice_type?: string
           issue_date?: string | null
           items?: Json | null
+          net_amount?: number | null
           notes?: string | null
           paid?: boolean | null
           paid_at?: string | null
@@ -1339,6 +1342,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           variable_symbol?: string | null
+          vat_amount?: number | null
         }
         Update: {
           bank_account?: string | null
@@ -1360,6 +1364,7 @@ export type Database = {
           invoice_type?: string
           issue_date?: string | null
           items?: Json | null
+          net_amount?: number | null
           notes?: string | null
           paid?: boolean | null
           paid_at?: string | null
@@ -1375,6 +1380,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           variable_symbol?: string | null
+          vat_amount?: number | null
         }
         Relationships: [
           {
