@@ -50,23 +50,21 @@ const queryClient = new QueryClient();
 
 const SaveIndicator = () => {
   const { isSaving, lastSaved } = useGlobalHistory();
-  if (isSaving) {
-    return (
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Ukládám…
-      </span>
-    );
-  }
-  if (lastSaved) {
-    return (
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Check className="h-3 w-3 text-emerald-500" />
-        Uloženo
-      </span>
-    );
-  }
-  return null;
+  return (
+    <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-[70px] justify-end">
+      {isSaving ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Ukládám…
+        </>
+      ) : lastSaved ? (
+        <>
+          <Check className="h-3 w-3 text-emerald-500" />
+          Uloženo
+        </>
+      ) : null}
+    </span>
+  );
 };
 
 const UndoRedoButtons = () => {
