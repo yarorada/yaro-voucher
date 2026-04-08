@@ -173,6 +173,8 @@ const emptyForm = {
   supplier_dic: "",
   supplier_address: "",
   total_amount: "",
+  net_amount: "",
+  vat_amount: "",
   currency: "CZK",
   issue_date: format(new Date(), "yyyy-MM-dd"),
   taxable_date: format(new Date(), "yyyy-MM-dd"),
