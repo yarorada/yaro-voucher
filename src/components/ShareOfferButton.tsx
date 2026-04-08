@@ -129,7 +129,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     }
   }, [variants]);
 
-  // Handle external open trigger (mobile menu)
+  // Handle external open trigger — use Dialog instead of Popover (hidden trigger can't anchor popover)
   useEffect(() => {
     if (!externalOpen) return;
     let cancelled = false;
@@ -137,10 +137,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
       onExternalOpenChange?.(false);
       const token = await ensureShareToken();
       if (!cancelled && token) {
-        // Delay opening so the parent re-render (externalOpen→false) settles first
-        requestAnimationFrame(() => {
-          if (!cancelled) setOpen(true);
-        });
+        setShareDialogOpen(true);
       }
     })();
     return () => { cancelled = true; };
