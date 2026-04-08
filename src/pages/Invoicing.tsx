@@ -476,6 +476,8 @@ export default function Invoicing() {
       supplier_dic: form.supplier_dic || null,
       supplier_address: form.supplier_address || null,
       total_amount: finalTotal,
+      net_amount: form.net_amount ? parseFloat(form.net_amount) : null,
+      vat_amount: form.vat_amount ? parseFloat(form.vat_amount) : null,
       currency: normCurrency(form.currency),
       issue_date: form.issue_date || null,
       due_date: form.due_date || null,
