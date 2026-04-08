@@ -540,6 +540,8 @@ export default function Invoicing() {
       supplier_dic: inv.supplier_dic || "",
       supplier_address: inv.supplier_address || "",
       total_amount: inv.total_amount?.toString() || "",
+      net_amount: (inv as any).net_amount?.toString() || "",
+      vat_amount: (inv as any).vat_amount?.toString() || "",
       currency: inv.currency || "CZK",
       issue_date: format(new Date(), "yyyy-MM-dd"),
       due_date: "",
