@@ -47,7 +47,7 @@ export function DraftControls({
       {showTimestamp && lastSaved && (
         <span className="text-xs text-muted-foreground ml-2">
           <Save className="h-3 w-3 inline mr-1" />
-          {format(lastSaved, "HH:mm:ss", { locale: cs })}
+          Uloženo
         </span>
       )}
     </div>
