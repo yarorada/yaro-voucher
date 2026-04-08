@@ -99,6 +99,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
 
