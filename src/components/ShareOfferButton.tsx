@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, Check, Link, Loader2, Mail, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,11 +129,15 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
   }, [variants]);
 
   // Handle external open trigger (mobile menu)
-  const handleShareRef = useRef<() => void>();
   useEffect(() => {
-    if (externalOpen && handleShareRef.current) {
-      handleShareRef.current();
-      onExternalOpenChange?.(false);
+    if (externalOpen) {
+      (async () => {
+        const token = await ensureShareToken();
+        if (token) {
+          setOpen(true);
+        }
+        onExternalOpenChange?.(false);
+      })();
     }
   }, [externalOpen, onExternalOpenChange]);
 
@@ -185,7 +189,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
     if (token) await copyToClipboard(getPublicUrl(token));
   };
 
-  handleShareRef.current = handleShare;
+  
 
   // Fetch preview data
   const fetchPreviewData = useCallback(async () => {
