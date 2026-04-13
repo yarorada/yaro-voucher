@@ -124,6 +124,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [sending, setSending] = useState(false);
   const [hotelSupplier, setHotelSupplier] = useState<{ name: string; email: string | null } | null>(null);
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
+  const [hotelStays, setHotelStays] = useState<{ service_name: string; start_date: string | null; end_date: string | null; description: string | null }[]>([]);
   const [customMessage, setCustomMessage] = useState("");
   const pdfRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
