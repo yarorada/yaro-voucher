@@ -1782,6 +1782,13 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
   const formatAmount = (a: number | null) => a != null ? fmtCur(a) : "—";
   const taxableDate = invoice.taxable_date || invoice.issue_date;
 
+  // For issued invoices, always fall back to YARO defaults if supplier fields are empty
+  const isIssued = invoice.invoice_type === "issued";
+  const supplierName = invoice.supplier_name || (isIssued ? AGENCY_PARTNER_NAME : "");
+  const supplierAddress = invoice.supplier_address || (isIssued ? "Bratranců Veverkových 680, 53002, Pardubice" : "");
+  const supplierIco = invoice.supplier_ico || (isIssued ? "07849290" : "");
+  const supplierDic = invoice.supplier_dic || (isIssued ? "CZ07849290" : "");
+
   return (
     <div>
       {/* Header */}
@@ -1801,10 +1808,10 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
           <h3 style={{ fontSize: "9px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.5px" }}>
             Dodavatel
           </h3>
-          <p style={{ fontWeight: "bold", margin: "0 0 2px", fontSize: "11px" }}>{invoice.supplier_name || ""}</p>
-          <p style={{ margin: "0 0 1px", fontSize: "10px" }}>{invoice.supplier_address || ""}</p>
-          {invoice.supplier_ico && <p style={{ margin: "0 0 1px", fontSize: "10px" }}>IČO: {invoice.supplier_ico}</p>}
-          {invoice.supplier_dic && <p style={{ margin: 0, fontSize: "10px" }}>DIČ: {invoice.supplier_dic}</p>}
+          <p style={{ fontWeight: "bold", margin: "0 0 2px", fontSize: "11px" }}>{supplierName}</p>
+          <p style={{ margin: "0 0 1px", fontSize: "10px" }}>{supplierAddress}</p>
+          {supplierIco && <p style={{ margin: "0 0 1px", fontSize: "10px" }}>IČO: {supplierIco}</p>}
+          {supplierDic && <p style={{ margin: 0, fontSize: "10px" }}>DIČ: {supplierDic}</p>}
         </div>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: "9px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.5px" }}>
