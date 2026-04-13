@@ -708,18 +708,96 @@ zajezdy@yarotravel.cz`
           </div>
 
           {hotelStays.length > 1 ? (
-            <div style={{ marginBottom: "16px" }}>
-              {hotelStays.map((stay, i) => (
-                <p key={i} style={{ fontSize: "12px", marginBottom: "2px" }}>
-                  <strong>{stay.service_name}</strong>
-                  {(stay.start_date || stay.end_date) && (
-                    <span style={{ color: "#555" }}>
-                      {" "}— {formatDate(stay.start_date)} – {formatDate(stay.end_date)}
-                    </span>
-                  )}
-                </p>
-              ))}
-            </div>
+            <>
+              {hotelStays.map((stay, si) => {
+                const stayKey = `${stay.service_name}|${stay.start_date || ""}|${stay.end_date || ""}`;
+                const stayRooms = rooms.filter((r) => r.hotel_stay_key === stayKey);
+                if (stayRooms.length === 0) return null;
+                return (
+                  <div key={si} style={{ marginBottom: "20px" }}>
+                    <p style={{ fontSize: "13px", marginBottom: "6px", fontWeight: "bold" }}>
+                      {stay.service_name}
+                      {(stay.start_date || stay.end_date) && (
+                        <span style={{ fontWeight: "normal", color: "#555" }}>
+                          {" "}— {formatDate(stay.start_date)} – {formatDate(stay.end_date)}
+                        </span>
+                      )}
+                    </p>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ background: "#f0f0f0" }}>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Room</th>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Type</th>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Guests</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stayRooms.map((room) => (
+                          <tr key={room.id}>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", fontWeight: "bold" }}>{room.room_label}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                              {room.traveler_ids.length > 0
+                                ? room.traveler_ids.map((id) => {
+                                    const t = travelers.find((tr) => tr.client_id === id);
+                                    const cat = getAgeCategory(t?.clients.date_of_birth || null);
+                                    const color = cat === "infant" ? "#16a34a" : cat === "child" ? "#2563eb" : "#111";
+                                    return (
+                                      <span key={id} style={{ color, display: "block" }}>
+                                        {getTravelerLabel(id, true)}
+                                      </span>
+                                    );
+                                  })
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+              {/* Rooms without assigned stay */}
+              {(() => {
+                const unassignedRooms = rooms.filter((r) => !r.hotel_stay_key || !hotelStays.some((s) => `${s.service_name}|${s.start_date || ""}|${s.end_date || ""}` === r.hotel_stay_key));
+                if (unassignedRooms.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: "20px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ background: "#f0f0f0" }}>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Room</th>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Type</th>
+                          <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Guests</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unassignedRooms.map((room) => (
+                          <tr key={room.id}>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", fontWeight: "bold" }}>{room.room_label}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                              {room.traveler_ids.length > 0
+                                ? room.traveler_ids.map((id) => {
+                                    const t = travelers.find((tr) => tr.client_id === id);
+                                    const cat = getAgeCategory(t?.clients.date_of_birth || null);
+                                    const color = cat === "infant" ? "#16a34a" : cat === "child" ? "#2563eb" : "#111";
+                                    return (
+                                      <span key={id} style={{ color, display: "block" }}>
+                                        {getTravelerLabel(id, true)}
+                                      </span>
+                                    );
+                                  })
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </>
           ) : (
             <>
               {dealInfo?.hotel_name && (
@@ -732,40 +810,39 @@ zajezdy@yarotravel.cz`
                   <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
                 </p>
               )}
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <thead>
+                  <tr style={{ background: "#f0f0f0" }}>
+                    <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Room</th>
+                    <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Type</th>
+                    <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Guests</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rooms.map((room) => (
+                    <tr key={room.id}>
+                      <td style={{ border: "1px solid #ccc", padding: "8px", fontWeight: "bold" }}>{room.room_label}</td>
+                      <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
+                      <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                        {room.traveler_ids.length > 0
+                          ? room.traveler_ids.map((id) => {
+                              const t = travelers.find((tr) => tr.client_id === id);
+                              const cat = getAgeCategory(t?.clients.date_of_birth || null);
+                              const color = cat === "infant" ? "#16a34a" : cat === "child" ? "#2563eb" : "#111";
+                              return (
+                                <span key={id} style={{ color, display: "block" }}>
+                                  {getTravelerLabel(id, true)}
+                                </span>
+                              );
+                            })
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </>
           )}
-
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-            <thead>
-              <tr style={{ background: "#f0f0f0" }}>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Room</th>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Type</th>
-                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Guests</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rooms.map((room) => (
-                <tr key={room.id}>
-                  <td style={{ border: "1px solid #ccc", padding: "8px", fontWeight: "bold" }}>{room.room_label}</td>
-                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>{getRoomTypeLabelEn(room.room_type)}</td>
-                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                    {room.traveler_ids.length > 0
-                      ? room.traveler_ids.map((id) => {
-                          const t = travelers.find((tr) => tr.client_id === id);
-                          const cat = getAgeCategory(t?.clients.date_of_birth || null);
-                          const color = cat === "infant" ? "#16a34a" : cat === "child" ? "#2563eb" : "#111";
-                          return (
-                            <span key={id} style={{ color, display: "block" }}>
-                              {getTravelerLabel(id, true)}
-                            </span>
-                          );
-                        })
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
 
           <div style={{ marginTop: "12px", fontSize: "10px", color: "#555" }}>
             <span style={{ marginRight: "16px" }}>&#9632; <span style={{ color: "#111" }}>Adult</span></span>
