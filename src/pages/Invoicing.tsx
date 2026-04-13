@@ -1811,7 +1811,8 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
           <p style={{ fontWeight: "bold", margin: "0 0 2px", fontSize: "11px" }}>{supplierName}</p>
           <p style={{ margin: "0 0 1px", fontSize: "10px" }}>{supplierAddress}</p>
           {supplierIco && <p style={{ margin: "0 0 1px", fontSize: "10px" }}>IČO: {supplierIco}</p>}
-          {supplierDic && <p style={{ margin: 0, fontSize: "10px" }}>DIČ: {supplierDic}</p>}
+          {supplierDic && <p style={{ margin: "0 0 1px", fontSize: "10px" }}>DIČ: {supplierDic}</p>}
+          {isIssued && <p style={{ margin: "2px 0 0", fontSize: "8px", color: "#555" }}>Společnost zapsána v OR vložka C 43278 vedená u Krajského soudu v Hradci Králové</p>}
         </div>
         <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: "9px", fontWeight: "bold", color: "#888", textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.5px" }}>
@@ -2002,7 +2003,8 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
       )}
 
       <div style={{ marginTop: "20px", borderTop: "1px solid #ddd", paddingTop: "8px", textAlign: "center", color: "#999", fontSize: "8px" }}>
-        {invoice.supplier_name || ""} • {invoice.supplier_address || ""}{invoice.supplier_ico ? ` • IČO: ${invoice.supplier_ico}` : ""}{invoice.supplier_dic ? ` • DIČ: ${invoice.supplier_dic}` : ""}
+        {supplierName} • {supplierAddress}{supplierIco ? ` • IČO: ${supplierIco}` : ""}{supplierDic ? ` • DIČ: ${supplierDic}` : ""}
+        {isIssued && <div style={{ marginTop: "2px" }}>Tel: +420 777 007 877 • E-mail: info@yarogolf.cz</div>}
       </div>
     </div>
   );
