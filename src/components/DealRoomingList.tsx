@@ -165,7 +165,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
         // Fetch hotel service for supplier info and hotel name
         const { data: servicesData } = await supabase
           .from("deal_services")
-          .select("description, service_name, supplier_id, suppliers(name, email)")
+          .select("description, service_name, supplier_id, start_date, end_date, suppliers(name, email)")
           .eq("deal_id", dealId)
           .eq("service_type", "hotel");
 
@@ -183,6 +183,16 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
             setHotelSupplier({ name: sup.name, email: sup.email });
           }
           hotelName = servicesData[0]?.service_name || null;
+
+          // Collect unique hotel stays with dates
+          const staysMap = new Map<string, { service_name: string; start_date: string | null; end_date: string | null; description: string | null }>();
+          for (const s of servicesData) {
+            const key = `${s.service_name}|${s.start_date || ""}|${s.end_date || ""}`;
+            if (!staysMap.has(key)) {
+              staysMap.set(key, { service_name: s.service_name, start_date: s.start_date, end_date: s.end_date, description: s.description });
+            }
+          }
+          setHotelStays(Array.from(staysMap.values()));
         }
 
         setDealInfo({
