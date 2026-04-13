@@ -124,6 +124,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const [sending, setSending] = useState(false);
   const [hotelSupplier, setHotelSupplier] = useState<{ name: string; email: string | null } | null>(null);
   const [dealInfo, setDealInfo] = useState<{ deal_number: string; start_date: string | null; end_date: string | null; hotel_name: string | null } | null>(null);
+  const [hotelStays, setHotelStays] = useState<{ service_name: string; start_date: string | null; end_date: string | null; description: string | null }[]>([]);
   const [customMessage, setCustomMessage] = useState("");
   const pdfRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,7 +165,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
         // Fetch hotel service for supplier info and hotel name
         const { data: servicesData } = await supabase
           .from("deal_services")
-          .select("description, service_name, supplier_id, suppliers(name, email)")
+          .select("description, service_name, supplier_id, start_date, end_date, suppliers(name, email)")
           .eq("deal_id", dealId)
           .eq("service_type", "hotel");
 
@@ -182,6 +183,16 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
             setHotelSupplier({ name: sup.name, email: sup.email });
           }
           hotelName = servicesData[0]?.service_name || null;
+
+          // Collect unique hotel stays with dates
+          const staysMap = new Map<string, { service_name: string; start_date: string | null; end_date: string | null; description: string | null }>();
+          for (const s of servicesData) {
+            const key = `${s.service_name}|${s.start_date || ""}|${s.end_date || ""}`;
+            if (!staysMap.has(key)) {
+              staysMap.set(key, { service_name: s.service_name, start_date: s.start_date, end_date: s.end_date, description: s.description });
+            }
+          }
+          setHotelStays(Array.from(staysMap.values()));
         }
 
         setDealInfo({
@@ -444,6 +455,18 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
               </CardTitle>
               <CardDescription>
                 Přiřaďte cestující k pokojům
+                {hotelStays.length > 0 && (
+                  <span className="block mt-1 text-xs">
+                    {hotelStays.map((stay, i) => (
+                      <span key={i} className="block">
+                        {stay.service_name}
+                        {(stay.start_date || stay.end_date) && (
+                          <span className="text-muted-foreground"> — {formatDate(stay.start_date)} – {formatDate(stay.end_date)}</span>
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -649,15 +672,32 @@ zajezdy@yarotravel.cz`
             </div>
           </div>
 
-          {dealInfo?.hotel_name && (
-            <p style={{ fontSize: "14px", marginBottom: "4px" }}>
-              <strong>Hotel:</strong> {dealInfo.hotel_name}
-            </p>
-          )}
-          {(dealInfo?.start_date || dealInfo?.end_date) && (
-            <p style={{ fontSize: "12px", marginBottom: "16px", color: "#555" }}>
-              <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
-            </p>
+          {hotelStays.length > 1 ? (
+            <div style={{ marginBottom: "16px" }}>
+              {hotelStays.map((stay, i) => (
+                <p key={i} style={{ fontSize: "12px", marginBottom: "2px" }}>
+                  <strong>{stay.service_name}</strong>
+                  {(stay.start_date || stay.end_date) && (
+                    <span style={{ color: "#555" }}>
+                      {" "}— {formatDate(stay.start_date)} – {formatDate(stay.end_date)}
+                    </span>
+                  )}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <>
+              {dealInfo?.hotel_name && (
+                <p style={{ fontSize: "14px", marginBottom: "4px" }}>
+                  <strong>Hotel:</strong> {dealInfo.hotel_name}
+                </p>
+              )}
+              {(dealInfo?.start_date || dealInfo?.end_date) && (
+                <p style={{ fontSize: "12px", marginBottom: "16px", color: "#555" }}>
+                  <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
+                </p>
+              )}
+            </>
           )}
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
