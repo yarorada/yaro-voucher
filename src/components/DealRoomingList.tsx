@@ -395,24 +395,23 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       // First save the rooming list
       await supabase.from("deals").update({ rooming_list: rooms as any }).eq("id", dealId);
 
-      // Generate PDF
+      // Generate PDF and convert to base64
       const pdfBlob = await generatePdfBlob();
-      const fileName = `rooming-list-${dealInfo?.deal_number || dealId}-${Date.now()}.pdf`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("voucher-pdfs")
-        .upload(fileName, pdfBlob, { contentType: "application/pdf" });
-
-      if (uploadError) {
-        toast.error("Chyba při nahrávání PDF");
-        return;
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
       }
+      const pdfBase64 = btoa(binary);
 
-      // Send via edge function
+      // Send via edge function with inline PDF
       const { data, error } = await supabase.functions.invoke("send-rooming-list-email", {
         body: {
           dealId,
-          pdfPath: fileName,
+          pdfBase64,
           supplierEmail: hotelSupplier.email,
           supplierName: hotelSupplier.name,
           hotelName: dealInfo?.hotel_name || "",
