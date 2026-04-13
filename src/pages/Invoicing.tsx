@@ -2004,7 +2004,7 @@ function InvoicePdfContent({ invoice, qrUrl, logoSrc }: { invoice: Invoice; qrUr
 
       <div style={{ marginTop: "20px", borderTop: "1px solid #ddd", paddingTop: "8px", textAlign: "center", color: "#999", fontSize: "8px" }}>
         {supplierName} • {supplierAddress}{supplierIco ? ` • IČO: ${supplierIco}` : ""}{supplierDic ? ` • DIČ: ${supplierDic}` : ""}
-        {isIssued && <div style={{ marginTop: "2px" }}>Tel: +420 777 007 877 • E-mail: info@yarogolf.cz</div>}
+        {isIssued && <div style={{ marginTop: "2px" }}>Tel: +420 602 102 108 • E-mail: zajezdy@yarotravel.cz</div>}
       </div>
     </div>
   );
