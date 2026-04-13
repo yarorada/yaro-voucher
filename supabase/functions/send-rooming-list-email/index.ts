@@ -39,32 +39,34 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { dealId, pdfPath, supplierEmail, supplierName, hotelName, dealNumber, dateFrom, dateTo, customMessage } = await req.json();
+    const { dealId, pdfBase64, pdfPath, supplierEmail, supplierName, hotelName, dealNumber, dateFrom, dateTo, customMessage } = await req.json();
 
-    if (!supplierEmail || !pdfPath) {
+    if (!supplierEmail || (!pdfBase64 && !pdfPath)) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Download PDF
+    // Get PDF attachment - either from inline base64 or from storage (legacy)
     let pdfAttachment: any[] = [];
-    const { data: pdfData, error: pdfError } = await supabaseAdmin.storage.from("voucher-pdfs").download(pdfPath);
-
-    if (!pdfError && pdfData) {
-      const arrayBuffer = await pdfData.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      const chunkSize = 8192;
-      let binary = "";
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-        for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
+    if (pdfBase64) {
+      pdfAttachment = [{ filename: `rooming-list-${dealNumber || "deal"}.pdf`, content: pdfBase64 }];
+    } else if (pdfPath) {
+      const { data: pdfData, error: pdfError } = await supabaseAdmin.storage.from("voucher-pdfs").download(pdfPath);
+      if (!pdfError && pdfData) {
+        const arrayBuffer = await pdfData.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const chunkSize = 8192;
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          for (let j = 0; j < chunk.length; j++) binary += String.fromCharCode(chunk[j]);
+        }
+        pdfAttachment = [{ filename: `rooming-list-${dealNumber || "deal"}.pdf`, content: btoa(binary) }];
       }
-      pdfAttachment = [{ filename: `rooming-list-${dealNumber || "deal"}.pdf`, content: btoa(binary) }];
+      // Cleanup uploaded PDF
+      await supabaseAdmin.storage.from("voucher-pdfs").remove([pdfPath]);
     }
-
-    // Cleanup uploaded PDF
-    await supabaseAdmin.storage.from("voucher-pdfs").remove([pdfPath]);
 
     const dateFromFormatted = dateFrom ? formatDate(dateFrom) : "";
     const dateToFormatted = dateTo ? formatDate(dateTo) : "";
@@ -103,7 +105,6 @@ zajezdy@yarotravel.cz`;
 
     if (response.ok) {
       const result = await response.json();
-      // Log email
       try {
         await supabaseAdmin.from("email_log").insert({
           deal_id: dealId,
