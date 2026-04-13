@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
     const emailPayload: Record<string, unknown> = {
       from: "YARO Travel <radek@yarogolf.cz>",
       to: [recipientEmail],
+      bcc: ["zajezdy@yarotravel.cz"],
       subject,
       html: body.replace(/\n/g, "<br>"),
     };
