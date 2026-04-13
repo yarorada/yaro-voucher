@@ -660,15 +660,32 @@ zajezdy@yarotravel.cz`
             </div>
           </div>
 
-          {dealInfo?.hotel_name && (
-            <p style={{ fontSize: "14px", marginBottom: "4px" }}>
-              <strong>Hotel:</strong> {dealInfo.hotel_name}
-            </p>
-          )}
-          {(dealInfo?.start_date || dealInfo?.end_date) && (
-            <p style={{ fontSize: "12px", marginBottom: "16px", color: "#555" }}>
-              <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
-            </p>
+          {hotelStays.length > 1 ? (
+            <div style={{ marginBottom: "16px" }}>
+              {hotelStays.map((stay, i) => (
+                <p key={i} style={{ fontSize: "12px", marginBottom: "2px" }}>
+                  <strong>{stay.service_name}</strong>
+                  {(stay.start_date || stay.end_date) && (
+                    <span style={{ color: "#555" }}>
+                      {" "}— {formatDate(stay.start_date)} – {formatDate(stay.end_date)}
+                    </span>
+                  )}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <>
+              {dealInfo?.hotel_name && (
+                <p style={{ fontSize: "14px", marginBottom: "4px" }}>
+                  <strong>Hotel:</strong> {dealInfo.hotel_name}
+                </p>
+              )}
+              {(dealInfo?.start_date || dealInfo?.end_date) && (
+                <p style={{ fontSize: "12px", marginBottom: "16px", color: "#555" }}>
+                  <strong>Dates:</strong> {formatDate(dealInfo?.start_date || null)} – {formatDate(dealInfo?.end_date || null)}
+                </p>
+              )}
+            </>
           )}
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
