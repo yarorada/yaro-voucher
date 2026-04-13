@@ -209,6 +209,14 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     fetchData();
   }, [dealId]);
 
+  const getDefaultStayKey = () => {
+    if (hotelStays.length === 1) {
+      const s = hotelStays[0];
+      return `${s.service_name}|${s.start_date || ""}|${s.end_date || ""}`;
+    }
+    return undefined;
+  };
+
   const addRoom = () => {
     setRooms((prev) => [
       ...prev,
@@ -217,6 +225,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
         room_type: hotelRoomTypes[0] || "DBL",
         room_label: `Room ${prev.length + 1}`,
         traveler_ids: [],
+        hotel_stay_key: getDefaultStayKey(),
       },
     ]);
   };
