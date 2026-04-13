@@ -550,7 +550,7 @@ zajezdy@yarotravel.cz`
                         <div className="border rounded-lg p-3 space-y-3">
                           <div className="flex items-center gap-2">
                             {dragHandle}
-                            <div className="flex-1 grid grid-cols-2 gap-2">
+                            <div className={`flex-1 grid gap-2 ${hotelStays.length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                               <div>
                                 <Label className="text-xs text-muted-foreground">Název</Label>
                                 <Input
@@ -582,6 +582,31 @@ zajezdy@yarotravel.cz`
                                   </SelectContent>
                                 </Select>
                               </div>
+                              {hotelStays.length > 1 && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Pobyt</Label>
+                                  <Select
+                                    value={room.hotel_stay_key || ""}
+                                    onValueChange={(v) =>
+                                      updateRoom(room.id, { hotel_stay_key: v })
+                                    }
+                                  >
+                                    <SelectTrigger className="h-8 text-sm">
+                                      <SelectValue placeholder="Vyberte pobyt" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {hotelStays.map((stay, i) => {
+                                        const key = `${stay.service_name}|${stay.start_date || ""}|${stay.end_date || ""}`;
+                                        return (
+                                          <SelectItem key={i} value={key}>
+                                            {stay.service_name} {stay.start_date ? `(${formatDate(stay.start_date)} – ${formatDate(stay.end_date)})` : ""}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
                             </div>
                             <Button
                               size="icon"
