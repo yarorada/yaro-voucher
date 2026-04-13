@@ -407,11 +407,11 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
       }
       const pdfBase64 = btoa(binary);
 
-      // Send via edge function
+      // Send via edge function with inline PDF
       const { data, error } = await supabase.functions.invoke("send-rooming-list-email", {
         body: {
           dealId,
-          pdfPath: fileName,
+          pdfBase64,
           supplierEmail: hotelSupplier.email,
           supplierName: hotelSupplier.name,
           hotelName: dealInfo?.hotel_name || "",
