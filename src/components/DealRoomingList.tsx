@@ -64,6 +64,7 @@ interface RoomAssignment {
   room_type: string;
   room_label: string;
   traveler_ids: string[];
+  hotel_stay_key?: string;
 }
 
 interface DealRoomingListProps {
