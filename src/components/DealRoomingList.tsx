@@ -455,6 +455,18 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
               </CardTitle>
               <CardDescription>
                 Přiřaďte cestující k pokojům
+                {hotelStays.length > 0 && (
+                  <span className="block mt-1 text-xs">
+                    {hotelStays.map((stay, i) => (
+                      <span key={i} className="block">
+                        {stay.service_name}
+                        {(stay.start_date || stay.end_date) && (
+                          <span className="text-muted-foreground"> — {formatDate(stay.start_date)} – {formatDate(stay.end_date)}</span>
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </CardDescription>
             </div>
             <div className="flex gap-2">
