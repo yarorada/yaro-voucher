@@ -73,13 +73,12 @@ interface DealRoomingListProps {
 }
 
 const ROOM_TYPES = [
-  { value: "DBL", label: "DBL – Double (manželská postel)" },
-  { value: "TWN", label: "TWN – Twin (dvě oddělené postele)" },
-  { value: "SGL", label: "SGL – Single" },
-  { value: "TRPL", label: "TRPL – Triple" },
+  { value: "SGL", label: "Single Room" },
+  { value: "DBL", label: "Double Room" },
+  { value: "TWN", label: "Twin Room" },
+  { value: "TRPL", label: "Triple Room" },
   { value: "SUITE", label: "Suite" },
-  { value: "FAM", label: "FAM – Family" },
-  { value: "OTHER", label: "Jiný" },
+  { value: "FAM", label: "Family" },
 ];
 
 // Sortable room wrapper component
@@ -336,13 +335,12 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
 
   const getRoomTypeLabelEn = (value: string) => {
     const EN_ROOM_TYPES: Record<string, string> = {
-      DBL: "DBL – Double (double bed)",
-      TWN: "TWN – Twin (two single beds)",
-      SGL: "SGL – Single",
-      TRPL: "TRPL – Triple",
+      SGL: "Single Room",
+      DBL: "Double Room",
+      TWN: "Twin Room",
+      TRPL: "Triple Room",
       SUITE: "Suite",
-      FAM: "FAM – Family",
-      OTHER: "Other",
+      FAM: "Family",
     };
     return EN_ROOM_TYPES[value] || value;
   };
