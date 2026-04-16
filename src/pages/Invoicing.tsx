@@ -380,16 +380,16 @@ export default function Invoicing() {
             .eq("partner_type", "customer")
             .maybeSingle();
           if (!existing) {
-            await supabase.from("suppliers").insert({
+            setPendingCustomer({
               name: data.name,
               ico: data.ico,
-              dic: data.dic || null,
-              address: data.address || null,
-              street: data.street || null,
-              city: data.city || null,
-              postal_code: data.postal_code || null,
-              partner_type: "customer",
+              dic: data.dic || undefined,
+              address: data.address || undefined,
+              street: data.street || undefined,
+              city: data.city || undefined,
+              postal_code: data.postal_code || undefined,
             });
+            setPendingCustomerEmail("");
           }
         }
       } else {
