@@ -369,6 +369,27 @@ export default function Invoicing() {
           client_dic: data.dic || f.client_dic,
           client_address: data.address || f.client_address,
         }));
+        // Auto-save as customer partner if not already exists
+        if (data.name && data.ico) {
+          const { data: existing } = await supabase
+            .from("suppliers")
+            .select("id")
+            .eq("ico", data.ico)
+            .eq("partner_type", "customer")
+            .maybeSingle();
+          if (!existing) {
+            await supabase.from("suppliers").insert({
+              name: data.name,
+              ico: data.ico,
+              dic: data.dic || null,
+              address: data.address || null,
+              street: data.street || null,
+              city: data.city || null,
+              postal_code: data.postal_code || null,
+              partner_type: "customer",
+            });
+          }
+        }
       } else {
         setForm((f) => ({
           ...f,
