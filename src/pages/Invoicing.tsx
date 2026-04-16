@@ -211,6 +211,8 @@ export default function Invoicing() {
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
+  const [pendingCustomer, setPendingCustomer] = useState<{ name: string; ico: string; dic?: string; address?: string; street?: string; city?: string; postal_code?: string } | null>(null);
+  const [pendingCustomerEmail, setPendingCustomerEmail] = useState("");
   const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
   const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [markPaidMethod, setMarkPaidMethod] = useState<string>("moneta");
