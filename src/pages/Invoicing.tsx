@@ -211,6 +211,8 @@ export default function Invoicing() {
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
+  const [pendingCustomer, setPendingCustomer] = useState<{ name: string; ico: string; dic?: string; address?: string; street?: string; city?: string; postal_code?: string } | null>(null);
+  const [pendingCustomerEmail, setPendingCustomerEmail] = useState("");
   const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
   const [markPaidDate, setMarkPaidDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [markPaidMethod, setMarkPaidMethod] = useState<string>("moneta");
@@ -378,16 +380,16 @@ export default function Invoicing() {
             .eq("partner_type", "customer")
             .maybeSingle();
           if (!existing) {
-            await supabase.from("suppliers").insert({
+            setPendingCustomer({
               name: data.name,
               ico: data.ico,
-              dic: data.dic || null,
-              address: data.address || null,
-              street: data.street || null,
-              city: data.city || null,
-              postal_code: data.postal_code || null,
-              partner_type: "customer",
+              dic: data.dic || undefined,
+              address: data.address || undefined,
+              street: data.street || undefined,
+              city: data.city || undefined,
+              postal_code: data.postal_code || undefined,
             });
+            setPendingCustomerEmail("");
           }
         }
       } else {
@@ -1704,6 +1706,64 @@ export default function Invoicing() {
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* New Customer Email Dialog */}
+      <Dialog open={!!pendingCustomer} onOpenChange={(o) => { if (!o) setPendingCustomer(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nový odběratel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {pendingCustomer?.name} (IČO: {pendingCustomer?.ico})
+            </p>
+            <div>
+              <Label>Fakturační e-mail</Label>
+              <Input
+                type="email"
+                placeholder="email@firma.cz"
+                value={pendingCustomerEmail}
+                onChange={(e) => setPendingCustomerEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={async () => {
+                if (pendingCustomer) {
+                  await supabase.from("suppliers").insert({
+                    name: pendingCustomer.name,
+                    ico: pendingCustomer.ico,
+                    dic: pendingCustomer.dic || null,
+                    address: pendingCustomer.address || null,
+                    street: pendingCustomer.street || null,
+                    city: pendingCustomer.city || null,
+                    postal_code: pendingCustomer.postal_code || null,
+                    partner_type: "customer",
+                  });
+                  toast.success("Odběratel uložen bez e-mailu");
+                }
+                setPendingCustomer(null);
+              }}>Přeskočit</Button>
+              <Button size="sm" onClick={async () => {
+                if (pendingCustomer) {
+                  await supabase.from("suppliers").insert({
+                    name: pendingCustomer.name,
+                    ico: pendingCustomer.ico,
+                    dic: pendingCustomer.dic || null,
+                    address: pendingCustomer.address || null,
+                    street: pendingCustomer.street || null,
+                    city: pendingCustomer.city || null,
+                    postal_code: pendingCustomer.postal_code || null,
+                    partner_type: "customer",
+                    email: pendingCustomerEmail || null,
+                  });
+                  toast.success("Odběratel uložen");
+                }
+                setPendingCustomer(null);
+              }}>Uložit</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
