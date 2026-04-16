@@ -1709,6 +1709,64 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
+      {/* New Customer Email Dialog */}
+      <Dialog open={!!pendingCustomer} onOpenChange={(o) => { if (!o) setPendingCustomer(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nový odběratel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {pendingCustomer?.name} (IČO: {pendingCustomer?.ico})
+            </p>
+            <div>
+              <Label>Fakturační e-mail</Label>
+              <Input
+                type="email"
+                placeholder="email@firma.cz"
+                value={pendingCustomerEmail}
+                onChange={(e) => setPendingCustomerEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={async () => {
+                if (pendingCustomer) {
+                  await supabase.from("suppliers").insert({
+                    name: pendingCustomer.name,
+                    ico: pendingCustomer.ico,
+                    dic: pendingCustomer.dic || null,
+                    address: pendingCustomer.address || null,
+                    street: pendingCustomer.street || null,
+                    city: pendingCustomer.city || null,
+                    postal_code: pendingCustomer.postal_code || null,
+                    partner_type: "customer",
+                  });
+                  toast.success("Odběratel uložen bez e-mailu");
+                }
+                setPendingCustomer(null);
+              }}>Přeskočit</Button>
+              <Button size="sm" onClick={async () => {
+                if (pendingCustomer) {
+                  await supabase.from("suppliers").insert({
+                    name: pendingCustomer.name,
+                    ico: pendingCustomer.ico,
+                    dic: pendingCustomer.dic || null,
+                    address: pendingCustomer.address || null,
+                    street: pendingCustomer.street || null,
+                    city: pendingCustomer.city || null,
+                    postal_code: pendingCustomer.postal_code || null,
+                    partner_type: "customer",
+                    email: pendingCustomerEmail || null,
+                  });
+                  toast.success("Odběratel uložen");
+                }
+                setPendingCustomer(null);
+              }}>Uložit</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Mark as Paid Dialog */}
       <Dialog open={!!markPaidInvoice} onOpenChange={(o) => { if (!o) setMarkPaidInvoice(null); }}>
         <DialogContent className="max-w-sm">
