@@ -1,10 +1,9 @@
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Camera, Loader2, Trash2, ArrowUp, ArrowDown, Plus, Check, Crop as CropIcon } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
-import Cropper, { Area } from "react-easy-crop";
 
 type Page = {
   id: string;
