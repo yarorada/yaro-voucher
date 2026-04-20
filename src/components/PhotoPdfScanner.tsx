@@ -138,7 +138,7 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
 
-    // Step 4: scanner-like processing — grayscale, auto-levels, gamma boost
+    // Step 4: scanner-like processing — pure black & white (binarization)
     const imgData = ctx.getImageData(0, 0, outW, outH);
     const d = imgData.data;
 
@@ -148,10 +148,10 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       hist[Math.round(lum)]++;
     }
-    // Determine 2% / 98% percentiles for robust min/max
+    // Determine 5% / 95% percentiles for robust min/max (stronger contrast)
     const totalSamples = (d.length / 16) | 0;
-    const lowCut = totalSamples * 0.02;
-    const highCut = totalSamples * 0.98;
+    const lowCut = totalSamples * 0.05;
+    const highCut = totalSamples * 0.95;
     let cum = 0;
     let min = 0, max = 255;
     for (let i = 0; i < 256; i++) {
@@ -165,15 +165,15 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     }
     const range = Math.max(1, max - min);
     const factor = 255 / range;
-    const gamma = 0.85; // slight brightening — punch up the page background to white
+    // Adaptive threshold: midpoint of stretched range, slightly biased toward white background
+    const threshold = 150;
 
     for (let i = 0; i < d.length; i += 4) {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       let v = (lum - min) * factor;
       if (v < 0) v = 0; else if (v > 255) v = 255;
-      // gamma correction
-      v = 255 * Math.pow(v / 255, gamma);
-      const out = v < 0 ? 0 : v > 255 ? 255 : v;
+      // Pure black & white binarization (1-bit look)
+      const out = v >= threshold ? 255 : 0;
       d[i] = out;
       d[i + 1] = out;
       d[i + 2] = out;
