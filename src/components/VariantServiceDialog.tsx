@@ -694,36 +694,43 @@ export const VariantServiceDialog = ({
               <Label>Nákupní cena</Label>
               <div className="flex gap-1">
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={costPriceOriginal !== "" ? costPriceOriginal : costPrice}
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const val = e.target.value;
+                    // Allow only digits, optional decimal separator
+                    if (val !== "" && !/^\d*[.,]?\d*$/.test(val)) return;
+                    const normalized = val.replace(",", ".");
                     const margin = (parseFloat(marginPercent) || 0) / 100;
-                    setCostPriceOriginal(val);
+                    setCostPriceOriginal(normalized);
                     if (costCurrency === "CZK") {
-                      setCostPrice(val);
-                      setCostCzkValue(val ? parseFloat(val) : null);
-                      if (!priceManuallySet && val) {
-                        setPrice(Math.round(parseFloat(val) * (1 + margin)).toString());
+                      setCostPrice(normalized);
+                      setCostCzkValue(normalized ? parseFloat(normalized) : null);
+                      if (!priceManuallySet && normalized) {
+                        setPrice(Math.round(parseFloat(normalized) * (1 + margin)).toString());
                         setPriceCurrency("CZK");
                       }
-                    } else if (val) {
-                      try {
-                        const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                          body: { currency: costCurrency, amount: parseFloat(val) },
-                        });
-                        if (data?.rate && data?.convertedAmount) {
-                          setCostExchangeRate(data.rate);
-                          setCostCzkValue(data.convertedAmount);
-                          if (!priceManuallySet) {
-                            setPrice(Math.round(data.convertedAmount * (1 + margin)).toString());
-                            setPriceCurrency("CZK");
-                          }
-                        }
-                      } catch {}
-                    } else {
+                    } else if (!normalized) {
                       setCostCzkValue(null);
                     }
+                  }}
+                  onBlur={async () => {
+                    if (costCurrency === "CZK" || !costPriceOriginal) return;
+                    const margin = (parseFloat(marginPercent) || 0) / 100;
+                    try {
+                      const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                        body: { currency: costCurrency, amount: parseFloat(costPriceOriginal) },
+                      });
+                      if (data?.rate && data?.convertedAmount) {
+                        setCostExchangeRate(data.rate);
+                        setCostCzkValue(data.convertedAmount);
+                        if (!priceManuallySet) {
+                          setPrice(Math.round(data.convertedAmount * (1 + margin)).toString());
+                          setPriceCurrency("CZK");
+                        }
+                      }
+                    } catch {}
                   }}
                   placeholder="0"
                   className="flex-1"
@@ -820,25 +827,30 @@ export const VariantServiceDialog = ({
               <div className="flex gap-1">
                 <Input
                   id="price"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={price}
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const val = e.target.value;
-                    setPrice(val);
+                    if (val !== "" && !/^\d*[.,]?\d*$/.test(val)) return;
+                    const normalized = val.replace(",", ".");
+                    setPrice(normalized);
                     setPriceManuallySet(true);
                     if (priceCurrency === "CZK") {
-                      setPriceCzkValue(val ? parseFloat(val) : null);
-                    } else if (val) {
-                      try {
-                        const { data } = await supabase.functions.invoke("get-exchange-rate", {
-                          body: { currency: priceCurrency, amount: parseFloat(val) },
-                        });
-                        if (data?.rate && data?.convertedAmount) {
-                          setPriceExchangeRate(data.rate);
-                          setPriceCzkValue(data.convertedAmount);
-                        }
-                      } catch {}
+                      setPriceCzkValue(normalized ? parseFloat(normalized) : null);
                     }
+                  }}
+                  onBlur={async () => {
+                    if (priceCurrency === "CZK" || !price) return;
+                    try {
+                      const { data } = await supabase.functions.invoke("get-exchange-rate", {
+                        body: { currency: priceCurrency, amount: parseFloat(price) },
+                      });
+                      if (data?.rate && data?.convertedAmount) {
+                        setPriceExchangeRate(data.rate);
+                        setPriceCzkValue(data.convertedAmount);
+                      }
+                    } catch {}
                   }}
                   placeholder="0"
                   className="flex-1"
