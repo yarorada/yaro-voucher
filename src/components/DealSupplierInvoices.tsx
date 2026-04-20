@@ -476,6 +476,12 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
       await supabase.storage.from("supplier-invoices").remove([path]);
     }
 
+    // Delete linked invoice in /invoicing (přijaté faktury)
+    await supabase
+      .from("invoices")
+      .delete()
+      .eq("deal_supplier_invoice_id", invoice.id);
+
     const { error } = await supabase
       .from("deal_supplier_invoices")
       .delete()
