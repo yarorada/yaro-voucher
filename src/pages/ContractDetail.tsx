@@ -334,10 +334,9 @@ const ContractDetail = () => {
                   <button
                     type="button"
                     onClick={() => navigate(`/deals/${contract.deal.id}`)}
-                    className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                    className="font-medium text-primary hover:underline"
                   >
-                    {contract.deal.deal_number || 'Otevřít obchodní případ'}
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    {contract.deal.deal_number || 'Otevřít'}
                   </button>
                 </div>
               )}
