@@ -87,12 +87,11 @@ function detectContentBounds(
     return { x: 0, y: 0, w: width, h: height };
   }
 
-  // Add small padding and map back to original coords
-  const pad = 4;
-  minX = Math.max(0, minX - pad);
-  minY = Math.max(0, minY - pad);
-  maxX = Math.min(sw - 1, maxX + pad);
-  maxY = Math.min(sh - 1, maxY + pad);
+  // No padding — crop tightly to detected content, removing all background
+  minX = Math.max(0, minX);
+  minY = Math.max(0, minY);
+  maxX = Math.min(sw - 1, maxX);
+  maxY = Math.min(sh - 1, maxY);
 
   const sx = minX / sw;
   const sy = minY / sh;
