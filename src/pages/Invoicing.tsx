@@ -208,7 +208,7 @@ export default function Invoicing() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [ocrScanning, setOcrScanning] = useState(false);
-  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; net_amount?: number; vat_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
