@@ -37,6 +37,11 @@ const ContractDetail = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [id]);
+
   const { data: airports = [] } = useQuery({
     queryKey: ["airport_templates_for_contract"],
     queryFn: async () => {
