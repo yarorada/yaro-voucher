@@ -87,12 +87,11 @@ function detectContentBounds(
     return { x: 0, y: 0, w: width, h: height };
   }
 
-  // Add small padding and map back to original coords
-  const pad = 4;
-  minX = Math.max(0, minX - pad);
-  minY = Math.max(0, minY - pad);
-  maxX = Math.min(sw - 1, maxX + pad);
-  maxY = Math.min(sh - 1, maxY + pad);
+  // No padding — crop tightly to detected content, removing all background
+  minX = Math.max(0, minX);
+  minY = Math.max(0, minY);
+  maxX = Math.min(sw - 1, maxX);
+  maxY = Math.min(sh - 1, maxY);
 
   const sx = minX / sw;
   const sy = minY / sh;
@@ -190,8 +189,39 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     }
     ctx.putImageData(imgData, 0, 0);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-    return { dataUrl, width: outW, height: outH };
+    // Step 5: post-binarization tight crop — remove leftover uniform borders (any solid edge)
+    let tMinX = outW, tMinY = outH, tMaxX = 0, tMaxY = 0;
+    let tFound = false;
+    // Sample every pixel on the now-binary image; find black ink bounds
+    for (let y = 0; y < outH; y++) {
+      for (let x = 0; x < outW; x++) {
+        const i = (y * outW + x) * 4;
+        if (d[i] < 128) {
+          if (x < tMinX) tMinX = x;
+          if (y < tMinY) tMinY = y;
+          if (x > tMaxX) tMaxX = x;
+          if (y > tMaxY) tMaxY = y;
+          tFound = true;
+        }
+      }
+    }
+
+    let finalCanvas = canvas;
+    let finalW = outW;
+    let finalH = outH;
+    if (tFound && (tMaxX - tMinX) > outW * 0.3 && (tMaxY - tMinY) > outH * 0.3) {
+      finalW = tMaxX - tMinX + 1;
+      finalH = tMaxY - tMinY + 1;
+      const cropped = document.createElement("canvas");
+      cropped.width = finalW;
+      cropped.height = finalH;
+      const cctx = cropped.getContext("2d")!;
+      cctx.drawImage(canvas, tMinX, tMinY, finalW, finalH, 0, 0, finalW, finalH);
+      finalCanvas = cropped;
+    }
+
+    const dataUrl = finalCanvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    return { dataUrl, width: finalW, height: finalH };
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
