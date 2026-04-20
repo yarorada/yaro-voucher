@@ -516,6 +516,28 @@ export default function Invoicing() {
       notes: form.notes || null,
       items: calcItems.length > 0 ? calcItems : [],
     };
+    // Pokud editujeme existující fakturu (a způsob platby již byl zvolen) – ulož přímo
+    if (editingInvoice) {
+      saveMutation.mutate(values);
+      return;
+    }
+    // U nových faktur otevři dialog pro výběr způsobu platby
+    setPaymentChoiceValues(values);
+  };
+
+  const handlePaymentChoiceConfirm = (choice: "cash" | "transfer" | "skip") => {
+    if (!paymentChoiceValues) return;
+    const values = { ...paymentChoiceValues };
+    if (choice === "cash") {
+      values.payment_method = "cash";
+      values.paid = true;
+      values.paid_at = format(new Date(), "yyyy-MM-dd");
+    } else if (choice === "transfer") {
+      values.payment_method = "moneta";
+      values.paid = false;
+    }
+    // skip = žádné nastavení (zůstane null/false)
+    setPaymentChoiceValues(null);
     saveMutation.mutate(values);
   };
 
