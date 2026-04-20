@@ -327,24 +327,23 @@ const ContractDetail = () => {
             <div className="grid md:grid-cols-2 gap-4 min-w-0">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Číslo smlouvy</p>
-                <p className="font-medium text-foreground">{contract.contract_number}</p>
+                {contract.deal?.id ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/deals/${contract.deal.id}`)}
+                    className="font-medium text-primary hover:underline"
+                    title="Otevřít obchodní případ"
+                  >
+                    {contract.contract_number}
+                  </button>
+                ) : (
+                  <p className="font-medium text-foreground">{contract.contract_number}</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
                 {getStatusBadge(contract.status, true)}
               </div>
-              {contract.deal?.id && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Obchodní případ</p>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/deals/${contract.deal.id}`)}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {contract.deal.deal_number || 'Otevřít'}
-                  </button>
-                </div>
-              )}
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Termín zájezdu</p>
                 <p className="font-medium text-foreground">
