@@ -123,13 +123,15 @@ const LayoutHeader = () => {
   const toolbarContent = usePageToolbarContent();
   const headerActions = useHeaderActionsContent();
   return (
-    <header className="border-b bg-background print:hidden">
-      <div className="px-4 py-2">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-2 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors">
+    <header className="border-b bg-background print:hidden overflow-hidden">
+      <div className="px-2 sm:px-4 py-2 max-w-full">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+          <SidebarTrigger className="-ml-1 h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors shrink-0">
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
-          <Breadcrumbs />
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <Breadcrumbs />
+          </div>
           <div className="flex-1 min-w-0 hidden sm:block">
             {toolbarContent && (
               <div className="flex items-center gap-2 justify-end">
@@ -137,13 +139,15 @@ const LayoutHeader = () => {
               </div>
             )}
           </div>
-          {headerActions}
-          <NotificationBell />
-          <UndoRedoButtons />
-          <SaveIndicator />
+          <div className="flex items-center gap-0.5 shrink-0">
+            {headerActions}
+            <NotificationBell />
+            <UndoRedoButtons />
+            <SaveIndicator />
+          </div>
         </div>
         {toolbarContent && (
-          <div className="flex items-center gap-2 mt-2 sm:hidden">
+          <div className="flex items-center gap-2 mt-2 sm:hidden min-w-0 w-full overflow-hidden">
             {toolbarContent}
           </div>
         )}

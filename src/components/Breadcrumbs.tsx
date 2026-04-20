@@ -58,22 +58,30 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground min-w-0 overflow-hidden">
       {breadcrumbs.map((crumb, index) => {
         const isLast = index === breadcrumbs.length - 1;
+        const isFirst = index === 0;
         const Icon = crumb.icon;
+        // On mobile, hide intermediate text labels (keep Home icon + last item)
+        const hideOnMobile = !isFirst && !isLast;
 
         return (
-          <div key={crumb.path} className="flex items-center">
+          <div
+            key={crumb.path}
+            className={`flex items-center min-w-0 ${hideOnMobile ? "hidden sm:flex" : ""}`}
+          >
             {index > 0 && (
               <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
             )}
             <Link
               to={crumb.path}
-              className={`hover:text-foreground transition-colors flex items-center ${isLast ? "font-medium text-foreground" : ""}`}
+              className={`hover:text-foreground transition-colors flex items-center min-w-0 ${isLast ? "font-medium text-foreground" : ""}`}
             >
-              {Icon && <Icon className="h-4 w-4 mr-1" />}
-              {crumb.name}
+              {Icon && <Icon className="h-4 w-4 mr-1 flex-shrink-0" />}
+              <span className={`truncate ${isFirst && !isLast ? "hidden sm:inline" : ""}`}>
+                {crumb.name}
+              </span>
             </Link>
           </div>
         );
