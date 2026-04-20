@@ -458,6 +458,50 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!cropPageId} onOpenChange={(v) => { if (!v) { setCropPageId(null); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Oříznout stránku</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden">
+            {cropPage && (
+              <Cropper
+                image={cropPage.dataUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={undefined}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                restrictPosition={false}
+                objectFit="contain"
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <span className="text-xs text-muted-foreground w-12">Zoom</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.05}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setCropPageId(null)}>
+              Přeskočit
+            </Button>
+            <Button type="button" size="sm" onClick={applyCrop}>
+              <Check className="h-4 w-4 mr-1" />
+              Použít ořez
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
