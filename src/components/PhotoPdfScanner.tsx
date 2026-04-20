@@ -236,6 +236,55 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
   const fileRef = useRef<HTMLInputElement>(null);
   const addMoreRef = useRef<HTMLInputElement>(null);
 
+  // Cropper state
+  const [cropPageId, setCropPageId] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
+    setCroppedAreaPixels(areaPixels);
+  }, []);
+
+  const cropPage = pages.find((p) => p.id === cropPageId) || null;
+
+  const applyCrop = async () => {
+    if (!cropPage || !croppedAreaPixels) { setCropPageId(null); return; }
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = cropPage.dataUrl;
+      });
+      const cw = Math.max(1, Math.round(croppedAreaPixels.width));
+      const ch = Math.max(1, Math.round(croppedAreaPixels.height));
+      const c = document.createElement("canvas");
+      c.width = cw;
+      c.height = ch;
+      const cctx = c.getContext("2d")!;
+      cctx.drawImage(
+        img,
+        Math.round(croppedAreaPixels.x),
+        Math.round(croppedAreaPixels.y),
+        cw,
+        ch,
+        0,
+        0,
+        cw,
+        ch,
+      );
+      const dataUrl = c.toDataURL("image/jpeg", JPEG_QUALITY);
+      setPages((prev) => prev.map((p) => p.id === cropPage.id ? { ...p, dataUrl, width: cw, height: ch } : p));
+      setCropPageId(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se oříznout");
+    }
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setProcessing(true);
