@@ -319,9 +319,6 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
       if (!open) setOpen(true);
       // Auto-offer crop for the first newly added page
       if (newPages.length > 0) {
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
         setCropPageId(newPages[0].id);
       }
     } catch (e: any) {
