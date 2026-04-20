@@ -51,6 +51,7 @@ Important:
 - Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
 - For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
 - Return only the JSON object, no additional text or markdown
+- For multi-page documents: synthesize the BEST single answer per field, do not concatenate values from different pages
 - If you cannot find a field, use null`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
