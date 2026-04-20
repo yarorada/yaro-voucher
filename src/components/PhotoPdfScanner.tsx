@@ -118,6 +118,232 @@ const EDGE_SAMPLE = 260; // downscaled dim for edge detection
 const BG_THRESHOLD = 22; // luminance delta vs background to consider as document (lower = more sensitive crop)
 const ADAPTIVE_WINDOW = 25; // half-window radius (px) for local mean (≈ 51px window)
 const ADAPTIVE_BIAS = 12; // subtract from local mean to whiten background and remove shadows
+const QUAD_SAMPLE = 360; // downscaled dim for 4-corner detection (quadrilateral fit)
+
+type Pt = { x: number; y: number };
+
+/**
+ * Detect the 4 corners of the document by:
+ * 1) Building a foreground mask (non-background pixels) on a downscaled image
+ * 2) Finding the extreme points along 4 diagonal directions
+ * Returns null if detection is unreliable (falls back to bbox crop).
+ */
+function detectDocumentQuad(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+): { tl: Pt; tr: Pt; br: Pt; bl: Pt } | null {
+  const scale = Math.min(1, QUAD_SAMPLE / Math.max(width, height));
+  const sw = Math.max(64, Math.round(width * scale));
+  const sh = Math.max(64, Math.round(height * scale));
+  const small = document.createElement("canvas");
+  small.width = sw;
+  small.height = sh;
+  const sctx = small.getContext("2d")!;
+  sctx.drawImage(ctx.canvas, 0, 0, sw, sh);
+  const data = sctx.getImageData(0, 0, sw, sh).data;
+
+  // Estimate background luminance from the 4 corner patches (12x12)
+  const patch = 12;
+  const corners: Array<[number, number]> = [
+    [0, 0],
+    [sw - patch, 0],
+    [0, sh - patch],
+    [sw - patch, sh - patch],
+  ];
+  let br = 0, bg = 0, bb = 0, bn = 0;
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + patch; y++) {
+      for (let x = cx; x < cx + patch; x++) {
+        const i = (y * sw + x) * 4;
+        br += data[i]; bg += data[i + 1]; bb += data[i + 2]; bn++;
+      }
+    }
+  }
+  const bgLum = 0.299 * (br / bn) + 0.587 * (bg / bn) + 0.114 * (bb / bn);
+
+  // Build foreground mask
+  const mask = new Uint8Array(sw * sh);
+  let count = 0;
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const i = (y * sw + x) * 4;
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      if (Math.abs(lum - bgLum) > BG_THRESHOLD) {
+        mask[y * sw + x] = 1;
+        count++;
+      }
+    }
+  }
+  // Need a reasonable amount of foreground
+  if (count < sw * sh * 0.05) return null;
+
+  // Find extremes:
+  // tl = min(x + y), tr = min(-x + y) = max(x - y) reversed, br = max(x + y), bl = max(-x + y) = min(x - y) inverted
+  let tlScore = Infinity, brScore = -Infinity, trScore = -Infinity, blScore = Infinity;
+  let tl: Pt = { x: 0, y: 0 };
+  let tr: Pt = { x: sw - 1, y: 0 };
+  let br_: Pt = { x: sw - 1, y: sh - 1 };
+  let bl: Pt = { x: 0, y: sh - 1 };
+
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      if (!mask[y * sw + x]) continue;
+      const sumA = x + y;
+      if (sumA < tlScore) { tlScore = sumA; tl = { x, y }; }
+      if (sumA > brScore) { brScore = sumA; br_ = { x, y }; }
+      const diff = x - y;
+      if (diff > trScore) { trScore = diff; tr = { x, y }; }
+      if (diff < blScore) { blScore = diff; bl = { x, y }; }
+    }
+  }
+
+  // Sanity: corners should not all be near the image edges (i.e., paper fills frame entirely)
+  // Also verify the quad has a reasonable area
+  const quadArea = polyArea([tl, tr, br_, bl]);
+  if (quadArea < sw * sh * 0.15) return null;
+
+  // Map back to original image pixel coordinates
+  const map = (p: Pt): Pt => ({ x: (p.x / sw) * width, y: (p.y / sh) * height });
+  return { tl: map(tl), tr: map(tr), br: map(br_), bl: map(bl) };
+}
+
+function polyArea(pts: Pt[]): number {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const j = (i + 1) % pts.length;
+    a += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+  }
+  return Math.abs(a) / 2;
+}
+
+/**
+ * Solve 8 unknowns of a 2D projective transform that maps 4 source points to a unit square (0..1, 0..1)
+ * scaled to (outW, outH). Returns the inverse mapping coefficients for use in pixel-by-pixel sampling
+ * (output -> source). We compute the forward H (src -> dst) and then invert by solving per-pixel:
+ * actually we compute the *inverse* projective directly (dst -> src) by swapping point sets.
+ */
+function computeInverseProjective(
+  srcCorners: { tl: Pt; tr: Pt; br: Pt; bl: Pt },
+  dstW: number,
+  dstH: number,
+): number[] | null {
+  // Map dst (rectangle) -> src (quad) so we can sample for each dst pixel
+  const dst: Pt[] = [
+    { x: 0, y: 0 },
+    { x: dstW, y: 0 },
+    { x: dstW, y: dstH },
+    { x: 0, y: dstH },
+  ];
+  const src: Pt[] = [srcCorners.tl, srcCorners.tr, srcCorners.br, srcCorners.bl];
+  return solveHomography(dst, src);
+}
+
+/** Solve 3x3 homography H such that H * dst_i = src_i (in homogeneous coords), returning [h11..h32, 1]. */
+function solveHomography(p1: Pt[], p2: Pt[]): number[] | null {
+  // 8 equations, 8 unknowns
+  const A: number[][] = [];
+  const b: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const { x, y } = p1[i];
+    const { x: u, y: v } = p2[i];
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]);
+    b.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
+    b.push(v);
+  }
+  const h = solveLinearSystem(A, b);
+  if (!h) return null;
+  return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+}
+
+/** Gaussian elimination for an n x n linear system A x = b. */
+function solveLinearSystem(A: number[][], b: number[]): number[] | null {
+  const n = A.length;
+  // Build augmented matrix
+  const M: number[][] = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    // Pivot
+    let maxRow = col;
+    let maxVal = Math.abs(M[col][col]);
+    for (let r = col + 1; r < n; r++) {
+      if (Math.abs(M[r][col]) > maxVal) {
+        maxVal = Math.abs(M[r][col]);
+        maxRow = r;
+      }
+    }
+    if (maxVal < 1e-10) return null;
+    if (maxRow !== col) [M[col], M[maxRow]] = [M[maxRow], M[col]];
+    // Eliminate
+    for (let r = col + 1; r < n; r++) {
+      const factor = M[r][col] / M[col][col];
+      for (let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+    }
+  }
+  // Back-substitute
+  const x = new Array(n).fill(0);
+  for (let r = n - 1; r >= 0; r--) {
+    let s = M[r][n];
+    for (let c = r + 1; c < n; c++) s -= M[r][c] * x[c];
+    x[r] = s / M[r][r];
+  }
+  return x;
+}
+
+/** Warp a quadrilateral region of the source canvas into a rectangular output canvas via projective transform + bilinear sampling. */
+function warpPerspective(
+  srcCtx: CanvasRenderingContext2D,
+  srcW: number,
+  srcH: number,
+  quad: { tl: Pt; tr: Pt; br: Pt; bl: Pt },
+  outW: number,
+  outH: number,
+): HTMLCanvasElement | null {
+  const H = computeInverseProjective(quad, outW, outH);
+  if (!H) return null;
+
+  const srcImg = srcCtx.getImageData(0, 0, srcW, srcH).data;
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  const octx = out.getContext("2d")!;
+  const outImg = octx.createImageData(outW, outH);
+  const od = outImg.data;
+
+  const [h11, h12, h13, h21, h22, h23, h31, h32] = H;
+
+  for (let y = 0; y < outH; y++) {
+    for (let x = 0; x < outW; x++) {
+      const w = h31 * x + h32 * y + 1;
+      const sx = (h11 * x + h12 * y + h13) / w;
+      const sy = (h21 * x + h22 * y + h23) / w;
+      const di = (y * outW + x) * 4;
+      if (sx < 0 || sy < 0 || sx >= srcW - 1 || sy >= srcH - 1) {
+        od[di] = 255; od[di + 1] = 255; od[di + 2] = 255; od[di + 3] = 255;
+        continue;
+      }
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      const dx = sx - x0, dy = sy - y0;
+      const i00 = (y0 * srcW + x0) * 4;
+      const i10 = i00 + 4;
+      const i01 = i00 + srcW * 4;
+      const i11 = i01 + 4;
+      // Bilinear interp per channel
+      for (let c = 0; c < 3; c++) {
+        const v00 = srcImg[i00 + c];
+        const v10 = srcImg[i10 + c];
+        const v01 = srcImg[i01 + c];
+        const v11 = srcImg[i11 + c];
+        const v0 = v00 * (1 - dx) + v10 * dx;
+        const v1 = v01 * (1 - dx) + v11 * dx;
+        od[di + c] = v0 * (1 - dy) + v1 * dy;
+      }
+      od[di + 3] = 255;
+    }
+  }
+  octx.putImageData(outImg, 0, 0);
+  return out;
+}
 
 /** Detect a rectangular content bounding box by finding pixels that differ from the dominant background color. */
 function detectContentBounds(
@@ -217,21 +443,58 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     const fctx = full.getContext("2d")!;
     fctx.drawImage(img, 0, 0);
 
-    // Step 2: detect document bounds and crop background
-    const bounds = detectContentBounds(fctx, full.width, full.height);
+    // Step 2: try to detect 4 document corners for perspective rectification
+    const quad = detectDocumentQuad(fctx, full.width, full.height);
 
-    // Step 3: scale cropped region to MAX_DIM
-    const scale = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
-    const outW = Math.max(1, Math.round(bounds.w * scale));
-    const outH = Math.max(1, Math.round(bounds.h * scale));
+    let canvas: HTMLCanvasElement;
+    let outW: number;
+    let outH: number;
+    let ctx: CanvasRenderingContext2D;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext("2d")!;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+    if (quad) {
+      // Step 3a: estimate target rectangle size from the longest opposite-edge averages
+      const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+      const wTop = dist(quad.tl, quad.tr);
+      const wBot = dist(quad.bl, quad.br);
+      const hLeft = dist(quad.tl, quad.bl);
+      const hRight = dist(quad.tr, quad.br);
+      const targetW = Math.max(wTop, wBot);
+      const targetH = Math.max(hLeft, hRight);
+      const scale = Math.min(1, MAX_DIM / Math.max(targetW, targetH));
+      outW = Math.max(1, Math.round(targetW * scale));
+      outH = Math.max(1, Math.round(targetH * scale));
+      const warped = warpPerspective(fctx, full.width, full.height, quad, outW, outH);
+      if (warped) {
+        canvas = warped;
+        ctx = canvas.getContext("2d")!;
+      } else {
+        // Fallback to bbox crop if warp fails
+        const bounds = detectContentBounds(fctx, full.width, full.height);
+        const s = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
+        outW = Math.max(1, Math.round(bounds.w * s));
+        outH = Math.max(1, Math.round(bounds.h * s));
+        canvas = document.createElement("canvas");
+        canvas.width = outW;
+        canvas.height = outH;
+        ctx = canvas.getContext("2d")!;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+      }
+    } else {
+      // Fallback: simple bbox crop
+      const bounds = detectContentBounds(fctx, full.width, full.height);
+      const scale = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
+      outW = Math.max(1, Math.round(bounds.w * scale));
+      outH = Math.max(1, Math.round(bounds.h * scale));
+      canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      ctx = canvas.getContext("2d")!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+    }
 
     // Step 4: scanner-like processing — adaptive (local) thresholding to remove shadows
     const imgData = ctx.getImageData(0, 0, outW, outH);
