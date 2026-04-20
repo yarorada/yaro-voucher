@@ -1822,7 +1822,53 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF Preview Dialog */}
+      {/* Payment Method Choice Dialog (při vytváření nové faktury) */}
+      <Dialog open={!!paymentChoiceValues} onOpenChange={(o) => { if (!o) setPaymentChoiceValues(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Způsob platby</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Jak byla tato faktura uhrazena?
+            </p>
+            <div className="grid gap-2">
+              <Button
+                variant="default"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("cash")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Hotově</div>
+                  <div className="text-xs opacity-80">Označí fakturu jako zaplacenou dnešním datem</div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("transfer")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Převodem</div>
+                  <div className="text-xs opacity-70">Čeká na úhradu – bude spárováno s bankou</div>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("skip")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Nyní neuvádět</div>
+                  <div className="text-xs opacity-70">Uložit fakturu bez označení platby</div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
         <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
