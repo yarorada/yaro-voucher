@@ -695,7 +695,7 @@ export const VariantServiceDialog = ({
               <div className="flex gap-1">
                 <Input
                   type="number"
-                  value={costPriceOriginal || costPrice}
+                  value={costPriceOriginal !== "" ? costPriceOriginal : costPrice}
                   onChange={async (e) => {
                     const val = e.target.value;
                     const margin = (parseFloat(marginPercent) || 0) / 100;
