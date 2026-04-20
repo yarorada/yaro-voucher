@@ -25,7 +25,12 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const prompt = `Analyze this supplier invoice/document image and extract the following information in JSON format:
+    // Detect if input is a PDF (data URL prefix) — Gemini handles PDFs natively (multi-page)
+    const isPdf = typeof imageBase64 === "string" && imageBase64.startsWith("data:application/pdf");
+
+    const prompt = `Analyze this supplier invoice/document. The document MAY contain MULTIPLE PAGES (e.g. PDF). Inspect ALL pages and combine the most relevant data into a single JSON result. Prefer the page that contains the actual invoice/tax document with totals (skip cover letters, delivery notes, terms & conditions, attachments). If the same field appears on multiple pages, use the one from the main invoice page (typically with "Faktura", "Invoice", "Daňový doklad" header and a total amount).
+
+Extract the following information in JSON format:
 {
   "supplier_name": "name of the supplier/company that issued the invoice (string)",
   "total_amount": "total amount to be paid as a number (number, not string)",
