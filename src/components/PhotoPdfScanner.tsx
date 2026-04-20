@@ -12,6 +12,100 @@ type Page = {
   height: number;
 };
 
+type Rect = { x: number; y: number; w: number; h: number };
+type ImgLayout = { left: number; top: number; width: number; height: number };
+
+type Handle = "move" | "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+function CropOverlay({
+  page,
+  rect,
+  setRect,
+  imgLayout,
+}: {
+  page: Page;
+  rect: Rect;
+  setRect: (r: Rect) => void;
+  imgLayout: ImgLayout;
+}) {
+  // Convert image-pixel coords <-> displayed (container) coords
+  const sx = imgLayout.width / page.width;
+  const sy = imgLayout.height / page.height;
+  const dispLeft = imgLayout.left + rect.x * sx;
+  const dispTop = imgLayout.top + rect.y * sy;
+  const dispW = rect.w * sx;
+  const dispH = rect.h * sy;
+
+  const startDrag = (e: React.PointerEvent, handle: Handle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const start = { ...rect };
+
+    const onMove = (ev: PointerEvent) => {
+      const dxDisp = ev.clientX - startX;
+      const dyDisp = ev.clientY - startY;
+      const dxImg = dxDisp / sx;
+      const dyImg = dyDisp / sy;
+      let { x, y, w, h } = start;
+      const minSize = 20; // image px
+
+      if (handle === "move") {
+        x = Math.min(Math.max(0, x + dxImg), page.width - w);
+        y = Math.min(Math.max(0, y + dyImg), page.height - h);
+      } else {
+        if (handle.includes("e")) {
+          w = Math.max(minSize, Math.min(page.width - x, start.w + dxImg));
+        }
+        if (handle.includes("s")) {
+          h = Math.max(minSize, Math.min(page.height - y, start.h + dyImg));
+        }
+        if (handle.includes("w")) {
+          const nx = Math.max(0, Math.min(start.x + start.w - minSize, start.x + dxImg));
+          w = start.w + (start.x - nx);
+          x = nx;
+        }
+        if (handle.includes("n")) {
+          const ny = Math.max(0, Math.min(start.y + start.h - minSize, start.y + dyImg));
+          h = start.h + (start.y - ny);
+          y = ny;
+        }
+      }
+      setRect({ x, y, w, h });
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      try { (e.target as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const handleStyle = "absolute w-3 h-3 bg-primary border-2 border-background rounded-sm shadow";
+
+  return (
+    <div
+      className="absolute border-2 border-primary cursor-move"
+      style={{ left: dispLeft, top: dispTop, width: dispW, height: dispH, boxShadow: "0 0 0 9999px hsl(var(--background) / 0.55)" }}
+      onPointerDown={(e) => startDrag(e, "move")}
+    >
+      {/* Edge handles */}
+      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 cursor-n-resize" onPointerDown={(e) => startDrag(e, "n")} />
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 cursor-s-resize" onPointerDown={(e) => startDrag(e, "s")} />
+      <div className="absolute -left-1 top-1/2 -translate-y-1/2 h-6 w-2 cursor-w-resize" onPointerDown={(e) => startDrag(e, "w")} />
+      <div className="absolute -right-1 top-1/2 -translate-y-1/2 h-6 w-2 cursor-e-resize" onPointerDown={(e) => startDrag(e, "e")} />
+      {/* Corner handles */}
+      <div className={`${handleStyle} -top-1.5 -left-1.5 cursor-nw-resize`} onPointerDown={(e) => startDrag(e, "nw")} />
+      <div className={`${handleStyle} -top-1.5 -right-1.5 cursor-ne-resize`} onPointerDown={(e) => startDrag(e, "ne")} />
+      <div className={`${handleStyle} -bottom-1.5 -left-1.5 cursor-sw-resize`} onPointerDown={(e) => startDrag(e, "sw")} />
+      <div className={`${handleStyle} -bottom-1.5 -right-1.5 cursor-se-resize`} onPointerDown={(e) => startDrag(e, "se")} />
+    </div>
+  );
+}
+
 type Props = {
   onPdfReady: (file: File) => void;
   disabled?: boolean;
