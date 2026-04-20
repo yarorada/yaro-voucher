@@ -1342,9 +1342,12 @@ export default function Invoicing() {
                 {/* OCR Scan */}
                 <div className="border border-dashed rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                      <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
-                    </h3>
+                    <div>
+                      <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                        <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Podporuje vícestránkové PDF – AI vybere nejrelevantnější údaje</p>
+                    </div>
                     <div>
                       <input
                         ref={ocrFileRef}
