@@ -208,7 +208,7 @@ export default function Invoicing() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [ocrScanning, setOcrScanning] = useState(false);
-  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; net_amount?: number; vat_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
@@ -462,6 +462,8 @@ export default function Invoicing() {
       ...f,
       supplier_name: ocrPreview.supplier_name || f.supplier_name,
       total_amount: ocrPreview.total_amount?.toString() || f.total_amount,
+      net_amount: ocrPreview.net_amount != null ? ocrPreview.net_amount.toString() : f.net_amount,
+      vat_amount: ocrPreview.vat_amount != null ? ocrPreview.vat_amount.toString() : f.vat_amount,
       currency: ocrPreview.currency || f.currency,
       issue_date: ocrPreview.issue_date
         ? ocrPreview.issue_date.split(".").length === 3
@@ -532,7 +534,8 @@ export default function Invoicing() {
     if (choice === "cash") {
       values.payment_method = "cash";
       values.paid = true;
-      values.paid_at = format(new Date(), "yyyy-MM-dd");
+      // U hotovostních plateb použij datum vystavení (issue_date), jinak dnešní datum
+      values.paid_at = values.issue_date || format(new Date(), "yyyy-MM-dd");
     } else if (choice === "transfer") {
       values.payment_method = "moneta";
       values.paid = false;
@@ -1387,7 +1390,13 @@ export default function Invoicing() {
                           <div><span className="text-muted-foreground">Dodavatel:</span> {ocrPreview.supplier_name}</div>
                         )}
                         {ocrPreview.total_amount != null && (
-                          <div><span className="text-muted-foreground">Částka:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                          <div><span className="text-muted-foreground">Celkem s DPH:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.net_amount != null && (
+                          <div><span className="text-muted-foreground">Bez DPH:</span> {ocrPreview.net_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.vat_amount != null && (
+                          <div><span className="text-muted-foreground">DPH:</span> {ocrPreview.vat_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
                         )}
                         {ocrPreview.issue_date && (
                           <div><span className="text-muted-foreground">Datum vystavení:</span> {ocrPreview.issue_date}</div>

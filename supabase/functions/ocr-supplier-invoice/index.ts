@@ -33,7 +33,9 @@ serve(async (req) => {
 Extract the following information in JSON format:
 {
   "supplier_name": "name of the supplier/company that issued the invoice (string)",
-  "total_amount": "total amount to be paid as a number (number, not string)",
+  "total_amount": "total amount to be paid INCLUDING VAT as a number (number, not string)",
+  "net_amount": "amount WITHOUT VAT (základ daně / cena bez DPH) as a number (number or null)",
+  "vat_amount": "VAT amount (DPH / daň) as a number (number or null)",
   "currency": "currency code like CZK, EUR, USD, GBP (string, default CZK)",
   "issue_date": "issue date in DD.MM.YYYY format (string)",
   "variable_symbol": "variable symbol / variabilní symbol (string or null)",
@@ -42,10 +44,12 @@ Extract the following information in JSON format:
 }
 
 Important:
-- For total_amount, return only the numeric value (e.g. 15000, not "15 000 Kč")
+- For total_amount, return only the numeric value (e.g. 15000, not "15 000 Kč"). This is the TOTAL with VAT included ("Celkem k úhradě", "Celkem s DPH", "Total incl. VAT").
+- For net_amount, look for "Základ daně", "Cena bez DPH", "Mezisoučet", "Subtotal", "Net amount". If the invoice has multiple VAT rates, sum all bases together. If invoice is non-VAT (e.g. neplátce DPH) set net_amount equal to total_amount and vat_amount to 0.
+- For vat_amount, look for "DPH", "Daň", "VAT amount", "Tax". If multiple rates, sum them. If no VAT, set to 0.
+- Sanity check: net_amount + vat_amount should approximately equal total_amount (±1 unit for rounding).
 - For issue_date and due_date, use DD.MM.YYYY format with 4-digit year
 - Look for "Datum vystavení", "Date of issue", "Invoice date" etc.
-- Look for "Celkem k úhradě", "Total", "Amount due", "Částka" etc.
 - Look for "Variabilní symbol", "Var. symbol", "VS" for the variable symbol
 - Look for "Datum splatnosti", "Due date", "Splatnost" for the due date
 - Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
