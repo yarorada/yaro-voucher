@@ -1,10 +1,9 @@
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Camera, Loader2, Trash2, ArrowUp, ArrowDown, Plus, Check, Crop as CropIcon } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
-import Cropper, { Area } from "react-easy-crop";
 
 type Page = {
   id: string;
@@ -12,6 +11,100 @@ type Page = {
   width: number;
   height: number;
 };
+
+type Rect = { x: number; y: number; w: number; h: number };
+type ImgLayout = { left: number; top: number; width: number; height: number };
+
+type Handle = "move" | "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+function CropOverlay({
+  page,
+  rect,
+  setRect,
+  imgLayout,
+}: {
+  page: Page;
+  rect: Rect;
+  setRect: (r: Rect) => void;
+  imgLayout: ImgLayout;
+}) {
+  // Convert image-pixel coords <-> displayed (container) coords
+  const sx = imgLayout.width / page.width;
+  const sy = imgLayout.height / page.height;
+  const dispLeft = imgLayout.left + rect.x * sx;
+  const dispTop = imgLayout.top + rect.y * sy;
+  const dispW = rect.w * sx;
+  const dispH = rect.h * sy;
+
+  const startDrag = (e: React.PointerEvent, handle: Handle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const start = { ...rect };
+
+    const onMove = (ev: PointerEvent) => {
+      const dxDisp = ev.clientX - startX;
+      const dyDisp = ev.clientY - startY;
+      const dxImg = dxDisp / sx;
+      const dyImg = dyDisp / sy;
+      let { x, y, w, h } = start;
+      const minSize = 20; // image px
+
+      if (handle === "move") {
+        x = Math.min(Math.max(0, x + dxImg), page.width - w);
+        y = Math.min(Math.max(0, y + dyImg), page.height - h);
+      } else {
+        if (handle.includes("e")) {
+          w = Math.max(minSize, Math.min(page.width - x, start.w + dxImg));
+        }
+        if (handle.includes("s")) {
+          h = Math.max(minSize, Math.min(page.height - y, start.h + dyImg));
+        }
+        if (handle.includes("w")) {
+          const nx = Math.max(0, Math.min(start.x + start.w - minSize, start.x + dxImg));
+          w = start.w + (start.x - nx);
+          x = nx;
+        }
+        if (handle.includes("n")) {
+          const ny = Math.max(0, Math.min(start.y + start.h - minSize, start.y + dyImg));
+          h = start.h + (start.y - ny);
+          y = ny;
+        }
+      }
+      setRect({ x, y, w, h });
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      try { (e.target as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const handleStyle = "absolute w-3 h-3 bg-primary border-2 border-background rounded-sm shadow";
+
+  return (
+    <div
+      className="absolute border-2 border-primary cursor-move"
+      style={{ left: dispLeft, top: dispTop, width: dispW, height: dispH, boxShadow: "0 0 0 9999px hsl(var(--background) / 0.55)" }}
+      onPointerDown={(e) => startDrag(e, "move")}
+    >
+      {/* Edge handles */}
+      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 cursor-n-resize" onPointerDown={(e) => startDrag(e, "n")} />
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 cursor-s-resize" onPointerDown={(e) => startDrag(e, "s")} />
+      <div className="absolute -left-1 top-1/2 -translate-y-1/2 h-6 w-2 cursor-w-resize" onPointerDown={(e) => startDrag(e, "w")} />
+      <div className="absolute -right-1 top-1/2 -translate-y-1/2 h-6 w-2 cursor-e-resize" onPointerDown={(e) => startDrag(e, "e")} />
+      {/* Corner handles */}
+      <div className={`${handleStyle} -top-1.5 -left-1.5 cursor-nw-resize`} onPointerDown={(e) => startDrag(e, "nw")} />
+      <div className={`${handleStyle} -top-1.5 -right-1.5 cursor-ne-resize`} onPointerDown={(e) => startDrag(e, "ne")} />
+      <div className={`${handleStyle} -bottom-1.5 -left-1.5 cursor-sw-resize`} onPointerDown={(e) => startDrag(e, "sw")} />
+      <div className={`${handleStyle} -bottom-1.5 -right-1.5 cursor-se-resize`} onPointerDown={(e) => startDrag(e, "se")} />
+    </div>
+  );
+}
 
 type Props = {
   onPdfReady: (file: File) => void;
@@ -236,20 +329,48 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
   const fileRef = useRef<HTMLInputElement>(null);
   const addMoreRef = useRef<HTMLInputElement>(null);
 
-  // Cropper state
+  // Cropper state — values are in *image pixel* coords (relative to page.dataUrl natural size)
   const [cropPageId, setCropPageId] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-
-  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
-    setCroppedAreaPixels(areaPixels);
-  }, []);
+  const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const cropImgRef = useRef<HTMLImageElement | null>(null);
+  const cropContainerRef = useRef<HTMLDivElement | null>(null);
+  const [imgLayout, setImgLayout] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
   const cropPage = pages.find((p) => p.id === cropPageId) || null;
 
+  // Initialize crop rect to full image when a new page is opened
+  useEffect(() => {
+    if (cropPage) {
+      setCropRect({ x: 0, y: 0, w: cropPage.width, h: cropPage.height });
+    } else {
+      setCropRect(null);
+      setImgLayout(null);
+    }
+  }, [cropPageId]);
+
+  // Compute the displayed image rectangle inside the container (object-contain layout)
+  const recomputeLayout = () => {
+    const cont = cropContainerRef.current;
+    if (!cont || !cropPage) return;
+    const cw = cont.clientWidth;
+    const ch = cont.clientHeight;
+    const ratio = Math.min(cw / cropPage.width, ch / cropPage.height);
+    const w = cropPage.width * ratio;
+    const h = cropPage.height * ratio;
+    setImgLayout({ left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h });
+  };
+
+  useEffect(() => {
+    if (!cropPageId) return;
+    recomputeLayout();
+    const onResize = () => recomputeLayout();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cropPageId, cropPage?.width, cropPage?.height]);
+
   const applyCrop = async () => {
-    if (!cropPage || !croppedAreaPixels) { setCropPageId(null); return; }
+    if (!cropPage || !cropRect) { setCropPageId(null); return; }
     try {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const im = new Image();
@@ -257,29 +378,19 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
         im.onerror = reject;
         im.src = cropPage.dataUrl;
       });
-      const cw = Math.max(1, Math.round(croppedAreaPixels.width));
-      const ch = Math.max(1, Math.round(croppedAreaPixels.height));
+      const cx = Math.max(0, Math.round(cropRect.x));
+      const cy = Math.max(0, Math.round(cropRect.y));
+      const cw = Math.max(1, Math.min(cropPage.width - cx, Math.round(cropRect.w)));
+      const ch = Math.max(1, Math.min(cropPage.height - cy, Math.round(cropRect.h)));
       const c = document.createElement("canvas");
       c.width = cw;
       c.height = ch;
       const cctx = c.getContext("2d")!;
-      cctx.drawImage(
-        img,
-        Math.round(croppedAreaPixels.x),
-        Math.round(croppedAreaPixels.y),
-        cw,
-        ch,
-        0,
-        0,
-        cw,
-        ch,
-      );
+      cctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
       const dataUrl = c.toDataURL("image/jpeg", JPEG_QUALITY);
       setPages((prev) => prev.map((p) => p.id === cropPage.id ? { ...p, dataUrl, width: cw, height: ch } : p));
       setCropPageId(null);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCroppedAreaPixels(null);
+      setCropRect(null);
     } catch (e: any) {
       toast.error(e?.message || "Nepodařilo se oříznout");
     }
@@ -302,9 +413,6 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
       if (!open) setOpen(true);
       // Auto-offer crop for the first newly added page
       if (newPages.length > 0) {
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
         setCropPageId(newPages[0].id);
       }
     } catch (e: any) {
@@ -428,7 +536,7 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(idx, 1)} disabled={idx === pages.length - 1}>
                         <ArrowDown className="h-3 w-3" />
                       </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setCrop({ x: 0, y: 0 }); setZoom(1); setCroppedAreaPixels(null); setCropPageId(p.id); }}>
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => setCropPageId(p.id)}>
                         <CropIcon className="h-3 w-3" />
                       </Button>
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => remove(idx)}>
@@ -464,32 +572,39 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
           <DialogHeader>
             <DialogTitle>Oříznout stránku</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden">
+          <div
+            ref={cropContainerRef}
+            className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden select-none touch-none"
+          >
             {cropPage && (
-              <Cropper
-                image={cropPage.dataUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={undefined}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-                restrictPosition={false}
-                objectFit="contain"
+              <img
+                ref={cropImgRef}
+                src={cropPage.dataUrl}
+                alt="Stránka k oříznutí"
+                onLoad={recomputeLayout}
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                draggable={false}
+              />
+            )}
+            {cropPage && cropRect && imgLayout && (
+              <CropOverlay
+                page={cropPage}
+                rect={cropRect}
+                setRect={setCropRect}
+                imgLayout={imgLayout}
               />
             )}
           </div>
-          <div className="flex items-center gap-2 pt-2">
-            <span className="text-xs text-muted-foreground w-12">Zoom</span>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="flex-1"
-            />
+          <p className="text-xs text-muted-foreground">Táhněte rohy nebo hrany pro úpravu velikosti, klikněte dovnitř a táhněte pro posun.</p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cropPage && setCropRect({ x: 0, y: 0, w: cropPage.width, h: cropPage.height })}
+            >
+              Resetovat
+            </Button>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setCropPageId(null)}>
