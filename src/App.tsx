@@ -11,7 +11,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { FloatingTaskButton } from "@/components/FloatingTaskButton";
 import { PageToolbarProvider, usePageToolbarContent, useHeaderActionsContent } from "@/hooks/usePageToolbar";
 import { GlobalHistoryProvider, useGlobalHistory } from "@/hooks/useGlobalHistory";
-import { Menu, Undo2, Redo2, Check, Loader2 } from "lucide-react";
+import { Menu, Undo2, Redo2, Check, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import yaroLogo from "@/assets/yaro-logo.png";
 import Index from "./pages/Index";
@@ -54,12 +54,12 @@ const SaveIndicator = () => {
     <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-[70px] justify-end">
       {isSaving ? (
         <>
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Save className="h-3.5 w-3.5 text-destructive animate-pulse" />
           Ukládám…
         </>
       ) : lastSaved ? (
         <>
-          <Check className="h-3 w-3 text-emerald-500" />
+          <Save className="h-3.5 w-3.5 text-emerald-500" />
           Uloženo
         </>
       ) : null}
