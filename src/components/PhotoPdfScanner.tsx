@@ -140,45 +140,53 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
 
-    // Step 4: scanner-like processing — pure black & white (binarization)
+    // Step 4: scanner-like processing — adaptive (local) thresholding to remove shadows
     const imgData = ctx.getImageData(0, 0, outW, outH);
     const d = imgData.data;
+    const N = outW * outH;
 
-    // Build luminance histogram (sampled)
-    const hist = new Uint32Array(256);
-    for (let i = 0; i < d.length; i += 16) {
-      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      hist[Math.round(lum)]++;
+    // Build luminance plane
+    const lum = new Float32Array(N);
+    for (let i = 0, p = 0; p < N; i += 4, p++) {
+      lum[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     }
-    // Determine 5% / 95% percentiles for robust min/max (stronger contrast)
-    const totalSamples = (d.length / 16) | 0;
-    const lowCut = totalSamples * 0.05;
-    const highCut = totalSamples * 0.95;
-    let cum = 0;
-    let min = 0, max = 255;
-    for (let i = 0; i < 256; i++) {
-      cum += hist[i];
-      if (cum >= lowCut) { min = i; break; }
-    }
-    cum = 0;
-    for (let i = 0; i < 256; i++) {
-      cum += hist[i];
-      if (cum >= highCut) { max = i; break; }
-    }
-    const range = Math.max(1, max - min);
-    const factor = 255 / range;
-    // Adaptive threshold: midpoint of stretched range, slightly biased toward white background
-    const threshold = 150;
 
-    for (let i = 0; i < d.length; i += 4) {
-      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      let v = (lum - min) * factor;
-      if (v < 0) v = 0; else if (v > 255) v = 255;
-      // Pure black & white binarization (1-bit look)
-      const out = v >= threshold ? 255 : 0;
-      d[i] = out;
-      d[i + 1] = out;
-      d[i + 2] = out;
+    // Build integral image (summed-area table) of luminance for O(1) box mean
+    const sat = new Float64Array(N);
+    for (let y = 0; y < outH; y++) {
+      let rowSum = 0;
+      for (let x = 0; x < outW; x++) {
+        const idx = y * outW + x;
+        rowSum += lum[idx];
+        sat[idx] = rowSum + (y > 0 ? sat[idx - outW] : 0);
+      }
+    }
+
+    const boxSum = (x1: number, y1: number, x2: number, y2: number): number => {
+      // inclusive coords; clamp inside
+      if (x1 < 0) x1 = 0; if (y1 < 0) y1 = 0;
+      if (x2 >= outW) x2 = outW - 1; if (y2 >= outH) y2 = outH - 1;
+      const A = (x1 > 0 && y1 > 0) ? sat[(y1 - 1) * outW + (x1 - 1)] : 0;
+      const B = (y1 > 0) ? sat[(y1 - 1) * outW + x2] : 0;
+      const C = (x1 > 0) ? sat[y2 * outW + (x1 - 1)] : 0;
+      const D = sat[y2 * outW + x2];
+      return D - B - C + A;
+    };
+
+    // Adaptive threshold: pixel is black if it's noticeably darker than its local neighborhood mean
+    const r = ADAPTIVE_WINDOW;
+    for (let y = 0; y < outH; y++) {
+      for (let x = 0; x < outW; x++) {
+        const x1 = x - r, y1 = y - r, x2 = x + r, y2 = y + r;
+        const xx1 = Math.max(0, x1), yy1 = Math.max(0, y1);
+        const xx2 = Math.min(outW - 1, x2), yy2 = Math.min(outH - 1, y2);
+        const area = (xx2 - xx1 + 1) * (yy2 - yy1 + 1);
+        const mean = boxSum(xx1, yy1, xx2, yy2) / area;
+        const p = y * outW + x;
+        const out = lum[p] < mean - ADAPTIVE_BIAS ? 0 : 255;
+        const i = p * 4;
+        d[i] = out; d[i + 1] = out; d[i + 2] = out;
+      }
     }
     ctx.putImageData(imgData, 0, 0);
 
