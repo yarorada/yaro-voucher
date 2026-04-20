@@ -1390,7 +1390,13 @@ export default function Invoicing() {
                           <div><span className="text-muted-foreground">Dodavatel:</span> {ocrPreview.supplier_name}</div>
                         )}
                         {ocrPreview.total_amount != null && (
-                          <div><span className="text-muted-foreground">Částka:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                          <div><span className="text-muted-foreground">Celkem s DPH:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.net_amount != null && (
+                          <div><span className="text-muted-foreground">Bez DPH:</span> {ocrPreview.net_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
+                        )}
+                        {ocrPreview.vat_amount != null && (
+                          <div><span className="text-muted-foreground">DPH:</span> {ocrPreview.vat_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>
                         )}
                         {ocrPreview.issue_date && (
                           <div><span className="text-muted-foreground">Datum vystavení:</span> {ocrPreview.issue_date}</div>
