@@ -442,7 +442,7 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(idx, 1)} disabled={idx === pages.length - 1}>
                         <ArrowDown className="h-3 w-3" />
                       </Button>
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setCrop({ x: 0, y: 0 }); setZoom(1); setCroppedAreaPixels(null); setCropPageId(p.id); }}>
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => setCropPageId(p.id)}>
                         <CropIcon className="h-3 w-3" />
                       </Button>
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => remove(idx)}>
