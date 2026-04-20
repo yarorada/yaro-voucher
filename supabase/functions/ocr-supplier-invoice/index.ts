@@ -61,12 +61,14 @@ Important:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        // Pro PDF (zejména vícestránkové) použijeme silnější model schopný lépe rozumět celé struktuře dokumentu
+        model: isPdf ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
             content: [
               { type: "text", text: prompt },
+              // Gemini přes OpenAI-kompatibilní gateway přijímá PDF i obrázky přes image_url s data: URL
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
