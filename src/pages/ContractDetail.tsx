@@ -328,6 +328,19 @@ const ContractDetail = () => {
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
                 {getStatusBadge(contract.status, true)}
               </div>
+              {contract.deal?.id && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Obchodní případ</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/deals/${contract.deal.id}`)}
+                    className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    {contract.deal.deal_number || 'Otevřít obchodní případ'}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Termín zájezdu</p>
                 <p className="font-medium text-foreground">
