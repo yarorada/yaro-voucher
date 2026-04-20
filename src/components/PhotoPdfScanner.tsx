@@ -18,8 +18,92 @@ type Props = {
   triggerLabel?: string;
 };
 
-const MAX_DIM = 1800; // px - max dimension for compressed image
-const JPEG_QUALITY = 0.78;
+const MAX_DIM = 1600; // px - max dimension for compressed image (iOS-scanner-like)
+const JPEG_QUALITY = 0.6; // aggressive compression after binarization
+const EDGE_SAMPLE = 220; // downscaled dim for edge detection
+const BG_THRESHOLD = 38; // luminance delta vs background to consider as document
+
+/** Detect a rectangular content bounding box by finding pixels that differ from the dominant background color. */
+function detectContentBounds(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+): { x: number; y: number; w: number; h: number } {
+  // Downscale to a small canvas for fast analysis
+  const scale = Math.min(1, EDGE_SAMPLE / Math.max(width, height));
+  const sw = Math.max(32, Math.round(width * scale));
+  const sh = Math.max(32, Math.round(height * scale));
+  const small = document.createElement("canvas");
+  small.width = sw;
+  small.height = sh;
+  const sctx = small.getContext("2d")!;
+  sctx.drawImage(ctx.canvas, 0, 0, sw, sh);
+  const data = sctx.getImageData(0, 0, sw, sh).data;
+
+  // Estimate background color from the corners (8x8 patches)
+  const patch = 8;
+  const corners: Array<[number, number]> = [
+    [0, 0],
+    [sw - patch, 0],
+    [0, sh - patch],
+    [sw - patch, sh - patch],
+  ];
+  let br = 0, bg = 0, bb = 0, bn = 0;
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + patch; y++) {
+      for (let x = cx; x < cx + patch; x++) {
+        const i = (y * sw + x) * 4;
+        br += data[i];
+        bg += data[i + 1];
+        bb += data[i + 2];
+        bn++;
+      }
+    }
+  }
+  br /= bn; bg /= bn; bb /= bn;
+  const bgLum = 0.299 * br + 0.587 * bg + 0.114 * bb;
+
+  // Find min/max coords of pixels that differ enough from background luminance
+  let minX = sw, minY = sh, maxX = 0, maxY = 0;
+  let found = false;
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const i = (y * sw + x) * 4;
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      if (Math.abs(lum - bgLum) > BG_THRESHOLD) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+
+  if (!found || maxX - minX < sw * 0.3 || maxY - minY < sh * 0.3) {
+    // Fallback: no clear document detected, use full image
+    return { x: 0, y: 0, w: width, h: height };
+  }
+
+  // Add small padding and map back to original coords
+  const pad = 4;
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(sw - 1, maxX + pad);
+  maxY = Math.min(sh - 1, maxY + pad);
+
+  const sx = minX / sw;
+  const sy = minY / sh;
+  const sx2 = (maxX + 1) / sw;
+  const sy2 = (maxY + 1) / sh;
+
+  return {
+    x: Math.round(sx * width),
+    y: Math.round(sy * height),
+    w: Math.round((sx2 - sx) * width),
+    h: Math.round((sy2 - sy) * height),
+  };
+}
 
 async function processImage(file: File): Promise<{ dataUrl: string; width: number; height: number }> {
   const blobUrl = URL.createObjectURL(file);
@@ -31,39 +115,73 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
       im.src = blobUrl;
     });
 
-    let { width, height } = img;
-    const scale = Math.min(1, MAX_DIM / Math.max(width, height));
-    width = Math.round(width * scale);
-    height = Math.round(height * scale);
+    // Step 1: draw original at native size for accurate edge detection
+    const full = document.createElement("canvas");
+    full.width = img.width;
+    full.height = img.height;
+    const fctx = full.getContext("2d")!;
+    fctx.drawImage(img, 0, 0);
+
+    // Step 2: detect document bounds and crop background
+    const bounds = detectContentBounds(fctx, full.width, full.height);
+
+    // Step 3: scale cropped region to MAX_DIM
+    const scale = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
+    const outW = Math.max(1, Math.round(bounds.w * scale));
+    const outH = Math.max(1, Math.round(bounds.h * scale));
 
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = outW;
+    canvas.height = outH;
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
 
-    // Auto-contrast: stretch luminance to full range, slight brightness boost
-    const imgData = ctx.getImageData(0, 0, width, height);
+    // Step 4: scanner-like processing — grayscale, auto-levels, gamma boost
+    const imgData = ctx.getImageData(0, 0, outW, outH);
     const d = imgData.data;
-    let min = 255;
-    let max = 0;
-    // sample every 4th pixel for speed
+
+    // Build luminance histogram (sampled)
+    const hist = new Uint32Array(256);
     for (let i = 0; i < d.length; i += 16) {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      if (lum < min) min = lum;
-      if (lum > max) max = lum;
+      hist[Math.round(lum)]++;
+    }
+    // Determine 2% / 98% percentiles for robust min/max
+    const totalSamples = (d.length / 16) | 0;
+    const lowCut = totalSamples * 0.02;
+    const highCut = totalSamples * 0.98;
+    let cum = 0;
+    let min = 0, max = 255;
+    for (let i = 0; i < 256; i++) {
+      cum += hist[i];
+      if (cum >= lowCut) { min = i; break; }
+    }
+    cum = 0;
+    for (let i = 0; i < 256; i++) {
+      cum += hist[i];
+      if (cum >= highCut) { max = i; break; }
     }
     const range = Math.max(1, max - min);
     const factor = 255 / range;
+    const gamma = 0.85; // slight brightening — punch up the page background to white
+
     for (let i = 0; i < d.length; i += 4) {
-      d[i] = Math.max(0, Math.min(255, (d[i] - min) * factor));
-      d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] - min) * factor));
-      d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] - min) * factor));
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      let v = (lum - min) * factor;
+      if (v < 0) v = 0; else if (v > 255) v = 255;
+      // gamma correction
+      v = 255 * Math.pow(v / 255, gamma);
+      const out = v < 0 ? 0 : v > 255 ? 255 : v;
+      d[i] = out;
+      d[i + 1] = out;
+      d[i + 2] = out;
     }
     ctx.putImageData(imgData, 0, 0);
 
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-    return { dataUrl, width, height };
+    return { dataUrl, width: outW, height: outH };
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
