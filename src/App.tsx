@@ -51,17 +51,11 @@ const queryClient = new QueryClient();
 const SaveIndicator = () => {
   const { isSaving, lastSaved } = useGlobalHistory();
   return (
-    <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-[70px] justify-end">
+    <span className="flex items-center justify-end w-5">
       {isSaving ? (
-        <>
-          <Save className="h-3.5 w-3.5 text-destructive animate-pulse" />
-          Ukládám…
-        </>
+        <Save className="h-3.5 w-3.5 text-destructive animate-pulse" />
       ) : lastSaved ? (
-        <>
-          <Save className="h-3.5 w-3.5 text-emerald-500" />
-          Uloženo
-        </>
+        <Save className="h-3.5 w-3.5 text-emerald-500" />
       ) : null}
     </span>
   );
