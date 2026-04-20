@@ -25,7 +25,12 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const prompt = `Analyze this supplier invoice/document image and extract the following information in JSON format:
+    // Detect if input is a PDF (data URL prefix) — Gemini handles PDFs natively (multi-page)
+    const isPdf = typeof imageBase64 === "string" && imageBase64.startsWith("data:application/pdf");
+
+    const prompt = `Analyze this supplier invoice/document. The document MAY contain MULTIPLE PAGES (e.g. PDF). Inspect ALL pages and combine the most relevant data into a single JSON result. Prefer the page that contains the actual invoice/tax document with totals (skip cover letters, delivery notes, terms & conditions, attachments). If the same field appears on multiple pages, use the one from the main invoice page (typically with "Faktura", "Invoice", "Daňový doklad" header and a total amount).
+
+Extract the following information in JSON format:
 {
   "supplier_name": "name of the supplier/company that issued the invoice (string)",
   "total_amount": "total amount to be paid as a number (number, not string)",
@@ -46,6 +51,7 @@ Important:
 - Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
 - For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
 - Return only the JSON object, no additional text or markdown
+- For multi-page documents: synthesize the BEST single answer per field, do not concatenate values from different pages
 - If you cannot find a field, use null`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -55,12 +61,14 @@ Important:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        // Pro PDF (zejména vícestránkové) použijeme silnější model schopný lépe rozumět celé struktuře dokumentu
+        model: isPdf ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
             content: [
               { type: "text", text: prompt },
+              // Gemini přes OpenAI-kompatibilní gateway přijímá PDF i obrázky přes image_url s data: URL
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },

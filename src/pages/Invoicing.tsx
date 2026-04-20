@@ -221,6 +221,7 @@ export default function Invoicing() {
   const [filePreviewLoading, setFilePreviewLoading] = useState(false);
   const [filePreviewKind, setFilePreviewKind] = useState<FilePreviewKind>("other");
   const [filePreviewPages, setFilePreviewPages] = useState<string[]>([]);
+  const [paymentChoiceValues, setPaymentChoiceValues] = useState<any | null>(null);
   const queryClient = useQueryClient();
   const pdfRef = useRef<HTMLDivElement>(null);
   const ocrFileRef = useRef<HTMLInputElement>(null);
@@ -515,6 +516,28 @@ export default function Invoicing() {
       notes: form.notes || null,
       items: calcItems.length > 0 ? calcItems : [],
     };
+    // Pokud editujeme existující fakturu (a způsob platby již byl zvolen) – ulož přímo
+    if (editingInvoice) {
+      saveMutation.mutate(values);
+      return;
+    }
+    // U nových faktur otevři dialog pro výběr způsobu platby
+    setPaymentChoiceValues(values);
+  };
+
+  const handlePaymentChoiceConfirm = (choice: "cash" | "transfer" | "skip") => {
+    if (!paymentChoiceValues) return;
+    const values = { ...paymentChoiceValues };
+    if (choice === "cash") {
+      values.payment_method = "cash";
+      values.paid = true;
+      values.paid_at = format(new Date(), "yyyy-MM-dd");
+    } else if (choice === "transfer") {
+      values.payment_method = "moneta";
+      values.paid = false;
+    }
+    // skip = žádné nastavení (zůstane null/false)
+    setPaymentChoiceValues(null);
     saveMutation.mutate(values);
   };
 
@@ -1319,9 +1342,12 @@ export default function Invoicing() {
                 {/* OCR Scan */}
                 <div className="border border-dashed rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                      <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
-                    </h3>
+                    <div>
+                      <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                        <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Podporuje vícestránkové PDF – AI vybere nejrelevantnější údaje</p>
+                    </div>
                     <div>
                       <input
                         ref={ocrFileRef}
@@ -1799,7 +1825,53 @@ export default function Invoicing() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF Preview Dialog */}
+      {/* Payment Method Choice Dialog (při vytváření nové faktury) */}
+      <Dialog open={!!paymentChoiceValues} onOpenChange={(o) => { if (!o) setPaymentChoiceValues(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Způsob platby</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Jak byla tato faktura uhrazena?
+            </p>
+            <div className="grid gap-2">
+              <Button
+                variant="default"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("cash")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Hotově</div>
+                  <div className="text-xs opacity-80">Označí fakturu jako zaplacenou dnešním datem</div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("transfer")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Převodem</div>
+                  <div className="text-xs opacity-70">Čeká na úhradu – bude spárováno s bankou</div>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start h-auto py-3"
+                onClick={() => handlePaymentChoiceConfirm("skip")}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Nyní neuvádět</div>
+                  <div className="text-xs opacity-70">Uložit fakturu bez označení platby</div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={!!pdfInvoice} onOpenChange={(o) => { if (!o) setPdfInvoice(null); }}>
         <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
