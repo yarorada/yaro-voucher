@@ -462,6 +462,8 @@ export default function Invoicing() {
       ...f,
       supplier_name: ocrPreview.supplier_name || f.supplier_name,
       total_amount: ocrPreview.total_amount?.toString() || f.total_amount,
+      net_amount: ocrPreview.net_amount != null ? ocrPreview.net_amount.toString() : f.net_amount,
+      vat_amount: ocrPreview.vat_amount != null ? ocrPreview.vat_amount.toString() : f.vat_amount,
       currency: ocrPreview.currency || f.currency,
       issue_date: ocrPreview.issue_date
         ? ocrPreview.issue_date.split(".").length === 3
