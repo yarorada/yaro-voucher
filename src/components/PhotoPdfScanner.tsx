@@ -19,9 +19,11 @@ type Props = {
 };
 
 const MAX_DIM = 1600; // px - max dimension for compressed image (iOS-scanner-like)
-const JPEG_QUALITY = 0.55; // aggressive compression after binarization
+const JPEG_QUALITY = 0.6; // aggressive compression after binarization
 const EDGE_SAMPLE = 260; // downscaled dim for edge detection
 const BG_THRESHOLD = 22; // luminance delta vs background to consider as document (lower = more sensitive crop)
+const ADAPTIVE_WINDOW = 25; // half-window radius (px) for local mean (≈ 51px window)
+const ADAPTIVE_BIAS = 12; // subtract from local mean to whiten background and remove shadows
 
 /** Detect a rectangular content bounding box by finding pixels that differ from the dominant background color. */
 function detectContentBounds(
