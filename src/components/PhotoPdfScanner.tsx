@@ -235,20 +235,48 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
   const fileRef = useRef<HTMLInputElement>(null);
   const addMoreRef = useRef<HTMLInputElement>(null);
 
-  // Cropper state
+  // Cropper state — values are in *image pixel* coords (relative to page.dataUrl natural size)
   const [cropPageId, setCropPageId] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-
-  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
-    setCroppedAreaPixels(areaPixels);
-  }, []);
+  const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const cropImgRef = useRef<HTMLImageElement | null>(null);
+  const cropContainerRef = useRef<HTMLDivElement | null>(null);
+  const [imgLayout, setImgLayout] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
   const cropPage = pages.find((p) => p.id === cropPageId) || null;
 
+  // Initialize crop rect to full image when a new page is opened
+  useEffect(() => {
+    if (cropPage) {
+      setCropRect({ x: 0, y: 0, w: cropPage.width, h: cropPage.height });
+    } else {
+      setCropRect(null);
+      setImgLayout(null);
+    }
+  }, [cropPageId]);
+
+  // Compute the displayed image rectangle inside the container (object-contain layout)
+  const recomputeLayout = () => {
+    const cont = cropContainerRef.current;
+    if (!cont || !cropPage) return;
+    const cw = cont.clientWidth;
+    const ch = cont.clientHeight;
+    const ratio = Math.min(cw / cropPage.width, ch / cropPage.height);
+    const w = cropPage.width * ratio;
+    const h = cropPage.height * ratio;
+    setImgLayout({ left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h });
+  };
+
+  useEffect(() => {
+    if (!cropPageId) return;
+    recomputeLayout();
+    const onResize = () => recomputeLayout();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cropPageId, cropPage?.width, cropPage?.height]);
+
   const applyCrop = async () => {
-    if (!cropPage || !croppedAreaPixels) { setCropPageId(null); return; }
+    if (!cropPage || !cropRect) { setCropPageId(null); return; }
     try {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const im = new Image();
@@ -256,29 +284,19 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
         im.onerror = reject;
         im.src = cropPage.dataUrl;
       });
-      const cw = Math.max(1, Math.round(croppedAreaPixels.width));
-      const ch = Math.max(1, Math.round(croppedAreaPixels.height));
+      const cx = Math.max(0, Math.round(cropRect.x));
+      const cy = Math.max(0, Math.round(cropRect.y));
+      const cw = Math.max(1, Math.min(cropPage.width - cx, Math.round(cropRect.w)));
+      const ch = Math.max(1, Math.min(cropPage.height - cy, Math.round(cropRect.h)));
       const c = document.createElement("canvas");
       c.width = cw;
       c.height = ch;
       const cctx = c.getContext("2d")!;
-      cctx.drawImage(
-        img,
-        Math.round(croppedAreaPixels.x),
-        Math.round(croppedAreaPixels.y),
-        cw,
-        ch,
-        0,
-        0,
-        cw,
-        ch,
-      );
+      cctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
       const dataUrl = c.toDataURL("image/jpeg", JPEG_QUALITY);
       setPages((prev) => prev.map((p) => p.id === cropPage.id ? { ...p, dataUrl, width: cw, height: ch } : p));
       setCropPageId(null);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCroppedAreaPixels(null);
+      setCropRect(null);
     } catch (e: any) {
       toast.error(e?.message || "Nepodařilo se oříznout");
     }
