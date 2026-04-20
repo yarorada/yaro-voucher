@@ -32,6 +32,7 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
+import { PhotoPdfScanner } from "@/components/PhotoPdfScanner";
 
 function InvoiceDatePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
   const dateValue = value ? new Date(value + "T00:00:00") : undefined;
@@ -1346,9 +1347,9 @@ export default function Invoicing() {
                       <h3 className="text-sm font-semibold flex items-center gap-1.5">
                         <ScanLine className="h-4 w-4" /> Skenování faktury (OCR)
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">Podporuje vícestránkové PDF – AI vybere nejrelevantnější údaje</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Vyfoťte více stránek nebo nahrajte PDF – AI vybere nejrelevantnější údaje</p>
                     </div>
-                    <div>
+                    <div className="flex gap-2 flex-wrap justify-end">
                       <input
                         ref={ocrFileRef}
                         type="file"
@@ -1360,6 +1361,10 @@ export default function Invoicing() {
                           e.target.value = "";
                         }}
                       />
+                      <PhotoPdfScanner
+                        disabled={ocrScanning}
+                        onPdfReady={(file) => handleOcrScan(file)}
+                      />
                       <Button
                         type="button"
                         variant="outline"
@@ -1368,7 +1373,7 @@ export default function Invoicing() {
                         disabled={ocrScanning}
                       >
                         {ocrScanning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ScanLine className="h-4 w-4 mr-1" />}
-                        {ocrScanning ? "Skenování…" : "Nahrát a skenovat"}
+                        {ocrScanning ? "Skenování…" : "Nahrát PDF/obrázek"}
                       </Button>
                     </div>
                   </div>
