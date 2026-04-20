@@ -443,21 +443,58 @@ async function processImage(file: File): Promise<{ dataUrl: string; width: numbe
     const fctx = full.getContext("2d")!;
     fctx.drawImage(img, 0, 0);
 
-    // Step 2: detect document bounds and crop background
-    const bounds = detectContentBounds(fctx, full.width, full.height);
+    // Step 2: try to detect 4 document corners for perspective rectification
+    const quad = detectDocumentQuad(fctx, full.width, full.height);
 
-    // Step 3: scale cropped region to MAX_DIM
-    const scale = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
-    const outW = Math.max(1, Math.round(bounds.w * scale));
-    const outH = Math.max(1, Math.round(bounds.h * scale));
+    let canvas: HTMLCanvasElement;
+    let outW: number;
+    let outH: number;
+    let ctx: CanvasRenderingContext2D;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext("2d")!;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+    if (quad) {
+      // Step 3a: estimate target rectangle size from the longest opposite-edge averages
+      const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+      const wTop = dist(quad.tl, quad.tr);
+      const wBot = dist(quad.bl, quad.br);
+      const hLeft = dist(quad.tl, quad.bl);
+      const hRight = dist(quad.tr, quad.br);
+      const targetW = Math.max(wTop, wBot);
+      const targetH = Math.max(hLeft, hRight);
+      const scale = Math.min(1, MAX_DIM / Math.max(targetW, targetH));
+      outW = Math.max(1, Math.round(targetW * scale));
+      outH = Math.max(1, Math.round(targetH * scale));
+      const warped = warpPerspective(fctx, full.width, full.height, quad, outW, outH);
+      if (warped) {
+        canvas = warped;
+        ctx = canvas.getContext("2d")!;
+      } else {
+        // Fallback to bbox crop if warp fails
+        const bounds = detectContentBounds(fctx, full.width, full.height);
+        const s = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
+        outW = Math.max(1, Math.round(bounds.w * s));
+        outH = Math.max(1, Math.round(bounds.h * s));
+        canvas = document.createElement("canvas");
+        canvas.width = outW;
+        canvas.height = outH;
+        ctx = canvas.getContext("2d")!;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+      }
+    } else {
+      // Fallback: simple bbox crop
+      const bounds = detectContentBounds(fctx, full.width, full.height);
+      const scale = Math.min(1, MAX_DIM / Math.max(bounds.w, bounds.h));
+      outW = Math.max(1, Math.round(bounds.w * scale));
+      outH = Math.max(1, Math.round(bounds.h * scale));
+      canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      ctx = canvas.getContext("2d")!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(full, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, outW, outH);
+    }
 
     // Step 4: scanner-like processing — adaptive (local) thresholding to remove shadows
     const imgData = ctx.getImageData(0, 0, outW, outH);
