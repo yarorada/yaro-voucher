@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Camera, Loader2, Trash2, ArrowUp, ArrowDown, Plus, Check } from "lucide-react";
+import { Camera, Loader2, Trash2, ArrowUp, ArrowDown, Plus, Check, Crop as CropIcon } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
+import Cropper, { Area } from "react-easy-crop";
 
 type Page = {
   id: string;
@@ -235,6 +236,55 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
   const fileRef = useRef<HTMLInputElement>(null);
   const addMoreRef = useRef<HTMLInputElement>(null);
 
+  // Cropper state
+  const [cropPageId, setCropPageId] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
+    setCroppedAreaPixels(areaPixels);
+  }, []);
+
+  const cropPage = pages.find((p) => p.id === cropPageId) || null;
+
+  const applyCrop = async () => {
+    if (!cropPage || !croppedAreaPixels) { setCropPageId(null); return; }
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = cropPage.dataUrl;
+      });
+      const cw = Math.max(1, Math.round(croppedAreaPixels.width));
+      const ch = Math.max(1, Math.round(croppedAreaPixels.height));
+      const c = document.createElement("canvas");
+      c.width = cw;
+      c.height = ch;
+      const cctx = c.getContext("2d")!;
+      cctx.drawImage(
+        img,
+        Math.round(croppedAreaPixels.x),
+        Math.round(croppedAreaPixels.y),
+        cw,
+        ch,
+        0,
+        0,
+        cw,
+        ch,
+      );
+      const dataUrl = c.toDataURL("image/jpeg", JPEG_QUALITY);
+      setPages((prev) => prev.map((p) => p.id === cropPage.id ? { ...p, dataUrl, width: cw, height: ch } : p));
+      setCropPageId(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se oříznout");
+    }
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setProcessing(true);
@@ -250,6 +300,13 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
       }
       setPages((prev) => [...prev, ...newPages]);
       if (!open) setOpen(true);
+      // Auto-offer crop for the first newly added page
+      if (newPages.length > 0) {
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setCroppedAreaPixels(null);
+        setCropPageId(newPages[0].id);
+      }
     } catch (e: any) {
       toast.error(e?.message || "Nepodařilo se zpracovat obrázky");
     } finally {
@@ -371,6 +428,9 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(idx, 1)} disabled={idx === pages.length - 1}>
                         <ArrowDown className="h-3 w-3" />
                       </Button>
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setCrop({ x: 0, y: 0 }); setZoom(1); setCroppedAreaPixels(null); setCropPageId(p.id); }}>
+                        <CropIcon className="h-3 w-3" />
+                      </Button>
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => remove(idx)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -395,6 +455,50 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
                 Uložit jako PDF a skenovat
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cropPageId} onOpenChange={(v) => { if (!v) { setCropPageId(null); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Oříznout stránku</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden">
+            {cropPage && (
+              <Cropper
+                image={cropPage.dataUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={undefined}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                restrictPosition={false}
+                objectFit="contain"
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <span className="text-xs text-muted-foreground w-12">Zoom</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.05}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setCropPageId(null)}>
+              Přeskočit
+            </Button>
+            <Button type="button" size="sm" onClick={applyCrop}>
+              <Check className="h-4 w-4 mr-1" />
+              Použít ořez
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
