@@ -532,7 +532,8 @@ export default function Invoicing() {
     if (choice === "cash") {
       values.payment_method = "cash";
       values.paid = true;
-      values.paid_at = format(new Date(), "yyyy-MM-dd");
+      // U hotovostních plateb použij datum vystavení (issue_date), jinak dnešní datum
+      values.paid_at = values.issue_date || format(new Date(), "yyyy-MM-dd");
     } else if (choice === "transfer") {
       values.payment_method = "moneta";
       values.paid = false;
