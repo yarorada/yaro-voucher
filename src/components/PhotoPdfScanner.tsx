@@ -478,32 +478,39 @@ export function PhotoPdfScanner({ onPdfReady, disabled, triggerLabel = "Vyfotit 
           <DialogHeader>
             <DialogTitle>Oříznout stránku</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden">
+          <div
+            ref={cropContainerRef}
+            className="relative w-full h-[60vh] bg-muted rounded-md overflow-hidden select-none touch-none"
+          >
             {cropPage && (
-              <Cropper
-                image={cropPage.dataUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={undefined}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-                restrictPosition={false}
-                objectFit="contain"
+              <img
+                ref={cropImgRef}
+                src={cropPage.dataUrl}
+                alt="Stránka k oříznutí"
+                onLoad={recomputeLayout}
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                draggable={false}
+              />
+            )}
+            {cropPage && cropRect && imgLayout && (
+              <CropOverlay
+                page={cropPage}
+                rect={cropRect}
+                setRect={setCropRect}
+                imgLayout={imgLayout}
               />
             )}
           </div>
-          <div className="flex items-center gap-2 pt-2">
-            <span className="text-xs text-muted-foreground w-12">Zoom</span>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="flex-1"
-            />
+          <p className="text-xs text-muted-foreground">Táhněte rohy nebo hrany pro úpravu velikosti, klikněte dovnitř a táhněte pro posun.</p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cropPage && setCropRect({ x: 0, y: 0, w: cropPage.width, h: cropPage.height })}
+            >
+              Resetovat
+            </Button>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setCropPageId(null)}>
