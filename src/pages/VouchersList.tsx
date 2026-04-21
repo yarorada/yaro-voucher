@@ -549,17 +549,22 @@ const VouchersList = () => {
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}
                   >
-                    {/* Row 1: Badge + Code + Menu */}
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {voucher.sent_at ? (
-                          <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
-                        ) : isExpired ? (
-                          <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
-                        ) : (
-                          <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
-                        )}
-                        <span className="font-bold text-foreground truncate">{voucher.voucher_code}</span>
+                    {/* Row 1: Badge + Code + Name + ISO + Date + Menu */}
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {voucher.sent_at ? (
+                            <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                          ) : isExpired ? (
+                            <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
+                          ) : (
+                            <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+                          )}
+                          <span className="font-bold text-foreground">{voucher.voucher_code}</span>
+                          {displayName && <span className="text-foreground">{displayName}</span>}
+                          {countryIso && <span className="text-muted-foreground font-medium">{countryIso}</span>}
+                          {firstServiceDate && <span className="text-muted-foreground">{formatDate(firstServiceDate)}</span>}
+                        </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -590,11 +595,7 @@ const VouchersList = () => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    {/* Row 2: Summary line */}
-                    <div className="text-xs text-muted-foreground truncate mb-1">
-                      {[displayName, countryIso, hotelName, firstServiceDate ? formatDate(firstServiceDate) : null].filter(Boolean).join(" • ")}
-                    </div>
-                    {/* Row 3: Metadata */}
+                    {/* Row 2: Metadata */}
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                       {destination && (
                         <span className="truncate">
