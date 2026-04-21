@@ -562,8 +562,8 @@ const VouchersList = () => {
                           )}
                           <span className="font-bold text-foreground">{voucher.voucher_code}</span>
                           {displayName && <span className="text-foreground">{displayName}</span>}
-                          {countryIso && <span className="text-muted-foreground font-medium">{countryIso}</span>}
-                          {firstServiceDate && <span className="text-muted-foreground">{formatDate(firstServiceDate)}</span>}
+                          {countryIso && <span className="text-foreground">{countryIso}</span>}
+                          {firstServiceDate && <span className="text-foreground">{formatDate(firstServiceDate)}</span>}
                         </div>
                       </div>
                       <DropdownMenu>
