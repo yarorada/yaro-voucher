@@ -582,7 +582,7 @@ const Deals = () => {
                 }
 
                 const getBaseNumber = (dn: string) => {
-                  const match = dn.match(/^D-\d{6}/);
+                  const match = dn.match(/^D-\d{5,6}/);
                   return match ? match[0] : dn;
                 };
 

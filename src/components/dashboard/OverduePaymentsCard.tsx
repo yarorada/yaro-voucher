@@ -77,7 +77,7 @@ export const OverduePaymentsCard = () => {
           notes: dp.notes,
           source: "deal",
           source_id: dp.deal_id,
-          label: deal?.deal_number?.match(/^D-\d{6}/)?.[0] || "Deal",
+          label: deal?.deal_number?.match(/^D-\d{5,6}/)?.[0] || "Deal",
           clientName,
           currency,
         });

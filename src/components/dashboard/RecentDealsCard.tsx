@@ -112,7 +112,7 @@ export const RecentDealsCard = () => {
   };
 
   const getBaseNumber = (dealNumber: string) => {
-    const match = dealNumber.match(/^D-\d{6}/);
+    const match = dealNumber.match(/^D-\d{5,6}/);
     return match ? match[0] : dealNumber;
   };
 
