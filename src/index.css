@@ -59,52 +59,57 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    /* Vrstva 1 — pozadí stránky (nejtemněji) */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 98%;
+    /* Vrstva 2 — karty a panely (střední) */
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 98%;
+    /* Vrstva 3 — popovers nad kartami (nejsvětlejší tmavá) */
+    --popover: 0 0% 16%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 0 0% 98%;
+    --primary: 0 0% 95%;
     --primary-foreground: 0 0% 9%;
-    --primary-light: 0 0% 90%;
+    --primary-light: 0 0% 88%;
     --primary-dark: 0 0% 100%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
+    /* Interaktivní prvky — dlaždice, tagy, badges */
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 62%;
 
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 0% 98%;
+    --border: 0 0% 22%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 95%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 90%));
-    --gradient-accent: linear-gradient(135deg, hsl(0 0% 15%), hsl(0 0% 12%));
-    --gradient-subtle: hsl(0 0% 7%);
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 95%), hsl(0 0% 88%));
+    --gradient-accent: linear-gradient(135deg, hsl(0 0% 18%), hsl(0 0% 14%));
+    --gradient-subtle: hsl(0 0% 8%);
 
-    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.2), 0 1px 3px -1px hsl(0 0% 0% / 0.15);
-    --shadow-medium: 0 4px 12px -2px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
-    --shadow-strong: 0 8px 24px -4px hsl(0 0% 0% / 0.4), 0 4px 8px -4px hsl(0 0% 0% / 0.25);
+    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.3), 0 1px 3px -1px hsl(0 0% 0% / 0.2);
+    --shadow-medium: 0 4px 12px -2px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-strong: 0 8px 24px -4px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.35);
 
-    --sidebar-background: 0 0% 9%;
-    --sidebar-foreground: 0 0% 80%;
-    --sidebar-primary: 0 0% 98%;
+    /* Sidebar — mírně odlišný od pozadí */
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 82%;
+    --sidebar-primary: 0 0% 95%;
     --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 0 0% 98%;
+    --sidebar-ring: 0 0% 95%;
   }
 }
 
