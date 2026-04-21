@@ -2820,7 +2820,7 @@ const DealDetail = () => {
               ) : (
                 <div className="flex flex-1 min-w-0 items-center gap-1 overflow-hidden">
                   <span className="font-bold text-heading-1 text-foreground flex-shrink-0">
-                    {deal.deal_number.match(/^D-\d{5,6}/)?.[0] || deal.deal_number}
+                    {deal.deal_number.match(/^D-\d{3,6}/)?.[0] || deal.deal_number}
                   </span>
                   <Button
                     variant="ghost"
