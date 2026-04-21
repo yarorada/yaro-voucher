@@ -10,7 +10,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock, MoreHorizontal } from "lucide-react";
+import { Download, Pencil, Check, X, Share2, Copy, Trash2, Lock, MoreHorizontal, FileCode } from "lucide-react";
+import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -358,6 +359,122 @@ export default function Accounting() {
     URL.revokeObjectURL(url);
   };
 
+  const exportHtml = async () => {
+    let logoSrc = "";
+    try {
+      const resp = await fetch(yaroLogo);
+      const blob = await resp.blob();
+      logoSrc = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch {}
+
+    const monthLabel = month === "all" ? "Všechny měsíce" : months.find((m) => m.value === month)?.label || month;
+
+    const totals = (rows as any[]).reduce(
+      (acc, r) => ({
+        sellDeposit: acc.sellDeposit + (r.sellDeposit || 0),
+        buyDeposit: acc.buyDeposit + (r.buyDeposit || 0),
+        profitDeposit: acc.profitDeposit + (r.profitDeposit || 0),
+        sellFinal: acc.sellFinal + (r.sellFinal || 0),
+        buyFinal: acc.buyFinal + (r.buyFinal || 0),
+        profitFinal: acc.profitFinal + (r.profitFinal || 0),
+        vatDeposit: acc.vatDeposit + (r.vatDeposit || 0),
+        vatFinal: acc.vatFinal + (r.vatFinal || 0),
+      }),
+      { sellDeposit: 0, buyDeposit: 0, profitDeposit: 0, sellFinal: 0, buyFinal: 0, profitFinal: 0, vatDeposit: 0, vatFinal: 0 }
+    );
+
+    const cell = (val: string | number, right = false, extra = "") =>
+      `<td style="padding:10px 14px;white-space:nowrap;${right ? "text-align:right;" : ""}${extra}">${val}</td>`;
+
+    const rowsHtml = (rows as any[]).map((r) => {
+      const bg = r.highlightRed ? "background:#fecaca;" : r.highlightBlue ? "background:#bfdbfe;" : "";
+      return `<tr style="${bg}">
+        ${cell(r.contractNumber || "", false, "font-weight:500;")}
+        ${cell(r.clientName || "")}
+        ${cell(r.country || "")}
+        ${cell(r.destination || "")}
+        ${cell(formatDateShort(r.from))}
+        ${cell(formatDateShort(r.to))}
+        ${cell(formatNum(r.sellDeposit), true)}
+        ${cell(formatNum(r.buyDeposit), true)}
+        ${cell(formatNum(r.profitDeposit), true)}
+        ${cell(formatNum(r.sellFinal), true)}
+        ${cell(formatNum(r.buyFinal), true)}
+        ${cell(formatNum(r.profitFinal), true)}
+        ${cell(formatNum(r.vatDeposit), true)}
+        ${cell(formatNum(r.vatFinal), true)}
+      </tr>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Účetnictví – ${year} – ${monthLabel}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; margin: 0; padding: 28px 36px; color: #111; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px 0; }
+    .subtitle { font-size: 14px; color: #777; margin: 0; }
+    img.logo { height: 40px; object-fit: contain; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 500; color: #555; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+    thead th.num { text-align: right; }
+    tbody tr:nth-child(even):not([style*="background"]) { background: #fafafa; }
+    tbody td { border-bottom: 1px solid #f3f4f6; }
+    tfoot td { padding: 10px 14px; font-weight: 700; border-top: 2px solid #d1d5db; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Účetnictví – Rozklad kalkulace zájezdů</h1>
+      <p class="subtitle">${year} · ${monthLabel}</p>
+    </div>
+    ${logoSrc ? `<img class="logo" src="${logoSrc}" alt="YARO Travel" />` : ""}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Smlouva</th><th>Klient</th><th>Země</th><th>Destinace</th>
+        <th>Od</th><th>Do</th>
+        <th class="num">Prodej zál.</th><th class="num">Nákup zál.</th><th class="num">Zisk zál.</th>
+        <th class="num">Prodej vyúčt.</th><th class="num">Nákup vyúčt.</th><th class="num">Zisk vyúčt.</th>
+        <th class="num">DPH zál.</th><th class="num">DPH vyúčt.</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" style="text-align:right;">Celkem</td>
+        <td style="text-align:right;">${formatNum(totals.sellDeposit)}</td>
+        <td style="text-align:right;">${formatNum(totals.buyDeposit)}</td>
+        <td style="text-align:right;">${formatNum(totals.profitDeposit)}</td>
+        <td style="text-align:right;">${formatNum(totals.sellFinal)}</td>
+        <td style="text-align:right;">${formatNum(totals.buyFinal)}</td>
+        <td style="text-align:right;">${formatNum(totals.profitFinal)}</td>
+        <td style="text-align:right;">${formatNum(totals.vatDeposit)}</td>
+        <td style="text-align:right;">${formatNum(totals.vatFinal)}</td>
+      </tr>
+    </tfoot>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ucetnictvi_${year}_${month}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   usePageToolbar(
@@ -382,6 +499,9 @@ export default function Accounting() {
       <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 text-xs gap-1 shrink-0" onClick={exportCsv}>
         <Download className="h-3.5 w-3.5" /> Export CSV
       </Button>
+      <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 text-xs gap-1 shrink-0" onClick={exportHtml}>
+        <FileCode className="h-3.5 w-3.5" /> Export HTML
+      </Button>
       <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 text-xs gap-1 shrink-0" onClick={() => setShareDialogOpen(true)}>
         <Share2 className="h-3.5 w-3.5" /> Sdílet
       </Button>
@@ -395,6 +515,9 @@ export default function Accounting() {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={exportCsv}>
             <Download className="h-4 w-4 mr-2" /> Export CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={exportHtml}>
+            <FileCode className="h-4 w-4 mr-2" /> Export HTML
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
             <Share2 className="h-4 w-4 mr-2" /> Sdílet
