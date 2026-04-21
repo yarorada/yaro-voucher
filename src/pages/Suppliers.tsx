@@ -38,6 +38,7 @@ interface Supplier {
   name: string;
   contact_person: string | null;
   email: string | null;
+  invoice_email: string | null;
   phone: string | null;
   street: string | null;
   postal_code: string | null;
@@ -54,6 +55,7 @@ const emptyForm = {
   name: "",
   contact_person: "",
   email: "",
+  invoice_email: "",
   phone: "",
   street: "",
   postal_code: "",
@@ -69,6 +71,7 @@ type SupplierPayload = {
   name: string;
   contact_person: string | null;
   email: string | null;
+  invoice_email: string | null;
   phone: string | null;
   street: string | null;
   postal_code: string | null;
@@ -90,6 +93,9 @@ const Suppliers = () => {
   const [formData, setFormData] = useState(emptyForm);
   const [activeTab, setActiveTab] = useState<"supplier" | "customer">("supplier");
   const [aresLoading, setAresLoading] = useState(false);
+  // Invoice email dialog (shown after ARES lookup for new supplier)
+  const [invoiceEmailDialogOpen, setInvoiceEmailDialogOpen] = useState(false);
+  const [invoiceEmailInput, setInvoiceEmailInput] = useState("");
   // Duplicate check state
   const [pendingPayload, setPendingPayload] = useState<SupplierPayload | null>(null);
   const [dupDialogOpen, setDupDialogOpen] = useState(false);
@@ -111,6 +117,7 @@ const Suppliers = () => {
           name: data.name.trim(),
           contact_person: data.contact_person.trim() || null,
           email: data.email.trim() || null,
+          invoice_email: data.invoice_email.trim() || null,
           phone: data.phone.trim() ? formatPhone(data.phone.trim()) : null,
           street: data.street.trim() || null,
           postal_code: data.postal_code.trim() || null,
@@ -182,6 +189,11 @@ const Suppliers = () => {
         country_name: f.country_name || "Česká republika",
       }));
       toast.success("Údaje doplněny z ARES");
+      // For new suppliers, prompt for billing email right after ARES fill
+      if (!editingSupplier) {
+        setInvoiceEmailInput("");
+        setInvoiceEmailDialogOpen(true);
+      }
     } catch {
       toast.error("Nepodařilo se načíst údaje z ARES");
     } finally {
@@ -217,6 +229,7 @@ const Suppliers = () => {
       name: formData.name.trim(),
       contact_person: formData.contact_person.trim() || null,
       email: formData.email.trim() || null,
+      invoice_email: formData.invoice_email.trim() || null,
       phone: formData.phone.trim() ? formatPhone(formData.phone.trim()) : null,
       street: formData.street.trim() || null,
       postal_code: formData.postal_code.trim() || null,
@@ -253,6 +266,7 @@ const Suppliers = () => {
       name: supplier.name,
       contact_person: supplier.contact_person || "",
       email: supplier.email || "",
+      invoice_email: supplier.invoice_email || "",
       phone: supplier.phone || "",
       street: supplier.street || "",
       postal_code: supplier.postal_code || "",
@@ -420,6 +434,10 @@ const Suppliers = () => {
                   <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="invoice_email">Fakturační e-mail</Label>
+                  <Input id="invoice_email" type="email" value={formData.invoice_email} onChange={(e) => setFormData({ ...formData, invoice_email: e.target.value })} placeholder="faktury@firma.cz" />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="phone">Telefon</Label>
                   <Input
                     id="phone"
@@ -484,6 +502,54 @@ const Suppliers = () => {
                 )}
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invoice email dialog — shown after ARES lookup for new supplier */}
+        <Dialog open={invoiceEmailDialogOpen} onOpenChange={setInvoiceEmailDialogOpen}>
+          <DialogContent className="max-w-sm bg-background">
+            <DialogHeader>
+              <DialogTitle>Fakturační e-mail</DialogTitle>
+              <DialogDescription>
+                Zadejte e-mailovou adresu pro zasílání faktur. Můžete ji přeskočit a doplnit později.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="invoice_email_dialog">Fakturační e-mail</Label>
+              <Input
+                id="invoice_email_dialog"
+                type="email"
+                autoFocus
+                placeholder="faktury@firma.cz"
+                value={invoiceEmailInput}
+                onChange={(e) => setInvoiceEmailInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setFormData((f) => ({ ...f, invoice_email: invoiceEmailInput.trim() }));
+                    setInvoiceEmailDialogOpen(false);
+                  }
+                }}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInvoiceEmailDialogOpen(false)}
+              >
+                Přeskočit
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setFormData((f) => ({ ...f, invoice_email: invoiceEmailInput.trim() }));
+                  setInvoiceEmailDialogOpen(false);
+                }}
+              >
+                Uložit e-mail
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -554,7 +620,7 @@ const Suppliers = () => {
     }
     if (items.length === 0) {
       return (
-        <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+        <Card className="p-12 text-center">
           <h2 className="text-heading-2 text-foreground mb-2">
             {searchText ? `Žádní ${currentLabel} nenalezeni` : `Zatím žádní ${currentLabel}`}
           </h2>
@@ -569,7 +635,7 @@ const Suppliers = () => {
         {/* Mobile card view */}
         <div className="sm:hidden space-y-2">
           {items.map((supplier) => (
-            <Card key={supplier.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleEdit(supplier)}>
+            <Card key={supplier.id} className="p-3 space-y-1 cursor-pointer hover:bg-zinc-50 transition-colors" onClick={() => handleEdit(supplier)}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <button onClick={() => handleEdit(supplier)} className="font-medium text-sm text-left hover:text-primary transition-colors cursor-pointer">{supplier.name}</button>
@@ -606,7 +672,7 @@ const Suppliers = () => {
         </div>
 
         {/* Desktop table view */}
-        <Card className="shadow-[var(--shadow-medium)] overflow-hidden hidden sm:block">
+        <Card className="overflow-hidden hidden sm:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

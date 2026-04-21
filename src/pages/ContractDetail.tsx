@@ -208,7 +208,7 @@ const ContractDetail = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     contract ? (

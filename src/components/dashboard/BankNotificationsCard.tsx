@@ -160,15 +160,17 @@ export const BankNotificationsCard = () => {
     <>
       <Card className="h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BellRing className="h-5 w-5 text-amber-500" />
-            Příchozí platby
-            {notifications.length > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {notifications.length}
-              </Badge>
-            )}
-            <div className="flex gap-1 ml-auto">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <BellRing className="h-5 w-5 text-amber-500 shrink-0" />
+              <span>Příchozí platby</span>
+              {notifications.length > 0 && (
+                <Badge variant="destructive" className="ml-1">
+                  {notifications.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <div className="flex gap-1 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -209,7 +211,7 @@ export const BankNotificationsCard = () => {
                 <Settings className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (

@@ -544,7 +544,7 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
                   <div className="flex flex-col items-center justify-center">
                     <img src={qrDataUrl} alt="QR platba" className="w-[120px] h-[120px] rounded" />
                     <p className="text-xs text-muted-foreground mt-1">QR platba</p>
-                    <p className="text-sm font-bold text-primary">{formatPrice(unpaidTotal, true, currency)}</p>
+                    <p className="text-sm font-bold text-foreground">{formatPrice(unpaidTotal, true, currency)}</p>
                   </div>
                 )}
               </div>

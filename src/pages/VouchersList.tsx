@@ -374,7 +374,7 @@ const VouchersList = () => {
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     <div className="flex items-center gap-1.5 w-full min-w-0">
@@ -422,7 +422,7 @@ const VouchersList = () => {
             <p className="text-muted-foreground">Načítám vouchery...</p>
           </div>
         ) : vouchers.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+          <Card className="p-12 text-center">
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-heading-2 text-foreground mb-2">Zatím žádné vouchery</h2>
             <p className="text-body text-muted-foreground mb-6">Vytvořte svůj první cestovní voucher</p>
@@ -477,14 +477,14 @@ const VouchersList = () => {
                       onClick={() => setStatusFilter(tab.value)}
                       className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                         isActive
-                          ? "border-primary text-primary"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                          ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                          : "border-transparent text-zinc-400 hover:text-zinc-700 hover:border-zinc-300"
                       }`}
                     >
                       {tab.label}
                       {count > 0 && (
                         <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                          isActive ? "bg-zinc-100 text-zinc-900" : "bg-zinc-100 text-zinc-500"
                         }`}>{count}</span>
                       )}
                     </button>
@@ -544,7 +544,7 @@ const VouchersList = () => {
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-3 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer ${
+                    className={`p-3 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}

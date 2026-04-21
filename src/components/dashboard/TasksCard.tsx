@@ -453,9 +453,9 @@ export const TasksCard = () => {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ListTodo className="h-5 w-5 text-primary" />
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <ListTodo className="h-5 w-5 text-primary shrink-0" />
             Dnešní úkoly
             {tasks.length > 0 && (
               <Badge variant="secondary">
@@ -465,7 +465,7 @@ export const TasksCard = () => {
           </CardTitle>
           {isAdmin && (
             <Select value={viewMode} onValueChange={setViewMode}>
-              <SelectTrigger className="w-36 h-8 text-xs">
+              <SelectTrigger className="w-28 sm:w-36 h-8 text-xs shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -2668,7 +2668,7 @@ const DealDetail = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     deal ? (
@@ -2893,7 +2893,7 @@ const DealDetail = () => {
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
               <div className="rounded-lg bg-muted/50 p-2.5 sm:p-4 text-center">
                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Prodejní cena</div>
-                <div className="text-sm sm:text-lg font-bold text-primary mt-0.5">{formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}</div>
+                <div className="text-sm sm:text-lg font-bold text-foreground mt-0.5">{formatPriceCurrency(totalSellingPriceCzkFinal, "CZK")}</div>
               </div>
               <div className="rounded-lg bg-muted/50 p-2.5 sm:p-4 text-center">
                 <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Nákupní cena</div>
@@ -3846,9 +3846,9 @@ const DealDetail = () => {
                   </DndContext>
                 </div>
                 
-                <div className="flex justify-between items-center p-4 border-t-2 border-primary/20 bg-muted/30">
+                <div className="flex justify-between items-center p-4 border-t border-zinc-200 bg-zinc-50">
                   <span className="font-semibold text-sm sm:text-base">Celková cena:</span>
-                  <span className="font-bold text-base sm:text-lg text-primary">
+                  <span className="font-bold text-base sm:text-lg text-foreground">
                     {formatPriceCurrency(
                       services.reduce((sum, s) => sum + getServiceTotal(s), 0),
                       dealCurrency

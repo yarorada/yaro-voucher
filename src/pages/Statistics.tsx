@@ -352,14 +352,14 @@ const Statistics = () => {
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-1.5 border rounded-md px-2 sm:px-3 py-1 h-8 bg-primary/10 border-primary/20">
+      <div className="flex items-center gap-1.5 border rounded-md px-2 sm:px-3 py-1 h-8 bg-zinc-50 border-zinc-200">
         <Switch
           id="exclude-flights"
           checked={excludeFlights}
           onCheckedChange={setExcludeFlights}
           className="scale-75"
         />
-        <Label htmlFor="exclude-flights" className="text-xs cursor-pointer whitespace-nowrap text-primary">
+        <Label htmlFor="exclude-flights" className="text-xs cursor-pointer whitespace-nowrap text-zinc-700">
           <span className="hidden sm:inline">Bez letenek</span>
           <span className="sm:hidden">✈️</span>
         </Label>

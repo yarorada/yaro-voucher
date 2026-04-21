@@ -281,7 +281,7 @@ const Index = () => {
     contracts: <RecentContractsCard />,
   }), [canAccess]);
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   useHeaderActions(
     <Button
@@ -342,10 +342,7 @@ const Index = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={visibleOrder} strategy={rectSortingStrategy}>
-            <div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6 grid-flow-dense"
-              style={{ gridAutoRows: "320px" }}
-            >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 grid-flow-dense md:[grid-auto-rows:320px]">
               {visibleOrder.map((id) => {
                 const size: TileSize = tileSizes[id] ?? "1x1";
                 return (
@@ -358,7 +355,7 @@ const Index = () => {
                     onToggleVisibility={() => toggleVisibility(id)}
                     onChangeSize={(s) => changeTileSize(id, s)}
                   >
-                    <div className="h-full [&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
+                    <div className="md:h-full md:[&>div]:h-full md:[&>div]:flex md:[&>div]:flex-col md:[&>div>div:last-child]:flex-1 [&>div>div:last-child]:overflow-y-auto">
                       {TILE_COMPONENTS[id]}
                     </div>
                   </SortableTile>

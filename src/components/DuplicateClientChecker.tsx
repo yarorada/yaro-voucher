@@ -259,7 +259,7 @@ export function DuplicateClientChecker({ onComplete }: DuplicateClientCheckerPro
                         )}
                       </div>
                       {index === 0 && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        <span className="text-xs bg-zinc-100 text-zinc-700 px-2 py-1 rounded">
                           Primární
                         </span>
                       )}

@@ -238,7 +238,7 @@ const Contracts = () => {
     }
   });
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     <div className="flex items-center gap-1.5 w-full min-w-0">
@@ -286,7 +286,7 @@ const Contracts = () => {
             <p className="text-muted-foreground">Načítání smluv...</p>
           </div>
         ) : contracts && contracts.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+          <Card className="p-12 text-center">
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-heading-2 text-foreground mb-2">Žádné smlouvy</h2>
             <p className="text-body text-muted-foreground mb-6">Začněte vytvořením první cestovní smlouvy.</p>
@@ -337,14 +337,14 @@ const Contracts = () => {
                       onClick={() => setStatusFilter(tab.value)}
                       className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                         isActive
-                          ? "border-primary text-primary"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                          ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                          : "border-transparent text-zinc-400 hover:text-zinc-700 hover:border-zinc-300"
                       }`}
                     >
                       {tab.label}
                       {count > 0 && (
                         <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                          isActive ? "bg-zinc-100 text-zinc-900" : "bg-zinc-100 text-zinc-500"
                         }`}>{count}</span>
                       )}
                     </button>
@@ -365,7 +365,7 @@ const Contracts = () => {
                 return (
                   <Card
                     key={contract.id}
-                    className="p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer"
+                    className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
                     <div className="flex items-start justify-between gap-2">

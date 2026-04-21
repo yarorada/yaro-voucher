@@ -407,7 +407,7 @@ const Deals = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20";
+  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     <div className="flex items-center gap-1.5 w-full min-w-0">
@@ -458,7 +458,7 @@ const Deals = () => {
             <p className="text-muted-foreground">Načítám obchodní případy...</p>
           </div>
         ) : deals.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+          <Card className="p-12 text-center">
             <Plus className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-heading-2 text-foreground mb-2">Zatím žádné obchodní případy</h2>
             <p className="text-body text-muted-foreground mb-6">Vytvořte svůj první obchodní případ</p>
@@ -515,14 +515,14 @@ const Deals = () => {
                       onClick={() => setStatusFilter(opt.value)}
                       className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                         isActive
-                          ? "border-primary text-primary"
-                          : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                          ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                          : "border-transparent text-zinc-400 hover:text-zinc-700 hover:border-zinc-300"
                       }`}
                     >
                       {opt.label}
                       {count > 0 && (
                         <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                          isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                          isActive ? "bg-zinc-100 text-zinc-900" : "bg-zinc-100 text-zinc-500"
                         }`}>{count}</span>
                       )}
                     </button>
@@ -587,7 +587,7 @@ const Deals = () => {
                 };
 
                 return (
-                  <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:shadow-[var(--shadow-medium)] transition-shadow cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
+                  <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {/* Row 1: Status + Number + Name ISO Hotel Date */}

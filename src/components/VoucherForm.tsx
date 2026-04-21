@@ -990,7 +990,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="p-6 shadow-[var(--shadow-medium)]">
+      <Card className="p-6">
         <h2 className="text-heading-2 text-foreground mb-4">Informace o klientovi</h2>
         
         <div className="space-y-4">
@@ -1210,7 +1210,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
         </div>
       </Card>
 
-      <Card className="p-6 shadow-[var(--shadow-medium)]">
+      <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-heading-2 text-foreground">Služby</h2>
           <Button type="button" onClick={addService} size="sm" variant="outline">
@@ -1249,7 +1249,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       </Card>
 
       {/* Flight Details Section */}
-      <Card className="p-6 shadow-[var(--shadow-medium)]">
+      <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-heading-2 text-foreground">Detaily letů</h2>
           <div className="flex gap-2">
@@ -1399,7 +1399,7 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       </Card>
 
       {/* Tee Time Section */}
-      <Card className="p-6 shadow-[var(--shadow-medium)]">
+      <Card className="p-6">
         <div className="mb-4">
           <h2 className="text-heading-2 text-foreground">Tee Time</h2>
         </div>

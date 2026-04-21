@@ -1578,6 +1578,7 @@ export type Database = {
           email: string | null
           ico: string | null
           id: string
+          invoice_email: string | null
           name: string
           notes: string | null
           partner_type: string
@@ -1598,6 +1599,7 @@ export type Database = {
           email?: string | null
           ico?: string | null
           id?: string
+          invoice_email?: string | null
           name: string
           notes?: string | null
           partner_type?: string
@@ -1618,6 +1620,7 @@ export type Database = {
           email?: string | null
           ico?: string | null
           id?: string
+          invoice_email?: string | null
           name?: string
           notes?: string | null
           partner_type?: string

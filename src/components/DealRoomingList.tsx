@@ -293,7 +293,7 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
   const getAgeCategoryColor = (category: "adult" | "child" | "infant") => {
     if (category === "infant") return "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700";
     if (category === "child") return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700";
-    return "bg-primary/10 text-primary border-primary/20";
+    return "bg-zinc-100 text-zinc-700 border-zinc-200";
   };
 
   const TITLE_EN_MAP: Record<string, string> = {

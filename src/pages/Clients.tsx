@@ -960,13 +960,13 @@ const Clients = () => {
             <p className="text-muted-foreground">Načítám klienty...</p>
           </div>
         ) : clients.length === 0 ? (
-          <Card className="p-12 text-center shadow-[var(--shadow-medium)]">
+          <Card className="p-12 text-center">
             <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-heading-2 text-foreground mb-2">Zatím žádní klienti</h2>
             <p className="text-muted-foreground mb-6">Přidejte prvního klienta</p>
           </Card>
         ) : filteredClients.length === 0 ? (
-          <Card className="p-8 text-center shadow-[var(--shadow-medium)]">
+          <Card className="p-8 text-center">
             <p className="text-muted-foreground">Žádný klient nevyhovuje nastaveným filtrům</p>
             <Button variant="outline" className="mt-3" onClick={() => setFilterConditions([])}>Zrušit filtry</Button>
           </Card>
@@ -974,7 +974,7 @@ const Clients = () => {
           <>
           <div className="sm:hidden space-y-2">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="shadow-[var(--shadow-medium)] p-3 space-y-1.5 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleEdit(client)}>
+              <Card key={client.id} className="p-3 space-y-1.5 cursor-pointer hover:bg-zinc-50 transition-colors" onClick={() => handleEdit(client)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -1017,7 +1017,7 @@ const Clients = () => {
           </div>
 
           {/* Desktop table view */}
-          <Card className="shadow-[var(--shadow-medium)] overflow-hidden hidden sm:block">
+          <Card className="overflow-hidden hidden sm:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

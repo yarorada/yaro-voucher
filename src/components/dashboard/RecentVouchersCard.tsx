@@ -66,8 +66,8 @@ export const RecentVouchersCard = () => {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <FileText className="h-5 w-5 text-primary" />
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <FileText className="h-5 w-5 text-primary shrink-0" />
           Poslední vouchery
         </CardTitle>
       </CardHeader>

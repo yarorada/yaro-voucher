@@ -106,7 +106,7 @@ export function AppSidebar() {
             />
           </div>
           
-          <SidebarGroupLabel className="mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <SidebarGroupLabel className="mt-4 text-[10px] font-medium text-zinc-400 uppercase tracking-widest px-4">
             Navigace
           </SidebarGroupLabel>
           <SidebarGroupContent className="mt-2">
@@ -121,16 +121,16 @@ export function AppSidebar() {
                       tooltip={item.title}
                       className={`
                         group relative transition-colors duration-150
-                        ${active 
-                          ? 'bg-primary/10 text-primary font-medium' 
-                          : 'hover:bg-muted text-foreground/70 hover:text-foreground'
+                        ${active
+                          ? 'bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-50'
+                          : 'hover:bg-zinc-50 text-zinc-500 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-50'
                         }
                       `}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                       {active && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-zinc-900 rounded-r-full dark:bg-zinc-50" />
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -145,15 +145,15 @@ export function AppSidebar() {
                     className={`
                       group relative transition-colors duration-150
                       ${isActive("/admin/roles")
-                        ? 'bg-primary/10 text-primary font-medium' 
-                        : 'hover:bg-muted text-foreground/70 hover:text-foreground'
+                        ? 'bg-zinc-100 text-zinc-900 font-medium dark:bg-zinc-800 dark:text-zinc-50'
+                        : 'hover:bg-zinc-50 text-zinc-500 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-50'
                       }
                     `}
                   >
                     <ShieldCheck className="h-4 w-4" />
                     <span>Správa rolí</span>
                     {isActive("/admin/roles") && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-r-full" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-zinc-900 rounded-r-full dark:bg-zinc-50" />
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -167,7 +167,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-2 group-data-[state=collapsed]:hidden">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                 <UserCircle className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">

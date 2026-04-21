@@ -142,7 +142,7 @@ export const OverduePaymentsCard = () => {
               <span className="text-sm text-muted-foreground">• {p.clientName}</span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 break-words">
             Splatnost: {format(parseISO(p.due_date), "d.M.yyyy")}
             {isOverdue && (
               <span className="text-destructive font-medium ml-1">
@@ -161,8 +161,8 @@ export const OverduePaymentsCard = () => {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <CreditCard className="h-5 w-5 text-primary" />
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <CreditCard className="h-5 w-5 text-primary shrink-0" />
           Nezaplacené platby
           {overdue.length > 0 && (
             <Badge variant="destructive" className="ml-auto text-xs">
