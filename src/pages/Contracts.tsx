@@ -365,7 +365,7 @@ const Contracts = () => {
                 return (
                   <Card
                     key={contract.id}
-                    className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer"
+                    className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
                     <div className="flex items-start justify-between gap-2">
