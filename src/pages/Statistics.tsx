@@ -352,7 +352,7 @@ const Statistics = () => {
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-1.5 border rounded-md px-2 sm:px-3 py-1 h-8 bg-zinc-50 border-zinc-200">
+      <div className="flex items-center gap-1.5 border rounded-md px-2 sm:px-3 py-1 h-8 bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
         <Switch
           id="exclude-flights"
           checked={excludeFlights}

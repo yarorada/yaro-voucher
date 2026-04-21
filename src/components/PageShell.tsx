@@ -8,7 +8,7 @@ interface PageShellProps {
 }
 
 export const PageShell = ({ children, maxWidth = "default", className }: PageShellProps) => (
-  <div className="min-h-screen bg-zinc-50 overflow-x-hidden">
+  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 overflow-x-hidden">
     <div
       className={cn(
         "mx-auto py-6 md:py-8 px-4 md:px-6",

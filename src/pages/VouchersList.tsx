@@ -544,7 +544,7 @@ const VouchersList = () => {
                 return (
                   <Card 
                     key={voucher.id} 
-                    className={`p-3 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer ${
+                    className={`p-3 md:p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${
                       isExpired ? 'bg-muted/50 opacity-75' : ''
                     }`}
                     onClick={() => navigate(`/voucher/${voucher.id}`)}

@@ -96,7 +96,7 @@ export function SignatureCanvas({ onSignatureChange, width = 500, height = 200 }
 
   return (
     <div className="space-y-2">
-      <div className="relative border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden bg-white">
+      <div className="relative border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden bg-white dark:bg-zinc-800">
         <canvas
           ref={canvasRef}
           style={{ width, height, touchAction: "none", cursor: "crosshair" }}

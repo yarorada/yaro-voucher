@@ -587,7 +587,7 @@ const Deals = () => {
                 };
 
                 return (
-                  <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 transition-colors cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
+                  <Card key={deal.id} className="p-3 sm:p-4 md:p-6 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer" onClick={() => navigate(`/deals/${deal.id}`)}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         {/* Row 1: Status + Number + Name ISO Hotel Date */}
