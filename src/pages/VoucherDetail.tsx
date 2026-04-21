@@ -405,9 +405,9 @@ const VoucherDetail = () => {
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-1 min-w-0">
             {voucher.sent_at ? (
-              <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+              <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white border-transparent">Odesláno</Badge>
             ) : (
-              <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+              <Badge className="text-xs shrink-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white border-transparent">Neodesláno</Badge>
             )}
             <span className="font-bold text-heading-1 text-foreground">{voucher.voucher_code}</span>
             {(() => {
@@ -460,9 +460,9 @@ const VoucherDetail = () => {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Status odeslání</p>
                 {voucher.sent_at ? (
-                  <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                  <Badge className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white border-transparent">Odesláno</Badge>
                 ) : (
-                  <Badge variant="secondary">Neodesláno</Badge>
+                  <Badge className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white border-transparent">Neodesláno</Badge>
                 )}
               </div>
               <div>

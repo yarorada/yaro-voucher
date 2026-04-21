@@ -554,11 +554,11 @@ const VouchersList = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           {voucher.sent_at ? (
-                            <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white border-transparent">Odesláno</Badge>
+                            <Badge className="text-xs shrink-0 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white border-transparent">Odesláno</Badge>
                           ) : isExpired ? (
-                            <Badge className="text-xs shrink-0 bg-muted-foreground hover:bg-muted-foreground/80 text-white border-transparent">Využitý</Badge>
+                            <Badge className="text-xs shrink-0 bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white border-transparent">Využitý</Badge>
                           ) : (
-                            <Badge className="text-xs shrink-0 bg-gray-500 hover:bg-gray-600 text-white border-transparent">Neodesláno</Badge>
+                            <Badge className="text-xs shrink-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white border-transparent">Neodesláno</Badge>
                           )}
                           <span className="font-bold text-foreground">{voucher.voucher_code}</span>
                           {displayName && <span className="text-foreground">{displayName}</span>}
