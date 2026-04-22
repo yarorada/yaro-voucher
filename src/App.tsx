@@ -45,6 +45,7 @@ import MfaVerify from "./pages/MfaVerify";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoles from "./pages/AdminRoles";
+import UctoVystup from "./pages/UctoVystup";
 
 const queryClient = new QueryClient();
 
@@ -384,6 +385,16 @@ const App = () => (
               <ProtectedRoute>
                 <ProtectedLayout>
                   <AdminRoles />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ucto-vystup"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <UctoVystup />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

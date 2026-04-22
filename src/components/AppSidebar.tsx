@@ -1,11 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { 
-  Home, 
-  FileText, 
-  Building2, 
-  Users, 
-  Briefcase, 
-  MapPin, 
+import {
+  Home,
+  FileText,
+  Building2,
+  Users,
+  Briefcase,
+  MapPin,
   FileSignature,
   BarChart3,
   LogOut,
@@ -15,6 +15,7 @@ import {
   Receipt,
   ShieldCheck,
   UserCircle,
+  FolderOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ const allMenuItems = [
   { title: "Destinace", url: "/destinations", icon: MapPin, prodejce: false },
   { title: "Účetnictví", url: "/accounting", icon: Calculator, prodejce: false },
   { title: "Fakturace", url: "/invoicing", icon: Receipt, prodejce: false },
+  { title: "UCTO výstup", url: "/ucto-vystup", icon: FolderOpen, prodejce: false },
   { title: "Šablony e-mailů", url: "/email-templates", icon: Mail, prodejce: false },
 ];
 

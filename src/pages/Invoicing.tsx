@@ -186,6 +186,7 @@ const emptyForm = {
   bank_account: DEFAULT_BANK_ACCOUNT,
   iban: "",
   notes: "",
+  payment_method: "",
 };
 
 export default function Invoicing() {
@@ -517,6 +518,7 @@ export default function Invoicing() {
       file_url: scanFileUrl || editingInvoice?.file_url || null,
       file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
+      payment_method: form.payment_method || null,
       items: calcItems.length > 0 ? calcItems : [],
     };
     // Pokud editujeme existující fakturu (a způsob platby již byl zvolen) – ulož přímo
@@ -572,6 +574,7 @@ export default function Invoicing() {
       bank_account: inv.bank_account || "",
       iban: inv.iban || "",
       notes: inv.notes || "",
+      payment_method: inv.payment_method || "",
     });
     setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
@@ -604,6 +607,7 @@ export default function Invoicing() {
       bank_account: inv.bank_account || DEFAULT_BANK_ACCOUNT,
       iban: inv.iban || "",
       notes: inv.notes || "",
+      payment_method: inv.payment_method || "",
     });
     setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
@@ -1714,6 +1718,27 @@ export default function Invoicing() {
               </>
               )}
             </div>
+
+            {form.invoice_type === "received" && (
+              <div>
+                <Label>Forma platby</Label>
+                <Select
+                  value={form.payment_method || ""}
+                  onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vyberte formu platby" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="moneta">Moneta</SelectItem>
+                    <SelectItem value="amnis">Amnis</SelectItem>
+                    <SelectItem value="cash">Hotově</SelectItem>
+                    <SelectItem value="card">Kartou</SelectItem>
+                    <SelectItem value="transfer">Převodem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <Label>Poznámky</Label>
