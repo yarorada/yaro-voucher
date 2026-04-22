@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
@@ -24,13 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Edit, User, Users, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
-import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { Trash2, Edit, User, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/components/ClientFilterBar";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatDateForDB, parseDateSafe } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -39,7 +37,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,

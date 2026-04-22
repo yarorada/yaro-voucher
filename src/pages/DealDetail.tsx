@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, BookOpen, MoreVertical, Share2 } from "lucide-react";
+import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, MoreVertical, Share2 } from "lucide-react";
 import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
-import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
+import { CurrencySelect } from "@/components/CurrencySelect";
 import {
   DndContext,
   closestCenter,
@@ -29,7 +29,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 import { getServiceTotal, getServiceMultiplier, getServiceCostTotal } from "@/lib/servicePrice";
 import { format, addDays, addMonths } from "date-fns";
@@ -39,8 +38,6 @@ import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { HotelCombobox } from "@/components/HotelCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
-import { AirportCombobox } from "@/components/AirportCombobox";
-import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "@/components/FlightSegmentForm";
 import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 import { FlightAiImport } from "@/components/FlightAiImport";
@@ -54,7 +51,6 @@ import { CreateVouchersFromDeal } from "@/components/CreateVouchersFromDeal";
 import { DealDocumentsSection } from "@/components/DealDocumentsSection";
 import { DealSupplierInvoices } from "@/components/DealSupplierInvoices";
 import { DealRoomingList } from "@/components/DealRoomingList";
-import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
@@ -62,7 +58,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,

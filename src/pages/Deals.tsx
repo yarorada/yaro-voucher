@@ -5,9 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useDataScope } from "@/hooks/useDataScope";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Copy, MoreHorizontal, Filter, Trash2, FileText, ScrollText, X } from "lucide-react";
+import { Plus, Search, Copy, MoreHorizontal, Trash2, FileText, ScrollText, X } from "lucide-react";
 import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
@@ -18,11 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
-import { format } from "date-fns";
 import { formatDateDisplay, removeDiacritics } from "@/lib/utils";
-import { cs } from "date-fns/locale";
 import { formatPriceCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {

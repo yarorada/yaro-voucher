@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
+import { bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
 import { PhotoPdfScanner } from "@/components/PhotoPdfScanner";
 
@@ -261,7 +260,7 @@ export default function Invoicing() {
 
       // Fetch contract numbers for deal_ids
       const dealIds = [...new Set((data || []).map((r: any) => r.deal_id).filter(Boolean))];
-      let contractMap: Record<string, string> = {};
+      const contractMap: Record<string, string> = {};
       if (dealIds.length > 0) {
         const { data: contracts } = await supabase
           .from("travel_contracts")

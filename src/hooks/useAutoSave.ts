@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface UseAutoSaveOptions<T> {
   data: T;
@@ -63,7 +63,7 @@ export function useAutoSave<T>({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [data, enabled, debounceMs]);
 
   return { isSaving, lastSaved };

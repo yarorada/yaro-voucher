@@ -9,11 +9,9 @@ import { Edit, Trash2, Download, Mail, Loader2, User, Users, Building2, ChevronD
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { removeDiacritics } from "@/lib/utils";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { jsPDF } from "jspdf";
-import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type BaggageAllowance, type LogoInfo } from "@/lib/voucherPdfBuilder";
+import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type BaggageAllowance } from "@/lib/voucherPdfBuilder";
 import {
   AlertDialog,
   AlertDialogAction,

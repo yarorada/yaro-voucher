@@ -14,7 +14,6 @@ import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn, removeDiacritics } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 
 interface ExtractedData {
   first_name?: string;
@@ -147,7 +146,7 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
     // Try both document types to find which one has data
     let extractedData: ExtractedData | null = null;
-    let documentType: 'passport' | 'id_card' = 'passport';
+    const documentType: 'passport' | 'id_card' = 'passport';
 
     console.log('Trying passport OCR...');
     // First try passport

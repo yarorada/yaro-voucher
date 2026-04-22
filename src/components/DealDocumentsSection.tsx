@@ -10,15 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, Mail, ChevronDown, User, Users, Building2, Plus, X } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Upload, FileText, Trash2, Eye, Download, Loader2, ExternalLink, Send, Clock, User, Building2, Plus, X } from "lucide-react";
+
+
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn, removeDiacritics } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";

@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Sparkles, Trash2, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 export interface ParsedTeeTime {
   date: string;

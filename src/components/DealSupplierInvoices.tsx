@@ -29,12 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DateInput } from "@/components/ui/date-input";
 import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye, ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
-import { format } from "date-fns";
 
 interface DealSupplierInvoicesProps {
   dealId: string;

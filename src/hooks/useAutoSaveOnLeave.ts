@@ -1,5 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
 
 interface UseAutoSaveOnLeaveOptions {
   /** Returns true if there are unsaved changes */

@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
     });
 
     // Fetch hotel images and descriptions
-    let hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null; golf_courses_data: any[] | null; review_score: number | null }> = {};
+    const hotelImages: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; image_url_4: string | null; image_url_5: string | null; image_url_6: string | null; image_url_7: string | null; image_url_8: string | null; image_url_9: string | null; image_url_10: string | null; description: string | null; golf_courses_data: any[] | null; review_score: number | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')

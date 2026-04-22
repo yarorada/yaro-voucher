@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       if (s.service_type === 'hotel') hotelNames.add(s.service_name);
     });
 
-    let hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
+    const hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')

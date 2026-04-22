@@ -336,7 +336,7 @@ const SignContract = () => {
                 const total = (s.price || 0) * multiplier;
 
                 // Parse flight legs
-                let flightLegs: { text: string }[] = [];
+                const flightLegs: { text: string }[] = [];
                 if (s.service_type === "flight" && s.details) {
                   const det = typeof s.details === "string" ? JSON.parse(s.details) : s.details;
                   const parseLeg = (seg: any) => {
