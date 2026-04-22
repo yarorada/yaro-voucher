@@ -193,7 +193,7 @@ export function DocumentUpload({
       const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
       const fileName = `${clientId}/${fileLabel}_${uniqueSuffix}.png`;
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("client-documents")
         .upload(fileName, fileToUpload);
 

@@ -142,15 +142,6 @@ function parseStorageReference(fileUrl: string): { bucket: string; path: string 
   }
 }
 
-function base64ToBlobUrl(base64: string, contentType: string) {
-  const byteChars = atob(base64);
-  const byteArr = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteArr[i] = byteChars.charCodeAt(i);
-  }
-  return URL.createObjectURL(new Blob([byteArr], { type: contentType || "application/octet-stream" }));
-}
-
 const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
 
 /** Normalize currency – treat "Kč" as "CZK" */

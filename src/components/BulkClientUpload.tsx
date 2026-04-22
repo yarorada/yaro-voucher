@@ -146,7 +146,6 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
 
     // Try both document types to find which one has data
     let extractedData: ExtractedData | null = null;
-    const documentType: 'passport' | 'id_card' = 'passport';
 
     // First try passport
     const { data: passportData } = await supabase.functions.invoke('ocr-document', {
@@ -571,10 +570,6 @@ export const BulkClientUpload = ({ onComplete }: { onComplete: () => void }) => 
           status: 'success',
           extractedData: editedData
         };
-        
-        // Check if all uploads are completed after this update
-        const allCompleted = updated.every(u => u.status === 'success' || u.status === 'error');
-        const successCount = updated.filter(u => u.status === 'success').length;
         
         return updated;
       });

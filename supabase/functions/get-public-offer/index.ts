@@ -5,19 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-function isCrawler(userAgent: string): boolean {
-  const bots = [
-    'bot', 'crawler', 'spider', 'slurp', 'facebookexternalhit', 'linkedinbot',
-    'twitterbot', 'whatsapp', 'telegrambot', 'skypeuripreview', 'embedly',
-    'quora link preview', 'outbrain', 'pinterest', 'slack', 'vkshare',
-    'w3c_validator', 'redditbot', 'applebot', 'yandex', 'baiduspider',
-    'googlebot', 'preview', 'fetcher', 'curl', 'wget',
-    'outlook', 'thunderbird', 'mailchimp', 'postfix',
-  ];
-  const ua = userAgent.toLowerCase();
-  return bots.some(b => ua.includes(b));
-}
-
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -313,8 +300,6 @@ async function serveOgHtml(supabase: any, token: string, requestUrl: URL) {
   descParts.push('YARO Travel');
   const description = descParts.join(' · ');
 
-  // The canonical URL should point to the SPA page
-  const spaOrigin = requestUrl.origin.replace(/\.supabase\.co.*/, '');
   // We'll use a meta refresh to redirect browsers to the SPA
   const spaUrl = `https://yarogolf-crm.lovable.app/offer/${token}`;
 

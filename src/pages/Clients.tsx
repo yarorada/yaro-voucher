@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Edit, User, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/components/ClientFilterBar";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDateForDB, parseDateSafe } from "@/lib/utils";
@@ -95,7 +94,6 @@ function getExpiryBadgeClass(status: ExpiryStatus): string {
 const Clients = () => {
   const { user } = useAuth();
   const { scope } = useDataScope();
-  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -331,7 +329,7 @@ const Clients = () => {
       setEditingClient(null);
       setIsDialogOpen(false);
       fetchClients();
-    } catch (error: any) {
+    } catch {
       toast.error("Chyba při ukládání klienta");
     }
   };
@@ -607,17 +605,6 @@ const Clients = () => {
     </div>,
     [filterConditions, quickSearch, filteredClients.length, loading]
   );
-
-  // Extract city from address
-  const extractCity = (address: string | null): string => {
-    if (!address) return "–";
-    // Try to get the last part (usually city) or return the whole address
-    const parts = address.split(",").map(p => p.trim());
-    return parts[parts.length - 1] || address;
-  };
-
-  // Check if client has passport
-  const hasPassport = (client: Client) => !!client.passport_number;
 
   return (
     <PageShell>

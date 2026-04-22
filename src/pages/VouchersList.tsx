@@ -111,7 +111,7 @@ const VouchersList = () => {
         query = query.eq("user_id", user.id);
       }
 
-      const { data: vouchersData, error: vouchersError } = await query;
+      const { data: vouchersData } = await query;
 
       // Fetch profiles to get creator emails
       const { data: profilesData, error: profilesError } = await supabase
@@ -322,7 +322,7 @@ const VouchersList = () => {
       })) || [];
 
       // Create new voucher with all data including flights and tee_times
-      const { data: newVoucher, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from("vouchers")
         .insert({
           client_id: originalVoucher.client_id,
@@ -501,21 +501,6 @@ const VouchersList = () => {
                 const destination = (voucher as any).deals?.destinations?.name;
                 const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || "";
                 
-                // Resolve hotel name: prefer explicit field, fallback to hotel service name
-                const hotelName = voucher.hotel_name ||
-                  (() => {
-                    const servs = Array.isArray(voucher.services) ? voucher.services : [];
-                    const hotelSvc = servs.find((s: any) => 
-                      s.service_type === 'hotel' || 
-                      (typeof s.name === 'string' && s.name.toLowerCase().startsWith('accommodation'))
-                    );
-                    if (!hotelSvc) return null;
-                    const raw = hotelSvc.service_name || hotelSvc.name || '';
-                    // Extract "Hotel Name" from "Accommodation in Room Type in Hotel Name"
-                    const match = raw.match(/accommodation in .+ in (.+)/i);
-                    return match ? match[1].trim() : raw || null;
-                  })();
-
                 // Get earliest service start_date and latest service end_date
                 const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
                 const firstServiceDate = servicesArr

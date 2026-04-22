@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch {
     return new Response(
       JSON.stringify({ error: "Nastala neočekávaná chyba." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -59,7 +59,7 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
     try {
       const payload = items.length > 0 ? items : null;
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("travel_contracts")
         .update({ tee_times: payload } as any)
         .eq("id", contractId)

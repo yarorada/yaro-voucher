@@ -251,7 +251,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [supplierId, setSupplierId] = useState(initialData?.supplierId || "");
   const [hotelName, setHotelName] = useState(initialData?.hotelName || "");
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
-  const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
     initialData?.services?.map(s => ({
       id: crypto.randomUUID(),

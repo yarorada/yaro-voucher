@@ -407,15 +407,6 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
     if (!error) fetchInvoices();
   };
 
-  const handleUpdatePayment = async (id: string, field: string, value: any) => {
-    const { error } = await supabase
-      .from("deal_supplier_invoices")
-      .update({ [field]: value } as any)
-      .eq("id", id);
-
-    if (!error) fetchInvoices();
-  };
-
   const handleOpenEdit = (invoice: SupplierInvoice) => {
     setEditingInvoice(invoice);
     setEditData({

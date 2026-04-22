@@ -544,17 +544,10 @@ const Deals = () => {
 
                 // Orderer = traveler with is_lead_traveler, OR the lead_client_id if not in travelers
                 const ordererInTravelers = deal.deal_travelers?.find((dt: any) => dt.is_lead_traveler);
-                const leadClientId = deal.lead_client_id;
 
                 // leadName for metadata row — prefer orderer, fallback to first
                 const leadClient = ordererInTravelers?.clients || firstByOrder?.clients;
                 const leadName = leadClient ? `${leadClient.first_name} ${leadClient.last_name}` : "";
-
-                const mainTravelers = [...deal.deal_travelers]
-                  .filter((dt: any) => dt.clients)
-                  .sort((a: any, b: any) => (b.is_lead_traveler ? 1 : 0) - (a.is_lead_traveler ? 1 : 0))
-                  .map((dt: any) => `${dt.clients.first_name} ${dt.clients.last_name}`)
-                  .join(", ");
 
                 // Use deal.name if available but always compute display description from live data
                 // to ensure bullet separators are correct regardless of how name was stored.

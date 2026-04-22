@@ -535,54 +535,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
     return getLogoBase64ForPdf(yaroLogo);
   }, []);
 
-   // Generate a simple voucher PDF and upload to deal-documents
-  const generateVoucherPdf = async (voucher: DealVoucher): Promise<boolean> => {
-    try {
-      const { data: fullVoucher, error } = await supabase
-        .from("vouchers")
-        .select("*")
-        .eq("id", voucher.id)
-        .single();
-      if (error || !fullVoucher) return false;
-
-      const { data: voucherTravelers } = await supabase
-        .from("voucher_travelers")
-        .select("client_id, is_main_client, clients(first_name, last_name)")
-        .eq("voucher_id", voucher.id);
-
-      let supplierData: any = null;
-      if (fullVoucher.supplier_id) {
-        const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
-        supplierData = sd;
-      }
-
-      const logoInfo = await getLogoBase64();
-      const baggage = fullVoucher.deal_id ? await fetchBaggageFromDeal(supabase, fullVoucher.deal_id) : null;
-
-      const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData?.name || voucher.suppliers?.name, supplierData, logoInfo, (voucherTravelers || []) as any, baggage);
-
-      // Upload to deal-documents storage
-      const path = `${dealId}/voucher-${fullVoucher.voucher_code}-${Date.now()}.pdf`;
-      const { error: uploadErr } = await supabase.storage.from("deal-documents").upload(path, pdfBlob, { contentType: "application/pdf" });
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage.from("deal-documents").getPublicUrl(path);
-
-      await supabase.from("deal_documents").insert({
-        deal_id: dealId,
-        file_name: `Voucher ${fullVoucher.voucher_code}.pdf`,
-        file_url: urlData.publicUrl,
-        file_type: "application/pdf",
-        description: "Auto-generated voucher PDF",
-      } as any);
-
-      return true;
-    } catch (err) {
-      console.error("Error generating voucher PDF:", err);
-      return false;
-    }
-  };
-
   // Generate PDF blob for a voucher (for inline attachment)
   const generateVoucherPdfBase64 = async (v: DealVoucher, logoInfo?: LogoInfo): Promise<string | null> => {
     try {

@@ -110,7 +110,6 @@ export const DateInput = React.forwardRef<HTMLDivElement, DateInputProps>(
       const newValue = e.target.value;
       const digitsOnly = newValue.replace(/\D/g, "");
       // Consume the paste flag — reliable detection without digit-count heuristics
-      const isPaste = isPasteRef.current;
       isPasteRef.current = false;
 
       if (digitsOnly.length > 0) {

@@ -293,7 +293,6 @@ Deno.serve(async (req) => {
 
       const txDate = tx.bookingDate || tx.valueDate || tx.transactionDate || null;
       const senderName = tx.counterParty?.name || tx.creditorName || tx.debtorName || tx.counterpartName || null;
-      const senderAccount = tx.counterParty?.accountNumber || tx.counterParty?.iban || tx.creditorAccount?.iban || null;
       const note = tx.remittanceInformation?.unstructured || tx.additionalTransactionInformation || tx.transactionNote || null;
 
       if (!amount || amount <= 0) continue;

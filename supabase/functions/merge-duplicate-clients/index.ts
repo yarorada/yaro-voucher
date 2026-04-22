@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
     }
 
     // Process each group
-    for (const [key, group] of clientGroups) {
+    for (const [, group] of clientGroups) {
       // Add diacritics to the first client's name
       const primaryClient = group[0];
       const newFirstName = addDiacritics(primaryClient.first_name);

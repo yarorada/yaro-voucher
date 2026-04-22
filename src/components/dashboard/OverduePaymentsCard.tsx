@@ -101,8 +101,6 @@ export const OverduePaymentsCard = () => {
     .map(([cur, amt]) => formatPriceCurrency(amt, cur))
     .join(" + ");
 
-  const typeLabel = (t: string) => (t === "final" ? "Doplatek" : "Záloha");
-
   const typeCircle = (t: string) => {
     if (t === "final") return "D";
     // deposit_1, deposit_2, deposit etc.

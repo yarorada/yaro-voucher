@@ -1,10 +1,7 @@
 import { PageShell } from "@/components/PageShell";
 import { VoucherForm } from "@/components/VoucherForm";
-import { useNavigate } from "react-router-dom";
 
 const CreateVoucher = () => {
-  const navigate = useNavigate();
-
   return (
     <PageShell maxWidth="narrow">
         <header className="mb-8">

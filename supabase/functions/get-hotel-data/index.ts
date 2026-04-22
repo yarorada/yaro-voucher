@@ -53,15 +53,15 @@ Deno.serve(async (req) => {
       }
 
       const {
-        image_url, image_url_2, image_url_3, image_url_4, image_url_5,
-        image_url_6, image_url_7, image_url_8, image_url_9, image_url_10,
+        image_url: _image_url, image_url_2: _image_url_2, image_url_3: _image_url_3, image_url_4: _image_url_4, image_url_5: _image_url_5,
+        image_url_6: _image_url_6, image_url_7: _image_url_7, image_url_8: _image_url_8, image_url_9: _image_url_9, image_url_10: _image_url_10,
         ...rest
       } = hotel;
 
       const destination_name = rest.destinations?.name || null;
       const country_name = rest.destinations?.countries?.name || null;
       const country_iso = rest.destinations?.countries?.iso_code || null;
-      const { destinations, ...clean } = rest;
+      const { destinations: _destinations, ...clean } = rest;
 
       return { ...clean, images, destination_name, country_name, country_iso };
     };

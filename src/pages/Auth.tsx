@@ -137,7 +137,7 @@ const Auth = () => {
           setIsLogin(true);
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Chyba",
         description: "Nastala neočekávaná chyba. Zkuste to prosím znovu.",
@@ -187,7 +187,7 @@ const Auth = () => {
         setIsForgotPassword(false);
         setIsLogin(true);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Chyba",
         description: "Nastala neočekávaná chyba. Zkuste to prosím znovu.",

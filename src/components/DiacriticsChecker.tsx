@@ -168,7 +168,7 @@ export function DiacriticsChecker({ onComplete }: DiacriticsCheckerProps) {
       setIsOpen(false);
       setChanges([]);
       onComplete();
-    } catch (e) {
+    } catch {
       toast.error("Chyba při ukládání změn");
     } finally {
       setSaving(false);

@@ -331,9 +331,6 @@ export function ContractPaymentSchedule({ contractId, dealId, totalPrice = 0, de
     ));
   };
 
-  const depositsSum = payments
-    .filter((p) => p.payment_type === "deposit" || p.payment_type === "installment")
-    .reduce((sum, p) => sum + p.amount, 0);
   const allPaymentsSum = payments.reduce((sum, p) => sum + p.amount, 0);
   const remainingPayment = Math.max(0, totalPrice - allPaymentsSum);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);

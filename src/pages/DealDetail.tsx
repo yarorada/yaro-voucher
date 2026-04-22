@@ -528,20 +528,6 @@ const DealDetail = () => {
     setLastDraftSave(null);
   }, [DRAFT_KEY]);
   
-  // Update service form with history tracking
-  const updateServiceForm = useCallback((newForm: typeof serviceForm | ((prev: typeof serviceForm) => typeof serviceForm)) => {
-    setServiceForm(prev => {
-      const updated = typeof newForm === 'function' ? newForm(prev) : newForm;
-      // Add to history only if different
-      if (JSON.stringify(updated) !== JSON.stringify(prev)) {
-        setServiceFormHistory(h => [...h.slice(-49), prev]);
-        setServiceFormFuture([]);
-        saveDraft(updated);
-      }
-      return updated;
-    });
-  }, [saveDraft]);
-  
   // Undo service form
   const undoServiceForm = useCallback(() => {
     if (serviceFormHistory.length === 0) return;
@@ -584,7 +570,7 @@ const DealDetail = () => {
           const prevForm = JSON.parse(previousFormRef.current);
           setServiceFormHistory(h => [...h.slice(-49), prevForm]);
           setServiceFormFuture([]);
-        } catch (e) {}
+        } catch { /* ignore */ }
         previousFormRef.current = currentFormStr;
       }, 800);
     } else if (!previousFormRef.current) {
@@ -629,7 +615,7 @@ const DealDetail = () => {
     || "CZK";
   
   // Store original flight details to preserve all segments
-  const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
+  const [_originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
   const [activeTab, setActiveTab] = useState("info");
@@ -809,7 +795,7 @@ const DealDetail = () => {
     leadTravelerIsFirstPassenger,
   } : null;
 
-  const { isSaving: isAutoSaving } = useAutoSave({
+  useAutoSave({
     data: autoSaveData,
     saveFn: async () => {
       if (!deal || !autoSaveData) return;
@@ -2235,7 +2221,6 @@ const DealDetail = () => {
       // Restore CZK conversion info from stored values
       cost_czk_value: (() => {
         const czkVal = service.cost_price;
-        const costCurr = serviceAny.cost_currency || "CZK";
         return czkVal != null ? czkVal : null;
       })(),
       cost_exchange_rate: (() => {
@@ -2661,7 +2646,6 @@ const DealDetail = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     deal ? (

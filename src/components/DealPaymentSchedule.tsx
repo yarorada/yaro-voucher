@@ -381,7 +381,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                         if (error) throw error;
                         toast({ title: "Doplatek přidán", description: `Přidána platba ${formatPrice(remainingPayment, true, currency)}` });
                         fetchPayments();
-                      } catch (e) {
+                      } catch {
                         toast({ title: "Chyba", description: "Nepodařilo se přidat doplatek", variant: "destructive" });
                       }
                     }}

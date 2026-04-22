@@ -87,12 +87,6 @@ const formatDateShort = (d: string | null) => {
   return format(date, "d.M.yyyy");
 };
 
-const fmtDatePdf = (d: string) => {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
-};
-
 // buildVoucherPdfBlob, BaggageAllowance, normalizePdfInlineText are imported from @/lib/voucherPdfBuilder
 
 const VoucherDetail = () => {
@@ -120,7 +114,7 @@ const VoucherDetail = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
-  const [newExtraEmail, setNewExtraEmail] = useState("");
+  const [_newExtraEmail, setNewExtraEmail] = useState("");
 
   useEffect(() => {
     if (id) fetchVoucher();
@@ -259,12 +253,6 @@ const VoucherDetail = () => {
       // Generate PDF
       const logoInfo = await getLogoBase64();
       const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
-      const arrayBuffer = await pdfBlob.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-      const base64 = btoa(binary);
-
       // Upload PDF to storage for sending
       const { data: { user } } = await supabase.auth.getUser();
       let pdfPath: string | null = null;
