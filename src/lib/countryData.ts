@@ -51,7 +51,7 @@ export const getCountryFlag = (countryName: string): string => {
   return iso2ToFlag(iso2);
 };
 
-export const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
+const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
   "afghánistán": { iso: "AFG", currency: "AFN" },
   "albánie": { iso: "ALB", currency: "ALL" },
   "alžírsko": { iso: "DZA", currency: "DZD" },
@@ -219,7 +219,7 @@ export const COUNTRY_DATA: Record<string, { iso: string; currency: string }> = {
   "severní kypr": { iso: "NCY", currency: "TRY" },
 };
 
-export const lookupCountryData = (name: string) => {
+const lookupCountryData = (name: string) => {
   const key = name.trim().toLowerCase();
   return COUNTRY_DATA[key] || null;
 };
@@ -238,7 +238,7 @@ export const searchCountries = (query: string, limit = 10) => {
 };
 
 // Known destination → country mapping for intelligent suggestions
-export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
+const DESTINATION_COUNTRY_MAP: Record<string, string> = {
   // Egypt
   "hurghada": "egypt", "sharm el sheikh": "egypt", "marsa alam": "egypt", "el gouna": "egypt",
   "dahab": "egypt", "taba": "egypt", "luxor": "egypt", "aswan": "egypt", "káhira": "egypt",

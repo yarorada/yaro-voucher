@@ -2,7 +2,7 @@
  * Mapa nejčastějších golfových destinací v češtině → název země v databázi
  * Klíče jsou lowercase bez diakritiky pro snadné porovnávání
  */
-export const DESTINATION_COUNTRY_MAP: Record<string, string> = {
+const DESTINATION_COUNTRY_MAP: Record<string, string> = {
   // Rakousko
   "viden": "Rakousko",
   "vídeň": "Rakousko",

@@ -14,7 +14,7 @@ export interface LogoInfo {
   h: number;
 }
 
-export interface VoucherPdfTraveler {
+interface VoucherPdfTraveler {
   client_id: string;
   is_main_client: boolean;
   clients: { first_name: string; last_name: string };

@@ -28,7 +28,7 @@ const ROLE_DEFAULTS: Record<string, SectionKey[]> = {
   none: ALL_SECTIONS.map((s) => s.key) as SectionKey[],
 };
 
-export interface UserPermissions {
+interface UserPermissions {
   loading: boolean;
   canAccess: (section: SectionKey) => boolean;
   allowedSections: SectionKey[];
