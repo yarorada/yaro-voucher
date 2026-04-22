@@ -44,9 +44,3 @@ export function CurrencySelect({ value, onChange, className }: CurrencySelectPro
   );
 }
 
-export function getCurrencySymbol(code: string): string {
-  const currency = CURRENCIES.find(c => c.code === code);
-  return currency?.symbol || code;
-}
-
-export { CURRENCIES };

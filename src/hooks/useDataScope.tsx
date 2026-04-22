@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 
-export type DataScope = "all" | "own";
+type DataScope = "all" | "own";
 
 // Default scope per role
 const ROLE_DEFAULT_SCOPE: Record<string, DataScope> = {
@@ -12,7 +12,7 @@ const ROLE_DEFAULT_SCOPE: Record<string, DataScope> = {
   none: "all",
 };
 
-export interface DataScopeResult {
+interface DataScopeResult {
   scope: DataScope;
   loading: boolean;
 }

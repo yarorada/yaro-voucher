@@ -7,7 +7,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 /**
  * Check if a file is a HEIC/HEIF format
  */
-export function isHeicFile(file: File): boolean {
+function isHeicFile(file: File): boolean {
   const heicTypes = ["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"];
   if (heicTypes.includes(file.type.toLowerCase())) {
     return true;
@@ -26,7 +26,7 @@ export function isPdfFile(file: File): boolean {
 /**
  * Convert HEIC file to JPEG
  */
-export async function convertHeicToJpeg(file: File): Promise<File> {
+async function convertHeicToJpeg(file: File): Promise<File> {
   try {
     const convertedBlob = await heic2any({
       blob: file,
@@ -45,7 +45,7 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
 /**
  * Convert PDF first page to PNG using PDF.js
  */
-export async function convertPdfToPng(file: File): Promise<File> {
+async function convertPdfToPng(file: File): Promise<File> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const page = await pdf.getPage(1);
