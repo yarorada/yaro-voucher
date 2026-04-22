@@ -105,6 +105,7 @@ type Invoice = {
   file_name: string | null;
   notes: string | null;
   payment_method: string | null;
+  bank: string | null;
   items: InvoiceItem[] | null;
   created_at: string;
   taxable_date?: string | null;
@@ -187,6 +188,7 @@ const emptyForm = {
   iban: "",
   notes: "",
   payment_method: "",
+  bank: "",
 };
 
 export default function Invoicing() {
@@ -519,6 +521,7 @@ export default function Invoicing() {
       file_name: scanFileName || editingInvoice?.file_name || null,
       notes: form.notes || null,
       payment_method: form.payment_method || null,
+      bank: form.bank || null,
       items: calcItems.length > 0 ? calcItems : [],
     };
     // Pokud editujeme existující fakturu (a způsob platby již byl zvolen) – ulož přímo
@@ -575,6 +578,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
       payment_method: inv.payment_method || "",
+      bank: (inv as any).bank || "",
     });
     setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
@@ -1720,23 +1724,38 @@ export default function Invoicing() {
             </div>
 
             {form.invoice_type === "received" && (
-              <div>
-                <Label>Forma platby</Label>
-                <Select
-                  value={form.payment_method || ""}
-                  onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyberte formu platby" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="moneta">Moneta</SelectItem>
-                    <SelectItem value="amnis">Amnis</SelectItem>
-                    <SelectItem value="cash">Hotově</SelectItem>
-                    <SelectItem value="card">Kartou</SelectItem>
-                    <SelectItem value="transfer">Převodem</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Banka</Label>
+                  <Select
+                    value={form.bank || ""}
+                    onValueChange={(v) => setForm((f) => ({ ...f, bank: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte banku" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="moneta">Moneta</SelectItem>
+                      <SelectItem value="amnis">Amnis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Typ platby</Label>
+                  <Select
+                    value={form.payment_method || ""}
+                    onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte typ platby" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="transfer">Převodem</SelectItem>
+                      <SelectItem value="card">Kartou</SelectItem>
+                      <SelectItem value="cash">Hotově</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
