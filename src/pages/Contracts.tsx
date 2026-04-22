@@ -110,56 +110,6 @@ const Contracts = () => {
     },
   });
 
-  const handleExportCSV = () => {
-    if (!filteredContracts || filteredContracts.length === 0) {
-      toast.error("Žádné smlouvy k exportu");
-      return;
-    }
-
-    const headers = ["Číslo smlouvy", "Klient", "Destinace", "Datum odjezdu", "Datum návratu", "Prodejní cena", "Měna", "Nákupní cena", "Marže", "Status"];
-    
-    const rows = filteredContracts.map((contract) => {
-      const client = contract.client as any;
-      const clientName = client ? `${client.first_name} ${client.last_name}` : "";
-      const destination = (contract.deal as any)?.destination?.name || "";
-      const startDate = formatDateShort((contract.deal as any)?.start_date);
-      const endDate = formatDateShort((contract.deal as any)?.end_date);
-      const salesPrice = contract.total_price || 0;
-      const currency = contract.currency || "CZK";
-      const costPrice = ((contract.deal as any)?.deal_services || []).reduce(
-        (sum: number, s: any) => sum + (s.cost_price || 0), 0
-      );
-      const margin = salesPrice - costPrice;
-
-      return [
-        contract.contract_number,
-        clientName,
-        destination,
-        startDate,
-        endDate,
-        salesPrice.toString(),
-        currency,
-        costPrice.toString(),
-        margin.toString(),
-        contract.status,
-      ];
-    });
-
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(";"))
-      .join("\n");
-
-    const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `smlouvy-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("Export dokončen");
-  };
-
   const handleDeleteClick = (e: React.MouseEvent, contractId: string, contractNumber: string) => {
     e.stopPropagation();
     setContractToDelete({ id: contractId, number: contractNumber });

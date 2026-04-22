@@ -91,7 +91,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
   // Map of supplierId → Set of selected voucherIds
   const [supplierVoucherSelection, setSupplierVoucherSelection] = useState<Record<string, Set<string>>>({});
 
-  const [sendingVoucherId, setSendingVoucherId] = useState<string | null>(null);
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -743,106 +742,6 @@ export function DealDocumentsSection({ dealId, clientEmail, clientName, startDat
       fetchDocuments();
     } catch {
       toast.error("Nepodařilo se smazat voucher");
-    }
-  };
-
-  // mode: "client" | "both" | "supplier"
-  const handleSendVoucher = async (voucher: DealVoucher, mode: "client" | "both" | "supplier" = "both") => {
-    setSendingVoucherId(voucher.id);
-    try {
-      // For client/both modes, check client email
-      if (mode !== "supplier") {
-        const { data: travelerData } = await supabase
-          .from("voucher_travelers")
-          .select("is_main_client, clients:client_id(email, first_name, last_name)")
-          .eq("voucher_id", voucher.id)
-          .eq("is_main_client", true)
-          .limit(1)
-          .single();
-
-        const voucherClientEmail = (travelerData?.clients as any)?.email;
-        if (!voucherClientEmail) {
-          const { data: voucherRow } = await supabase
-            .from("vouchers")
-            .select("client_id, clients:client_id(email, first_name, last_name)")
-            .eq("id", voucher.id)
-            .single();
-          const fallbackEmail = (voucherRow?.clients as any)?.email;
-          if (!fallbackEmail) {
-            toast.error(`Klient ${voucher.client_name} nemá vyplněný e-mail. Doplňte e-mail v kartě klienta.`);
-            setSendingVoucherId(null);
-            return;
-          }
-        }
-      }
-
-      // For supplier/both modes, check supplier email
-      if (mode !== "client" && !voucher.suppliers?.email) {
-        toast.error(`Voucher ${voucher.voucher_code} nemá přiřazeného dodavatele s e-mailem.`);
-        setSendingVoucherId(null);
-        return;
-      }
-
-      // Fetch full voucher data to generate PDF
-      const { data: fullVoucher } = await supabase
-        .from("vouchers")
-        .select("*")
-        .eq("id", voucher.id)
-        .single();
-
-      let pdfPath: string | null = null;
-
-      if (fullVoucher) {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: vTravelers2 } = await supabase.from("voucher_travelers").select("client_id, is_main_client, clients(first_name, last_name)").eq("voucher_id", voucher.id);
-            let supplierData2: any = null;
-            if (fullVoucher.supplier_id) {
-              const { data: sd } = await supabase.from("suppliers").select("name, contact_person, email, phone, address").eq("id", fullVoucher.supplier_id).single();
-              supplierData2 = sd;
-            }
-            const logoInfo2 = await getLogoBase64();
-            const baggage2 = fullVoucher.deal_id ? await fetchBaggageFromDeal(supabase, fullVoucher.deal_id) : null;
-            const pdfBlob = buildVoucherPdfBlob(fullVoucher, supplierData2?.name || voucher.suppliers?.name, supplierData2, logoInfo2, (vTravelers2 || []) as any, baggage2);
-            const voucherPdfPath = `${user.id}/${fullVoucher.voucher_code}-${Date.now()}.pdf`;
-            const { error: uploadErr } = await supabase.storage
-              .from("voucher-pdfs")
-              .upload(voucherPdfPath, pdfBlob, { contentType: "application/pdf", upsert: true });
-            if (!uploadErr) pdfPath = voucherPdfPath;
-          }
-        } catch (pdfErr) {
-          console.error("PDF generation error:", pdfErr);
-        }
-      }
-
-      // Determine flags for edge function
-      const sendToClient = mode === "client" || mode === "both";
-      const sendToSupplier = mode === "supplier" || mode === "both";
-
-      const { data, error } = await supabase.functions.invoke("send-voucher-email", {
-        body: {
-          voucherId: voucher.id,
-          pdfPath,
-          emailCcSupplier: sendToSupplier && !!voucher.suppliers?.email,
-          skipClient: !sendToClient,
-        },
-      });
-
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Chyba při odesílání");
-
-      const recipients = (data.results || [])
-        .filter((r: any) => r.success)
-        .map((r: any) => r.recipient)
-        .join(", ");
-      toast.success(`Voucher ${voucher.voucher_code} odeslán: ${recipients}`);
-      fetchDocuments();
-    } catch (err: any) {
-      console.error("Send voucher error:", err);
-      toast.error(err.message || "Nepodařilo se odeslat voucher");
-    } finally {
-      setSendingVoucherId(null);
     }
   };
 
