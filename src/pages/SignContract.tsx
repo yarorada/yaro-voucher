@@ -123,7 +123,6 @@ const SignContract = () => {
 
       if (res.ok) {
         setPdfSent(true);
-        console.log("Signed PDF sent successfully");
       } else {
         const err = await res.json();
         console.error("Failed to send signed PDF:", err);

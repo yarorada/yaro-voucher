@@ -58,7 +58,6 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
     setSaving(true);
     try {
       const payload = items.length > 0 ? items : null;
-      console.log("Saving tee times:", { contractId, payload });
       
       const { data, error } = await supabase
         .from("travel_contracts")
@@ -67,7 +66,6 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
         .select("tee_times")
         .single();
 
-      console.log("Save result:", { data, error });
       if (error) throw error;
       toast.success("Startovací časy uloženy");
       setOpen(false);

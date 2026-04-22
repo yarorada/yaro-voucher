@@ -703,7 +703,6 @@ const DealDetail = () => {
           lead_traveler_is_first_passenger: leadTravelerIsFirstPassenger,
         })
         .eq("id", deal.id);
-      console.log("Auto-saved deal on leave");
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
@@ -1802,7 +1801,6 @@ const DealDetail = () => {
                       .from("hotel_templates")
                       .update(updatePayload)
                       .eq("id", newHotel.id);
-                    console.log("Hotel template enriched with AI data:", Object.keys(updatePayload));
                   }
                 } catch (e) {
                   console.error("Background hotel enrichment failed:", e);

@@ -60,7 +60,6 @@ const ContractDetail = () => {
   const { data: contract, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ["travel_contract", id],
     queryFn: async () => {
-      console.log("Fetching contract with ID:", id);
       // @ts-ignore - Supabase types not updated after migration
       const { data, error } = await (supabase as any)
         .from("travel_contracts")
@@ -87,7 +86,6 @@ const ContractDetail = () => {
         .eq("id", id)
         .maybeSingle();
 
-      console.log("Query result:", { data, error });
       if (error) {
         console.error("Error fetching contract:", error);
         throw error;
@@ -279,7 +277,6 @@ const ContractDetail = () => {
   }
 
   if (!contract) {
-    console.log("Contract not found for ID:", id);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

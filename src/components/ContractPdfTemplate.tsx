@@ -79,7 +79,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         if (el) el.setAttribute('data-qr-ready', 'true');
         return;
       }
-      console.log('Generating QR codes for', unpaidPayments.length, 'payments, bankAccount:', bankAccount, 'isPartl:', isPartl);
       const generate = async () => {
         const urls: Record<string, string> = {};
         for (const p of unpaidPayments) {
@@ -91,7 +90,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               size: 160,
             });
             urls[p.id] = url;
-            console.log('QR generated for payment', p.id, '→', url ? 'OK' : 'EMPTY');
           } catch (e) { console.error('QR generation error:', e); }
         }
         setPaymentQrUrls(urls);
