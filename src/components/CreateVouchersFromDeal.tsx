@@ -22,8 +22,6 @@ import { useNavigate } from "react-router-dom";
 import { FileText, Loader2, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const YARO_SUPPLIER_NAME = "YARO s.r.o.";
-
 interface FlightSegment {
   departure: string;
   arrival: string;

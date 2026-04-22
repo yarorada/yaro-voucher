@@ -106,27 +106,9 @@ export const RecentDealsCard = () => {
     return "";
   };
 
-  const getHotel = (deal: Deal) => {
-    const hotel = deal.deal_services?.find((s) => s.service_type === "hotel");
-    return hotel?.service_name || "";
-  };
-
   const getBaseNumber = (dealNumber: string) => {
     const match = dealNumber.match(/^D-\d{3,6}/);
     return match ? match[0] : dealNumber;
-  };
-
-  const buildDescription = (deal: Deal) => {
-    const parts: string[] = [];
-    const client = getLeadClient(deal);
-    if (client) parts.push(client);
-    const iso = deal.destinations?.countries?.iso_code;
-    if (iso) parts.push(iso);
-    const hotel = getHotel(deal);
-    if (hotel) parts.push(hotel);
-    const date = formatDateShort(deal.start_date);
-    if (date) parts.push(date);
-    return parts.join(" • ");
   };
 
   return (

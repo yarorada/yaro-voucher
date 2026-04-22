@@ -2,7 +2,6 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Plus, Trash2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
@@ -59,16 +58,14 @@ export const ContractTeeTimesEditor = ({ contractId, teeTimes, onUpdate }: Contr
     setSaving(true);
     try {
       const payload = items.length > 0 ? items : null;
-      console.log("Saving tee times:", { contractId, payload });
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("travel_contracts")
         .update({ tee_times: payload } as any)
         .eq("id", contractId)
         .select("tee_times")
         .single();
 
-      console.log("Save result:", { data, error });
       if (error) throw error;
       toast.success("Startovací časy uloženy");
       setOpen(false);

@@ -15,10 +15,6 @@ function formatDate(dateStr: string): string {
   return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
 }
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 }).format(price);
-}
-
 function formatPriceWithCurrency(price: number, currency?: string): string {
   const formatted = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 }).format(price);
   if (!currency || currency === 'CZK') return `${formatted} CZK`;
@@ -213,7 +209,7 @@ Deno.serve(async (req) => {
       if (s.service_type === 'hotel') hotelNames.add(s.service_name);
     });
 
-    let hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
+    const hotelData: Record<string, { image_url: string | null; image_url_2: string | null; image_url_3: string | null; description: string | null }> = {};
     if (hotelNames.size > 0) {
       const { data: hotels } = await supabase
         .from('hotel_templates')
@@ -232,10 +228,6 @@ Deno.serve(async (req) => {
     const allSameEnd = displayVariants.length > 0 && displayVariants.every((v: any) => v.end_date === displayVariants[0].end_date);
     const sharedStart = allSameStart ? displayVariants[0]?.start_date : deal.start_date;
     const sharedEnd = allSameEnd ? displayVariants[0]?.end_date : deal.end_date;
-    const dateRange = sharedStart && sharedEnd && allSameStart && allSameEnd
-      ? `${formatDate(sharedStart)} – ${formatDate(sharedEnd)}`
-      : '';
-
     // Decline last name to 4th case (akuzativ) for the title heading — use full name for the heading
     let accusativeName = clientFullName;
     try {
@@ -613,14 +605,12 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    const subject = `Nabídka zájezdu${destText ? ' – ' + destText : ''} | YARO Travel`;
-
     // Load offer template if no custom message
     let offerTemplate: any = null;
     try {
       const { data } = await supabase.from("email_templates").select("*").eq("template_key", "offer_client_cz").eq("is_active", true).single();
       offerTemplate = data;
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
 
     const offerPlaceholderVars: Record<string, string> = {
       salutation: `${vazenySalutation} ${declinedName}`,

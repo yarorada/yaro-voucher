@@ -54,18 +54,6 @@ export const RecentContractsCard = () => {
     },
   });
 
-  const buildDescription = (c: Contract) => {
-    const parts: string[] = [];
-    if (c.clients) parts.push(`${c.clients.first_name} ${c.clients.last_name}`);
-    const iso = c.deals?.destinations?.countries?.iso_code;
-    if (iso) parts.push(iso);
-    const hotel = c.deals?.deal_services?.find((s) => s.service_type === "hotel");
-    if (hotel) parts.push(hotel.service_name);
-    const date = formatDateShort(c.deals?.start_date || null);
-    if (date) parts.push(date);
-    return parts.join(" • ");
-  };
-
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">

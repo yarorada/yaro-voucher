@@ -29,12 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DateInput } from "@/components/ui/date-input";
 import { Upload, FileText, Loader2, Download, Trash2, CheckCircle2, Receipt, Eye, ExternalLink, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { compressImage, isImageFile } from "@/lib/imageCompression";
-import { format } from "date-fns";
 
 interface DealSupplierInvoicesProps {
   dealId: string;
@@ -405,15 +403,6 @@ export function DealSupplierInvoices({ dealId }: DealSupplierInvoicesProps) {
         payment_method: newPaid ? (invoice.payment_method || "moneta") : null,
       } as any)
       .eq("id", invoice.id);
-
-    if (!error) fetchInvoices();
-  };
-
-  const handleUpdatePayment = async (id: string, field: string, value: any) => {
-    const { error } = await supabase
-      .from("deal_supplier_invoices")
-      .update({ [field]: value } as any)
-      .eq("id", id);
 
     if (!error) fetchInvoices();
   };

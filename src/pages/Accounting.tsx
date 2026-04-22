@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download, Pencil, Check, X, Share2, Lock, MoreHorizontal } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import {
@@ -153,7 +152,6 @@ export default function Accounting() {
 
           const vatDeposit = Math.round(profitDeposit * vatRate);
           const vatFinal = isPastTrip ? Math.round(profitFinal * vatRate) : 0;
-          const vatDiff = isPastTrip ? vatFinal - vatDeposit : 0;
 
           const paidPayments = payments.filter((p) => p.paid && p.paid_at);
           const firstPaidAt = paidPayments.map((p) => p.paid_at!).sort()[0] || null;

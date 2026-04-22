@@ -51,18 +51,6 @@ export const RecentVouchersCard = () => {
       [0] || null;
   };
 
-  const buildDescription = (v: any) => {
-    const parts: string[] = [];
-    const client = getClientName(v);
-    if (client) parts.push(client);
-    const iso = v.deals?.destinations?.countries?.iso_code;
-    if (iso) parts.push(iso);
-    if (v.hotel_name) parts.push(v.hotel_name);
-    const date = formatDateShort(getFirstServiceDate(v));
-    if (date) parts.push(date);
-    return parts.join(" • ");
-  };
-
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">

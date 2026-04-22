@@ -313,8 +313,6 @@ const Suppliers = () => {
 
   const currentLabel = activeTab === "customer" ? "odběratele" : "dodavatele";
   const currentLabelTitle = activeTab === "customer" ? "Odběratel" : "Dodavatel";
-  const isCustomerForm = editingSupplier ? editingSupplier.partner_type === "customer" : activeTab === "customer";
-
   const handleAddNew = () => {
     setFormData(emptyForm);
     setEditingSupplier(null);

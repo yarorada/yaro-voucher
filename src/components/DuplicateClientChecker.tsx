@@ -11,7 +11,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Merge, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Users, Merge, X, Loader2 } from "lucide-react";
 import { removeDiacritics, capitalizeWords } from "@/lib/utils";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";

@@ -183,16 +183,6 @@ const serviceIcons: Record<string, typeof Plane> = {
   other: FileText,
 };
 
-const serviceLabels: Record<string, string> = {
-  flight: "Let",
-  hotel: "Hotel",
-  golf: "Golf",
-  transfer: "Transfer",
-  insurance: "Pojištění",
-  meal: "Strava",
-  other: "Ostatní",
-};
-
 function formatPrice(price: number, currency?: string): string {
   const formatted = new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0 }).format(price);
   if (!currency || currency === "CZK") return `${formatted} CZK`;

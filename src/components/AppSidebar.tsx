@@ -30,7 +30,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
@@ -58,7 +57,7 @@ const allMenuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { open, setOpen, setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const { signOut, user } = useAuth();
   const { isAdmin } = useUserRole();
   const { canAccess } = useUserPermissions();

@@ -61,8 +61,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
     
     const bankAccount = isPartl ? '6180898002/5500' : ((contract as any).agency_bank_account || '227993932/0600');
     const iban = isPartl ? 'CZ3955000000006180898002' : bankAccountToIban(bankAccount);
-    const partlEurIban = 'CZ3955000000006180898002';
-    const partlEurSwift = 'RZBCCZPP';
     const contractNumber = contract.contract_number || '';
     const variableSymbol = extractVariableSymbol(contractNumber);
 
@@ -79,7 +77,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
         if (el) el.setAttribute('data-qr-ready', 'true');
         return;
       }
-      console.log('Generating QR codes for', unpaidPayments.length, 'payments, bankAccount:', bankAccount, 'isPartl:', isPartl);
       const generate = async () => {
         const urls: Record<string, string> = {};
         for (const p of unpaidPayments) {
@@ -91,7 +88,6 @@ export const ContractPdfTemplate = forwardRef<HTMLDivElement, ContractPdfTemplat
               size: 160,
             });
             urls[p.id] = url;
-            console.log('QR generated for payment', p.id, '→', url ? 'OK' : 'EMPTY');
           } catch (e) { console.error('QR generation error:', e); }
         }
         setPaymentQrUrls(urls);

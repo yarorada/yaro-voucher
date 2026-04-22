@@ -1,11 +1,7 @@
 import { PageShell } from "@/components/PageShell";
 import { VoucherForm } from "@/components/VoucherForm";
-import { useNavigate } from "react-router-dom";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 
 const CreateVoucher = () => {
-  const navigate = useNavigate();
-
   return (
     <PageShell maxWidth="narrow">
         <header className="mb-8">

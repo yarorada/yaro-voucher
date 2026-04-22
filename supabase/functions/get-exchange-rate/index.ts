@@ -6,13 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface CNBRate {
-  currency: string;
-  code: string;
-  rate: number;
-  amount: number;
-}
-
 // Cache exchange rates for 1 hour (CNB updates once a day)
 let cachedRates: Map<string, number> = new Map();
 let lastFetchTime: number = 0;

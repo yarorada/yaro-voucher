@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { compressImage } from "@/lib/imageCompression";
 import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { generatePaymentQrDataUrl, bankAccountToIban, generateSpaydString } from "@/lib/spayd";
+import { bankAccountToIban, generateSpaydString } from "@/lib/spayd";
 import QRCode from "qrcode";
 import { PhotoPdfScanner } from "@/components/PhotoPdfScanner";
 
@@ -143,15 +142,6 @@ function parseStorageReference(fileUrl: string): { bucket: string; path: string 
   }
 }
 
-function base64ToBlobUrl(base64: string, contentType: string) {
-  const byteChars = atob(base64);
-  const byteArr = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteArr[i] = byteChars.charCodeAt(i);
-  }
-  return URL.createObjectURL(new Blob([byteArr], { type: contentType || "application/octet-stream" }));
-}
-
 const emptyItem: InvoiceItem = { text: "", quantity: 1, unit_price: 0, vat_rate: 21 };
 
 /** Normalize currency – treat "Kč" as "CZK" */
@@ -261,7 +251,7 @@ export default function Invoicing() {
 
       // Fetch contract numbers for deal_ids
       const dealIds = [...new Set((data || []).map((r: any) => r.deal_id).filter(Boolean))];
-      let contractMap: Record<string, string> = {};
+      const contractMap: Record<string, string> = {};
       if (dealIds.length > 0) {
         const { data: contracts } = await supabase
           .from("travel_contracts")

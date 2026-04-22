@@ -42,7 +42,7 @@ interface AirlineComboboxProps {
 export function AirlineCombobox({ value, onSelect, placeholder = "Kód dopravce..." }: AirlineComboboxProps) {
   const [open, setOpen] = useState(false);
   const [airlines, setAirlines] = useState<Airline[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");

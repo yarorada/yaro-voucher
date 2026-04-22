@@ -17,7 +17,7 @@ export function bankAccountToIban(bankAccount: string): string {
 
   // Calculate IBAN check digits (ISO 13616)
   const numericStr = bban + '123500'; // C=12, Z=35, 00 placeholder
-  let remainder = BigInt(numericStr) % 97n;
+  const remainder = BigInt(numericStr) % 97n;
   const checkDigits = (98n - remainder).toString().padStart(2, '0');
 
   return `CZ${checkDigits}${bban}`;

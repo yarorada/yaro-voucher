@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Sparkles, Loader2, X } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "./FlightSegmentForm";
 import {
   Dialog,
@@ -66,7 +65,7 @@ export const VariantServiceDialog = ({
 }: VariantServiceDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [convertingCurrency, setConvertingCurrency] = useState(false);
+  const [_convertingCurrency, setConvertingCurrency] = useState(false);
   const [serviceType, setServiceType] = useState<"flight" | "hotel" | "golf" | "transfer" | "insurance" | "meal" | "other">("hotel");
   const [serviceName, setServiceName] = useState("");
   const [description, setDescription] = useState("");
@@ -84,8 +83,6 @@ export const VariantServiceDialog = ({
   const [priceMode, setPriceMode] = useState<"per_person" | "per_service">("per_person");
   const [priceManuallySet, setPriceManuallySet] = useState(false);
   const [marginPercent, setMarginPercent] = useState("15");
-  type RoomTypeEntry = { name: string; rooms: number; persons_per_room: number; price: number };
-  const [roomTypes, setRoomTypes] = useState<RoomTypeEntry[]>([]);
   // Exchange rate info for display
   const [costExchangeRate, setCostExchangeRate] = useState<number | null>(null);
   const [costCzkValue, setCostCzkValue] = useState<number | null>(null);
@@ -99,7 +96,7 @@ export const VariantServiceDialog = ({
   const [baggage, setBaggage] = useState<FlightFormData['baggage']>(undefined);
 
   // AI import state
-  const [showAiImport, setShowAiImport] = useState(false);
+  const [_showAiImport, setShowAiImport] = useState(false);
   const [aiImportText, setAiImportText] = useState("");
   const [aiImportLoading, setAiImportLoading] = useState(false);
 

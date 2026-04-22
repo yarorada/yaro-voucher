@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -177,7 +176,7 @@ const Statistics = () => {
   };
 
   const filteredData = useMemo(() => {
-    let filtered = deals.filter((deal) => {
+    const filtered = deals.filter((deal) => {
       // Filter by status
       if (statusFilter === "confirmed" && deal.status !== "confirmed") return false;
       if (statusFilter === "completed" && deal.status !== "completed") return false;
@@ -266,7 +265,7 @@ const Statistics = () => {
 
     // Calculate YoY comparison
     const prevYear = selectedYear !== "all" ? parseInt(selectedYear) - 1 : null;
-    let prevYearStats = { revenue: 0, costs: 0, profit: 0 };
+    const prevYearStats = { revenue: 0, costs: 0, profit: 0 };
 
     if (prevYear) {
       const prevYearDeals = deals.filter((deal) => {

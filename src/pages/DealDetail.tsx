@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, BookOpen, MoreVertical, Share2 } from "lucide-react";
+import { Trash2, Plus, X, Plane, Hotel, Navigation, Car, Shield, FileText, FileSignature, Edit, ChevronDown, Utensils, HeadphonesIcon, GripVertical, Copy, Pencil, Check, Loader2, Undo2, Redo2, RefreshCw, CheckCircle2, MessageSquare, Download, MoreVertical, Share2 } from "lucide-react";
 import { removeDiacritics, translateTitleToEnglish, formatDateDisplay } from "@/lib/utils";
-import { CurrencySelect, getCurrencySymbol } from "@/components/CurrencySelect";
+import { CurrencySelect } from "@/components/CurrencySelect";
 import {
   DndContext,
   closestCenter,
@@ -29,7 +29,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { formatPriceCurrency, formatDateForDB } from "@/lib/utils";
 import { getServiceTotal, getServiceMultiplier, getServiceCostTotal } from "@/lib/servicePrice";
 import { format, addDays, addMonths } from "date-fns";
@@ -39,8 +38,6 @@ import { SupplierCombobox } from "@/components/SupplierCombobox";
 import { ServiceCombobox } from "@/components/ServiceCombobox";
 import { HotelCombobox } from "@/components/HotelCombobox";
 import { DealStatusBadge } from "@/components/DealStatusBadge";
-import { AirportCombobox } from "@/components/AirportCombobox";
-import { AirlineCombobox } from "@/components/AirlineCombobox";
 import { FlightSegmentForm, emptySegment, type FlightSegment, type FlightFormData } from "@/components/FlightSegmentForm";
 import { GolfAiImport, type ParsedTeeTime } from "@/components/GolfAiImport";
 import { FlightAiImport } from "@/components/FlightAiImport";
@@ -54,7 +51,6 @@ import { CreateVouchersFromDeal } from "@/components/CreateVouchersFromDeal";
 import { DealDocumentsSection } from "@/components/DealDocumentsSection";
 import { DealSupplierInvoices } from "@/components/DealSupplierInvoices";
 import { DealRoomingList } from "@/components/DealRoomingList";
-import { DateInput } from "@/components/ui/date-input";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
@@ -62,7 +58,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -533,20 +528,6 @@ const DealDetail = () => {
     setLastDraftSave(null);
   }, [DRAFT_KEY]);
   
-  // Update service form with history tracking
-  const updateServiceForm = useCallback((newForm: typeof serviceForm | ((prev: typeof serviceForm) => typeof serviceForm)) => {
-    setServiceForm(prev => {
-      const updated = typeof newForm === 'function' ? newForm(prev) : newForm;
-      // Add to history only if different
-      if (JSON.stringify(updated) !== JSON.stringify(prev)) {
-        setServiceFormHistory(h => [...h.slice(-49), prev]);
-        setServiceFormFuture([]);
-        saveDraft(updated);
-      }
-      return updated;
-    });
-  }, [saveDraft]);
-  
   // Undo service form
   const undoServiceForm = useCallback(() => {
     if (serviceFormHistory.length === 0) return;
@@ -589,7 +570,7 @@ const DealDetail = () => {
           const prevForm = JSON.parse(previousFormRef.current);
           setServiceFormHistory(h => [...h.slice(-49), prevForm]);
           setServiceFormFuture([]);
-        } catch (e) {}
+        } catch { /* ignore */ }
         previousFormRef.current = currentFormStr;
       }, 800);
     } else if (!previousFormRef.current) {
@@ -634,7 +615,7 @@ const DealDetail = () => {
     || "CZK";
   
   // Store original flight details to preserve all segments
-  const [originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
+  const [_originalFlightDetails, setOriginalFlightDetails] = useState<any>(null);
 
   // Form state
   const [activeTab, setActiveTab] = useState("info");
@@ -708,7 +689,6 @@ const DealDetail = () => {
           lead_traveler_is_first_passenger: leadTravelerIsFirstPassenger,
         })
         .eq("id", deal.id);
-      console.log("Auto-saved deal on leave");
     } catch (e) {
       console.error("Auto-save failed:", e);
     }
@@ -815,7 +795,7 @@ const DealDetail = () => {
     leadTravelerIsFirstPassenger,
   } : null;
 
-  const { isSaving: isAutoSaving } = useAutoSave({
+  useAutoSave({
     data: autoSaveData,
     saveFn: async () => {
       if (!deal || !autoSaveData) return;
@@ -1807,7 +1787,6 @@ const DealDetail = () => {
                       .from("hotel_templates")
                       .update(updatePayload)
                       .eq("id", newHotel.id);
-                    console.log("Hotel template enriched with AI data:", Object.keys(updatePayload));
                   }
                 } catch (e) {
                   console.error("Background hotel enrichment failed:", e);
@@ -2242,7 +2221,6 @@ const DealDetail = () => {
       // Restore CZK conversion info from stored values
       cost_czk_value: (() => {
         const czkVal = service.cost_price;
-        const costCurr = serviceAny.cost_currency || "CZK";
         return czkVal != null ? czkVal : null;
       })(),
       cost_exchange_rate: (() => {
@@ -2668,7 +2646,6 @@ const DealDetail = () => {
     }
   };
 
-  const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
 
   usePageToolbar(
     deal ? (

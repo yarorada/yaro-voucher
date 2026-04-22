@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Filter, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, X, Search, SlidersHorizontal } from "lucide-react";
 import { removeDiacritics, parseDateSafe } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 

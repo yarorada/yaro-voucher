@@ -212,7 +212,7 @@ export function ShareOfferButton({ dealId, shareToken, onTokenGenerated, variant
         .flatMap((v: any) => (v.deal_variant_services || []).filter((s: any) => s.service_type === "hotel").map((s: any) => s.service_name))
         .filter(Boolean);
 
-      let hotelImages: Record<string, string | null> = {};
+      const hotelImages: Record<string, string | null> = {};
       if (hotelNames.length > 0) {
         const { data: hotels } = await supabase
           .from("hotel_templates")

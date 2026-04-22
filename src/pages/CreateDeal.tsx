@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import yaroLogo from "@/assets/yaro-logo-wide.png";
 import { toast } from "sonner";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { DateRangePicker } from "@/components/ui/date-range-picker";

@@ -355,9 +355,6 @@ export const DealVariants = ({ dealId, onVariantSelected }: DealVariantsProps) =
       .eq("id", dealId)
       .single();
 
-    const depositAmount = Math.round(totalPrice * 0.5);
-    const finalAmount = totalPrice - depositAmount;
-
     const now = new Date();
     const startDate = deal?.start_date ? new Date(deal.start_date + "T00:00:00") : null;
     const daysUntilDeparture = startDate

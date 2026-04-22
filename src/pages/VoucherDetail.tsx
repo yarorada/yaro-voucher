@@ -9,11 +9,9 @@ import { Edit, Trash2, Download, Mail, Loader2, User, Users, Building2, ChevronD
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { removeDiacritics } from "@/lib/utils";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { jsPDF } from "jspdf";
-import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type BaggageAllowance, type LogoInfo } from "@/lib/voucherPdfBuilder";
+import { buildVoucherPdfBlob, getLogoBase64ForPdf, fetchBaggageFromDeal, type BaggageAllowance } from "@/lib/voucherPdfBuilder";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,12 +87,6 @@ const formatDateShort = (d: string | null) => {
   return format(date, "d.M.yyyy");
 };
 
-const fmtDatePdf = (d: string) => {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${dt.getFullYear()}`;
-};
-
 // buildVoucherPdfBlob, BaggageAllowance, normalizePdfInlineText are imported from @/lib/voucherPdfBuilder
 
 const VoucherDetail = () => {
@@ -122,7 +114,7 @@ const VoucherDetail = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [extraEmails, setExtraEmails] = useState<string[]>([]);
-  const [newExtraEmail, setNewExtraEmail] = useState("");
+  const [_newExtraEmail, setNewExtraEmail] = useState("");
 
   useEffect(() => {
     if (id) fetchVoucher();
@@ -261,12 +253,6 @@ const VoucherDetail = () => {
       // Generate PDF
       const logoInfo = await getLogoBase64();
       const pdfBlob = buildVoucherPdfBlob(voucher, supplier?.name, supplier, logoInfo, travelers, baggage);
-      const arrayBuffer = await pdfBlob.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-      const base64 = btoa(binary);
-
       // Upload PDF to storage for sending
       const { data: { user } } = await supabase.auth.getUser();
       let pdfPath: string | null = null;

@@ -322,17 +322,6 @@ export function DealRoomingList({ dealId, travelers }: DealRoomingListProps) {
     return `${titleStr}${displayFirst} ${displayLast}${dobStr}`;
   };
 
-  const getTravelerName = (clientId: string) => {
-    const t = travelers.find((tr) => tr.client_id === clientId);
-    if (!t) return "Neznámý";
-    return `${t.clients.first_name} ${t.clients.last_name}`;
-  };
-
-  const getRoomTypeLabel = (value: string) => {
-    const found = ROOM_TYPES.find((rt) => rt.value === value);
-    return found ? found.label : value;
-  };
-
   const getRoomTypeLabelEn = (value: string) => {
     const EN_ROOM_TYPES: Record<string, string> = {
       SGL: "Single Room",

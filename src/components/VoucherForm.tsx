@@ -251,7 +251,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const [supplierId, setSupplierId] = useState(initialData?.supplierId || "");
   const [hotelName, setHotelName] = useState(initialData?.hotelName || "");
   const [otherTravelerIds, setOtherTravelerIds] = useState<string[]>(initialData?.otherTravelerIds || []);
-  const [expirationDate, setExpirationDate] = useState(initialData?.expirationDate || "");
   const [services, setServices] = useState<Service[]>(
     initialData?.services?.map(s => ({
       id: crypto.randomUUID(),
@@ -439,11 +438,8 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
       }
 
       // Add only client IDs to voucher travelers list - use functional update to avoid stale closure
-      console.log('BULK IMPORT - Adding new traveler IDs:', newTravelerIds);
-      console.log('BULK IMPORT - Current otherTravelerIds before update:', otherTravelerIds);
       setOtherTravelerIds(prev => {
         const updated = [...prev, ...newTravelerIds];
-        console.log('BULK IMPORT - New otherTravelerIds after update:', updated);
         return updated;
       });
       setBulkImportText("");
@@ -457,7 +453,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           `Do voucheru přidáno pouze jméno, ostatní data uložena v databázi klientů`,
           { duration: 5000 }
         );
-        console.log('Created clients with full data:', createdDetails);
       }
       if (existingCount > 0) {
         toast.success(`Použito ${existingCount} existujících cestujících z databáze`);
@@ -750,10 +745,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== SUBMIT START ===');
-    console.log('clientId:', clientId);
-    console.log('otherTravelerIds at submit:', otherTravelerIds);
-    console.log('otherTravelerIds length:', otherTravelerIds.length);
     
     if (!clientId) {
       toast.error("Prosím vyberte klienta");
@@ -882,7 +873,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         // Insert other travelers - filter out main client and remove duplicates
         const uniqueTravelers = [...new Set(otherTravelerIds.filter(id => id && id !== "" && id !== clientId))];
-        console.log('UPDATE MODE - Unique other travelers to insert:', uniqueTravelers);
         if (uniqueTravelers.length > 0) {
           const { error: travelersError } = await supabase.from('voucher_travelers').insert(
             uniqueTravelers.map(id => ({
@@ -894,7 +884,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (travelersError) {
             console.error('Error inserting other travelers:', travelersError);
           } else {
-            console.log('Successfully inserted', uniqueTravelers.length, 'other travelers');
           }
         }
 
@@ -961,7 +950,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
 
         // Insert other travelers - filter out main client and remove duplicates
         const uniqueTravelers = [...new Set(otherTravelerIds.filter(id => id && id !== "" && id !== clientId))];
-        console.log('CREATE MODE - Unique other travelers to insert:', uniqueTravelers);
         if (uniqueTravelers.length > 0) {
           const { error: travelersError } = await supabase.from('voucher_travelers').insert(
             uniqueTravelers.map(id => ({
@@ -973,7 +961,6 @@ export const VoucherForm = ({ voucherId, initialData }: VoucherFormProps) => {
           if (travelersError) {
             console.error('Error inserting other travelers:', travelersError);
           } else {
-            console.log('Successfully inserted', uniqueTravelers.length, 'other travelers');
           }
         }
 

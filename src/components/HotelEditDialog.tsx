@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ interface HotelEditDialogProps {
 }
 
 export function HotelEditDialog({ open, onOpenChange, hotel, onSaved }: HotelEditDialogProps) {
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
   const [fetchingAll, setFetchingAll] = useState(false);
   const [ratingNote, setRatingNote] = useState<string | null>(null);
   const [currentHotel, setCurrentHotel] = useState<HotelTemplate>(hotel);

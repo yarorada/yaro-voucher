@@ -193,7 +193,7 @@ export function DocumentUpload({
       const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
       const fileName = `${clientId}/${fileLabel}_${uniqueSuffix}.png`;
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("client-documents")
         .upload(fileName, fileToUpload);
 
@@ -246,7 +246,6 @@ export function DocumentUpload({
             if (attempt < maxRetries - 1) {
               // Wait with exponential backoff: 2s, 4s, 8s
               const waitTime = Math.pow(2, attempt + 1) * 1000;
-              console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 2}/${maxRetries}`);
               await new Promise(resolve => setTimeout(resolve, waitTime));
               continue;
             }
@@ -268,7 +267,6 @@ export function DocumentUpload({
             } : uf)
           );
         } else if (ocrData?.data) {
-          console.log("OCR data extracted:", ocrData.data);
           
           // Call the callback for UI updates
           onDataExtracted?.(ocrData.data);
@@ -344,7 +342,6 @@ export function DocumentUpload({
               
               // Update client in database if we have data
               if (Object.keys(updateData).length > 0) {
-                console.log("Updating client with OCR data:", updateData);
                 
                 const { error: updateError } = await supabase
                   .from("clients")
@@ -355,7 +352,6 @@ export function DocumentUpload({
                   console.error("Failed to update client:", updateError);
                   toast.error("Nepodařilo se uložit data z dokumentu");
                 } else {
-                  console.log("Client updated successfully");
                   toast.success("Data z dokumentu byla úspěšně uložena");
                   // Trigger refresh to show updated data
                   onUploadComplete?.(documentUrl);

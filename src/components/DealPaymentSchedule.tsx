@@ -3,14 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
+
 import {
   Dialog,
   DialogContent,
@@ -26,7 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil, Mail } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";
@@ -387,7 +381,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                         if (error) throw error;
                         toast({ title: "Doplatek přidán", description: `Přidána platba ${formatPrice(remainingPayment, true, currency)}` });
                         fetchPayments();
-                      } catch (e) {
+                      } catch {
                         toast({ title: "Chyba", description: "Nepodařilo se přidat doplatek", variant: "destructive" });
                       }
                     }}
