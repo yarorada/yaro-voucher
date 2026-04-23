@@ -25,7 +25,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Detect if input is a PDF (data URL prefix) — Gemini handles PDFs natively (multi-page)
     const isPdf = typeof imageBase64 === "string" && imageBase64.startsWith("data:application/pdf");
 
     const prompt = `Analyze this supplier invoice/document. The document MAY contain MULTIPLE PAGES (e.g. PDF). Inspect ALL pages and combine the most relevant data into a single JSON result. Prefer the page that contains the actual invoice/tax document with totals (skip cover letters, delivery notes, terms & conditions, attachments). If the same field appears on multiple pages, use the one from the main invoice page (typically with "Faktura", "Invoice", "Daňový doklad" header and a total amount).
@@ -47,21 +46,19 @@ Extract the following information in JSON format:
 }
 
 Important:
-- For total_amount, return only the numeric value (e.g. 15000, not "15 000 Kč"). This is the TOTAL with VAT included ("Celkem k úhradě", "Celkem s DPH", "Total incl. VAT").
-- For net_amount, look for "Základ daně", "Cena bez DPH", "Mezisoučet", "Subtotal", "Net amount". If the invoice has multiple VAT rates, sum all bases together. If invoice is non-VAT (e.g. neplátce DPH) set net_amount equal to total_amount and vat_amount to 0.
+- For total_amount, return only the numeric value (e.g. 15000, not "15 000 Kč"). This is the TOTAL with VAT included.
+- For net_amount, look for "Základ daně", "Cena bez DPH", "Mezisoučet", "Subtotal", "Net amount". If multiple VAT rates, sum bases. If non-VAT (neplátce DPH) set net_amount = total_amount and vat_amount = 0.
 - For vat_amount, look for "DPH", "Daň", "VAT amount", "Tax". If multiple rates, sum them. If no VAT, set to 0.
-- Sanity check: net_amount + vat_amount should approximately equal total_amount (±1 unit for rounding).
-- For issue_date and due_date, use DD.MM.YYYY format with 4-digit year
-- Look for "Datum vystavení", "Date of issue", "Invoice date" etc.
-- Look for "Variabilní symbol", "Var. symbol", "VS" for the variable symbol
-- Look for "Datum splatnosti", "Due date", "Splatnost" for the due date
-- Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
-- Look for "IČO", "IČ", "Company ID", "Reg. No.", "Identification number" for supplier_ico — return ONLY digits, strip any "IČO:" prefix and spaces.
-- Look for "DIČ", "VAT", "VAT ID", "Tax ID", "VAT No.", "DPH" (when followed by an ID, not just an amount) for supplier_dic — keep the country prefix if present (e.g. CZ12345678).
-- supplier_ico and supplier_dic refer to the SUPPLIER (the company that issued the invoice), NOT the customer. If both supplier and customer info appear, pick the one of the issuer (typically labeled "Dodavatel", "Odběratel" is the customer).
-- For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set bank_account to null but DO extract iban if shown.
-- Return only the JSON object, no additional text or markdown
-- For multi-page documents: synthesize the BEST single answer per field, do not concatenate values from different pages
+- Sanity check: net_amount + vat_amount ≈ total_amount (±1 unit).
+- For issue_date and due_date use DD.MM.YYYY format with 4-digit year.
+- Look for "Variabilní symbol", "Var. symbol", "VS" for variable_symbol.
+- Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for bank_account (format like 123456789/0100, include prefix like 19-123456789/0100).
+- Look for "IČO", "IČ", "Company ID", "Reg. No.", "Identification number" for supplier_ico — return ONLY digits, strip prefix and spaces.
+- Look for "DIČ", "VAT", "VAT ID", "Tax ID", "VAT No." for supplier_dic — keep country prefix if present (e.g. CZ12345678).
+- supplier_ico and supplier_dic refer to the SUPPLIER (issuer / "Dodavatel"), NOT the customer ("Odběratel").
+- For variable_symbol, due_date and bank_account, only extract if currency is CZK; for non-CZK set bank_account to null but DO extract iban if shown.
+- Return ONLY the JSON object, no markdown or extra text.
+- For multi-page documents: synthesize the best single answer per field, do not concatenate.
 - If you cannot find a field, use null`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -71,14 +68,12 @@ Important:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // Pro PDF (zejména vícestránkové) použijeme silnější model schopný lépe rozumět celé struktuře dokumentu
         model: isPdf ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
             content: [
               { type: "text", text: prompt },
-              // Gemini přes OpenAI-kompatibilní gateway přijímá PDF i obrázky přes image_url s data: URL
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
@@ -88,33 +83,21 @@ Important:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Payment required. Please add credits." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "AI gateway error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      return new Response(
-        JSON.stringify({ error: "No content in AI response" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No content in AI response" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     let extractedData: any = {};
@@ -125,21 +108,12 @@ Important:
       }
     } catch (e) {
       console.error("Failed to parse JSON:", e);
-      return new Response(
-        JSON.stringify({ error: "Failed to parse OCR result" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to parse OCR result" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(
-      JSON.stringify({ success: true, data: extractedData }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, data: extractedData }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("OCR supplier invoice error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
