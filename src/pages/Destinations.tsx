@@ -158,7 +158,7 @@ const Destinations = () => {
       addLabel={`destinaci „{text}"`}
       onAddNew={handleAddNew}
       placeholder="Hledat destinaci nebo zemi…"
-      className="w-48 md:w-64"
+      className="flex-1 min-w-0"
       inputClassName="h-8 text-xs"
       hint={smartSearchHint}
     />,
