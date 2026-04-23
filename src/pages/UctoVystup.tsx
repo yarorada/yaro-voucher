@@ -114,10 +114,64 @@ function clientName(c: Contract) {
   return `${f} ${l}`.trim() || "—";
 }
 
-function InvoiceTable({ invoices, type, periodStart }: { invoices: Invoice[]; type: "issued" | "received"; periodStart?: string }) {
+function InvoiceTable({
+  invoices,
+  type,
+  periodStart,
+  compact = false,
+}: {
+  invoices: Invoice[];
+  type: "issued" | "received";
+  periodStart?: string;
+  compact?: boolean;
+}) {
   const filtered = invoices.filter((i) => i.invoice_type === type);
   if (filtered.length === 0)
-    return <p className="text-sm text-muted-foreground py-4 text-center">Žádné faktury</p>;
+    return <p className="text-xs text-muted-foreground py-4 text-center">Žádné faktury</p>;
+
+  if (compact) {
+    // Kompaktní list pro úzké "čtvercové" karty — jeden řádek na fakturu
+    return (
+      <ul className="space-y-1">
+        {filtered.map((inv) => {
+          const isCarryOver =
+            !!periodStart &&
+            type === "received" &&
+            !inv.paid &&
+            !!inv.issue_date &&
+            inv.issue_date < periodStart;
+          return (
+            <li
+              key={inv.id}
+              className="flex items-center gap-2 text-xs py-1 px-1.5 rounded hover:bg-muted/40"
+              title={`${inv.invoice_number || ""} · ${
+                type === "issued" ? inv.client_name : inv.supplier_name || ""
+              }`}
+            >
+              <span className="font-mono text-[11px] shrink-0 text-muted-foreground">
+                {inv.invoice_number || "—"}
+              </span>
+              <span className="truncate flex-1">
+                {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
+              </span>
+              <span className="font-medium shrink-0">
+                {formatAmount(inv.total_amount, inv.currency)}
+              </span>
+              {!inv.paid && (
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${
+                    isCarryOver ? "bg-amber-500" : "bg-muted-foreground/40"
+                  }`}
+                  title={isCarryOver ? "Nedoplatek z dřívějšího období" : "Neuhrazena"}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -169,9 +223,48 @@ function InvoiceTable({ invoices, type, periodStart }: { invoices: Invoice[]; ty
   );
 }
 
-function ContractTable({ contracts, showChangedBadge = false }: { contracts: Contract[]; showChangedBadge?: boolean }) {
+function ContractTable({
+  contracts,
+  showChangedBadge = false,
+  compact = false,
+}: {
+  contracts: Contract[];
+  showChangedBadge?: boolean;
+  compact?: boolean;
+}) {
   if (contracts.length === 0)
-    return <p className="text-sm text-muted-foreground py-4 text-center">Žádné smlouvy</p>;
+    return <p className="text-xs text-muted-foreground py-4 text-center">Žádné smlouvy</p>;
+
+  if (compact) {
+    return (
+      <ul className="space-y-1">
+        {contracts.map((c) => (
+          <li
+            key={c.id}
+            className="flex items-center gap-2 text-xs py-1 px-1.5 rounded hover:bg-muted/40"
+          >
+            <Link
+              to={`/contracts/${c.id}`}
+              className="font-mono text-[11px] shrink-0 text-primary hover:underline"
+            >
+              {c.contract_number}
+            </Link>
+            <span className="truncate flex-1">{clientName(c)}</span>
+            <span className="font-medium shrink-0">
+              {formatAmount(c.total_price, c.currency)}
+            </span>
+            {showChangedBadge && c.accounting_changed_after_archive && (
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500 shrink-0"
+                title="Změněná smlouva"
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -879,81 +972,82 @@ export default function UctoVystup() {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        Vydané faktury
-                        <span className="text-sm font-normal text-muted-foreground">
-                          {formatAmount(sumAmount(issued), "CZK")}
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <InvoiceTable invoices={pendingInvoices} type="issued" />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        Přijaté faktury
-                        <span className="text-sm font-normal text-muted-foreground">
-                          {formatAmount(sumAmount(received), "CZK")}
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <InvoiceTable
-                        invoices={pendingInvoices}
-                        type="received"
-                        periodStart={format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd")}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
+                {/* Vydané faktury */}
+                <Card className="flex flex-col h-56 sm:h-64">
+                  <CardHeader className="py-2 px-3 shrink-0">
+                    <CardTitle className="text-xs sm:text-sm flex items-center justify-between gap-1">
+                      <span className="truncate">Vydané</span>
+                      <span className="text-[10px] sm:text-xs font-normal text-muted-foreground whitespace-nowrap">
+                        {formatAmount(sumAmount(issued), "CZK")}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 pt-0">
+                    <InvoiceTable invoices={pendingInvoices} type="issued" compact />
+                  </CardContent>
+                </Card>
 
-                {(newContracts.length > 0 || changedContracts.length > 0) && (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    {newContracts.length > 0 && (
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                              <FileSignature className="h-4 w-4 text-purple-600" />
-                              Vystavené smlouvy
-                            </span>
-                            <span className="text-sm font-normal text-muted-foreground">
-                              {formatAmount(sumContracts(newContracts), "CZK")}
-                            </span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <ContractTable contracts={newContracts} />
-                        </CardContent>
-                      </Card>
-                    )}
-                    {changedContracts.length > 0 && (
-                      <Card className="border-orange-300 dark:border-orange-700">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                              <FileSignature className="h-4 w-4 text-orange-600" />
-                              Změněné smlouvy
-                            </span>
-                            <span className="text-sm font-normal text-muted-foreground">
-                              {formatAmount(sumContracts(changedContracts), "CZK")}
-                            </span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <ContractTable contracts={changedContracts} showChangedBadge />
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                )}
-              </>
+                {/* Přijaté faktury */}
+                <Card className="flex flex-col h-56 sm:h-64">
+                  <CardHeader className="py-2 px-3 shrink-0">
+                    <CardTitle className="text-xs sm:text-sm flex items-center justify-between gap-1">
+                      <span className="truncate">Přijaté</span>
+                      <span className="text-[10px] sm:text-xs font-normal text-muted-foreground whitespace-nowrap">
+                        {formatAmount(sumAmount(received), "CZK")}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 pt-0">
+                    <InvoiceTable
+                      invoices={pendingInvoices}
+                      type="received"
+                      periodStart={format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd")}
+                      compact
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Vystavené smlouvy */}
+                <Card className="flex flex-col h-56 sm:h-64">
+                  <CardHeader className="py-2 px-3 shrink-0">
+                    <CardTitle className="text-xs sm:text-sm flex items-center justify-between gap-1">
+                      <span className="flex items-center gap-1 truncate">
+                        <FileSignature className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                        <span className="truncate">Smlouvy</span>
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-normal text-muted-foreground whitespace-nowrap">
+                        {formatAmount(sumContracts(newContracts), "CZK")}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 pt-0">
+                    <ContractTable contracts={newContracts} compact />
+                  </CardContent>
+                </Card>
+
+                {/* Změněné smlouvy */}
+                <Card
+                  className={`flex flex-col h-56 sm:h-64 ${
+                    changedContracts.length > 0 ? "border-orange-300 dark:border-orange-700" : ""
+                  }`}
+                >
+                  <CardHeader className="py-2 px-3 shrink-0">
+                    <CardTitle className="text-xs sm:text-sm flex items-center justify-between gap-1">
+                      <span className="flex items-center gap-1 truncate">
+                        <FileSignature className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                        <span className="truncate">Změněné</span>
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-normal text-muted-foreground whitespace-nowrap">
+                        {formatAmount(sumContracts(changedContracts), "CZK")}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 pt-0">
+                    <ContractTable contracts={changedContracts} showChangedBadge compact />
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </TabsContent>
 
