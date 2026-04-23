@@ -26,7 +26,21 @@ const KIND_LABEL: Record<WalletTransaction["kind"], string> = {
   redeem: "Uplatnění (sleva)",
   reverse_earn: "Storno připsání",
   reverse_redeem: "Vrácení uplatnění",
-  adjust: "Ruční úprava",
+  adjust: "Úprava",
+};
+
+// Rozliš automatický přepočet (z backfill migrace) od ruční úpravy.
+const resolveKindLabel = (tx: WalletTransaction) => {
+  if (tx.kind === "adjust" && tx.notes?.startsWith("Přepočet")) return "Auto přepočet";
+  return KIND_LABEL[tx.kind];
+};
+
+// Z dlouhého deal_number (např. "D-260006 Jiří Filip NCY Korineum Golf...")
+// vyextrahuj krátký identifikátor (před první mezerou).
+const shortDealNumber = (s: string | null | undefined) => {
+  if (!s) return "OP";
+  const first = s.split(/\s/)[0];
+  return first || s;
 };
 
 const KIND_COLOR: Record<WalletTransaction["kind"], string> = {
@@ -156,30 +170,66 @@ export function ClientWalletSection({ clientId }: Props) {
           <div className="space-y-1 max-h-[240px] overflow-y-auto">
             {transactions.map((tx) => (
               <div key={tx.id} className="py-1.5 px-2 rounded hover:bg-muted/40">
-                {/* Řádek 1: typ + OP + body (vpravo) */}
-                <div className="flex items-center gap-2 text-xs min-w-0">
-                  <span className={`${KIND_COLOR[tx.kind]} font-medium shrink-0`}>{KIND_LABEL[tx.kind]}</span>
-                  {tx.deal && (
-                    <Link
-                      to={`/deals/${tx.deal.id}`}
-                      className="inline-flex items-center gap-0.5 text-primary hover:underline shrink-0"
-                    >
-                      {tx.deal.deal_number || "OP"}
-                      <ExternalLink className="h-2.5 w-2.5" />
-                    </Link>
-                  )}
+                {/* Desktop (sm+): jednořádkový grid — datum | typ+OP | poznámka | body */}
+                <div className="hidden sm:grid sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,2fr)_auto] sm:gap-3 sm:items-baseline text-xs">
+                  <span className="tabular-nums text-muted-foreground whitespace-nowrap">
+                    {formatDate(tx.created_at)}
+                  </span>
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className={`${KIND_COLOR[tx.kind]} font-medium truncate`}>
+                      {resolveKindLabel(tx)}
+                    </span>
+                    {tx.deal && (
+                      <Link
+                        to={`/deals/${tx.deal.id}`}
+                        className="inline-flex items-center gap-0.5 text-primary hover:underline shrink-0 tabular-nums"
+                        title={tx.deal.deal_number || ""}
+                      >
+                        {shortDealNumber(tx.deal.deal_number)}
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground truncate" title={tx.notes || ""}>
+                    {tx.notes || ""}
+                  </span>
                   <span
-                    className={`ml-auto font-semibold tabular-nums shrink-0 ${
+                    className={`font-semibold tabular-nums text-right whitespace-nowrap ${
                       tx.points > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
                     }`}
                   >
                     {formatPoints(tx.points)}
                   </span>
                 </div>
-                {/* Řádek 2: datum + poznámka (truncate) */}
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 min-w-0">
-                  <span className="tabular-nums shrink-0">{formatDate(tx.created_at)}</span>
-                  {tx.notes && <span className="truncate">· {tx.notes}</span>}
+
+                {/* Mobile (pod sm): dvouřádkový layout */}
+                <div className="sm:hidden">
+                  <div className="flex items-center gap-2 text-xs min-w-0">
+                    <span className={`${KIND_COLOR[tx.kind]} font-medium truncate`}>
+                      {resolveKindLabel(tx)}
+                    </span>
+                    {tx.deal && (
+                      <Link
+                        to={`/deals/${tx.deal.id}`}
+                        className="inline-flex items-center gap-0.5 text-primary hover:underline shrink-0 tabular-nums"
+                        title={tx.deal.deal_number || ""}
+                      >
+                        {shortDealNumber(tx.deal.deal_number)}
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
+                    )}
+                    <span
+                      className={`ml-auto font-semibold tabular-nums shrink-0 ${
+                        tx.points > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                      }`}
+                    >
+                      {formatPoints(tx.points)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 min-w-0">
+                    <span className="tabular-nums shrink-0">{formatDate(tx.created_at)}</span>
+                    {tx.notes && <span className="truncate" title={tx.notes}>· {tx.notes}</span>}
+                  </div>
                 </div>
               </div>
             ))}
