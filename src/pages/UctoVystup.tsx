@@ -92,7 +92,7 @@ function clientName(c: Contract) {
   return `${f} ${l}`.trim() || "—";
 }
 
-function InvoiceTable({ invoices, type }: { invoices: Invoice[]; type: "issued" | "received" }) {
+function InvoiceTable({ invoices, type, periodStart }: { invoices: Invoice[]; type: "issued" | "received"; periodStart?: string }) {
   const filtered = invoices.filter((i) => i.invoice_type === type);
   if (filtered.length === 0)
     return <p className="text-sm text-muted-foreground py-4 text-center">Žádné faktury</p>;
@@ -108,25 +108,40 @@ function InvoiceTable({ invoices, type }: { invoices: Invoice[]; type: "issued" 
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filtered.map((inv) => (
-          <TableRow key={inv.id}>
-            <TableCell className="font-mono text-xs">{inv.invoice_number || "—"}</TableCell>
-            <TableCell className="text-sm">
-              {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
-            </TableCell>
-            <TableCell className="text-sm">
-              {inv.issue_date ? format(new Date(inv.issue_date + "T00:00:00"), "d.M.yyyy") : "—"}
-            </TableCell>
-            <TableCell className="text-right text-sm font-medium">
-              {formatAmount(inv.total_amount, inv.currency)}
-            </TableCell>
-            <TableCell>
-              <Badge variant={inv.paid ? "default" : "secondary"} className="text-xs">
-                {inv.paid ? "Uhrazena" : "Neuhrazena"}
-              </Badge>
-            </TableCell>
-          </TableRow>
-        ))}
+        {filtered.map((inv) => {
+          const isCarryOver =
+            !!periodStart &&
+            type === "received" &&
+            !inv.paid &&
+            !!inv.issue_date &&
+            inv.issue_date < periodStart;
+          return (
+            <TableRow key={inv.id}>
+              <TableCell className="font-mono text-xs">
+                {inv.invoice_number || "—"}
+                {isCarryOver && (
+                  <Badge className="ml-2 bg-amber-500 text-white text-[10px]" title="Nezaplacená faktura z dřívějšího období">
+                    Nedoplatek
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-sm">
+                {type === "issued" ? inv.client_name : inv.supplier_name || "—"}
+              </TableCell>
+              <TableCell className="text-sm">
+                {inv.issue_date ? format(new Date(inv.issue_date + "T00:00:00"), "d.M.yyyy") : "—"}
+              </TableCell>
+              <TableCell className="text-right text-sm font-medium">
+                {formatAmount(inv.total_amount, inv.currency)}
+              </TableCell>
+              <TableCell>
+                <Badge variant={inv.paid ? "default" : "secondary"} className="text-xs">
+                  {inv.paid ? "Uhrazena" : "Neuhrazena"}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
@@ -308,21 +323,49 @@ export default function UctoVystup() {
   const [sendEmail, setSendEmail] = useState(DEFAULT_ACCOUNTANT_EMAIL);
   const [sendNotes, setSendNotes] = useState("");
 
-  // Faktury pro vybrané období (bez přiřazení do dávky)
+  // Faktury pro vybrané období (bez přiřazení do dávky).
+  // Logika:
+  //   - vystavené faktury: jen ty s issue_date v daném měsíci
+  //   - přijaté faktury: ty s issue_date v daném měsíci
+  //                      PLUS všechny nezaplacené přijaté z dřívějších měsíců
+  //                      (carry-forward, ať nezaplacený závazek účetnímu nikdy nevypadne)
   const { data: pendingInvoices = [], isLoading } = useQuery({
     queryKey: ["ucto-pending", period],
     queryFn: async () => {
       const start = format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd");
       const end = format(endOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd");
-      const { data, error } = await (supabase as any)
-        .from("invoices")
-        .select("id, invoice_number, invoice_type, issue_date, client_name, supplier_name, total_amount, currency, paid, accounting_batch_id")
-        .gte("issue_date", start)
-        .lte("issue_date", end)
-        .is("accounting_batch_id", null)
-        .order("issue_date", { ascending: true });
-      if (error) throw error;
-      return (data || []) as Invoice[];
+      const baseSelect =
+        "id, invoice_number, invoice_type, issue_date, client_name, supplier_name, total_amount, currency, paid, accounting_batch_id";
+
+      const [{ data: inPeriod, error: e1 }, { data: unpaidReceived, error: e2 }] = await Promise.all([
+        // 1) vše vystavené v tomto měsíci (oboje typy)
+        (supabase as any)
+          .from("invoices")
+          .select(baseSelect)
+          .gte("issue_date", start)
+          .lte("issue_date", end)
+          .is("accounting_batch_id", null),
+        // 2) všechny nezaplacené přijaté faktury vystavené do konce tohoto měsíce
+        //    (zachytí jak aktuální měsíc, tak nedoplatky z minulých měsíců)
+        (supabase as any)
+          .from("invoices")
+          .select(baseSelect)
+          .eq("invoice_type", "received")
+          .lte("issue_date", end)
+          .is("accounting_batch_id", null)
+          .or("paid.is.false,paid.is.null"),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+
+      // Sloučit a deduplikovat podle id
+      const map = new Map<string, Invoice>();
+      for (const i of (inPeriod || []) as Invoice[]) map.set(i.id, i);
+      for (const i of (unpaidReceived || []) as Invoice[]) map.set(i.id, i);
+      // Seřadit podle issue_date vzestupně
+      return Array.from(map.values()).sort((a, b) =>
+        (a.issue_date || "").localeCompare(b.issue_date || "")
+      );
     },
     enabled: !!user,
   });
@@ -630,9 +673,20 @@ export default function UctoVystup() {
         .single();
       if (batchErr) throw batchErr;
 
-      // Přiřaď faktury
-      if (pendingInvoices.length > 0) {
-        const invIds = pendingInvoices.map((i) => i.id);
+      // Přiřaď faktury — ALE ne carry-over nedoplatky (nezaplacené přijaté
+      // vystavené před tímto měsícem). Ty zůstanou viditelné v aktuální složce
+      // dál, dokud nebudou zaplaceny — patří do dávky toho měsíce, kdy byly vystaveny.
+      const periodStart = format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd");
+      const archivableInvoices = pendingInvoices.filter((i) => {
+        const isCarryOver =
+          i.invoice_type === "received" &&
+          !i.paid &&
+          !!i.issue_date &&
+          i.issue_date < periodStart;
+        return !isCarryOver;
+      });
+      if (archivableInvoices.length > 0) {
+        const invIds = archivableInvoices.map((i) => i.id);
         const { error: updErr } = await (supabase as any)
           .from("invoices")
           .update({ accounting_batch_id: batch.id })
@@ -809,7 +863,11 @@ export default function UctoVystup() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <InvoiceTable invoices={pendingInvoices} type="received" />
+                      <InvoiceTable
+                        invoices={pendingInvoices}
+                        type="received"
+                        periodStart={format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd")}
+                      />
                     </CardContent>
                   </Card>
                 </div>
