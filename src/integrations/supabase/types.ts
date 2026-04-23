@@ -21,6 +21,10 @@ export type Database = {
           label: string | null
           notes: string | null
           period: string
+          sent_to_accountant_at: string | null
+          sent_to_accountant_email: string | null
+          sent_zip_path: string | null
+          sent_zip_size_bytes: number | null
           user_id: string
         }
         Insert: {
@@ -29,6 +33,10 @@ export type Database = {
           label?: string | null
           notes?: string | null
           period: string
+          sent_to_accountant_at?: string | null
+          sent_to_accountant_email?: string | null
+          sent_zip_path?: string | null
+          sent_zip_size_bytes?: number | null
           user_id: string
         }
         Update: {
@@ -37,6 +45,10 @@ export type Database = {
           label?: string | null
           notes?: string | null
           period?: string
+          sent_to_accountant_at?: string | null
+          sent_to_accountant_email?: string | null
+          sent_zip_path?: string | null
+          sent_zip_size_bytes?: number | null
           user_id?: string
         }
         Relationships: []
