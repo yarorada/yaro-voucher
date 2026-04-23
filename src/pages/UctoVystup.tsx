@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format, parse, startOfMonth, endOfMonth } from "date-fns";
 import { cs } from "date-fns/locale";
-import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight } from "lucide-react";
+import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type Invoice = {
   id: string;
@@ -30,6 +31,18 @@ type Invoice = {
   accounting_batch_id: string | null;
 };
 
+type Contract = {
+  id: string;
+  contract_number: string;
+  contract_date: string;
+  total_price: number;
+  currency: string | null;
+  accounting_queued_at: string | null;
+  accounting_batch_id: string | null;
+  accounting_changed_after_archive: boolean | null;
+  client?: { first_name: string | null; last_name: string | null } | null;
+};
+
 type Batch = {
   id: string;
   period: string;
@@ -37,6 +50,7 @@ type Batch = {
   notes: string | null;
   created_at: string;
   invoices?: Invoice[];
+  contracts?: Contract[];
 };
 
 function periodLabel(period: string): string {
@@ -62,6 +76,12 @@ function formatAmount(amount: number | null, currency: string | null) {
     currency: currency || "CZK",
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+function clientName(c: Contract) {
+  const f = c.client?.first_name ?? "";
+  const l = c.client?.last_name ?? "";
+  return `${f} ${l}`.trim() || "—";
 }
 
 function InvoiceTable({ invoices, type }: { invoices: Invoice[]; type: "issued" | "received" }) {
@@ -104,10 +124,50 @@ function InvoiceTable({ invoices, type }: { invoices: Invoice[]; type: "issued" 
   );
 }
 
+function ContractTable({ contracts, showChangedBadge = false }: { contracts: Contract[]; showChangedBadge?: boolean }) {
+  if (contracts.length === 0)
+    return <p className="text-sm text-muted-foreground py-4 text-center">Žádné smlouvy</p>;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Číslo</TableHead>
+          <TableHead>Klient</TableHead>
+          <TableHead>Datum</TableHead>
+          <TableHead className="text-right">Cena</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {contracts.map((c) => (
+          <TableRow key={c.id}>
+            <TableCell className="font-mono text-xs">
+              <Link to={`/contracts/${c.id}`} className="text-primary hover:underline">
+                {c.contract_number}
+              </Link>
+              {showChangedBadge && c.accounting_changed_after_archive && (
+                <Badge className="ml-2 bg-orange-500 text-white text-[10px]">Změněná</Badge>
+              )}
+            </TableCell>
+            <TableCell className="text-sm">{clientName(c)}</TableCell>
+            <TableCell className="text-sm">
+              {c.contract_date ? format(new Date(c.contract_date + "T00:00:00"), "d.M.yyyy") : "—"}
+            </TableCell>
+            <TableCell className="text-right text-sm font-medium">
+              {formatAmount(c.total_price, c.currency)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function BatchCard({ batch }: { batch: Batch }) {
   const [open, setOpen] = useState(false);
   const issued = (batch.invoices || []).filter((i) => i.invoice_type === "issued");
   const received = (batch.invoices || []).filter((i) => i.invoice_type === "received");
+  const contracts = batch.contracts || [];
+  const totalDocs = (batch.invoices || []).length + contracts.length;
   return (
     <Card className="mb-3">
       <CardHeader className="py-3 px-4 cursor-pointer" onClick={() => setOpen((v) => !v)}>
@@ -116,8 +176,13 @@ function BatchCard({ batch }: { batch: Batch }) {
             <FolderOpen className="h-4 w-4 text-amber-500" />
             <span className="font-medium">{batch.label || periodLabel(batch.period)}</span>
             <Badge variant="outline" className="text-xs">
-              {(batch.invoices || []).length} dokladů
+              {totalDocs} dokladů
             </Badge>
+            {contracts.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {contracts.length} smluv
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span>Archivováno {format(new Date(batch.created_at), "d.M.yyyy")}</span>
@@ -129,7 +194,7 @@ function BatchCard({ batch }: { batch: Batch }) {
         )}
       </CardHeader>
       {open && (
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
@@ -144,6 +209,15 @@ function BatchCard({ batch }: { batch: Batch }) {
               <InvoiceTable invoices={batch.invoices || []} type="received" />
             </div>
           </div>
+          {contracts.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                <FileSignature className="h-3.5 w-3.5" />
+                Vystavené smlouvy ({contracts.length})
+              </p>
+              <ContractTable contracts={contracts} />
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
@@ -178,7 +252,27 @@ export default function UctoVystup() {
     enabled: !!user,
   });
 
-  // Archivované dávky
+  // Smlouvy zařazené pro vybrané období (queued v daném měsíci, ještě nezařazené do nové dávky)
+  const { data: pendingContracts = [] } = useQuery({
+    queryKey: ["ucto-pending-contracts", period],
+    queryFn: async () => {
+      const start = format(startOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd");
+      const end = format(endOfMonth(parse(period, "yyyy-MM", new Date())), "yyyy-MM-dd");
+      const { data, error } = await (supabase as any)
+        .from("travel_contracts")
+        .select("id, contract_number, contract_date, total_price, currency, accounting_queued_at, accounting_batch_id, accounting_changed_after_archive, client:clients(first_name, last_name)")
+        .gte("accounting_queued_at", start + "T00:00:00")
+        .lte("accounting_queued_at", end + "T23:59:59")
+        // buď nikdy nearchivovaná, nebo archivovaná ale po archivaci změněná → re-queue
+        .or("accounting_batch_id.is.null,accounting_changed_after_archive.eq.true")
+        .order("accounting_queued_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Contract[];
+    },
+    enabled: !!user,
+  });
+
+  // Archivované dávky (faktury + smlouvy)
   const { data: batches = [] } = useQuery({
     queryKey: ["ucto-batches"],
     queryFn: async () => {
@@ -190,18 +284,36 @@ export default function UctoVystup() {
       if (!batchData?.length) return [] as Batch[];
 
       const batchIds = batchData.map((b: Batch) => b.id);
-      const { data: invData } = await (supabase as any)
-        .from("invoices")
-        .select("id, invoice_number, invoice_type, issue_date, client_name, supplier_name, total_amount, currency, paid, accounting_batch_id")
-        .in("accounting_batch_id", batchIds);
+
+      const [{ data: invData }, { data: contractData }] = await Promise.all([
+        (supabase as any)
+          .from("invoices")
+          .select("id, invoice_number, invoice_type, issue_date, client_name, supplier_name, total_amount, currency, paid, accounting_batch_id")
+          .in("accounting_batch_id", batchIds),
+        (supabase as any)
+          .from("travel_contracts")
+          .select("id, contract_number, contract_date, total_price, currency, accounting_queued_at, accounting_batch_id, accounting_changed_after_archive, client:clients(first_name, last_name)")
+          .in("accounting_batch_id", batchIds)
+          // pouze ty, co po archivaci NEbyly změněny (změněné už visí v aktuální složce)
+          .eq("accounting_changed_after_archive", false),
+      ]);
 
       const invByBatch: Record<string, Invoice[]> = {};
       for (const inv of invData || []) {
         if (!invByBatch[inv.accounting_batch_id]) invByBatch[inv.accounting_batch_id] = [];
         invByBatch[inv.accounting_batch_id].push(inv);
       }
+      const contractsByBatch: Record<string, Contract[]> = {};
+      for (const c of contractData || []) {
+        if (!contractsByBatch[c.accounting_batch_id]) contractsByBatch[c.accounting_batch_id] = [];
+        contractsByBatch[c.accounting_batch_id].push(c);
+      }
 
-      return batchData.map((b: Batch) => ({ ...b, invoices: invByBatch[b.id] || [] })) as Batch[];
+      return batchData.map((b: Batch) => ({
+        ...b,
+        invoices: invByBatch[b.id] || [],
+        contracts: contractsByBatch[b.id] || [],
+      })) as Batch[];
     },
     enabled: !!user,
   });
@@ -209,7 +321,8 @@ export default function UctoVystup() {
   const archiveMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Nepřihlášen");
-      if (pendingInvoices.length === 0) throw new Error("Žádné faktury k archivaci");
+      if (pendingInvoices.length === 0 && pendingContracts.length === 0)
+        throw new Error("Žádné doklady k archivaci");
 
       // Vytvoř dávku
       const { data: batch, error: batchErr } = await (supabase as any)
@@ -224,19 +337,35 @@ export default function UctoVystup() {
         .single();
       if (batchErr) throw batchErr;
 
-      // Přiřaď faktury do dávky
-      const ids = pendingInvoices.map((i) => i.id);
-      const { error: updErr } = await (supabase as any)
-        .from("invoices")
-        .update({ accounting_batch_id: batch.id })
-        .in("id", ids);
-      if (updErr) throw updErr;
+      // Přiřaď faktury
+      if (pendingInvoices.length > 0) {
+        const invIds = pendingInvoices.map((i) => i.id);
+        const { error: updErr } = await (supabase as any)
+          .from("invoices")
+          .update({ accounting_batch_id: batch.id })
+          .in("id", invIds);
+        if (updErr) throw updErr;
+      }
+
+      // Přiřaď smlouvy + vyresetuj flag změny
+      if (pendingContracts.length > 0) {
+        const cIds = pendingContracts.map((c) => c.id);
+        const { error: cErr } = await (supabase as any)
+          .from("travel_contracts")
+          .update({
+            accounting_batch_id: batch.id,
+            accounting_changed_after_archive: false,
+          })
+          .in("id", cIds);
+        if (cErr) throw cErr;
+      }
     },
     onSuccess: () => {
       toast.success("Měsíc uzavřen a doklady archivovány");
       setArchiveDialogOpen(false);
       setArchiveNotes("");
       qc.invalidateQueries({ queryKey: ["ucto-pending"] });
+      qc.invalidateQueries({ queryKey: ["ucto-pending-contracts"] });
       qc.invalidateQueries({ queryKey: ["ucto-batches"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -244,9 +373,21 @@ export default function UctoVystup() {
 
   const issued = useMemo(() => pendingInvoices.filter((i) => i.invoice_type === "issued"), [pendingInvoices]);
   const received = useMemo(() => pendingInvoices.filter((i) => i.invoice_type === "received"), [pendingInvoices]);
+  const newContracts = useMemo(
+    () => pendingContracts.filter((c) => !c.accounting_changed_after_archive),
+    [pendingContracts]
+  );
+  const changedContracts = useMemo(
+    () => pendingContracts.filter((c) => c.accounting_changed_after_archive),
+    [pendingContracts]
+  );
 
   const sumAmount = (invs: Invoice[]) =>
     invs.reduce((s, i) => s + (i.total_amount || 0), 0);
+  const sumContracts = (cs: Contract[]) =>
+    cs.reduce((s, c) => s + (c.total_price || 0), 0);
+
+  const totalPending = pendingInvoices.length + pendingContracts.length;
 
   return (
     <PageShell>
@@ -281,18 +422,20 @@ export default function UctoVystup() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex gap-3 text-sm text-muted-foreground">
-                <span>
-                  Vydané: <strong>{issued.length}</strong>
-                </span>
-                <span>
-                  Přijaté: <strong>{received.length}</strong>
-                </span>
+              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <span>Vydané: <strong>{issued.length}</strong></span>
+                <span>Přijaté: <strong>{received.length}</strong></span>
+                <span>Smlouvy: <strong>{newContracts.length}</strong></span>
+                {changedContracts.length > 0 && (
+                  <span className="text-orange-600 dark:text-orange-400">
+                    Změněné smlouvy: <strong>{changedContracts.length}</strong>
+                  </span>
+                )}
               </div>
               <div className="sm:ml-auto">
                 <Button
                   onClick={() => setArchiveDialogOpen(true)}
-                  disabled={pendingInvoices.length === 0}
+                  disabled={totalPending === 0}
                   className="gap-2"
                 >
                   <Archive className="h-4 w-4" />
@@ -304,7 +447,7 @@ export default function UctoVystup() {
 
             {isLoading ? (
               <p className="text-muted-foreground text-sm py-8 text-center">Načítám…</p>
-            ) : pendingInvoices.length === 0 ? (
+            ) : totalPending === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-3 opacity-40" />
@@ -312,39 +455,82 @@ export default function UctoVystup() {
                     Žádné neodeslané doklady pro {periodLabel(period)}
                   </p>
                   <p className="text-xs mt-1 opacity-70">
-                    Buď byly již archivovány, nebo v tomto měsíci nebyly vystaveny žádné faktury.
+                    Buď byly již archivovány, nebo v tomto měsíci nebyly vystaveny faktury / přijaty platby ke smlouvám.
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center justify-between">
-                      Vydané faktury
-                      <span className="text-sm font-normal text-muted-foreground">
-                        {formatAmount(sumAmount(issued), "CZK")}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <InvoiceTable invoices={pendingInvoices} type="issued" />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center justify-between">
-                      Přijaté faktury
-                      <span className="text-sm font-normal text-muted-foreground">
-                        {formatAmount(sumAmount(received), "CZK")}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <InvoiceTable invoices={pendingInvoices} type="received" />
-                  </CardContent>
-                </Card>
-              </div>
+              <>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        Vydané faktury
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {formatAmount(sumAmount(issued), "CZK")}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <InvoiceTable invoices={pendingInvoices} type="issued" />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        Přijaté faktury
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {formatAmount(sumAmount(received), "CZK")}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <InvoiceTable invoices={pendingInvoices} type="received" />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {(newContracts.length > 0 || changedContracts.length > 0) && (
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {newContracts.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                              <FileSignature className="h-4 w-4 text-purple-600" />
+                              Vystavené smlouvy
+                            </span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                              {formatAmount(sumContracts(newContracts), "CZK")}
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <ContractTable contracts={newContracts} />
+                        </CardContent>
+                      </Card>
+                    )}
+                    {changedContracts.length > 0 && (
+                      <Card className="border-orange-300 dark:border-orange-700">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                              <FileSignature className="h-4 w-4 text-orange-600" />
+                              Změněné smlouvy
+                            </span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                              {formatAmount(sumContracts(changedContracts), "CZK")}
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <ContractTable contracts={changedContracts} showChangedBadge />
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -372,8 +558,16 @@ export default function UctoVystup() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Bude archivováno <strong>{pendingInvoices.length} dokladů</strong> ({issued.length} vydaných,{" "}
-              {received.length} přijatých). Tyto doklady se již v příští složce neobjeví.
+              Bude archivováno <strong>{pendingInvoices.length} faktur</strong> ({issued.length} vydaných,{" "}
+              {received.length} přijatých)
+              {pendingContracts.length > 0 && (
+                <> a <strong>{pendingContracts.length} smluv</strong>
+                  {changedContracts.length > 0 && (
+                    <> (z toho {changedContracts.length} změněných)</>
+                  )}
+                </>
+              )}
+              . Tyto doklady se již v příští složce neobjeví.
             </p>
             <div>
               <Label>Poznámka pro účetní (volitelné)</Label>
