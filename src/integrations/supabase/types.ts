@@ -521,6 +521,7 @@ export type Database = {
       deal_payment_splits: {
         Row: {
           amount: number
+          client_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -532,6 +533,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          client_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -543,6 +545,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -553,6 +556,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "deal_payment_splits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deal_payment_splits_payment_id_fkey"
             columns: ["payment_id"]
