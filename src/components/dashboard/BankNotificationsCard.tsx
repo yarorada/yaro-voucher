@@ -101,7 +101,7 @@ export const BankNotificationsCard = () => {
           paid_at: notification.parsed_date
             ? new Date(notification.parsed_date).toISOString()
             : new Date().toISOString(),
-          table: "contract_payments",
+          table: "deal_payments",
         },
       });
 

@@ -2389,32 +2389,7 @@ const DealDetail = () => {
             .insert(serviceAssignments);
         }
 
-        // 3. Sync payments: delete old and recreate from deal_payments
-        await supabase
-          .from("contract_payments")
-          .delete()
-          .eq("contract_id", contract.id);
-        
-        const { data: dealPayments } = await supabase
-          .from("deal_payments")
-          .select("*")
-          .eq("deal_id", deal.id);
-        
-        if (dealPayments && dealPayments.length > 0) {
-          const contractPayments = dealPayments.map(dp => ({
-            contract_id: contract.id,
-            payment_type: dp.payment_type,
-            amount: dp.amount,
-            due_date: dp.due_date,
-            notes: dp.notes,
-            paid: dp.paid === true,
-            paid_at: dp.paid === true ? (dp.paid_at || new Date().toISOString()) : null,
-          }));
-          
-          await supabase
-            .from("contract_payments")
-            .insert(contractPayments);
-        }
+        // Platby se už nesynchronizují – smlouva čte deal_payments přímo
       }
 
       toast({

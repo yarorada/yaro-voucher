@@ -617,7 +617,6 @@ export default function UctoVystup() {
       .select(`
         *,
         client:clients(*),
-        payments:contract_payments(*),
         deal:deals(
           id,
           *,
@@ -631,12 +630,18 @@ export default function UctoVystup() {
           services:deal_services(
             *,
             supplier:suppliers(name)
-          )
+          ),
+          payments:deal_payments(*)
         )
       `)
       .in("id", ids);
     if (error) throw error;
-    return (data || []) as ZipContract[];
+    // Merge deal.payments → contract.payments so ContractPdfTemplate sees them
+    const merged = (data || []).map((c: any) => ({
+      ...c,
+      payments: c?.deal?.payments || [],
+    }));
+    return merged as ZipContract[];
   };
 
   const runDownload = async (

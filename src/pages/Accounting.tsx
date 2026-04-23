@@ -78,15 +78,16 @@ export default function Accounting() {
       if (error) throw error;
       if (!contracts) return [];
 
-      const contractIds = contracts.map((c) => c.id);
-      const { data: allPayments } = await supabase
-        .from("contract_payments")
-        .select("contract_id, payment_type, amount, paid, paid_at")
-        .in("contract_id", contractIds);
-
       const dealIds = contracts
         .map((c) => (c.deal as any)?.id)
         .filter(Boolean);
+
+      // Platby čteme napřímo z deal_payments (jediný zdroj pravdy)
+      const { data: allPayments } = await supabase
+        .from("deal_payments")
+        .select("deal_id, payment_type, amount, paid, paid_at")
+        .in("deal_id", dealIds);
+
       const { data: profitData } = await supabase
         .from("deal_profitability")
         .select("deal_id, total_costs, revenue")
@@ -95,11 +96,17 @@ export default function Accounting() {
       const profitMap = new Map(
         (profitData || []).map((p) => [p.deal_id, p])
       );
-      const paymentsMap = new Map<string, typeof allPayments>();
+      // Index plateb podle deal_id, pak mapujeme na contract přes deal_id
+      const paymentsByDeal = new Map<string, typeof allPayments>();
       (allPayments || []).forEach((p) => {
-        const arr = paymentsMap.get(p.contract_id) || [];
+        const arr = paymentsByDeal.get(p.deal_id) || [];
         arr.push(p);
-        paymentsMap.set(p.contract_id, arr);
+        paymentsByDeal.set(p.deal_id, arr);
+      });
+      const paymentsMap = new Map<string, typeof allPayments>();
+      contracts.forEach((c) => {
+        const dealId = (c.deal as any)?.id;
+        if (dealId) paymentsMap.set(c.id, paymentsByDeal.get(dealId) || []);
       });
 
       return contracts
