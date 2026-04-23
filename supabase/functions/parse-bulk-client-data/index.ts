@@ -36,7 +36,15 @@ serve(async (req: Request) => {
           },
           {
             role: "user",
-            content: `Extrahuj informace o klientech z následujícího textu. Pro každého klienta najdi: jméno, příjmení, email, datum narození (ve formátu YYYY-MM-DD), číslo pasu, platnost pasu (ve formátu YYYY-MM-DD), číslo občanského průkazu, platnost OP (ve formátu YYYY-MM-DD) a automaticky přiřaď titul (Pan/Paní):\n\n${text}`
+            content: `Extrahuj informace o klientech z následujícího textu. Pro každého klienta najdi: jméno, příjmení, email, telefon, datum narození (ve formátu YYYY-MM-DD), číslo pasu, platnost pasu (ve formátu YYYY-MM-DD), číslo občanského průkazu, platnost OP (ve formátu YYYY-MM-DD) a automaticky přiřaď titul (Pan/Paní).
+
+Telefon poznáš podle některého z těchto vzorů:
+- mezinárodní formát začínající "+" (např. "+420 602 123 456", "+421901234567", "+44 20 7946 0958")
+- formát začínající "00" jako mezinárodní prefix (např. "00420602123456")
+- české/slovenské mobilní/pevné číslo o 9 číslicích (např. "602 123 456", "602123456", "777-888-999")
+Při extrakci ignoruj mezery, pomlčky, tečky a závorky uvnitř čísla. Hodnotu vrať tak, jak je v textu uvedena (klient si formát normalizuje sám). Pokud je v textu více čísel u jednoho klienta, vyber to první.
+
+Text:\n\n${text}`
           }
         ],
         tools: [
@@ -61,6 +69,7 @@ serve(async (req: Request) => {
                         first_name: { type: "string", description: "Křestní jméno" },
                         last_name: { type: "string", description: "Příjmení" },
                         email: { type: "string", description: "Emailová adresa (pokud je uvedena)" },
+                        phone: { type: "string", description: "Telefonní číslo. Rozpoznej podle mezinárodního formátu začínajícího + nebo 00, nebo podle formátu 9 číslic (případně se separátory jako mezery/pomlčky/tečky)." },
                         date_of_birth: { type: "string", description: "Datum narození ve formátu YYYY-MM-DD (pokud je uvedeno)" },
                         passport_number: { type: "string", description: "Číslo pasu (pokud je uvedeno)" },
                         passport_expiry: { type: "string", description: "Platnost pasu do ve formátu YYYY-MM-DD (pokud je uvedena)" },

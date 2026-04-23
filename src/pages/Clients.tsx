@@ -29,6 +29,7 @@ import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/componen
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDateForDB, parseDateSafe } from "@/lib/utils";
+import { formatPhone } from "@/lib/phoneFormat";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -480,6 +481,10 @@ const Clients = () => {
           };
 
           if (clientData.email) clientRecord.email = clientData.email.trim();
+          if (clientData.phone) {
+            const trimmed = String(clientData.phone).trim();
+            if (trimmed) clientRecord.phone = formatPhone(trimmed);
+          }
           if (clientData.date_of_birth) clientRecord.date_of_birth = clientData.date_of_birth;
           if (clientData.passport_number) clientRecord.passport_number = clientData.passport_number;
           if (clientData.passport_expiry) clientRecord.passport_expiry = clientData.passport_expiry;
@@ -888,7 +893,7 @@ const Clients = () => {
                   <DialogHeader>
                     <DialogTitle>Hromadný import klientů s AI</DialogTitle>
                     <DialogDescription>
-                      Vložte informace o klientech v jakémkoli formátu. AI automaticky extrahuje jméno, příjmení, email, datum narození, čísla dokladů a přiřadí tituly Pan/Paní.
+                      Vložte informace o klientech v jakémkoli formátu. AI automaticky extrahuje jméno, příjmení, email, telefon, datum narození, čísla dokladů a přiřadí tituly Pan/Paní. Telefon rozpozná podle mezinárodního formátu (+420…) nebo podle 9 číslic.
                       <br /><br />
                       <strong>Příklady formátů:</strong>
                       <br />• Jan Novák, jan@email.cz, 15.3.1990, pas: 123456789
