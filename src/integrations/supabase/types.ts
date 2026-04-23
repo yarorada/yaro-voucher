@@ -1714,8 +1714,10 @@ export type Database = {
       }
       travel_contracts: {
         Row: {
+          accounting_batch_id: string | null
           accounting_buy_deposit_locked: number | null
           accounting_buy_final_override: number | null
+          accounting_changed_after_archive: boolean
           accounting_changed_after_export: boolean
           accounting_deposit_locked_at: string | null
           accounting_exported_at: string | null
@@ -1750,8 +1752,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accounting_batch_id?: string | null
           accounting_buy_deposit_locked?: number | null
           accounting_buy_final_override?: number | null
+          accounting_changed_after_archive?: boolean
           accounting_changed_after_export?: boolean
           accounting_deposit_locked_at?: string | null
           accounting_exported_at?: string | null
@@ -1786,8 +1790,10 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          accounting_batch_id?: string | null
           accounting_buy_deposit_locked?: number | null
           accounting_buy_final_override?: number | null
+          accounting_changed_after_archive?: boolean
           accounting_changed_after_export?: boolean
           accounting_deposit_locked_at?: string | null
           accounting_exported_at?: string | null
@@ -1822,6 +1828,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "travel_contracts_accounting_batch_id_fkey"
+            columns: ["accounting_batch_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "travel_contracts_client_id_fkey"
             columns: ["client_id"]
