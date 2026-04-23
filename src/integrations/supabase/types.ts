@@ -232,6 +232,53 @@ export type Database = {
           },
         ]
       }
+      bank_statements: {
+        Row: {
+          accounting_batch_id: string | null
+          bank: string
+          file_name: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          notes: string | null
+          period: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          accounting_batch_id?: string | null
+          bank?: string
+          file_name: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          notes?: string | null
+          period: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          accounting_batch_id?: string | null
+          bank?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          notes?: string | null
+          period?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statements_accounting_batch_id_fkey"
+            columns: ["accounting_batch_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
