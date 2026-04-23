@@ -272,6 +272,61 @@ export type Database = {
           },
         ]
       }
+      client_wallet_transactions: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          id: string
+          kind: string
+          notes: string | null
+          points: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          points: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_wallet_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_wallet_transactions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_profitability"
+            referencedColumns: ["deal_id"]
+          },
+          {
+            foreignKeyName: "client_wallet_transactions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -963,6 +1018,8 @@ export type Database = {
           total_price: number | null
           updated_at: string
           user_id: string
+          wallet_points_earned_at: string | null
+          wallet_points_used: number
         }
         Insert: {
           adjustment_amount?: number | null
@@ -991,6 +1048,8 @@ export type Database = {
           total_price?: number | null
           updated_at?: string
           user_id?: string
+          wallet_points_earned_at?: string | null
+          wallet_points_used?: number
         }
         Update: {
           adjustment_amount?: number | null
@@ -1019,6 +1078,8 @@ export type Database = {
           total_price?: number | null
           updated_at?: string
           user_id?: string
+          wallet_points_earned_at?: string | null
+          wallet_points_used?: number
         }
         Relationships: [
           {
@@ -2185,6 +2246,21 @@ export type Database = {
       }
     }
     Views: {
+      client_wallet_balances: {
+        Row: {
+          balance: number | null
+          client_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_wallet_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_profitability: {
         Row: {
           created_at: string | null
@@ -2216,6 +2292,10 @@ export type Database = {
       generate_voucher_code_for_year: {
         Args: { p_issue_date: string }
         Returns: string
+      }
+      get_client_wallet_balance: {
+        Args: { _client_id: string }
+        Returns: number
       }
       has_full_data_scope: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
