@@ -103,8 +103,18 @@ export function ClientWalletSection({ clientId }: Props) {
     onError: (err: any) => toast.error(err.message || "Chyba při úpravě"),
   });
 
-  const formatDate = (s: string) =>
-    new Date(s).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const formatDate = (s: string) => {
+    const d = new Date(s);
+    const now = new Date();
+    const sameYear = d.getFullYear() === now.getFullYear();
+    return d.toLocaleString("cs-CZ", {
+      day: "numeric",
+      month: "numeric",
+      ...(sameYear ? {} : { year: "numeric" }),
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
   const formatPoints = (n: number) => `${n > 0 ? "+" : ""}${n.toLocaleString("cs-CZ")}`;
 
   return (
@@ -145,21 +155,32 @@ export function ClientWalletSection({ clientId }: Props) {
         ) : (
           <div className="space-y-1 max-h-[240px] overflow-y-auto">
             {transactions.map((tx) => (
-              <div key={tx.id} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded hover:bg-muted/40">
-                <span className="text-muted-foreground shrink-0 tabular-nums">{formatDate(tx.created_at)}</span>
-                <span className="flex-1 truncate">
-                  <span className={KIND_COLOR[tx.kind]}>{KIND_LABEL[tx.kind]}</span>
+              <div key={tx.id} className="py-1.5 px-2 rounded hover:bg-muted/40">
+                {/* Řádek 1: typ + OP + body (vpravo) */}
+                <div className="flex items-center gap-2 text-xs min-w-0">
+                  <span className={`${KIND_COLOR[tx.kind]} font-medium shrink-0`}>{KIND_LABEL[tx.kind]}</span>
                   {tx.deal && (
-                    <Link to={`/deals/${tx.deal.id}`} className="ml-1 inline-flex items-center gap-0.5 text-primary hover:underline">
+                    <Link
+                      to={`/deals/${tx.deal.id}`}
+                      className="inline-flex items-center gap-0.5 text-primary hover:underline shrink-0"
+                    >
                       {tx.deal.deal_number || "OP"}
                       <ExternalLink className="h-2.5 w-2.5" />
                     </Link>
                   )}
-                  {tx.notes && <span className="text-muted-foreground ml-1">· {tx.notes}</span>}
-                </span>
-                <span className={`font-semibold tabular-nums shrink-0 ${tx.points > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
-                  {formatPoints(tx.points)}
-                </span>
+                  <span
+                    className={`ml-auto font-semibold tabular-nums shrink-0 ${
+                      tx.points > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                    }`}
+                  >
+                    {formatPoints(tx.points)}
+                  </span>
+                </div>
+                {/* Řádek 2: datum + poznámka (truncate) */}
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 min-w-0">
+                  <span className="tabular-nums shrink-0">{formatDate(tx.created_at)}</span>
+                  {tx.notes && <span className="truncate">· {tx.notes}</span>}
+                </div>
               </div>
             ))}
           </div>
