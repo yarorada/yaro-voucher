@@ -29,9 +29,12 @@ const KIND_LABEL: Record<WalletTransaction["kind"], string> = {
   adjust: "Úprava",
 };
 
-// Rozliš automatický přepočet (z backfill migrace) od ruční úpravy.
+// Rozliš automatický přepočet (z backfill migrace), narozeninový bonus
+// a expiraci bonusu od běžných zápisů.
 const resolveKindLabel = (tx: WalletTransaction) => {
   if (tx.kind === "adjust" && tx.notes?.startsWith("Přepočet")) return "Auto přepočet";
+  if (tx.kind === "earn" && tx.notes?.startsWith("Narozeninový bonus")) return "🎂 Narozeniny";
+  if (tx.kind === "reverse_earn" && tx.notes?.startsWith("Expirace Narozeninový bonus")) return "Expirace narozenin";
   return KIND_LABEL[tx.kind];
 };
 
@@ -154,6 +157,7 @@ export function ClientWalletSection({ clientId }: Props) {
         </div>
         <ul className="text-xs text-muted-foreground mt-2 space-y-0.5 leading-snug list-disc list-inside marker:text-muted-foreground/50">
           <li>Načítání: 100&nbsp;Kč obratu bez letenek = 1&nbsp;bod (po ukončení zájezdu).</li>
+          <li>Narozeninový bonus: 1&nbsp;500&nbsp;bodů ročně (platnost 1&nbsp;rok).</li>
           <li>Uplatnění: max.&nbsp;20&nbsp;% z ceny nového zájezdu.</li>
         </ul>
       </div>
