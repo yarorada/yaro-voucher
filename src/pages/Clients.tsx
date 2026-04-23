@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateInput } from "@/components/ui/date-input";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentsList } from "@/components/DocumentsList";
+import { ClientWalletSection } from "@/components/ClientWalletSection";
 import { BulkClientUpload } from "@/components/BulkClientUpload";
 import { DuplicateClientChecker } from "@/components/DuplicateClientChecker";
 import { DiacriticsChecker } from "@/components/DiacriticsChecker";
@@ -886,6 +887,8 @@ const Clients = () => {
                         />
                       </div>
                     )}
+
+                    {editingClient && <ClientWalletSection clientId={editingClient.id} />}
 
                     <div className="flex gap-2 justify-end items-center">
                       <Button
