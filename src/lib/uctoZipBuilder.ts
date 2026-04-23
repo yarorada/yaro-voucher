@@ -43,10 +43,19 @@ export type ZipContract = {
   client?: { first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null } | null;
 };
 
+export type ZipBankStatement = {
+  id: string;
+  bank: string;          // 'moneta' | 'amnis' | 'other'
+  file_url: string;
+  file_name: string;
+  uploaded_at?: string | null;
+};
+
 export type ZipBatchInput = {
   folderName: string; // např. "UCTO_2026-04_duben-2026"
   invoices: ZipInvoice[];
   contracts: ZipContract[];
+  bankStatements?: ZipBankStatement[];
 };
 
 /* ---------- helpers ---------- */
@@ -355,10 +364,12 @@ export async function buildUctoZip(
   const issuedFolder = root.folder("vystavene-faktury")!;
   const receivedFolder = root.folder("prijate-faktury")!;
   const contractsFolder = root.folder("smlouvy")!;
+  const bankFolder = root.folder("bankovni-vypisy")!;
 
   const issued = input.invoices.filter((i) => i.invoice_type === "issued");
   const received = input.invoices.filter((i) => i.invoice_type === "received");
-  const total = issued.length + received.length + input.contracts.length + 1; // +1 = summary
+  const bank = input.bankStatements || [];
+  const total = issued.length + received.length + input.contracts.length + bank.length + 1; // +1 = summary
   let current = 0;
   const tick = (label: string) => {
     current += 1;
@@ -411,6 +422,20 @@ export async function buildUctoZip(
       console.error("Failed to render contract", c.contract_number, e);
     }
     tick(`Smlouva ${c.contract_number}`);
+  }
+
+  // 3.5) Bankovní výpisy — stáhni originál ze storage
+  for (const bs of bank) {
+    if (bs.file_url) {
+      const blob = await fetchInvoiceFile(bs.file_url);
+      if (blob) {
+        const ext = fileExtFromBlob(blob, bs.file_name || bs.file_url.split("/").pop());
+        const baseName = safeFileName(`${bs.bank}_${bs.file_name?.replace(/\.[^.]+$/, "") || bs.id.slice(0, 8)}`);
+        const folder = bankFolder.folder(bs.bank) || bankFolder;
+        folder.file(`${baseName}.${ext}`, blob);
+      }
+    }
+    tick(`Výpis ${bs.bank} ${bs.file_name ?? ""}`);
   }
 
   // 4) Summary CSV

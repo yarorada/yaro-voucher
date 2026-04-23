@@ -18,7 +18,8 @@ import { cs } from "date-fns/locale";
 import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature, Download, Loader2, Mail, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { buildUctoZip, downloadBlob, type ZipInvoice, type ZipContract } from "@/lib/uctoZipBuilder";
+import { buildUctoZip, downloadBlob, type ZipInvoice, type ZipContract, type ZipBankStatement } from "@/lib/uctoZipBuilder";
+import { BankStatementsCard, type BankStatement } from "@/components/BankStatementsCard";
 
 type Invoice = {
   id: string;
@@ -55,6 +56,7 @@ type Batch = {
   sent_to_accountant_email?: string | null;
   invoices?: Invoice[];
   contracts?: Contract[];
+  bankStatements?: BankStatement[];
 };
 
 const DEFAULT_ACCOUNTANT_EMAIL = "altax4u@seznam.cz";
@@ -180,7 +182,8 @@ function BatchCard({ batch, onDownload, onSend, downloadingBatchId, downloadProg
   const issued = (batch.invoices || []).filter((i) => i.invoice_type === "issued");
   const received = (batch.invoices || []).filter((i) => i.invoice_type === "received");
   const contracts = batch.contracts || [];
-  const totalDocs = (batch.invoices || []).length + contracts.length;
+  const bank = batch.bankStatements || [];
+  const totalDocs = (batch.invoices || []).length + contracts.length + bank.length;
   const isDownloading = downloadingBatchId === batch.id;
   const isSending = sendingBatchId === batch.id;
   const wasSent = !!batch.sent_to_accountant_at;
@@ -197,6 +200,11 @@ function BatchCard({ batch, onDownload, onSend, downloadingBatchId, downloadProg
             {contracts.length > 0 && (
               <Badge variant="outline" className="text-xs">
                 {contracts.length} smluv
+              </Badge>
+            )}
+            {bank.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {bank.length} výpisů
               </Badge>
             )}
             {wasSent && (
@@ -264,6 +272,21 @@ function BatchCard({ batch, onDownload, onSend, downloadingBatchId, downloadProg
               <ContractTable contracts={contracts} />
             </div>
           )}
+          {bank.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Bankovní výpisy ({bank.length})
+              </p>
+              <ul className="space-y-1 text-sm">
+                {bank.map((b) => (
+                  <li key={b.id} className="flex items-center gap-2 px-2 py-1 rounded bg-muted/40">
+                    <Badge variant="outline" className="text-[10px] uppercase">{b.bank}</Badge>
+                    <span className="truncate flex-1">{b.file_name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
@@ -324,7 +347,23 @@ export default function UctoVystup() {
     enabled: !!user,
   });
 
-  // Archivované dávky (faktury + smlouvy)
+  // Bankovní výpisy pro vybrané období (nezařazené do dávky)
+  const { data: pendingBankStatements = [] } = useQuery({
+    queryKey: ["ucto-bank-statements", period],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("bank_statements")
+        .select("*")
+        .eq("period", period)
+        .is("accounting_batch_id", null)
+        .order("uploaded_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as BankStatement[];
+    },
+    enabled: !!user,
+  });
+
+  // Archivované dávky (faktury + smlouvy + výpisy)
   const { data: batches = [] } = useQuery({
     queryKey: ["ucto-batches"],
     queryFn: async () => {
@@ -337,7 +376,7 @@ export default function UctoVystup() {
 
       const batchIds = batchData.map((b: Batch) => b.id);
 
-      const [{ data: invData }, { data: contractData }] = await Promise.all([
+      const [{ data: invData }, { data: contractData }, { data: bankData }] = await Promise.all([
         (supabase as any)
           .from("invoices")
           .select("id, invoice_number, invoice_type, issue_date, client_name, supplier_name, total_amount, currency, paid, accounting_batch_id")
@@ -348,6 +387,10 @@ export default function UctoVystup() {
           .in("accounting_batch_id", batchIds)
           // pouze ty, co po archivaci NEbyly změněny (změněné už visí v aktuální složce)
           .eq("accounting_changed_after_archive", false),
+        (supabase as any)
+          .from("bank_statements")
+          .select("*")
+          .in("accounting_batch_id", batchIds),
       ]);
 
       const invByBatch: Record<string, Invoice[]> = {};
@@ -360,11 +403,17 @@ export default function UctoVystup() {
         if (!contractsByBatch[c.accounting_batch_id]) contractsByBatch[c.accounting_batch_id] = [];
         contractsByBatch[c.accounting_batch_id].push(c);
       }
+      const bankByBatch: Record<string, BankStatement[]> = {};
+      for (const bs of bankData || []) {
+        if (!bankByBatch[bs.accounting_batch_id]) bankByBatch[bs.accounting_batch_id] = [];
+        bankByBatch[bs.accounting_batch_id].push(bs);
+      }
 
       return batchData.map((b: Batch) => ({
         ...b,
         invoices: invByBatch[b.id] || [],
         contracts: contractsByBatch[b.id] || [],
+        bankStatements: bankByBatch[b.id] || [],
       })) as Batch[];
     },
     enabled: !!user,
@@ -392,6 +441,15 @@ export default function UctoVystup() {
     return (data || []) as ZipInvoice[];
   };
 
+  const toZipBankStatements = (rows: BankStatement[]): ZipBankStatement[] =>
+    rows.map((r) => ({
+      id: r.id,
+      bank: r.bank,
+      file_url: r.file_url,
+      file_name: r.file_name,
+      uploaded_at: r.uploaded_at,
+    }));
+
   const fetchContractsFull = async (ids: string[]): Promise<ZipContract[]> => {
     if (!ids.length) return [];
     const { data, error } = await (supabase as any)
@@ -408,21 +466,22 @@ export default function UctoVystup() {
     batchId: string,
     folderName: string,
     invoiceIds: string[],
-    contractIds: string[]
+    contractIds: string[],
+    bankStatements: BankStatement[]
   ) => {
-    if (invoiceIds.length + contractIds.length === 0) {
+    if (invoiceIds.length + contractIds.length + bankStatements.length === 0) {
       toast.error("Žádné doklady k zabalení");
       return;
     }
     setDownloadingBatchId(batchId);
-    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + 1, label: "Načítám doklady…" });
+    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + bankStatements.length + 1, label: "Načítám doklady…" });
     try {
       const [invoices, contracts] = await Promise.all([
         fetchInvoicesFull(invoiceIds),
         fetchContractsFull(contractIds),
       ]);
       const blob = await buildUctoZip(
-        { folderName, invoices, contracts },
+        { folderName, invoices, contracts, bankStatements: toZipBankStatements(bankStatements) },
         (p) => setDownloadProgress(p)
       );
       downloadBlob(blob, `${folderName}.zip`);
@@ -443,7 +502,8 @@ export default function UctoVystup() {
       b.id,
       folderName,
       (b.invoices || []).map((i) => i.id),
-      (b.contracts || []).map((c) => c.id)
+      (b.contracts || []).map((c) => c.id),
+      b.bankStatements || []
     );
   };
 
@@ -464,7 +524,8 @@ export default function UctoVystup() {
     }
     const invoiceIds = (b.invoices || []).map((i) => i.id);
     const contractIds = (b.contracts || []).map((c) => c.id);
-    if (invoiceIds.length + contractIds.length === 0) {
+    const bank = b.bankStatements || [];
+    if (invoiceIds.length + contractIds.length + bank.length === 0) {
       toast.error("Dávka neobsahuje žádné doklady");
       return;
     }
@@ -472,7 +533,7 @@ export default function UctoVystup() {
     setSendingBatchId(b.id);
     setSendDialogBatch(null);
     setDownloadingBatchId(b.id); // ZIP build progress reused
-    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + 1, label: "Načítám doklady…" });
+    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + bank.length + 1, label: "Načítám doklady…" });
 
     try {
       // 1) build ZIP
@@ -482,7 +543,7 @@ export default function UctoVystup() {
         fetchContractsFull(contractIds),
       ]);
       const zipBlob = await buildUctoZip(
-        { folderName, invoices, contracts },
+        { folderName, invoices, contracts, bankStatements: toZipBankStatements(bank) },
         (p) => setDownloadProgress(p)
       );
       setDownloadProgress({ current: 0, total: 0, label: "Nahrávám ZIP…" });
@@ -545,14 +606,15 @@ export default function UctoVystup() {
       "__current__",
       folderName,
       pendingInvoices.map((i) => i.id),
-      pendingContracts.map((c) => c.id)
+      pendingContracts.map((c) => c.id),
+      pendingBankStatements
     );
   };
 
   const archiveMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Nepřihlášen");
-      if (pendingInvoices.length === 0 && pendingContracts.length === 0)
+      if (pendingInvoices.length === 0 && pendingContracts.length === 0 && pendingBankStatements.length === 0)
         throw new Error("Žádné doklady k archivaci");
 
       // Vytvoř dávku
@@ -590,6 +652,16 @@ export default function UctoVystup() {
           .in("id", cIds);
         if (cErr) throw cErr;
       }
+
+      // Přiřaď bankovní výpisy
+      if (pendingBankStatements.length > 0) {
+        const bsIds = pendingBankStatements.map((b) => b.id);
+        const { error: bsErr } = await (supabase as any)
+          .from("bank_statements")
+          .update({ accounting_batch_id: batch.id })
+          .in("id", bsIds);
+        if (bsErr) throw bsErr;
+      }
     },
     onSuccess: () => {
       toast.success("Měsíc uzavřen a doklady archivovány");
@@ -597,6 +669,7 @@ export default function UctoVystup() {
       setArchiveNotes("");
       qc.invalidateQueries({ queryKey: ["ucto-pending"] });
       qc.invalidateQueries({ queryKey: ["ucto-pending-contracts"] });
+      qc.invalidateQueries({ queryKey: ["ucto-bank-statements"] });
       qc.invalidateQueries({ queryKey: ["ucto-batches"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -618,7 +691,7 @@ export default function UctoVystup() {
   const sumContracts = (cs: Contract[]) =>
     cs.reduce((s, c) => s + (c.total_price || 0), 0);
 
-  const totalPending = pendingInvoices.length + pendingContracts.length;
+  const totalPending = pendingInvoices.length + pendingContracts.length + pendingBankStatements.length;
 
   return (
     <PageShell>
@@ -662,6 +735,7 @@ export default function UctoVystup() {
                     Změněné smlouvy: <strong>{changedContracts.length}</strong>
                   </span>
                 )}
+                <span>Výpisy: <strong>{pendingBankStatements.length}</strong></span>
               </div>
               <div className="sm:ml-auto flex gap-2">
                 <Button
@@ -693,14 +767,16 @@ export default function UctoVystup() {
               </div>
             </div>
 
+            <BankStatementsCard period={period} />
+
             {isLoading ? (
               <p className="text-muted-foreground text-sm py-8 text-center">Načítám…</p>
-            ) : totalPending === 0 ? (
+            ) : pendingInvoices.length === 0 && pendingContracts.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-3 opacity-40" />
                   <p className="text-sm">
-                    Žádné neodeslané doklady pro {periodLabel(period)}
+                    Žádné faktury ani smlouvy pro {periodLabel(period)}
                   </p>
                   <p className="text-xs mt-1 opacity-70">
                     Buď byly již archivovány, nebo v tomto měsíci nebyly vystaveny faktury / přijaty platby ke smlouvám.
@@ -824,6 +900,9 @@ export default function UctoVystup() {
                     <> (z toho {changedContracts.length} změněných)</>
                   )}
                 </>
+              )}
+              {pendingBankStatements.length > 0 && (
+                <> a <strong>{pendingBankStatements.length} bankovních výpisů</strong></>
               )}
               . Tyto doklady se již v příští složce neobjeví.
             </p>
