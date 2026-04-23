@@ -129,7 +129,7 @@ export function ClientWalletSection({ clientId }: Props) {
           </Badge>
         </div>
         <ul className="text-xs text-muted-foreground mt-2 space-y-0.5 leading-snug list-disc list-inside marker:text-muted-foreground/50">
-          <li>Načítání: 50&nbsp;Kč obratu bez letenek = 1&nbsp;bod (po ukončení zájezdu).</li>
+          <li>Načítání: 100&nbsp;Kč obratu bez letenek = 1&nbsp;bod (po ukončení zájezdu).</li>
           <li>Uplatnění: max.&nbsp;20&nbsp;% z ceny nového zájezdu.</li>
         </ul>
       </div>
