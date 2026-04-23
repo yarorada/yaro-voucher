@@ -972,7 +972,7 @@ export default function UctoVystup() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                 {/* Vydané faktury */}
                 <Card className="flex flex-col h-56 sm:h-64">
                   <CardHeader className="py-2 px-3 shrink-0">
