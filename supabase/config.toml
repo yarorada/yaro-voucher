@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.ares-lookup]
 verify_jwt = false
+
+[functions.send-ucto-to-accountant]
+verify_jwt = true

@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format, parse, startOfMonth, endOfMonth } from "date-fns";
 import { cs } from "date-fns/locale";
-import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature, Download, Loader2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature, Download, Loader2, Mail, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { buildUctoZip, downloadBlob, type ZipInvoice, type ZipContract } from "@/lib/uctoZipBuilder";
 
@@ -50,9 +51,13 @@ type Batch = {
   label: string | null;
   notes: string | null;
   created_at: string;
+  sent_to_accountant_at?: string | null;
+  sent_to_accountant_email?: string | null;
   invoices?: Invoice[];
   contracts?: Contract[];
 };
+
+const DEFAULT_ACCOUNTANT_EMAIL = "altax4u@seznam.cz";
 
 function periodLabel(period: string): string {
   const d = parse(period, "yyyy-MM", new Date());
@@ -163,11 +168,13 @@ function ContractTable({ contracts, showChangedBadge = false }: { contracts: Con
   );
 }
 
-function BatchCard({ batch, onDownload, downloadingBatchId, downloadProgress }: {
+function BatchCard({ batch, onDownload, onSend, downloadingBatchId, downloadProgress, sendingBatchId }: {
   batch: Batch;
   onDownload: (b: Batch) => void;
+  onSend: (b: Batch) => void;
   downloadingBatchId: string | null;
   downloadProgress: { current: number; total: number; label: string } | null;
+  sendingBatchId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const issued = (batch.invoices || []).filter((i) => i.invoice_type === "issued");
@@ -175,6 +182,8 @@ function BatchCard({ batch, onDownload, downloadingBatchId, downloadProgress }: 
   const contracts = batch.contracts || [];
   const totalDocs = (batch.invoices || []).length + contracts.length;
   const isDownloading = downloadingBatchId === batch.id;
+  const isSending = sendingBatchId === batch.id;
+  const wasSent = !!batch.sent_to_accountant_at;
   return (
     <Card className="mb-3">
       <CardHeader className="py-3 px-4">
@@ -190,6 +199,12 @@ function BatchCard({ batch, onDownload, downloadingBatchId, downloadProgress }: 
                 {contracts.length} smluv
               </Badge>
             )}
+            {wasSent && (
+              <Badge className="bg-emerald-600 text-white text-xs gap-1">
+                <Check className="h-3 w-3" />
+                Odesláno {format(new Date(batch.sent_to_accountant_at!), "d.M.")}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Button
@@ -203,6 +218,16 @@ function BatchCard({ batch, onDownload, downloadingBatchId, downloadProgress }: 
               {isDownloading
                 ? (downloadProgress ? `${downloadProgress.current}/${downloadProgress.total}` : "Stahuji…")
                 : "ZIP"}
+            </Button>
+            <Button
+              size="sm"
+              variant={wasSent ? "outline" : "default"}
+              className="gap-1 h-8"
+              disabled={isSending || totalDocs === 0}
+              onClick={(e) => { e.stopPropagation(); onSend(batch); }}
+            >
+              {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+              {isSending ? "Odesílám…" : wasSent ? "Poslat znovu" : "Odeslat účetnímu"}
             </Button>
             <span className="hidden md:inline">Archivováno {format(new Date(batch.created_at), "d.M.yyyy")}</span>
             <button onClick={() => setOpen((v) => !v)} className="p-1 hover:bg-muted rounded">
@@ -255,6 +280,10 @@ export default function UctoVystup() {
   const [archiveNotes, setArchiveNotes] = useState("");
   const [downloadingBatchId, setDownloadingBatchId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number; label: string } | null>(null);
+  const [sendingBatchId, setSendingBatchId] = useState<string | null>(null);
+  const [sendDialogBatch, setSendDialogBatch] = useState<Batch | null>(null);
+  const [sendEmail, setSendEmail] = useState(DEFAULT_ACCOUNTANT_EMAIL);
+  const [sendNotes, setSendNotes] = useState("");
 
   // Faktury pro vybrané období (bez přiřazení do dávky)
   const { data: pendingInvoices = [], isLoading } = useQuery({
@@ -301,7 +330,7 @@ export default function UctoVystup() {
     queryFn: async () => {
       const { data: batchData, error } = await (supabase as any)
         .from("accounting_batches")
-        .select("id, period, label, notes, created_at")
+        .select("id, period, label, notes, created_at, sent_to_accountant_at, sent_to_accountant_email")
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (!batchData?.length) return [] as Batch[];
@@ -416,6 +445,98 @@ export default function UctoVystup() {
       (b.invoices || []).map((i) => i.id),
       (b.contracts || []).map((c) => c.id)
     );
+  };
+
+  /* ---------- Send to accountant ---------- */
+
+  const handleOpenSend = (b: Batch) => {
+    setSendDialogBatch(b);
+    setSendEmail(b.sent_to_accountant_email || DEFAULT_ACCOUNTANT_EMAIL);
+    setSendNotes("");
+  };
+
+  const handleConfirmSend = async () => {
+    const b = sendDialogBatch;
+    if (!b || !user) return;
+    if (!sendEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sendEmail)) {
+      toast.error("Zadej platný e-mail účetního");
+      return;
+    }
+    const invoiceIds = (b.invoices || []).map((i) => i.id);
+    const contractIds = (b.contracts || []).map((c) => c.id);
+    if (invoiceIds.length + contractIds.length === 0) {
+      toast.error("Dávka neobsahuje žádné doklady");
+      return;
+    }
+
+    setSendingBatchId(b.id);
+    setSendDialogBatch(null);
+    setDownloadingBatchId(b.id); // ZIP build progress reused
+    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + 1, label: "Načítám doklady…" });
+
+    try {
+      // 1) build ZIP
+      const folderName = `UCTO_${b.period}_${folderSlug(b.label || periodLabel(b.period))}`;
+      const [invoices, contracts] = await Promise.all([
+        fetchInvoicesFull(invoiceIds),
+        fetchContractsFull(contractIds),
+      ]);
+      const zipBlob = await buildUctoZip(
+        { folderName, invoices, contracts },
+        (p) => setDownloadProgress(p)
+      );
+      setDownloadProgress({ current: 0, total: 0, label: "Nahrávám ZIP…" });
+
+      // 2) upload to ucto-archives
+      const zipPath = `${user.id}/${folderName}.zip`;
+      const { error: upErr } = await supabase.storage
+        .from("ucto-archives")
+        .upload(zipPath, zipBlob, {
+          contentType: "application/zip",
+          upsert: true,
+        });
+      if (upErr) throw new Error(`Nahrání ZIPu selhalo: ${upErr.message}`);
+
+      // 3) summary
+      const issuedInv = (b.invoices || []).filter((i) => i.invoice_type === "issued");
+      const receivedInv = (b.invoices || []).filter((i) => i.invoice_type === "received");
+      const summary = {
+        issued_count: issuedInv.length,
+        received_count: receivedInv.length,
+        contracts_count: (b.contracts || []).length,
+        issued_total: issuedInv.reduce((s, i) => s + (i.total_amount || 0), 0),
+        received_total: receivedInv.reduce((s, i) => s + (i.total_amount || 0), 0),
+        contracts_total: (b.contracts || []).reduce((s, c) => s + (c.total_price || 0), 0),
+        currency: "CZK",
+      };
+
+      // 4) call edge function
+      setDownloadProgress({ current: 0, total: 0, label: "Odesílám e-mail…" });
+      const { data, error: fnErr } = await supabase.functions.invoke("send-ucto-to-accountant", {
+        body: {
+          batch_id: b.id,
+          folder_name: folderName,
+          zip_path: zipPath,
+          zip_size_bytes: zipBlob.size,
+          recipient_email: sendEmail,
+          notes: sendNotes || undefined,
+          summary,
+        },
+      });
+      if (fnErr) throw new Error(fnErr.message);
+      if ((data as { error?: string })?.error) throw new Error((data as { error?: string }).error);
+
+      toast.success(`Odesláno účetnímu (${sendEmail})`);
+      qc.invalidateQueries({ queryKey: ["ucto-batches"] });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Odeslání se nezdařilo";
+      console.error(e);
+      toast.error(msg);
+    } finally {
+      setSendingBatchId(null);
+      setDownloadingBatchId(null);
+      setDownloadProgress(null);
+    }
   };
 
   const handleDownloadCurrent = async () => {
@@ -676,8 +797,10 @@ export default function UctoVystup() {
                   key={b.id}
                   batch={b}
                   onDownload={handleDownloadBatch}
+                  onSend={handleOpenSend}
                   downloadingBatchId={downloadingBatchId}
                   downloadProgress={downloadProgress}
+                  sendingBatchId={sendingBatchId}
                 />
               ))
             )}
@@ -726,6 +849,60 @@ export default function UctoVystup() {
             >
               <Archive className="h-4 w-4" />
               {archiveMutation.isPending ? "Archivuji…" : "Archivovat"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog odeslání účetnímu */}
+      <Dialog open={!!sendDialogBatch} onOpenChange={(o) => !o && setSendDialogBatch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Odeslat účetnímu — {sendDialogBatch?.label || (sendDialogBatch && periodLabel(sendDialogBatch.period))}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              ZIP balíček se nahraje do soukromého úložiště a účetnímu se pošle e-mail
+              s odkazem (platnost 30 dní). Nic se neposílá jako příloha — žádné limity velikosti.
+            </p>
+            {sendDialogBatch?.sent_to_accountant_at && (
+              <div className="text-xs px-3 py-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200">
+                Tato dávka už byla odeslána{" "}
+                <b>{format(new Date(sendDialogBatch.sent_to_accountant_at), "d.M.yyyy HH:mm")}</b>
+                {sendDialogBatch.sent_to_accountant_email ? <> na <b>{sendDialogBatch.sent_to_accountant_email}</b></> : null}.
+                Odesláním znovu se přepíše ZIP v archivu.
+              </div>
+            )}
+            <div>
+              <Label>E-mail účetní</Label>
+              <Input
+                type="email"
+                className="mt-1"
+                value={sendEmail}
+                onChange={(e) => setSendEmail(e.target.value)}
+                placeholder="ucetni@example.cz"
+              />
+            </div>
+            <div>
+              <Label>Poznámka v e-mailu (volitelné)</Label>
+              <Textarea
+                className="mt-1"
+                rows={3}
+                value={sendNotes}
+                onChange={(e) => setSendNotes(e.target.value)}
+                placeholder="Např. tento měsíc obsahuje 2 stornofaktury…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendDialogBatch(null)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleConfirmSend} className="gap-2">
+              <Mail className="h-4 w-4" />
+              Odeslat
             </Button>
           </DialogFooter>
         </DialogContent>
