@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck, RefreshCw, Building2 } from "lucide-react";
+import { BellRing, Check, X, Loader2, Settings, Copy, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 
 const WEBHOOK_URL = "https://jwaskoeqryjdjrdwupoi.supabase.co/functions/v1/bank-webhook";
@@ -44,48 +44,6 @@ export const BankNotificationsCard = () => {
         .limit(10);
       if (error) throw error;
       return data as BankNotification[];
-    },
-  });
-
-  const monetaMutation = useMutation({
-    mutationFn: async (daysBack: number = 7) => {
-      const response = await supabase.functions.invoke("moneta-fetch-transactions", {
-        body: { daysBack },
-      });
-      if (response.error) throw response.error;
-      if (!response.data?.success) throw new Error(response.data?.error || "Chyba při importu");
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["bank-notifications-pending"] });
-      const msg = data.inserted > 0
-        ? `Načteno ${data.inserted} nových plateb z Monety`
-        : "Žádné nové platby k načtení";
-      toast.success(msg);
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Chyba při načítání z Monety");
-    },
-  });
-
-  const amnissMutation = useMutation({
-    mutationFn: async (daysBack: number = 7) => {
-      const response = await supabase.functions.invoke("amnis-fetch-transactions", {
-        body: { daysBack },
-      });
-      if (response.error) throw response.error;
-      if (!response.data?.success) throw new Error(response.data?.error || "Chyba při importu z Amnis");
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["bank-notifications-pending"] });
-      const msg = data.inserted > 0
-        ? `Načteno ${data.inserted} nových plateb z Amnis`
-        : "Žádné nové platby z Amnis k načtení";
-      toast.success(msg);
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Chyba při načítání z Amnis");
     },
   });
 
@@ -172,36 +130,6 @@ export const BankNotificationsCard = () => {
             </CardTitle>
             <div className="flex gap-1 shrink-0">
               <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5 px-2"
-                onClick={() => monetaMutation.mutate(7)}
-                disabled={monetaMutation.isPending}
-                title="Načíst platby z Monety za posledních 7 dní"
-              >
-                {monetaMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Moneta
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5 px-2"
-                onClick={() => amnissMutation.mutate(7)}
-                disabled={amnissMutation.isPending}
-                title="Načíst platby z Amnis za posledních 7 dní"
-              >
-                {amnissMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Building2 className="h-3.5 w-3.5" />
-                )}
-                Amnis
-              </Button>
-              <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
@@ -220,34 +148,6 @@ export const BankNotificationsCard = () => {
             <div className="text-center py-6 space-y-2">
               <p className="text-sm text-muted-foreground">Žádné čekající platby</p>
               <div className="flex gap-2 justify-center flex-wrap">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="text-xs gap-1"
-                  onClick={() => monetaMutation.mutate(7)}
-                  disabled={monetaMutation.isPending}
-                >
-                  {monetaMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
-                  Načíst z Monety
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs gap-1"
-                  onClick={() => amnissMutation.mutate(7)}
-                  disabled={amnissMutation.isPending}
-                >
-                  {amnissMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Building2 className="h-3.5 w-3.5" />
-                  )}
-                  Načíst z Amnis
-                </Button>
                 <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setSetupOpen(true)}>
                   <Settings className="h-3.5 w-3.5" />
                   Nastavit webhook
@@ -378,9 +278,6 @@ export const BankNotificationsCard = () => {
               </div>
             </div>
 
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-300 text-xs">
-              <strong>Moneta API:</strong> Tlačítko "Moneta" v záhlaví karty načte transakce za posledních 7 dní přímo z Moneta Internet Banky. Token a číslo účtu jsou nastaveny jako secrets.
-            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,7 +1,7 @@
 -- Fáze 3: kompletní odstranění tabulky contract_payments.
 -- Platby existují výhradně v deal_payments; smlouva se na ně dotazuje přes deal_id.
--- Edge funkce (bank-webhook, parse-payment-email, moneta-/amnis-fetch-transactions,
--- confirm-payment-match, get-public-accounting) byly přepsány tak, aby pracovaly
+-- Edge funkce (bank-webhook, parse-payment-email, confirm-payment-match,
+-- get-public-accounting) byly přepsány tak, aby pracovaly
 -- s deal_payments — matched_payment_id v bank_notifications nyní odkazuje na deal_payments.id.
 
 -- 1) Uvolni FK bank_notifications.matched_payment_id → contract_payments (pokud existuje)
