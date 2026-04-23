@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_batches: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          notes: string | null
+          period: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          period: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          period?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       accounting_shares: {
         Row: {
           created_at: string
@@ -1269,6 +1296,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          accounting_batch_id: string | null
+          bank: string | null
           bank_account: string | null
           client_address: string | null
           client_dic: string | null
@@ -1307,6 +1336,8 @@ export type Database = {
           vat_amount: number | null
         }
         Insert: {
+          accounting_batch_id?: string | null
+          bank?: string | null
           bank_account?: string | null
           client_address?: string | null
           client_dic?: string | null
@@ -1345,6 +1376,8 @@ export type Database = {
           vat_amount?: number | null
         }
         Update: {
+          accounting_batch_id?: string | null
+          bank?: string | null
           bank_account?: string | null
           client_address?: string | null
           client_dic?: string | null
@@ -1383,6 +1416,13 @@ export type Database = {
           vat_amount?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_accounting_batch_id_fkey"
+            columns: ["accounting_batch_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_deal_id_fkey"
             columns: ["deal_id"]
@@ -1676,8 +1716,11 @@ export type Database = {
         Row: {
           accounting_buy_deposit_locked: number | null
           accounting_buy_final_override: number | null
+          accounting_changed_after_export: boolean
           accounting_deposit_locked_at: string | null
+          accounting_exported_at: string | null
           accounting_profit_deposit_locked: number | null
+          accounting_queued_at: string | null
           accounting_sell_deposit_locked: number | null
           agency_address: string | null
           agency_bank_account: string | null
@@ -1709,8 +1752,11 @@ export type Database = {
         Insert: {
           accounting_buy_deposit_locked?: number | null
           accounting_buy_final_override?: number | null
+          accounting_changed_after_export?: boolean
           accounting_deposit_locked_at?: string | null
+          accounting_exported_at?: string | null
           accounting_profit_deposit_locked?: number | null
+          accounting_queued_at?: string | null
           accounting_sell_deposit_locked?: number | null
           agency_address?: string | null
           agency_bank_account?: string | null
@@ -1742,8 +1788,11 @@ export type Database = {
         Update: {
           accounting_buy_deposit_locked?: number | null
           accounting_buy_final_override?: number | null
+          accounting_changed_after_export?: boolean
           accounting_deposit_locked_at?: string | null
+          accounting_exported_at?: string | null
           accounting_profit_deposit_locked?: number | null
+          accounting_queued_at?: string | null
           accounting_sell_deposit_locked?: number | null
           agency_address?: string | null
           agency_bank_account?: string | null
