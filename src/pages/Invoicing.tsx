@@ -605,6 +605,7 @@ export default function Invoicing() {
       iban: inv.iban || "",
       notes: inv.notes || "",
       payment_method: inv.payment_method || "",
+      bank: (inv as any).bank || "",
     });
     setItems(Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{ ...emptyItem }]);
     setShowForm(true);
