@@ -84,9 +84,10 @@ interface DealPaymentScheduleProps {
   totalPrice?: number;
   departureDate?: string;
   currency?: string;
+  dealClientId?: string | null;
 }
 
-export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, currency = "CZK" }: DealPaymentScheduleProps) {
+export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, currency = "CZK", dealClientId = null }: DealPaymentScheduleProps) {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +109,12 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
   const [splitDeleted, setSplitDeleted] = useState<string[]>([]);
   const [payerClients, setPayerClients] = useState<PayerClient[]>([]);
   const [openPayerIdx, setOpenPayerIdx] = useState<number | null>(null);
+
+  // Peněženka — body objednatele
+  const [walletBalance, setWalletBalance] = useState<number>(0); // aktuální zůstatek (už po odečtení aktuálně uplatněných bodů)
+  const [walletUsed, setWalletUsed] = useState<number>(0); // kolik bodů je aktuálně uplatněno na tomto dealu
+  const [walletInput, setWalletInput] = useState<string>("");
+  const [walletSaving, setWalletSaving] = useState(false);
 
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([
     { enabled: true, amount: "", date: undefined, type: "deposit", label: "1. záloha" },
@@ -159,9 +166,40 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     }
   };
 
+  const fetchWallet = async () => {
+    if (!dealClientId) {
+      setWalletBalance(0);
+      setWalletUsed(0);
+      setWalletInput("");
+      return;
+    }
+    try {
+      const [{ data: balData }, { data: dealData }] = await Promise.all([
+        (supabase as any)
+          .from("client_wallet_balances")
+          .select("balance")
+          .eq("client_id", dealClientId)
+          .maybeSingle(),
+        (supabase as any)
+          .from("deals")
+          .select("wallet_points_used")
+          .eq("id", dealId)
+          .maybeSingle(),
+      ]);
+      const bal = Number(balData?.balance) || 0;
+      const used = Number(dealData?.wallet_points_used) || 0;
+      setWalletBalance(bal);
+      setWalletUsed(used);
+      setWalletInput(used > 0 ? String(used) : "");
+    } catch (error) {
+      console.error("Error fetching wallet:", error);
+    }
+  };
+
   useEffect(() => {
     fetchPayments();
-  }, [dealId]);
+    fetchWallet();
+  }, [dealId, dealClientId]);
 
   useEffect(() => {
     const depositsTotal = scheduleItems
@@ -449,6 +487,99 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     return acc;
   }, {});
 
+  // Peněženka: max. uplatnění = min(zůstatek + aktuálně uplatněno, 20 % z total_price)
+  const walletCap20pct = Math.floor(Math.max(0, totalPrice) * 0.20);
+  const walletMaxRedeem = Math.max(0, Math.min(walletBalance + walletUsed, walletCap20pct));
+  const finalPayment = payments.find((p) => p.payment_type === "final");
+
+  const handleApplyWallet = async () => {
+    if (!dealClientId) return;
+    if (!finalPayment) {
+      toast({ title: "Chyba", description: "Nejprve přidejte doplatek — body se uplatní na řádek doplatku.", variant: "destructive" });
+      return;
+    }
+    const parsed = walletInput.trim() === "" ? 0 : parseInt(walletInput, 10);
+    if (isNaN(parsed) || parsed < 0) {
+      toast({ title: "Chyba", description: "Zadejte nezáporné celé číslo bodů", variant: "destructive" });
+      return;
+    }
+    if (parsed > walletMaxRedeem) {
+      toast({
+        title: "Překročen limit",
+        description: `Max. lze uplatnit ${walletMaxRedeem.toLocaleString("cs-CZ")} bodů (zůstatek ${(walletBalance + walletUsed).toLocaleString("cs-CZ")}, 20 % z ceny = ${walletCap20pct.toLocaleString("cs-CZ")}).`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const delta = parsed - walletUsed;
+    if (delta === 0) {
+      toast({ title: "Bez změny", description: "Počet bodů se nezměnil" });
+      return;
+    }
+    setWalletSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      // 1) Zápis do ledgeru (immutable)
+      if (delta > 0) {
+        // uplatnění dalších bodů (záporné points ↓ zůstatek)
+        const { error } = await (supabase as any)
+          .from("client_wallet_transactions")
+          .insert({
+            client_id: dealClientId,
+            deal_id: dealId,
+            points: -delta,
+            kind: "redeem",
+            notes: `Uplatnění na doplatek zájezdu`,
+            created_by: userData.user?.id || null,
+          });
+        if (error) throw error;
+      } else {
+        // snížení uplatnění (vrátit body = kladné)
+        const { error } = await (supabase as any)
+          .from("client_wallet_transactions")
+          .insert({
+            client_id: dealClientId,
+            deal_id: dealId,
+            points: -delta, // delta je záporné → points kladné
+            kind: "reverse_redeem",
+            notes: `Snížení uplatnění na doplatek zájezdu`,
+            created_by: userData.user?.id || null,
+          });
+        if (error) throw error;
+      }
+
+      // 2) Update deals.wallet_points_used
+      const { error: dealErr } = await supabase
+        .from("deals")
+        .update({ wallet_points_used: parsed })
+        .eq("id", dealId);
+      if (dealErr) throw dealErr;
+
+      // 3) Uprav amount doplatku (sleva o delta bodů = 1 bod = 1 Kč)
+      const newFinalAmount = Math.max(0, Number(finalPayment.amount) - delta);
+      const { error: payErr } = await supabase
+        .from("deal_payments")
+        .update({ amount: newFinalAmount })
+        .eq("id", finalPayment.id);
+      if (payErr) throw payErr;
+
+      toast({
+        title: "Body uplatněny",
+        description: delta > 0
+          ? `Uplatněno ${delta.toLocaleString("cs-CZ")} bodů = sleva ${delta.toLocaleString("cs-CZ")} Kč`
+          : `Vráceno ${(-delta).toLocaleString("cs-CZ")} bodů do peněženky`,
+      });
+
+      fetchPayments();
+      fetchWallet();
+    } catch (error: any) {
+      console.error("Error applying wallet points:", error);
+      toast({ title: "Chyba", description: error.message || "Nepodařilo se uplatnit body", variant: "destructive" });
+    } finally {
+      setWalletSaving(false);
+    }
+  };
+
   const allPaymentsSum = payments.reduce((sum, p) => sum + p.amount, 0);
   const remainingPayment = Math.max(0, totalPrice - allPaymentsSum);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
@@ -481,6 +612,71 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
             <p className="text-sm text-muted-foreground">Zatím nejsou přidány žádné platby</p>
           ) : (
             <>
+              {dealClientId && finalPayment && (walletBalance + walletUsed) > 0 && (
+                <div className="p-3 rounded-lg border border-amber-300/60 dark:border-amber-700/60 bg-amber-50/50 dark:bg-amber-950/10 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Wallet className="h-4 w-4 text-amber-600" />
+                      Peněženka objednatele
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Zůstatek:{" "}
+                      <span className="font-semibold text-foreground">
+                        {(walletBalance + walletUsed).toLocaleString("cs-CZ")} b
+                      </span>
+                      {" · "}Max. uplatnění: <span className="font-semibold text-foreground">{walletMaxRedeem.toLocaleString("cs-CZ")} b</span>
+                      <span className="text-muted-foreground"> (20 % z ceny)</span>
+                    </span>
+                  </div>
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">
+                      <Label className="text-xs text-muted-foreground">Uplatnit bodů</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={walletMaxRedeem}
+                        value={walletInput}
+                        onChange={(e) => setWalletInput(e.target.value)}
+                        placeholder="0"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground pb-2">
+                      →{" "}
+                      <span className="font-semibold text-foreground">
+                        sleva {(parseInt(walletInput || "0", 10) || 0).toLocaleString("cs-CZ")} Kč
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleApplyWallet}
+                      disabled={walletSaving}
+                      className="h-9"
+                    >
+                      {walletSaving ? "Ukládám..." : walletUsed > 0 ? "Upravit" : "Uplatnit"}
+                    </Button>
+                    {walletUsed > 0 && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setWalletInput("0"); }}
+                        disabled={walletSaving}
+                        className="h-9 text-destructive"
+                        title="Nastavit na 0 (vrátí body zpět)"
+                      >
+                        Zrušit slevu
+                      </Button>
+                    )}
+                  </div>
+                  {walletUsed > 0 && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Aktuálně uplatněno: {walletUsed.toLocaleString("cs-CZ")} bodů (sleva {walletUsed.toLocaleString("cs-CZ")} Kč z doplatku)
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 {payments.map((payment, index) => {
                   const isOverdue = !payment.paid && isPast(startOfDay(new Date(payment.due_date)));

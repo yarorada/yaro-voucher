@@ -3086,6 +3086,7 @@ const DealDetail = () => {
           totalPrice={parseFloat(totalPrice) || deal.total_price || 0}
           departureDate={deal.start_date || undefined}
           currency={dealCurrency}
+          dealClientId={deal.client_id || null}
         />
 
 
