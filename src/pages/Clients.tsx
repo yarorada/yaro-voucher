@@ -986,12 +986,12 @@ const Clients = () => {
         ) : (
           <>
           {/* Alphabetic letter tabs */}
-          <div className="mb-3 -mx-2 px-2 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-max">
+          <div className="mb-3 -mx-2 px-2 sm:overflow-x-auto">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 sm:min-w-max">
               <button
                 type="button"
                 onClick={() => setLetterFilter("*")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                className={`min-w-[28px] px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-medium border transition-colors ${
                   letterFilter === "*"
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -1004,7 +1004,7 @@ const Clients = () => {
                   key={letter}
                   type="button"
                   onClick={() => setLetterFilter(letter)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  className={`min-w-[28px] px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-medium border transition-colors ${
                     letterFilter === letter
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -1015,9 +1015,9 @@ const Clients = () => {
               ))}
             </div>
           </div>
-          <div className="sm:hidden space-y-2">
+          <div className="sm:hidden space-y-1.5">
             {displayedClients.map((client) => (
-              <Card key={client.id} className="p-3 space-y-1.5 cursor-pointer hover:bg-zinc-50 transition-colors" onClick={() => handleEdit(client)}>
+              <Card key={client.id} className="p-2 space-y-1 cursor-pointer hover:bg-zinc-50 transition-colors" onClick={() => handleEdit(client)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
