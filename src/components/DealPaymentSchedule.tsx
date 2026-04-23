@@ -20,7 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Wallet, CalendarIcon, Pencil } from "lucide-react";
+import { Plus, Trash2, Wallet, CalendarIcon, Pencil, Users } from "lucide-react";
 import { format, isPast, startOfDay, addMonths } from "date-fns";
 import { PaymentEmailMatchDialog } from "@/components/PaymentEmailMatchDialog";
 import { cs } from "date-fns/locale";
@@ -33,6 +33,24 @@ interface Payment {
   due_date: string;
   paid: boolean;
   paid_at?: string | null;
+  notes?: string;
+}
+
+interface PaymentSplit {
+  id: string;
+  payment_id: string;
+  payer_name: string;
+  amount: number;
+  paid_at?: string | null;
+  notes?: string | null;
+  sort_order: number;
+}
+
+interface SplitDraft {
+  id?: string;
+  payer_name: string;
+  amount: string;
+  paid_at?: Date | undefined;
   notes?: string;
 }
 
@@ -66,6 +84,11 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     amount: "",
     notes: "",
   });
+  const [splits, setSplits] = useState<PaymentSplit[]>([]);
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [splitPayment, setSplitPayment] = useState<Payment | null>(null);
+  const [splitDrafts, setSplitDrafts] = useState<SplitDraft[]>([]);
+  const [splitDeleted, setSplitDeleted] = useState<string[]>([]);
 
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([
     { enabled: true, amount: "", date: undefined, type: "deposit", label: "1. záloha" },
@@ -91,10 +114,29 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
         return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
       });
       setPayments(sorted);
+      await fetchSplits((sorted || []).map((p: Payment) => p.id));
     } catch (error) {
       console.error("Error fetching deal payments:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSplits = async (paymentIds: string[]) => {
+    if (!paymentIds.length) {
+      setSplits([]);
+      return;
+    }
+    try {
+      const { data, error } = await (supabase as any)
+        .from("deal_payment_splits")
+        .select("*")
+        .in("payment_id", paymentIds)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      setSplits((data || []) as PaymentSplit[]);
+    } catch (error) {
+      console.error("Error fetching payment splits:", error);
     }
   };
 
@@ -261,6 +303,96 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     setScheduleItems(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
   };
 
+  const openSplitDialog = (payment: Payment) => {
+    setSplitPayment(payment);
+    const existing = splits.filter((s) => s.payment_id === payment.id);
+    setSplitDrafts(
+      existing.length
+        ? existing.map((s) => ({
+            id: s.id,
+            payer_name: s.payer_name,
+            amount: String(s.amount),
+            paid_at: s.paid_at ? new Date(s.paid_at) : undefined,
+            notes: s.notes || "",
+          }))
+        : [
+            { payer_name: "", amount: "", paid_at: undefined, notes: "" },
+            { payer_name: "", amount: "", paid_at: undefined, notes: "" },
+          ]
+    );
+    setSplitDeleted([]);
+    setSplitDialogOpen(true);
+  };
+
+  const addSplitDraft = () => {
+    setSplitDrafts((prev) => [...prev, { payer_name: "", amount: "", paid_at: undefined, notes: "" }]);
+  };
+
+  const updateSplitDraft = (index: number, updates: Partial<SplitDraft>) => {
+    setSplitDrafts((prev) => prev.map((d, i) => (i === index ? { ...d, ...updates } : d)));
+  };
+
+  const removeSplitDraft = (index: number) => {
+    setSplitDrafts((prev) => {
+      const d = prev[index];
+      if (d?.id) setSplitDeleted((del) => [...del, d.id!]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleSaveSplits = async () => {
+    if (!splitPayment) return;
+    const valid = splitDrafts.filter((d) => d.payer_name.trim() && parseFloat(d.amount) > 0);
+    try {
+      // Delete removed
+      if (splitDeleted.length) {
+        const { error } = await (supabase as any)
+          .from("deal_payment_splits")
+          .delete()
+          .in("id", splitDeleted);
+        if (error) throw error;
+      }
+      // Upsert remaining
+      for (let i = 0; i < valid.length; i++) {
+        const d = valid[i];
+        const payload = {
+          payment_id: splitPayment.id,
+          payer_name: d.payer_name.trim(),
+          amount: parseFloat(d.amount),
+          paid_at: d.paid_at ? d.paid_at.toISOString() : null,
+          notes: d.notes?.trim() || null,
+          sort_order: i,
+        };
+        if (d.id) {
+          const { error } = await (supabase as any)
+            .from("deal_payment_splits")
+            .update(payload)
+            .eq("id", d.id);
+          if (error) throw error;
+        } else {
+          const { error } = await (supabase as any)
+            .from("deal_payment_splits")
+            .insert(payload);
+          if (error) throw error;
+        }
+      }
+      toast({ title: "Uloženo", description: "Rozdělení platby bylo uloženo" });
+      setSplitDialogOpen(false);
+      setSplitPayment(null);
+      setSplitDrafts([]);
+      setSplitDeleted([]);
+      fetchPayments();
+    } catch (error) {
+      console.error("Error saving splits:", error);
+      toast({ title: "Chyba", description: "Nepodařilo se uložit rozdělení", variant: "destructive" });
+    }
+  };
+
+  const splitsByPayment = splits.reduce<Record<string, PaymentSplit[]>>((acc, s) => {
+    (acc[s.payment_id] ||= []).push(s);
+    return acc;
+  }, {});
+
   const allPaymentsSum = payments.reduce((sum, p) => sum + p.amount, 0);
   const remainingPayment = Math.max(0, totalPrice - allPaymentsSum);
   const paidAmount = payments.filter((p) => p.paid).reduce((sum, p) => sum + p.amount, 0);
@@ -310,7 +442,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                     <div
                       key={payment.id}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border",
+                        "flex flex-wrap items-center gap-3 p-3 rounded-lg border",
                         isOverdue && "bg-red-50 dark:bg-red-950/20 border-destructive/30"
                       )}
                     >
@@ -353,6 +485,18 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                         </div>
                       </div>
                       <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={cn(
+                            "h-7 w-7 p-0",
+                            (splitsByPayment[payment.id]?.length ?? 0) > 0 && "text-primary"
+                          )}
+                          onClick={() => openSplitDialog(payment)}
+                          title="Rozdělit platbu mezi plátce"
+                        >
+                          <Users className="h-3 w-3" />
+                        </Button>
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(payment)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
@@ -360,6 +504,46 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
+                      {(splitsByPayment[payment.id]?.length ?? 0) > 0 && (
+                        <div className="basis-full mt-2 pl-7 border-l-2 border-primary/30 ml-1 space-y-1">
+                          {(() => {
+                            const rowSplits = splitsByPayment[payment.id] || [];
+                            const splitSum = rowSplits.reduce((s, r) => s + Number(r.amount || 0), 0);
+                            const diff = Number(payment.amount) - splitSum;
+                            return (
+                              <>
+                                {rowSplits.map((s) => (
+                                  <div key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="font-medium truncate">{s.payer_name}</span>
+                                      {s.paid_at ? (
+                                        <span className="text-green-600 whitespace-nowrap">
+                                          ✓ {format(new Date(s.paid_at), "d.M.yyyy", { locale: cs })}
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground">nezaplaceno</span>
+                                      )}
+                                      {s.notes && <span className="text-muted-foreground truncate">• {s.notes}</span>}
+                                    </div>
+                                    <span className="font-semibold whitespace-nowrap">
+                                      {formatPrice(Number(s.amount), true, currency)}
+                                    </span>
+                                  </div>
+                                ))}
+                                {Math.abs(diff) > 0.01 && (
+                                  <div className={cn(
+                                    "flex items-center justify-between gap-2 text-xs pt-1 border-t border-dashed",
+                                    diff > 0 ? "text-orange-600" : "text-red-600"
+                                  )}>
+                                    <span>{diff > 0 ? "Nerozděleno" : "Rozděleno nad rámec"}</span>
+                                    <span className="font-semibold">{formatPrice(Math.abs(diff), true, currency)}</span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -633,6 +817,143 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
               <Button onClick={handleSaveEditPayment}>Uložit</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Split Payment Dialog */}
+      <Dialog open={splitDialogOpen} onOpenChange={setSplitDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Rozdělit platbu mezi plátce</DialogTitle>
+          </DialogHeader>
+          {splitPayment && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span>
+                    {splitPayment.notes || getPaymentTypeLabel(splitPayment.payment_type)}
+                    {" · "}
+                    Splatnost: {format(new Date(splitPayment.due_date), "d.M.yyyy", { locale: cs })}
+                  </span>
+                  <span className="font-semibold">
+                    {formatPrice(splitPayment.amount, true, currency)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Rozpis je pouze pro vlastní evidenci — nepřenáší se do cestovní smlouvy.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {splitDrafts.map((d, idx) => (
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_auto] gap-2 items-start p-2 border rounded-lg">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Jméno plátce</Label>
+                      <Input
+                        value={d.payer_name}
+                        onChange={(e) => updateSplitDraft(idx, { payer_name: e.target.value })}
+                        placeholder="Jan Novák"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Částka</Label>
+                      <Input
+                        type="number"
+                        value={d.amount}
+                        onChange={(e) => updateSplitDraft(idx, { amount: e.target.value })}
+                        placeholder="0"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Zaplaceno dne</Label>
+                      <div className="flex gap-1">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "flex-1 h-9 justify-start text-left font-normal",
+                                !d.paid_at && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {d.paid_at ? format(d.paid_at, "d.M.yyyy", { locale: cs }) : "Nezaplaceno"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={d.paid_at}
+                              onSelect={(date) => updateSplitDraft(idx, { paid_at: date })}
+                              initialFocus
+                              locale={cs}
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {d.paid_at && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 w-9 p-0 text-destructive"
+                            onClick={() => updateSplitDraft(idx, { paid_at: undefined })}
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex sm:flex-col items-end gap-1 sm:pt-5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 p-0 text-destructive"
+                        onClick={() => removeSplitDraft(idx)}
+                        title="Odstranit"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addSplitDraft} className="w-full">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Přidat plátce
+                </Button>
+              </div>
+
+              {(() => {
+                const sum = splitDrafts.reduce((s, d) => s + (parseFloat(d.amount) || 0), 0);
+                const diff = Number(splitPayment.amount) - sum;
+                return (
+                  <div className="border-t pt-3 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Rozděleno:</span>
+                      <span className="font-semibold">{formatPrice(sum, true, currency)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Celá platba:</span>
+                      <span className="font-semibold">{formatPrice(splitPayment.amount, true, currency)}</span>
+                    </div>
+                    <div className={cn(
+                      "flex justify-between font-medium border-t pt-1",
+                      Math.abs(diff) > 0.01 ? (diff > 0 ? "text-orange-600" : "text-red-600") : "text-green-600"
+                    )}>
+                      <span>{diff > 0 ? "Nerozděleno:" : diff < 0 ? "Přes rámec:" : "Sedí:"}</span>
+                      <span className="font-bold">{formatPrice(Math.abs(diff), true, currency)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setSplitDialogOpen(false)}>Zrušit</Button>
+                <Button onClick={handleSaveSplits}>Uložit rozdělení</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
