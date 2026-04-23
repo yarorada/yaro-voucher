@@ -247,7 +247,8 @@ const SignContract = () => {
   const deal = contract?.deal;
   const services = deal?.services || [];
   const travelers = deal?.travelers || [];
-  const payments = contract?.payments || [];
+  // Single source of truth – read payments from the linked deal
+  const payments = contract?.deal?.payments || contract?.payments || [];
 
   return (
     <div className="min-h-screen bg-background">

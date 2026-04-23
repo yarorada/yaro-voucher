@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
           start_date, end_date, name,
           destination:destinations(name, country:countries(name)),
           services:deal_services(service_type, service_name, start_date, end_date, person_count, price, description, quantity, details),
-          travelers:deal_travelers(client:clients(first_name, last_name, date_of_birth, passport_number, title))
-        ),
-        payments:contract_payments(payment_type, amount, due_date, paid)
+          travelers:deal_travelers(client:clients(first_name, last_name, date_of_birth, passport_number, title)),
+          payments:deal_payments(payment_type, amount, due_date, paid)
+        )
       `)
       .eq('sign_token', token)
       .single();

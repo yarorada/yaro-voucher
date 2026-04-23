@@ -16,7 +16,6 @@ import { Download, Loader2, Copy, ExternalLink, CheckCircle2, ChevronDown } from
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ContractAgencyInfo } from "@/components/ContractAgencyInfo";
-import { ContractPaymentSchedule } from "@/components/ContractPaymentSchedule";
 import { CreateVoucherFromContract } from "@/components/CreateVoucherFromContract";
 import { SendContractEmail } from "@/components/SendContractEmail";
 import { EditContractDialog } from "@/components/EditContractDialog";
@@ -66,7 +65,6 @@ const ContractDetail = () => {
         .select(`
           *,
           client:clients(*),
-          payments:contract_payments(*),
           deal:deals(
             id,
             *,
@@ -80,7 +78,8 @@ const ContractDetail = () => {
             services:deal_services(
               *,
               supplier:suppliers(name)
-            )
+            ),
+            payments:deal_payments(*)
           )
         `)
         .eq("id", id)
@@ -93,6 +92,13 @@ const ContractDetail = () => {
       return data;
     },
   });
+
+  // Contract with payments derived from deal (single source of truth)
+  const contractForPdf = useMemo(() => {
+    if (!contract) return contract;
+    const payments = contract?.deal?.payments || [];
+    return { ...contract, payments };
+  }, [contract]);
 
   // Sort travelers: main client first
   const sortedTravelers = useMemo(() => {
@@ -216,7 +222,7 @@ const ContractDetail = () => {
           contractStatus={contract.status} 
         />
         <SendContractEmail
-          contract={contract}
+          contract={contractForPdf}
           pdfContentRef={pdfContentRef}
           onSent={refetch}
         />
@@ -610,26 +616,7 @@ const ContractDetail = () => {
             </Card>
           )}
 
-          {/* Platební kalendář */}
-          <ContractPaymentSchedule 
-            contractId={contract.id}
-            dealId={(contract as any).deal_id || contract.deal?.id}
-            totalPrice={
-              contract.deal?.services?.length
-                ? contract.deal.services.reduce((sum: number, s: any) => sum + getServiceTotal(s), 0)
-                : (contract.deal?.total_price ?? contract.total_price)
-            }
-            departureDate={contract.deal?.start_date}
-            contractNumber={contract.contract_number}
-            bankAccount={
-              contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl'
-                ? '6180898002/5500'
-                : (contract as any).agency_bank_account
-            }
-            currency={(contract as any).currency || contract.deal?.currency || "CZK"}
-            isPartl={contract.client?.first_name === 'Roman' && contract.client?.last_name === 'Partl'}
-            onPaymentsChange={refetch}
-          />
+          {/* Platební kalendář se spravuje v OP – zobrazuje se pouze v PDF smlouvy */}
 
 
           {/* Ostatní informace a požadavky - tee times */}
@@ -689,7 +676,7 @@ const ContractDetail = () => {
 
       {/* Hidden PDF content */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-        <ContractPdfTemplate ref={pdfContentRef} contract={contract} />
+        <ContractPdfTemplate ref={pdfContentRef} contract={contractForPdf} />
       </div>
 
       <EditContractDialog
