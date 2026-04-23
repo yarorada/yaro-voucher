@@ -35,14 +35,17 @@ serve(async (req) => {
 
     const { payment_id, paid_at, table } = await req.json();
 
-    if (!payment_id || !table) {
-      return new Response(JSON.stringify({ error: 'Chybí payment_id nebo table' }), {
+    if (!payment_id) {
+      return new Response(JSON.stringify({ error: 'Chybí payment_id' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (table !== 'contract_payments') {
-      return new Response(JSON.stringify({ error: 'Neplatná tabulka — párování probíhá vždy přes smlouvy' }), {
+    // Zpětná kompatibilita: dříve se posílala 'contract_payments', dnes pracujeme
+    // výhradně s deal_payments. Akceptujeme obě hodnoty, ale tabulku contract_payments
+    // už neaktualizujeme — je dormant a bude dropnuta.
+    if (table && table !== 'deal_payments' && table !== 'contract_payments') {
+      return new Response(JSON.stringify({ error: 'Neplatná tabulka' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -50,20 +53,20 @@ serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
     const paidAtValue = paid_at || new Date().toISOString();
 
-    // 1. Get the contract payment details before updating
-    const { data: contractPayment, error: fetchError } = await serviceClient
-      .from('contract_payments')
-      .select('id, contract_id, amount, payment_type')
+    // 1. Načti deal_payment
+    const { data: dealPayment, error: fetchError } = await serviceClient
+      .from('deal_payments')
+      .select('id, deal_id, amount, payment_type')
       .eq('id', payment_id)
       .single();
 
-    if (fetchError || !contractPayment) {
+    if (fetchError || !dealPayment) {
       throw new Error("Platba nebyla nalezena");
     }
 
-    // 2. Mark contract_payment as paid
+    // 2. Označ deal_payment jako zaplacený
     const { error: updateError } = await serviceClient
-      .from('contract_payments')
+      .from('deal_payments')
       .update({ paid: true, paid_at: paidAtValue })
       .eq('id', payment_id);
 
@@ -72,58 +75,20 @@ serve(async (req) => {
       throw new Error("Nepodařilo se aktualizovat platbu");
     }
 
-    // 3. Propagate to deal_payments if contract has a deal_id
-    let dealPropagated = false;
-    let dealId: string | null = null;
-
-    const { data: contract } = await serviceClient
-      .from('travel_contracts')
-      .select('deal_id')
-      .eq('id', contractPayment.contract_id)
-      .single();
-
-    if (contract?.deal_id) {
-      dealId = contract.deal_id;
-
-      // Find matching unpaid deal_payment by payment_type + amount (tolerance ±1)
-      const { data: dealPayments } = await serviceClient
-        .from('deal_payments')
-        .select('id, amount, payment_type')
-        .eq('deal_id', contract.deal_id)
-        .eq('paid', false)
-        .eq('payment_type', contractPayment.payment_type);
-
-      if (dealPayments) {
-        const matchingDealPayment = dealPayments.find(
-          dp => Math.abs(dp.amount - contractPayment.amount) <= 1
-        );
-
-        if (matchingDealPayment) {
-          const { error: dealUpdateError } = await serviceClient
-            .from('deal_payments')
-            .update({ paid: true, paid_at: paidAtValue })
-            .eq('id', matchingDealPayment.id);
-
-          if (dealUpdateError) {
-            console.error("Deal payment update error:", dealUpdateError);
-          } else {
-            dealPropagated = true;
-          }
-        }
-      }
-
-      // Update deal status to "confirmed" when first payment arrives
+    // 3. Posun stav dealu na 'confirmed' u první platby
+    const dealId = dealPayment.deal_id;
+    if (dealId) {
       const { data: currentDeal } = await serviceClient
         .from('deals')
         .select('status')
-        .eq('id', contract.deal_id)
+        .eq('id', dealId)
         .single();
 
       if (currentDeal && (currentDeal.status === 'inquiry' || currentDeal.status === 'quote')) {
         const { error: statusError } = await serviceClient
           .from('deals')
           .update({ status: 'confirmed' })
-          .eq('id', contract.deal_id);
+          .eq('id', dealId);
 
         if (statusError) {
           console.error("Deal status update error:", statusError);
@@ -131,20 +96,28 @@ serve(async (req) => {
       }
     }
 
-    // Insert notification for payment confirmation
+    // 4. Notifikace — pokud existuje smlouva přiřazená k dealu, odkážeme na ni
+    let contractId: string | null = null;
+    let contractNumber: string | null = null;
     try {
-      const { data: contractInfo } = await serviceClient
-        .from('travel_contracts')
-        .select('contract_number')
-        .eq('id', contractPayment.contract_id)
-        .single();
+      if (dealId) {
+        const { data: contract } = await serviceClient
+          .from('travel_contracts')
+          .select('id, contract_number')
+          .eq('deal_id', dealId)
+          .maybeSingle();
+        if (contract) {
+          contractId = contract.id;
+          contractNumber = contract.contract_number;
+        }
+      }
 
       await serviceClient.from('notifications').insert({
         event_type: 'payment_confirmed',
-        title: `Platba ${contractPayment.amount.toLocaleString('cs-CZ')} Kč spárována se smlouvou ${contractInfo?.contract_number || ''}`,
-        contract_id: contractPayment.contract_id,
+        title: `Platba ${dealPayment.amount.toLocaleString('cs-CZ')} Kč spárována${contractNumber ? ` se smlouvou ${contractNumber}` : ''}`,
+        contract_id: contractId,
         deal_id: dealId,
-        link: dealId ? `/deals/${dealId}` : `/contracts/${contractPayment.contract_id}`,
+        link: dealId ? `/deals/${dealId}` : (contractId ? `/contracts/${contractId}` : null),
       });
     } catch (e) {
       console.error('Notification insert error:', e);
@@ -152,7 +125,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      deal_propagated: dealPropagated,
+      deal_propagated: true,
       deal_id: dealId,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

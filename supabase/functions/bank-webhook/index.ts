@@ -131,21 +131,23 @@ Deno.serve(async (req) => {
     let matchedPaymentId: string | null = null;
     let matchedContractId: string | null = null;
 
-    // Strategy 1: Match by VS
+    // Strategy 1: Match by VS — najdi smlouvu podle contract_number a platbu v deal_payments dealu smlouvy
     if (parsed.variable_symbol) {
       const vs = parsed.variable_symbol.replace(/\D/g, '');
 
       const { data: contracts } = await supabase
         .from('travel_contracts')
-        .select('id, contract_number')
+        .select('id, contract_number, deal_id')
         .or(`contract_number.ilike.%${vs}`);
 
       if (contracts && contracts.length > 0) {
         for (const contract of contracts) {
+          if (!contract.deal_id) continue;
+
           const { data: payments } = await supabase
-            .from('contract_payments')
+            .from('deal_payments')
             .select('id, amount')
-            .eq('contract_id', contract.id)
+            .eq('deal_id', contract.deal_id)
             .eq('paid', false)
             .order('due_date', { ascending: true });
 
@@ -161,11 +163,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Strategy 2: Fallback by amount only
+    // Strategy 2: Fallback podle částky v deal_payments
     if (!matchedPaymentId) {
       const { data: allUnpaid } = await supabase
-        .from('contract_payments')
-        .select('id, amount, contract_id')
+        .from('deal_payments')
+        .select('id, amount, deal_id')
         .eq('paid', false)
         .order('due_date', { ascending: true });
 
@@ -173,7 +175,15 @@ Deno.serve(async (req) => {
         const match = allUnpaid.find(p => Math.abs(p.amount - parsed.amount) <= 1);
         if (match) {
           matchedPaymentId = match.id;
-          matchedContractId = match.contract_id;
+          // Dohledej smlouvu patřící k dealu (pokud existuje)
+          if (match.deal_id) {
+            const { data: contract } = await supabase
+              .from('travel_contracts')
+              .select('id')
+              .eq('deal_id', match.deal_id)
+              .maybeSingle();
+            matchedContractId = contract?.id || null;
+          }
         }
       }
     }

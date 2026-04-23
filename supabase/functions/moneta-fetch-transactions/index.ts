@@ -304,15 +304,16 @@ Deno.serve(async (req) => {
         const vs = variableSymbol.replace(/\D/g, '');
         const { data: contracts } = await supabase
           .from('travel_contracts')
-          .select('id, contract_number')
+          .select('id, contract_number, deal_id')
           .or(`contract_number.ilike.%${vs}`);
 
         if (contracts && contracts.length > 0) {
           for (const contract of contracts) {
+            if (!contract.deal_id) continue;
             const { data: payments } = await supabase
-              .from('contract_payments')
+              .from('deal_payments')
               .select('id, amount')
-              .eq('contract_id', contract.id)
+              .eq('deal_id', contract.deal_id)
               .eq('paid', false)
               .order('due_date', { ascending: true });
 
@@ -330,8 +331,8 @@ Deno.serve(async (req) => {
 
       if (!matchedPaymentId) {
         const { data: allUnpaid } = await supabase
-          .from('contract_payments')
-          .select('id, amount, contract_id')
+          .from('deal_payments')
+          .select('id, amount, deal_id')
           .eq('paid', false)
           .order('due_date', { ascending: true });
 
@@ -339,7 +340,14 @@ Deno.serve(async (req) => {
           const match = allUnpaid.find((p: any) => Math.abs(p.amount - amount) <= 1);
           if (match) {
             matchedPaymentId = match.id;
-            matchedContractId = match.contract_id;
+            if (match.deal_id) {
+              const { data: contract } = await supabase
+                .from('travel_contracts')
+                .select('id')
+                .eq('deal_id', match.deal_id)
+                .maybeSingle();
+              matchedContractId = contract?.id || null;
+            }
           }
         }
       }

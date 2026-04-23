@@ -108,7 +108,8 @@ serve(async (req) => {
       });
     }
 
-    // Search for matching unpaid payments — always in travel_contracts
+    // Search for matching unpaid payments — always in deal_payments.
+    // Smlouva slouží jen jako prostředník pro VS (contract_number), samotné platby čteme z deal_payments.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -127,10 +128,12 @@ serve(async (req) => {
 
       if (contracts && contracts.length > 0) {
         for (const contract of contracts) {
+          if (!contract.deal_id) continue;
+
           const { data: payments } = await supabaseClient
-            .from('contract_payments')
+            .from('deal_payments')
             .select('id, amount, due_date, payment_type, notes, paid')
-            .eq('contract_id', contract.id)
+            .eq('deal_id', contract.deal_id)
             .eq('paid', false)
             .order('due_date', { ascending: true });
 
@@ -138,7 +141,7 @@ serve(async (req) => {
             for (const payment of payments) {
               if (Math.abs(payment.amount - parsed.amount) <= 1) {
                 matches.push({
-                  table: 'contract_payments',
+                  table: 'deal_payments',
                   payment_id: payment.id,
                   payment_type: payment.payment_type,
                   payment_notes: payment.notes,
@@ -146,6 +149,7 @@ serve(async (req) => {
                   due_date: payment.due_date,
                   contract_number: contract.contract_number,
                   contract_id: contract.id,
+                  deal_id: contract.deal_id,
                 });
               }
             }
@@ -154,33 +158,34 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 2: If no VS match, search by amount across all unpaid contract_payments
+    // Strategy 2: If no VS match, search by amount across all unpaid deal_payments
     if (matches.length === 0) {
       const { data: allUnpaid } = await supabaseClient
-        .from('contract_payments')
-        .select('id, amount, due_date, payment_type, notes, paid, contract_id')
+        .from('deal_payments')
+        .select('id, amount, due_date, payment_type, notes, paid, deal_id')
         .eq('paid', false)
         .order('due_date', { ascending: true });
 
       if (allUnpaid) {
         for (const payment of allUnpaid) {
           if (Math.abs(payment.amount - parsed.amount) <= 1) {
-            // Get contract info
+            // Dohledej smlouvu podle deal_id (pokud existuje) jen kvůli zobrazení čísla smlouvy
             const { data: contract } = await supabaseClient
               .from('travel_contracts')
-              .select('contract_number, deal_id')
-              .eq('id', payment.contract_id)
-              .single();
+              .select('id, contract_number')
+              .eq('deal_id', payment.deal_id)
+              .maybeSingle();
 
             matches.push({
-              table: 'contract_payments',
+              table: 'deal_payments',
               payment_id: payment.id,
               payment_type: payment.payment_type,
               payment_notes: payment.notes,
               amount: payment.amount,
               due_date: payment.due_date,
               contract_number: contract?.contract_number,
-              contract_id: payment.contract_id,
+              contract_id: contract?.id,
+              deal_id: payment.deal_id,
             });
           }
         }

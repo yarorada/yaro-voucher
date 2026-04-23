@@ -151,10 +151,10 @@ Deno.serve(async (req) => {
       let matchedPaymentId: string | null = null;
       let matchedContractId: string | null = null;
 
-      // Strategy 1: Match by exact amount (within 1 CZK tolerance)
+      // Strategy 1: Match by exact amount (within 1 CZK tolerance) proti deal_payments
       const { data: allUnpaid } = await supabase
-        .from("contract_payments")
-        .select("id, amount, contract_id")
+        .from("deal_payments")
+        .select("id, amount, deal_id")
         .eq("paid", false)
         .order("due_date", { ascending: true });
 
@@ -162,7 +162,14 @@ Deno.serve(async (req) => {
         const match = allUnpaid.find((p: { amount: number }) => Math.abs(p.amount - amount) <= 1);
         if (match) {
           matchedPaymentId = match.id;
-          matchedContractId = match.contract_id;
+          if (match.deal_id) {
+            const { data: contract } = await supabase
+              .from("travel_contracts")
+              .select("id")
+              .eq("deal_id", match.deal_id)
+              .maybeSingle();
+            matchedContractId = contract?.id || null;
+          }
         }
       }
 

@@ -86,20 +86,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const contractIds = contracts.map((c: any) => c.id);
     const dealIds = contracts.map((c: any) => (c.deal as any)?.id).filter(Boolean);
 
     const [{ data: allPayments }, { data: profitData }] = await Promise.all([
-      supabase.from('contract_payments').select('contract_id, payment_type, amount, paid, paid_at').in('contract_id', contractIds),
+      supabase.from('deal_payments').select('deal_id, payment_type, amount, paid, paid_at').in('deal_id', dealIds),
       supabase.from('deal_profitability').select('deal_id, total_costs, revenue').in('deal_id', dealIds),
     ]);
 
     const profitMap = new Map((profitData || []).map((p: any) => [p.deal_id, p]));
-    const paymentsMap = new Map<string, any[]>();
+    const paymentsByDeal = new Map<string, any[]>();
     (allPayments || []).forEach((p: any) => {
-      const arr = paymentsMap.get(p.contract_id) || [];
+      const arr = paymentsByDeal.get(p.deal_id) || [];
       arr.push(p);
-      paymentsMap.set(p.contract_id, arr);
+      paymentsByDeal.set(p.deal_id, arr);
+    });
+    const paymentsMap = new Map<string, any[]>();
+    contracts.forEach((c: any) => {
+      const dealId = (c.deal as any)?.id;
+      if (dealId) paymentsMap.set(c.id, paymentsByDeal.get(dealId) || []);
     });
 
     const rows = contracts
