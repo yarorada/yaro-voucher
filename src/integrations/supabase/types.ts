@@ -223,13 +223,6 @@ export type Database = {
             referencedRelation: "travel_contracts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "bank_notifications_matched_payment_id_fkey"
-            columns: ["matched_payment_id"]
-            isOneToOne: false
-            referencedRelation: "contract_payments"
-            referencedColumns: ["id"]
-          },
         ]
       }
       bank_statements: {
@@ -350,50 +343,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      contract_payments: {
-        Row: {
-          amount: number
-          contract_id: string
-          created_at: string | null
-          due_date: string
-          id: string
-          notes: string | null
-          paid: boolean | null
-          paid_at: string | null
-          payment_type: string
-        }
-        Insert: {
-          amount: number
-          contract_id: string
-          created_at?: string | null
-          due_date: string
-          id?: string
-          notes?: string | null
-          paid?: boolean | null
-          paid_at?: string | null
-          payment_type: string
-        }
-        Update: {
-          amount?: number
-          contract_id?: string
-          created_at?: string | null
-          due_date?: string
-          id?: string
-          notes?: string | null
-          paid?: boolean | null
-          paid_at?: string | null
-          payment_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contract_payments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "travel_contracts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       contract_service_travelers: {
         Row: {
