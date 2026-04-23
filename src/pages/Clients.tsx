@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Edit, User, FileUp, ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
+import { Trash2, Edit, User, FileUp, ChevronDown, Eye, ExternalLink, FileText, MoreHorizontal, Wallet } from "lucide-react";
 import { ClientFilterBar, FilterCondition, applyClientFilters } from "@/components/ClientFilterBar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -97,6 +97,7 @@ const Clients = () => {
   const { user } = useAuth();
   const { scope } = useDataScope();
   const [clients, setClients] = useState<Client[]>([]);
+  const [walletBalances, setWalletBalances] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -175,7 +176,25 @@ const Clients = () => {
 
   useEffect(() => {
     fetchClients();
+    fetchWalletBalances();
   }, [scope, user?.id]);
+
+  const fetchWalletBalances = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("client_wallet_balances")
+        .select("client_id, balance");
+      if (error) throw error;
+      const map = new Map<string, number>();
+      (data || []).forEach((row: { client_id: string; balance: number }) => {
+        map.set(row.client_id, row.balance);
+      });
+      setWalletBalances(map);
+    } catch (error) {
+      // Peněženka je volitelný feature — v případě chyby tiše ignorujeme.
+      console.error("Error fetching wallet balances:", error);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -1044,18 +1063,35 @@ const Clients = () => {
                       )}
                     </div>
                     {client.email && <p className="text-xs text-muted-foreground truncate">{client.email}</p>}
-                    <div className="flex gap-3 text-xs text-muted-foreground">
+                    <div className="flex gap-3 text-xs text-muted-foreground items-center">
                       {client.phone && <span>{client.phone}</span>}
                       {client.date_of_birth && <span>{(() => { const d = parseDateSafe(client.date_of_birth); return d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}` : "–"; })()}</span>}
+                      {(walletBalances.get(client.id) || 0) > 0 && (
+                        <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-400 font-medium" title="Zůstatek peněženky">
+                          <Wallet className="h-3 w-3" />
+                          {(walletBalances.get(client.id) || 0).toLocaleString("cs-CZ")}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={() => handleEdit(client)} className="text-primary hover:text-primary/70 transition-colors" title="Upravit">
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }} className="text-destructive hover:text-destructive/70 transition-colors" title="Smazat">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="text-muted-foreground hover:text-foreground p-1 -m-1" title="Akce">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(client)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Upravit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Smazat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </Card>
@@ -1072,7 +1108,8 @@ const Clients = () => {
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Telefon</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Datum narození</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Akce</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Body</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1113,22 +1150,37 @@ const Clients = () => {
                       <td className="px-4 py-3 text-muted-foreground">
                         {client.date_of_birth ? (() => { const d = parseDateSafe(client.date_of_birth); return d ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}` : "–"; })() : "–"}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(client)}
-                            className="text-primary hover:text-primary/70 transition-colors"
-                            title="Upravit"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}
-                            className="text-destructive hover:text-destructive/70 transition-colors"
-                            title="Smazat"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {(() => {
+                          const bal = walletBalances.get(client.id) || 0;
+                          if (bal === 0) return <span className="text-muted-foreground">–</span>;
+                          return (
+                            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium" title="Zůstatek peněženky">
+                              <Wallet className="h-3.5 w-3.5" />
+                              {bal.toLocaleString("cs-CZ")}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="text-muted-foreground hover:text-foreground p-1 -m-1" title="Akce">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(client)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Upravit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Smazat
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
