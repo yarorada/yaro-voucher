@@ -77,13 +77,35 @@ function periodOptions(): { value: string; label: string }[] {
   return opts;
 }
 
+// Normalizuje měnu na ISO 4217 kód, který Intl.NumberFormat chápe.
+// Některé staré faktury mají v DB symbol "Kč", "$" atd. místo "CZK"/"USD".
+function normalizeCurrency(c: string | null | undefined): string {
+  if (!c) return "CZK";
+  const trimmed = c.trim();
+  // Pokud je to už 3-znakový alfa kód (a tedy pravděpodobně ISO), použij ho
+  if (/^[A-Za-z]{3}$/.test(trimmed)) return trimmed.toUpperCase();
+  const map: Record<string, string> = {
+    "Kč": "CZK", "kč": "CZK", "KČ": "CZK", "Kc": "CZK",
+    "€": "EUR", "EU": "EUR",
+    "$": "USD", "US$": "USD", "USD$": "USD",
+    "£": "GBP",
+    "zł": "PLN", "PLN zł": "PLN",
+  };
+  return map[trimmed] || "CZK";
+}
+
 function formatAmount(amount: number | null, currency: string | null) {
   if (amount == null) return "—";
-  return new Intl.NumberFormat("cs-CZ", {
-    style: "currency",
-    currency: currency || "CZK",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat("cs-CZ", {
+      style: "currency",
+      currency: normalizeCurrency(currency),
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    // poslední záchrana, kdyby normalizace neuměla
+    return `${amount.toLocaleString("cs-CZ")} ${currency || ""}`.trim();
+  }
 }
 
 function clientName(c: Contract) {

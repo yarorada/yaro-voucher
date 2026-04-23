@@ -69,9 +69,28 @@ function safeFileName(s: string, fallback = "soubor"): string {
   return cleaned || fallback;
 }
 
-function formatAmount(n: number | null | undefined, currency = "CZK"): string {
+function normalizeCurrency(c: string | null | undefined): string {
+  if (!c) return "CZK";
+  const t = c.trim();
+  if (/^[A-Za-z]{3}$/.test(t)) return t.toUpperCase();
+  const map: Record<string, string> = {
+    "Kč": "CZK", "kč": "CZK", "KČ": "CZK", "Kc": "CZK",
+    "€": "EUR", "$": "USD", "US$": "USD", "£": "GBP", "zł": "PLN",
+  };
+  return map[t] || "CZK";
+}
+
+function formatAmount(n: number | null | undefined, currency: string | null | undefined = "CZK"): string {
   if (n == null) return "—";
-  return new Intl.NumberFormat("cs-CZ", { style: "currency", currency, maximumFractionDigits: 2 }).format(n);
+  try {
+    return new Intl.NumberFormat("cs-CZ", {
+      style: "currency",
+      currency: normalizeCurrency(currency),
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${n.toLocaleString("cs-CZ")} ${currency || ""}`.trim();
+  }
 }
 
 function formatDate(d: string | null | undefined): string {
