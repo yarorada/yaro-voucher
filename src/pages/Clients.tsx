@@ -1010,7 +1010,7 @@ const Clients = () => {
                       : "bg-background text-muted-foreground border-border hover:bg-muted"
                   }`}
                 >
-                  {letter} ({letterCounts[letter]})
+                  {letter}
                 </button>
               ))}
             </div>
