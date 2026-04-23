@@ -2307,6 +2307,10 @@ export type Database = {
       }
       is_task_admin: { Args: { _user_id: string }; Returns: boolean }
       is_voucher_owner: { Args: { voucher_id: string }; Returns: boolean }
+      process_birthday_bonuses: {
+        Args: { p_backfill_year?: boolean }
+        Returns: number
+      }
       process_wallet_earnings: { Args: { p_deal_id?: string }; Returns: number }
       select_deal_variant: { Args: { p_variant_id: string }; Returns: boolean }
       update_deal_display_number: {
