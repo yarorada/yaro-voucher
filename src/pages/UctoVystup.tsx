@@ -249,7 +249,7 @@ export default function UctoVystup() {
     invs.reduce((s, i) => s + (i.total_amount || 0), 0);
 
   return (
-    <PageShell title="UCTO výstup">
+    <PageShell>
       <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
         <Tabs defaultValue="current">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
