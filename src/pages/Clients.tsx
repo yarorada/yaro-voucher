@@ -106,6 +106,7 @@ const Clients = () => {
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
   const [quickSearch, setQuickSearch] = useState("");
   const [documentPreviewClient, setDocumentPreviewClient] = useState<Client | null>(null);
+  const [letterFilter, setLetterFilter] = useState<string>("*");
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const { setIsSaving, setLastSaved } = useGlobalHistory();
 
@@ -205,6 +206,29 @@ const Clients = () => {
   };
 
   const filteredClients = applyClientFilters(clients, filterConditions, quickSearch);
+
+  const getClientInitial = (client: Client): string => {
+    const src = (client.last_name || client.first_name || "").trim();
+    if (!src) return "#";
+    const ch = removeDiacritics(src.charAt(0)).toUpperCase();
+    return /[A-Z]/.test(ch) ? ch : "#";
+  };
+
+  const letterCounts = filteredClients.reduce<Record<string, number>>((acc, c) => {
+    const letter = getClientInitial(c);
+    acc[letter] = (acc[letter] || 0) + 1;
+    return acc;
+  }, {});
+
+  const letterTabs = Object.keys(letterCounts).sort((a, b) => {
+    if (a === "#") return 1;
+    if (b === "#") return -1;
+    return a.localeCompare(b);
+  });
+
+  const displayedClients = letterFilter === "*"
+    ? filteredClients
+    : filteredClients.filter((c) => getClientInitial(c) === letterFilter);
 
   const handleAddNewFromSearch = (text: string) => {
     const parts = text.trim().split(/\s+/);
@@ -961,8 +985,38 @@ const Clients = () => {
           </Card>
         ) : (
           <>
+          {/* Alphabetic letter tabs */}
+          <div className="mb-3 -mx-2 px-2 overflow-x-auto">
+            <div className="flex items-center gap-1 min-w-max">
+              <button
+                type="button"
+                onClick={() => setLetterFilter("*")}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  letterFilter === "*"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:bg-muted"
+                }`}
+              >
+                * ({filteredClients.length})
+              </button>
+              {letterTabs.map((letter) => (
+                <button
+                  key={letter}
+                  type="button"
+                  onClick={() => setLetterFilter(letter)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    letterFilter === letter
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border hover:bg-muted"
+                  }`}
+                >
+                  {letter} ({letterCounts[letter]})
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="sm:hidden space-y-2">
-            {filteredClients.map((client) => (
+            {displayedClients.map((client) => (
               <Card key={client.id} className="p-3 space-y-1.5 cursor-pointer hover:bg-zinc-50 transition-colors" onClick={() => handleEdit(client)}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -1019,7 +1073,7 @@ const Clients = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredClients.map((client) => (
+                  {displayedClients.map((client) => (
                     <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => handleEdit(client)}>
                       <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
