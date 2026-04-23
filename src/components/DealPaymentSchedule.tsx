@@ -16,6 +16,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +47,7 @@ interface Payment {
 interface PaymentSplit {
   id: string;
   payment_id: string;
+  client_id?: string | null;
   payer_name: string;
   amount: number;
   paid_at?: string | null;
@@ -48,10 +57,18 @@ interface PaymentSplit {
 
 interface SplitDraft {
   id?: string;
+  client_id?: string | null;
   payer_name: string;
   amount: string;
   paid_at?: Date | undefined;
   notes?: string;
+}
+
+interface PayerClient {
+  id: string;
+  first_name: string;
+  last_name: string;
+  is_traveler?: boolean;
 }
 
 interface ScheduleItem {
@@ -89,6 +106,8 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
   const [splitPayment, setSplitPayment] = useState<Payment | null>(null);
   const [splitDrafts, setSplitDrafts] = useState<SplitDraft[]>([]);
   const [splitDeleted, setSplitDeleted] = useState<string[]>([]);
+  const [payerClients, setPayerClients] = useState<PayerClient[]>([]);
+  const [openPayerIdx, setOpenPayerIdx] = useState<number | null>(null);
 
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([
     { enabled: true, amount: "", date: undefined, type: "deposit", label: "1. záloha" },
@@ -303,6 +322,40 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     setScheduleItems(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
   };
 
+  const loadPayerClients = async () => {
+    try {
+      // Deal travelers first (top of the list, marked)
+      const { data: travelersRes } = await (supabase as any)
+        .from("deal_travelers")
+        .select("client_id, clients(id, first_name, last_name)")
+        .eq("deal_id", dealId);
+      const travelerIds = new Set<string>();
+      const travelers: PayerClient[] = (travelersRes || [])
+        .map((t: any) => {
+          if (!t.clients) return null;
+          travelerIds.add(t.clients.id);
+          return {
+            id: t.clients.id,
+            first_name: t.clients.first_name,
+            last_name: t.clients.last_name,
+            is_traveler: true,
+          } as PayerClient;
+        })
+        .filter(Boolean) as PayerClient[];
+      // All clients
+      const { data: allRes } = await (supabase as any)
+        .from("clients")
+        .select("id, first_name, last_name")
+        .order("last_name", { ascending: true });
+      const others: PayerClient[] = (allRes || [])
+        .filter((c: any) => !travelerIds.has(c.id))
+        .map((c: any) => ({ id: c.id, first_name: c.first_name, last_name: c.last_name }));
+      setPayerClients([...travelers, ...others]);
+    } catch (error) {
+      console.error("Error loading payer clients:", error);
+    }
+  };
+
   const openSplitDialog = (payment: Payment) => {
     setSplitPayment(payment);
     const existing = splits.filter((s) => s.payment_id === payment.id);
@@ -310,6 +363,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
       existing.length
         ? existing.map((s) => ({
             id: s.id,
+            client_id: s.client_id || null,
             payer_name: s.payer_name,
             amount: String(s.amount),
             paid_at: s.paid_at ? new Date(s.paid_at) : undefined,
@@ -322,6 +376,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
     );
     setSplitDeleted([]);
     setSplitDialogOpen(true);
+    loadPayerClients();
   };
 
   const addSplitDraft = () => {
@@ -357,6 +412,7 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
         const d = valid[i];
         const payload = {
           payment_id: splitPayment.id,
+          client_id: d.client_id || null,
           payer_name: d.payer_name.trim(),
           amount: parseFloat(d.amount),
           paid_at: d.paid_at ? d.paid_at.toISOString() : null,
@@ -849,12 +905,83 @@ export function DealPaymentSchedule({ dealId, totalPrice = 0, departureDate, cur
                   <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_auto] gap-2 items-start p-2 border rounded-lg">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Jméno plátce</Label>
-                      <Input
-                        value={d.payer_name}
-                        onChange={(e) => updateSplitDraft(idx, { payer_name: e.target.value })}
-                        placeholder="Jan Novák"
-                        className="h-9"
-                      />
+                      <Popover open={openPayerIdx === idx} onOpenChange={(o) => setOpenPayerIdx(o ? idx : null)}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full h-9 justify-start text-left font-normal truncate",
+                              !d.payer_name && "text-muted-foreground"
+                            )}
+                          >
+                            {d.payer_name || "Vybrat klienta…"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width] min-w-[260px]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Hledat klienta nebo napsat jméno…" />
+                            <CommandList>
+                              <CommandEmpty>
+                                <button
+                                  type="button"
+                                  className="w-full text-left text-sm px-2 py-1.5 hover:bg-accent rounded"
+                                  onClick={() => {
+                                    const el = document.querySelector<HTMLInputElement>("[cmdk-input]");
+                                    const v = el?.value?.trim() || "";
+                                    if (v) {
+                                      updateSplitDraft(idx, { payer_name: v, client_id: null });
+                                      setOpenPayerIdx(null);
+                                    }
+                                  }}
+                                >
+                                  Použít volný text (ENTER)
+                                </button>
+                              </CommandEmpty>
+                              {payerClients.some((c) => c.is_traveler) && (
+                                <CommandGroup heading="Cestující v OP">
+                                  {payerClients
+                                    .filter((c) => c.is_traveler)
+                                    .map((c) => (
+                                      <CommandItem
+                                        key={c.id}
+                                        value={`${c.first_name} ${c.last_name}`}
+                                        onSelect={() => {
+                                          updateSplitDraft(idx, {
+                                            payer_name: `${c.first_name} ${c.last_name}`.trim(),
+                                            client_id: c.id,
+                                          });
+                                          setOpenPayerIdx(null);
+                                        }}
+                                      >
+                                        {c.first_name} {c.last_name}
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              )}
+                              <CommandGroup heading="Ostatní klienti">
+                                {payerClients
+                                  .filter((c) => !c.is_traveler)
+                                  .map((c) => (
+                                    <CommandItem
+                                      key={c.id}
+                                      value={`${c.first_name} ${c.last_name}`}
+                                      onSelect={() => {
+                                        updateSplitDraft(idx, {
+                                          payer_name: `${c.first_name} ${c.last_name}`.trim(),
+                                          client_id: c.id,
+                                        });
+                                        setOpenPayerIdx(null);
+                                      }}
+                                    >
+                                      {c.first_name} {c.last_name}
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Částka</Label>

@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS public.deal_payment_splits (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   payment_id UUID NOT NULL REFERENCES public.deal_payments(id) ON DELETE CASCADE,
+  client_id UUID NULL REFERENCES public.clients(id) ON DELETE SET NULL,
   payer_name TEXT NOT NULL,
   amount NUMERIC NOT NULL DEFAULT 0,
   paid_at TIMESTAMPTZ,
