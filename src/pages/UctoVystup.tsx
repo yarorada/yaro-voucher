@@ -499,7 +499,7 @@ export default function UctoVystup() {
     const { data, error } = await (supabase as any)
       .from("invoices")
       .select(
-        "id, invoice_number, invoice_type, client_name, supplier_name, supplier_ico, supplier_dic, client_ico, client_dic, issue_date, due_date, total_amount, net_amount, vat_amount, currency, variable_symbol, bank_account, iban, paid, notes, file_url, payment_method, bank, items"
+        "id, invoice_number, invoice_type, client_name, client_address, supplier_name, supplier_address, supplier_ico, supplier_dic, client_ico, client_dic, issue_date, due_date, taxable_date, total_amount, net_amount, vat_amount, currency, variable_symbol, specific_symbol, constant_symbol, bank_account, iban, paid, notes, file_url, file_name, payment_method, bank, items"
       )
       .in("id", ids);
     if (error) throw error;
@@ -517,11 +517,30 @@ export default function UctoVystup() {
 
   const fetchContractsFull = async (ids: string[]): Promise<ZipContract[]> => {
     if (!ids.length) return [];
+    // Fetch the same deep object that ContractDetail.tsx uses, so the branded
+    // ContractPdfTemplate renders identically (services, travelers, payments, ...).
     const { data, error } = await (supabase as any)
       .from("travel_contracts")
-      .select(
-        "id, contract_number, contract_date, total_price, currency, deposit_amount, payment_schedule, client:clients(first_name, last_name, email, phone)"
-      )
+      .select(`
+        *,
+        client:clients(*),
+        payments:contract_payments(*),
+        deal:deals(
+          id,
+          *,
+          destination:destinations(
+            name,
+            country:countries(name, iso_code)
+          ),
+          travelers:deal_travelers(
+            client:clients(*)
+          ),
+          services:deal_services(
+            *,
+            supplier:suppliers(name)
+          )
+        )
+      `)
       .in("id", ids);
     if (error) throw error;
     return (data || []) as ZipContract[];

@@ -4,6 +4,8 @@
 
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { generateInvoicePdfBlob } from "./invoicePdfBuilder";
+import { generateContractPdfBlob } from "./contractPdfBuilder";
 
 export type ZipInvoice = {
   id: string;
@@ -27,9 +29,18 @@ export type ZipInvoice = {
   paid?: boolean | null;
   notes?: string | null;
   file_url?: string | null;
+  file_name?: string | null;
   payment_method?: string | null;
   bank?: string | null;
   items?: Array<{ text?: string; quantity?: number; unit_price?: number; vat_rate?: number }> | null;
+  // contract number for the deal this invoice belongs to (for filename prefix)
+  contract_number?: string | null;
+  // extra fields used by branded PDF
+  client_address?: string | null;
+  supplier_address?: string | null;
+  taxable_date?: string | null;
+  specific_symbol?: string | null;
+  constant_symbol?: string | null;
 };
 
 export type ZipContract = {
@@ -395,35 +406,46 @@ export async function buildUctoZip(
     onProgress?.({ current, total, label });
   };
 
-  // 1) Vystavené faktury — generuj PDF
+  // 1) Vystavené faktury — generuj branded PDF (stejný jako v Invoicing.tsx)
   for (const inv of issued) {
-    const fileName = `${safeFileName(inv.invoice_number || `faktura-${inv.id.slice(0, 8)}`)}.pdf`;
+    const fallbackName = `${safeFileName(inv.invoice_number || `faktura-${inv.id.slice(0, 8)}`)}.pdf`;
     try {
-      const blob = await htmlToPdfBlob(issuedInvoiceHtml(inv), fileName);
-      issuedFolder.file(fileName, blob);
+      const { blob, fileName } = await generateInvoicePdfBlob(inv as never);
+      issuedFolder.file(fileName || fallbackName, blob);
     } catch (e) {
       console.error("Failed to render issued invoice", inv.invoice_number, e);
+      // fallback na jednoduchou šablonu, ať aspoň něco doručíme
+      try {
+        const blob = await htmlToPdfBlob(issuedInvoiceHtml(inv), fallbackName);
+        issuedFolder.file(fallbackName, blob);
+      } catch (e2) {
+        console.error("Fallback PDF also failed", e2);
+      }
     }
     tick(`Vystavená faktura ${inv.invoice_number ?? ""}`);
   }
 
-  // 2) Přijaté faktury — stáhni originál ze storage
+  // 2) Přijaté faktury — stáhni originál ze storage s původním názvem
+  // (soubory jsou už nahrány s prefixem čísla smlouvy, není třeba přejmenovávat)
   for (const inv of received) {
     if (inv.file_url) {
       const blob = await fetchInvoiceFile(inv.file_url);
       if (blob) {
-        const ext = fileExtFromBlob(blob, inv.file_url.split("/").pop());
-        const baseName = safeFileName(
-          `${inv.supplier_name || "dodavatel"}_${inv.invoice_number || inv.id.slice(0, 8)}`
-        );
-        receivedFolder.file(`${baseName}.${ext}`, blob);
+        const storageName = inv.file_url.split("/").pop() || "";
+        const originalName = inv.file_name || storageName || `${inv.invoice_number || inv.id.slice(0, 8)}`;
+        const ext = fileExtFromBlob(blob, originalName);
+        // Pokud původní název už koncovku má, ponech ho beze změny — jinak doplň
+        const hasExt = /\.[a-zA-Z0-9]{1,5}$/.test(originalName);
+        const cleaned = safeFileName(originalName.replace(/\.[a-zA-Z0-9]{1,5}$/, "")) || `faktura-${inv.id.slice(0, 8)}`;
+        const finalName = hasExt ? `${cleaned}.${originalName.match(/\.([a-zA-Z0-9]{1,5})$/)?.[1].toLowerCase() || ext}` : `${cleaned}.${ext}`;
+        receivedFolder.file(finalName, blob);
       }
     } else {
-      // bez souboru — vygeneruj alespoň základní PDF přehled
-      const fileName = `${safeFileName(inv.supplier_name || "dodavatel")}_${safeFileName(inv.invoice_number || inv.id.slice(0, 8))}.pdf`;
+      // bez souboru — vygeneruj alespoň branded PDF přehled
+      const fallbackName = `${safeFileName(inv.supplier_name || "dodavatel")}_${safeFileName(inv.invoice_number || inv.id.slice(0, 8))}.pdf`;
       try {
-        const blob = await htmlToPdfBlob(issuedInvoiceHtml(inv), fileName); // stejný layout, jen s opačnými stranami
-        receivedFolder.file(fileName, blob);
+        const { blob, fileName } = await generateInvoicePdfBlob(inv as never);
+        receivedFolder.file(fileName || fallbackName, blob);
       } catch (e) {
         console.error("Failed to render received invoice fallback", e);
       }
@@ -431,14 +453,21 @@ export async function buildUctoZip(
     tick(`Přijatá faktura ${inv.invoice_number ?? inv.supplier_name ?? ""}`);
   }
 
-  // 3) Smlouvy — generuj PDF
+  // 3) Smlouvy — generuj branded PDF (stejný jako v ContractDetail.tsx)
   for (const c of input.contracts) {
-    const fileName = `${safeFileName(c.contract_number)}.pdf`;
+    const fallbackName = `${safeFileName(c.contract_number)}.pdf`;
     try {
-      const blob = await htmlToPdfBlob(contractHtml(c), fileName);
-      contractsFolder.file(fileName, blob);
+      const { blob, fileName } = await generateContractPdfBlob(c);
+      contractsFolder.file(fileName || fallbackName, blob);
     } catch (e) {
       console.error("Failed to render contract", c.contract_number, e);
+      // fallback na jednoduchou šablonu
+      try {
+        const blob = await htmlToPdfBlob(contractHtml(c), fallbackName);
+        contractsFolder.file(fallbackName, blob);
+      } catch (e2) {
+        console.error("Fallback PDF also failed", e2);
+      }
     }
     tick(`Smlouva ${c.contract_number}`);
   }
