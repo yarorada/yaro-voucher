@@ -201,7 +201,7 @@ export default function Invoicing() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [ocrScanning, setOcrScanning] = useState(false);
-  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; total_amount?: number; net_amount?: number; vat_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string } | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<{ supplier_name?: string; supplier_ico?: string; supplier_dic?: string; total_amount?: number; net_amount?: number; vat_amount?: number; currency?: string; issue_date?: string; variable_symbol?: string; due_date?: string; bank_account?: string; iban?: string } | null>(null);
   const [scanFileUrl, setScanFileUrl] = useState<string | null>(null);
   const [scanFileName, setScanFileName] = useState<string | null>(null);
   const [items, setItems] = useState<InvoiceItem[]>([{ ...emptyItem }]);
@@ -470,6 +470,9 @@ export default function Invoicing() {
           : f.due_date
         : f.due_date,
       bank_account: ocrPreview.bank_account || f.bank_account,
+      iban: ocrPreview.iban || f.iban,
+      supplier_ico: ocrPreview.supplier_ico || f.supplier_ico,
+      supplier_dic: ocrPreview.supplier_dic || f.supplier_dic,
     }));
     setOcrPreview(null);
     toast.success("Data převzata do formuláře");
@@ -1386,6 +1389,18 @@ export default function Invoicing() {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         {ocrPreview.supplier_name && (
                           <div><span className="text-muted-foreground">Dodavatel:</span> {ocrPreview.supplier_name}</div>
+                        )}
+                        {ocrPreview.supplier_ico && (
+                          <div><span className="text-muted-foreground">IČO:</span> {ocrPreview.supplier_ico}</div>
+                        )}
+                        {ocrPreview.supplier_dic && (
+                          <div><span className="text-muted-foreground">DIČ:</span> {ocrPreview.supplier_dic}</div>
+                        )}
+                        {ocrPreview.bank_account && (
+                          <div><span className="text-muted-foreground">Číslo účtu:</span> {ocrPreview.bank_account}</div>
+                        )}
+                        {ocrPreview.iban && (
+                          <div><span className="text-muted-foreground">IBAN:</span> {ocrPreview.iban}</div>
                         )}
                         {ocrPreview.total_amount != null && (
                           <div><span className="text-muted-foreground">Celkem s DPH:</span> {ocrPreview.total_amount.toLocaleString("cs-CZ")} {ocrPreview.currency || "CZK"}</div>

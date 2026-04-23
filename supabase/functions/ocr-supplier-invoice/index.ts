@@ -33,6 +33,8 @@ serve(async (req) => {
 Extract the following information in JSON format:
 {
   "supplier_name": "name of the supplier/company that issued the invoice (string)",
+  "supplier_ico": "supplier company ID — Czech IČO / IČ — usually 8 digits, sometimes 6-8 (string or null). Strip spaces.",
+  "supplier_dic": "supplier tax ID — DIČ / VAT ID — typically starts with country code like CZ12345678, SK..., DE..., AT..., or just digits (string or null). Strip spaces.",
   "total_amount": "total amount to be paid INCLUDING VAT as a number (number, not string)",
   "net_amount": "amount WITHOUT VAT (základ daně / cena bez DPH) as a number (number or null)",
   "vat_amount": "VAT amount (DPH / daň) as a number (number or null)",
@@ -40,7 +42,8 @@ Extract the following information in JSON format:
   "issue_date": "issue date in DD.MM.YYYY format (string)",
   "variable_symbol": "variable symbol / variabilní symbol (string or null)",
   "due_date": "due date / datum splatnosti in DD.MM.YYYY format (string or null)",
-  "bank_account": "bank account number in Czech format like 123456789/0100 (string or null)"
+  "bank_account": "bank account number in Czech format like 123456789/0100 (string or null)",
+  "iban": "IBAN if present on the invoice, normalized without spaces (string or null)"
 }
 
 Important:
@@ -53,7 +56,10 @@ Important:
 - Look for "Variabilní symbol", "Var. symbol", "VS" for the variable symbol
 - Look for "Datum splatnosti", "Due date", "Splatnost" for the due date
 - Look for "Číslo účtu", "Bankovní účet", "Bank account", "Účet" for the bank account number. It is typically in format like 123456789/0100 (account number / bank code). Include the prefix if present (e.g. 19-123456789/0100).
-- For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set these to null.
+- Look for "IČO", "IČ", "Company ID", "Reg. No.", "Identification number" for supplier_ico — return ONLY digits, strip any "IČO:" prefix and spaces.
+- Look for "DIČ", "VAT", "VAT ID", "Tax ID", "VAT No.", "DPH" (when followed by an ID, not just an amount) for supplier_dic — keep the country prefix if present (e.g. CZ12345678).
+- supplier_ico and supplier_dic refer to the SUPPLIER (the company that issued the invoice), NOT the customer. If both supplier and customer info appear, pick the one of the issuer (typically labeled "Dodavatel", "Odběratel" is the customer).
+- For variable_symbol, due_date and bank_account, only extract if the currency is CZK (Czech invoice). For non-CZK invoices, set bank_account to null but DO extract iban if shown.
 - Return only the JSON object, no additional text or markdown
 - For multi-page documents: synthesize the BEST single answer per field, do not concatenate values from different pages
 - If you cannot find a field, use null`;
