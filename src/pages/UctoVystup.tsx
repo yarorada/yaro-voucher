@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format, parse, startOfMonth, endOfMonth } from "date-fns";
 import { cs } from "date-fns/locale";
-import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature } from "lucide-react";
+import { Archive, ChevronDown, ChevronUp, FileText, FolderOpen, ArrowRight, FileSignature, Download, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { buildUctoZip, downloadBlob, type ZipInvoice, type ZipContract } from "@/lib/uctoZipBuilder";
 
 type Invoice = {
   id: string;
@@ -162,19 +163,25 @@ function ContractTable({ contracts, showChangedBadge = false }: { contracts: Con
   );
 }
 
-function BatchCard({ batch }: { batch: Batch }) {
+function BatchCard({ batch, onDownload, downloadingBatchId, downloadProgress }: {
+  batch: Batch;
+  onDownload: (b: Batch) => void;
+  downloadingBatchId: string | null;
+  downloadProgress: { current: number; total: number; label: string } | null;
+}) {
   const [open, setOpen] = useState(false);
   const issued = (batch.invoices || []).filter((i) => i.invoice_type === "issued");
   const received = (batch.invoices || []).filter((i) => i.invoice_type === "received");
   const contracts = batch.contracts || [];
   const totalDocs = (batch.invoices || []).length + contracts.length;
+  const isDownloading = downloadingBatchId === batch.id;
   return (
     <Card className="mb-3">
-      <CardHeader className="py-3 px-4 cursor-pointer" onClick={() => setOpen((v) => !v)}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-amber-500" />
-            <span className="font-medium">{batch.label || periodLabel(batch.period)}</span>
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 cursor-pointer flex-1 min-w-0" onClick={() => setOpen((v) => !v)}>
+            <FolderOpen className="h-4 w-4 text-amber-500 shrink-0" />
+            <span className="font-medium truncate">{batch.label || periodLabel(batch.period)}</span>
             <Badge variant="outline" className="text-xs">
               {totalDocs} dokladů
             </Badge>
@@ -184,9 +191,23 @@ function BatchCard({ batch }: { batch: Batch }) {
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>Archivováno {format(new Date(batch.created_at), "d.M.yyyy")}</span>
-            {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 h-8"
+              disabled={isDownloading || totalDocs === 0}
+              onClick={(e) => { e.stopPropagation(); onDownload(batch); }}
+            >
+              {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {isDownloading
+                ? (downloadProgress ? `${downloadProgress.current}/${downloadProgress.total}` : "Stahuji…")
+                : "ZIP"}
+            </Button>
+            <span className="hidden md:inline">Archivováno {format(new Date(batch.created_at), "d.M.yyyy")}</span>
+            <button onClick={() => setOpen((v) => !v)} className="p-1 hover:bg-muted rounded">
+              {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
           </div>
         </div>
         {batch.notes && (
@@ -232,6 +253,8 @@ export default function UctoVystup() {
   const [period, setPeriod] = useState(defaultPeriod);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [archiveNotes, setArchiveNotes] = useState("");
+  const [downloadingBatchId, setDownloadingBatchId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number; label: string } | null>(null);
 
   // Faktury pro vybrané období (bez přiřazení do dávky)
   const { data: pendingInvoices = [], isLoading } = useQuery({
@@ -317,6 +340,93 @@ export default function UctoVystup() {
     },
     enabled: !!user,
   });
+
+  /* ---------- ZIP download ---------- */
+
+  const folderSlug = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const fetchInvoicesFull = async (ids: string[]): Promise<ZipInvoice[]> => {
+    if (!ids.length) return [];
+    const { data, error } = await (supabase as any)
+      .from("invoices")
+      .select(
+        "id, invoice_number, invoice_type, client_name, supplier_name, supplier_ico, supplier_dic, client_ico, client_dic, issue_date, due_date, total_amount, net_amount, vat_amount, currency, variable_symbol, bank_account, iban, paid, notes, file_url, payment_method, bank, items"
+      )
+      .in("id", ids);
+    if (error) throw error;
+    return (data || []) as ZipInvoice[];
+  };
+
+  const fetchContractsFull = async (ids: string[]): Promise<ZipContract[]> => {
+    if (!ids.length) return [];
+    const { data, error } = await (supabase as any)
+      .from("travel_contracts")
+      .select(
+        "id, contract_number, contract_date, total_price, currency, deposit_amount, payment_schedule, client:clients(first_name, last_name, email, phone)"
+      )
+      .in("id", ids);
+    if (error) throw error;
+    return (data || []) as ZipContract[];
+  };
+
+  const runDownload = async (
+    batchId: string,
+    folderName: string,
+    invoiceIds: string[],
+    contractIds: string[]
+  ) => {
+    if (invoiceIds.length + contractIds.length === 0) {
+      toast.error("Žádné doklady k zabalení");
+      return;
+    }
+    setDownloadingBatchId(batchId);
+    setDownloadProgress({ current: 0, total: invoiceIds.length + contractIds.length + 1, label: "Načítám doklady…" });
+    try {
+      const [invoices, contracts] = await Promise.all([
+        fetchInvoicesFull(invoiceIds),
+        fetchContractsFull(contractIds),
+      ]);
+      const blob = await buildUctoZip(
+        { folderName, invoices, contracts },
+        (p) => setDownloadProgress(p)
+      );
+      downloadBlob(blob, `${folderName}.zip`);
+      toast.success("ZIP balíček byl stažen");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Nepodařilo se vytvořit ZIP";
+      console.error(e);
+      toast.error(msg);
+    } finally {
+      setDownloadingBatchId(null);
+      setDownloadProgress(null);
+    }
+  };
+
+  const handleDownloadBatch = async (b: Batch) => {
+    const folderName = `UCTO_${b.period}_${folderSlug(b.label || periodLabel(b.period))}`;
+    await runDownload(
+      b.id,
+      folderName,
+      (b.invoices || []).map((i) => i.id),
+      (b.contracts || []).map((c) => c.id)
+    );
+  };
+
+  const handleDownloadCurrent = async () => {
+    const folderName = `UCTO_${period}_${folderSlug(periodLabel(period))}_aktualni`;
+    await runDownload(
+      "__current__",
+      folderName,
+      pendingInvoices.map((i) => i.id),
+      pendingContracts.map((c) => c.id)
+    );
+  };
 
   const archiveMutation = useMutation({
     mutationFn: async () => {
@@ -432,7 +542,24 @@ export default function UctoVystup() {
                   </span>
                 )}
               </div>
-              <div className="sm:ml-auto">
+              <div className="sm:ml-auto flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadCurrent}
+                  disabled={totalPending === 0 || downloadingBatchId === "__current__"}
+                  className="gap-2"
+                >
+                  {downloadingBatchId === "__current__" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {downloadingBatchId === "__current__"
+                    ? downloadProgress
+                      ? `${downloadProgress.current}/${downloadProgress.total}`
+                      : "Stahuji…"
+                    : "Stáhnout ZIP"}
+                </Button>
                 <Button
                   onClick={() => setArchiveDialogOpen(true)}
                   disabled={totalPending === 0}
@@ -544,7 +671,15 @@ export default function UctoVystup() {
                 </CardContent>
               </Card>
             ) : (
-              batches.map((b) => <BatchCard key={b.id} batch={b} />)
+              batches.map((b) => (
+                <BatchCard
+                  key={b.id}
+                  batch={b}
+                  onDownload={handleDownloadBatch}
+                  downloadingBatchId={downloadingBatchId}
+                  downloadProgress={downloadProgress}
+                />
+              ))
             )}
           </TabsContent>
         </Tabs>
