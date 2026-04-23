@@ -121,16 +121,17 @@ export function ClientWalletSection({ clientId }: Props) {
       </div>
 
       <div className="p-3 rounded-lg bg-muted/40 border">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold">{balance.toLocaleString("cs-CZ")}</span>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-2xl font-semibold leading-none">{balance.toLocaleString("cs-CZ")}</span>
           <span className="text-sm text-muted-foreground">bodů</span>
-          <Badge variant="outline" className="text-[10px] ml-auto">
+          <Badge variant="outline" className="text-[10px] sm:ml-auto">
             1 bod = 1 Kč slevy
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Body se načítají po ukončení zájezdu v poměru 50&nbsp;Kč obratu bez letenek = 1&nbsp;bod. Uplatnit lze max. 20&nbsp;% z ceny nového zájezdu.
-        </p>
+        <ul className="text-xs text-muted-foreground mt-2 space-y-0.5 leading-snug list-disc list-inside marker:text-muted-foreground/50">
+          <li>Načítání: 50&nbsp;Kč obratu bez letenek = 1&nbsp;bod (po ukončení zájezdu).</li>
+          <li>Uplatnění: max.&nbsp;20&nbsp;% z ceny nového zájezdu.</li>
+        </ul>
       </div>
 
       <div>
