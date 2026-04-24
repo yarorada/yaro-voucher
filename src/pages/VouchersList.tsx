@@ -14,7 +14,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, FileText, Edit, Copy, Search, Trash2, MoreHorizontal, Eye, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Clock,
+  Copy,
+  Edit,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  PlaneLanding,
+  PlaneTakeoff,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { DateRangeFilter, defaultDateRangeFilter, type DateRangeFilterValue } from "@/components/DateRangeFilter";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +73,9 @@ interface Voucher {
     first_name: string;
     last_name: string;
   };
+  suppliers?: {
+    name: string;
+  };
 }
 
 const VouchersList = () => {
@@ -85,6 +104,24 @@ const VouchersList = () => {
     filterVouchers();
   }, [searchQuery, statusFilter, sortBy, dateFilter, vouchers]);
 
+  const getFirstServiceDate = (voucher: Voucher) => {
+    const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
+    return servicesArr
+      .map((s: any) => s.dateFrom || s.start_date)
+      .filter(Boolean)
+      .sort()
+      [0] || null;
+  };
+
+  const getLastServiceDate = (voucher: Voucher) => {
+    const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
+    return servicesArr
+      .map((s: any) => s.dateTo || s.end_date || s.dateFrom || s.start_date)
+      .filter(Boolean)
+      .sort()
+      .slice(-1)[0] || null;
+  };
+
   const fetchVouchers = async () => {
     try {
       // Fetch vouchers
@@ -96,6 +133,9 @@ const VouchersList = () => {
           clients:client_id (
             first_name,
             last_name
+          ),
+          suppliers:supplier_id (
+            name
           ),
           deals:deal_id (
             destinations:destination_id (
@@ -152,7 +192,7 @@ const VouchersList = () => {
     // Filter by date range
     if (dateFilter.preset !== "all" && dateFilter.from) {
       filtered = filtered.filter(v => {
-        const d = v.issue_date;
+        const d = dateFilter.dateField === "departure" ? getFirstServiceDate(v) : getLastServiceDate(v);
         if (!d) return false;
         if (dateFilter.from && d < dateFilter.from) return false;
         if (dateFilter.to && d > dateFilter.to) return false;
@@ -181,6 +221,14 @@ const VouchersList = () => {
       filtered.sort((a, b) => b.voucher_number - a.voucher_number);
     } else if (sortBy === "number_asc") {
       filtered.sort((a, b) => a.voucher_number - b.voucher_number);
+    } else if (sortBy === "departure_desc") {
+      filtered.sort((a, b) => (getFirstServiceDate(b) || "").localeCompare(getFirstServiceDate(a) || "") || b.voucher_number - a.voucher_number);
+    } else if (sortBy === "departure_asc") {
+      filtered.sort((a, b) => (getFirstServiceDate(a) || "").localeCompare(getFirstServiceDate(b) || "") || b.voucher_number - a.voucher_number);
+    } else if (sortBy === "arrival_desc") {
+      filtered.sort((a, b) => (getLastServiceDate(b) || "").localeCompare(getLastServiceDate(a) || "") || b.voucher_number - a.voucher_number);
+    } else if (sortBy === "arrival_asc") {
+      filtered.sort((a, b) => (getLastServiceDate(a) || "").localeCompare(getLastServiceDate(b) || "") || b.voucher_number - a.voucher_number);
     }
 
     setFilteredVouchers(filtered);
@@ -370,11 +418,35 @@ const VouchersList = () => {
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
+  const buildVoucherHeader = (voucher: Voucher, displayName: string, countryIso: string, firstServiceDate: string | null) => {
+    return [
+      displayName,
+      countryIso,
+      voucher.suppliers?.name,
+      firstServiceDate ? formatDate(firstServiceDate) : "",
+    ].filter(Boolean);
+  };
+
   const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
+  const sortButtonClass = "h-8 w-[82px] text-xs shrink-0";
+  const dateFieldClass = "h-8 w-[112px] text-xs shrink-0";
+  const sortOptions = [
+    { value: "newest", label: "Nejnovější", Icon: Clock, DirectionIcon: ArrowDown },
+    { value: "oldest", label: "Nejstarší", Icon: Clock, DirectionIcon: ArrowUp },
+    { value: "number_desc", label: "Číslo ↓", Icon: FileText, DirectionIcon: ArrowDown },
+    { value: "number_asc", label: "Číslo ↑", Icon: FileText, DirectionIcon: ArrowUp },
+    { value: "departure_desc", label: "Odjezd ↓", Icon: PlaneTakeoff, DirectionIcon: ArrowDown },
+    { value: "departure_asc", label: "Odjezd ↑", Icon: PlaneTakeoff, DirectionIcon: ArrowUp },
+    { value: "arrival_desc", label: "Příjezd ↓", Icon: PlaneLanding, DirectionIcon: ArrowDown },
+    { value: "arrival_asc", label: "Příjezd ↑", Icon: PlaneLanding, DirectionIcon: ArrowUp },
+  ];
+  const activeSortOption = sortOptions.find((option) => option.value === sortBy) || sortOptions[0];
+  const ActiveSortIcon = activeSortOption.Icon;
+  const ActiveSortDirectionIcon = activeSortOption.DirectionIcon;
 
   usePageToolbar(
-    <div className="flex items-center gap-1.5 w-full min-w-0">
-      <div className="relative flex-1 min-w-0">
+    <div className="flex items-center gap-1.5 w-full min-w-0 flex-nowrap overflow-hidden">
+      <div className="relative min-w-0 flex-1">
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           placeholder="Hledat..."
@@ -388,24 +460,42 @@ const VouchersList = () => {
           </button>
         )}
       </div>
-      <DateRangeFilter value={dateFilter} onChange={setDateFilter} showArrival={false} />
-      <Select value={sortBy} onValueChange={setSortBy}>
-        <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
-          <SelectValue placeholder="Řazení" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="newest">Nejnovější</SelectItem>
-          <SelectItem value="oldest">Nejstarší</SelectItem>
-          <SelectItem value="number_desc">Číslo ↓</SelectItem>
-          <SelectItem value="number_asc">Číslo ↑</SelectItem>
-        </SelectContent>
-      </Select>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} triggerClassName={dateFieldClass} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`${sortButtonClass} justify-center font-normal`}
+            title={activeSortOption.label}
+            aria-label={`Řazení: ${activeSortOption.label}`}
+          >
+            <ActiveSortIcon className="h-3.5 w-3.5" />
+            {ActiveSortDirectionIcon && <ActiveSortDirectionIcon className="h-3 w-3" />}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-auto min-w-0">
+          {sortOptions.map(({ Icon, DirectionIcon, ...option }) => (
+            <DropdownMenuItem
+              key={option.value}
+              onSelect={() => setSortBy(option.value)}
+              className="gap-1.5 px-2"
+              title={option.label}
+              aria-label={option.label}
+            >
+              <Check className={`h-4 w-4 ${sortBy === option.value ? "opacity-100" : "opacity-0"}`} />
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              {DirectionIcon && <DirectionIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button onClick={() => navigate("/create")} size="icon" className="h-8 w-8 shrink-0 sm:hidden">
         <Plus className="h-4 w-4" />
       </Button>
-      <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " gap-1 hidden sm:inline-flex shrink-0"}>
+      <Button onClick={() => navigate("/create")} className={toolbarButtonClass + " w-[82px] gap-1 hidden sm:inline-flex shrink-0"}>
         <Plus className="h-3.5 w-3.5" />
-        Přidat voucher
+        Přidat
       </Button>
     </div>,
     [searchQuery, sortBy, dateFilter]
@@ -502,18 +592,10 @@ const VouchersList = () => {
                 const countryIso = (voucher as any).deals?.destinations?.countries?.iso_code || "";
                 
                 // Get earliest service start_date and latest service end_date
-                const servicesArr = Array.isArray(voucher.services) ? voucher.services : [];
-                const firstServiceDate = servicesArr
-                  .map((s: any) => s.dateFrom || s.start_date)
-                  .filter(Boolean)
-                  .sort()
-                  [0] || null;
+                const firstServiceDate = getFirstServiceDate(voucher);
+                const headerParts = buildVoucherHeader(voucher, displayName, countryIso, firstServiceDate);
 
-                const lastServiceDate = servicesArr
-                  .map((s: any) => s.dateTo || s.end_date || s.dateFrom || s.start_date)
-                  .filter(Boolean)
-                  .sort()
-                  .slice(-1)[0] || null;
+                const lastServiceDate = getLastServiceDate(voucher);
 
                 // Check if voucher is utilized (set by daily backend job) or locally expired
                 const today = new Date();
@@ -542,9 +624,11 @@ const VouchersList = () => {
                             <Badge className="text-xs shrink-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white border-transparent">Neodesláno</Badge>
                           )}
                           <span className="font-bold text-foreground">{voucher.voucher_code}</span>
-                          {displayName && <span className="text-foreground">{displayName}</span>}
-                          {countryIso && <span className="text-foreground">{countryIso}</span>}
-                          {firstServiceDate && <span className="text-foreground">{formatDate(firstServiceDate)}</span>}
+                          {headerParts.length > 0 && (
+                            <span className="text-foreground break-words">
+                              {headerParts.join(" • ")}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <DropdownMenu>

@@ -649,7 +649,7 @@ const Clients = () => {
         <Plus className="h-4 w-4" />
       </Button>
       <Button className="hidden sm:inline-flex h-8 text-xs shrink-0 gap-1" onClick={() => { setEditingClient(null); setFormData({ title: "", first_name: "", last_name: "", email: "", phone: "", address: "", notes: "", date_of_birth: undefined, passport_number: "", passport_expiry: undefined, id_card_number: "", id_card_expiry: undefined, company_name: "", ico: "", dic: "", company_as_orderer: false }); setIsDialogOpen(true); }}>
-        <Plus className="h-3.5 w-3.5" /> Přidat klienta
+        <Plus className="h-3.5 w-3.5" /> Přidat
       </Button>
     </div>,
     [filterConditions, quickSearch, filteredClients.length, loading]

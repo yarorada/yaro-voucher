@@ -100,11 +100,18 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center justify-between py-4 px-4 border-b border-border/50">
-            <img 
-              src={yaroLogo} 
-              alt="YARO Travel" 
-              className="h-10 w-auto logo-dark-mode group-data-[state=collapsed]:hidden"
-            />
+            <button
+              type="button"
+              onClick={() => handleNavigate("/")}
+              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Přejít na dashboard"
+            >
+              <img 
+                src={yaroLogo} 
+                alt="YARO Travel" 
+                className="h-10 w-auto logo-dark-mode group-data-[state=collapsed]:hidden cursor-pointer"
+              />
+            </button>
           </div>
           
           <SidebarGroupLabel className="mt-4 text-[10px] font-medium text-zinc-400 uppercase tracking-widest px-4">

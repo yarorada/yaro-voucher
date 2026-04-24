@@ -23,6 +23,7 @@ export const RecentVouchersCard = () => {
         .from("vouchers")
         .select(`
           id, voucher_code, client_name, hotel_name, sent_at, created_at, services,
+          suppliers:supplier_id(name),
           deals(start_date, destinations(name, countries(iso_code))),
           voucher_travelers(is_main_client, clients(first_name, last_name))
         `)
@@ -45,7 +46,7 @@ export const RecentVouchersCard = () => {
   const getFirstServiceDate = (v: any): string | null => {
     const servicesArr = Array.isArray(v.services) ? v.services : [];
     return servicesArr
-      .map((s: any) => s.start_date)
+      .map((s: any) => s.dateFrom || s.start_date)
       .filter(Boolean)
       .sort()
       [0] || null;
@@ -85,7 +86,8 @@ export const RecentVouchersCard = () => {
                 <div className="text-xs text-muted-foreground pl-1 break-words">
                   {[
                     getClientName(voucher),
-                    voucher.deals?.destinations?.name || voucher.hotel_name,
+                    voucher.deals?.destinations?.countries?.iso_code || "",
+                    voucher.suppliers?.name || "",
                     formatDateShort(getFirstServiceDate(voucher)),
                   ].filter(Boolean).join(" • ")}
                 </div>

@@ -10,7 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Search, Trash2, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  FileText,
+  PlaneLanding,
+  PlaneTakeoff,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { usePageToolbar } from "@/hooks/usePageToolbar";
 import { format } from "date-fns";
 import { parseDateSafe, formatPriceCurrency } from "@/lib/utils";
@@ -33,6 +44,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { ContractStatusBadge } from "@/components/ContractStatusBadge";
 
@@ -181,16 +198,39 @@ const Contracts = () => {
         const db = (b.deal as any)?.start_date || "";
         return db.localeCompare(da) || b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
       }
+      case "arrival_asc": {
+        const da = (a.deal as any)?.end_date || "";
+        const db = (b.deal as any)?.end_date || "";
+        return da.localeCompare(db) || b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
+      }
+      case "arrival_desc": {
+        const da = (a.deal as any)?.end_date || "";
+        const db = (b.deal as any)?.end_date || "";
+        return db.localeCompare(da) || b.contract_number.localeCompare(a.contract_number, "cs", { numeric: true });
+      }
       default:
         return 0;
     }
   });
 
   const toolbarButtonClass = "h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700";
+  const sortButtonClass = "h-8 w-[82px] text-xs shrink-0";
+  const dateFieldClass = "h-8 w-[112px] text-xs shrink-0";
+  const sortOptions = [
+    { value: "number_desc", label: "Číslo ↓", Icon: FileText, DirectionIcon: ArrowDown },
+    { value: "number_asc", label: "Číslo ↑", Icon: FileText, DirectionIcon: ArrowUp },
+    { value: "departure_desc", label: "Odjezd ↓", Icon: PlaneTakeoff, DirectionIcon: ArrowDown },
+    { value: "departure_asc", label: "Odjezd ↑", Icon: PlaneTakeoff, DirectionIcon: ArrowUp },
+    { value: "arrival_desc", label: "Příjezd ↓", Icon: PlaneLanding, DirectionIcon: ArrowDown },
+    { value: "arrival_asc", label: "Příjezd ↑", Icon: PlaneLanding, DirectionIcon: ArrowUp },
+  ];
+  const activeSortOption = sortOptions.find((option) => option.value === sortBy) || sortOptions[0];
+  const ActiveSortIcon = activeSortOption.Icon;
+  const ActiveSortDirectionIcon = activeSortOption.DirectionIcon;
 
   usePageToolbar(
-    <div className="flex items-center gap-1.5 w-full min-w-0">
-      <div className="relative flex-1 min-w-0">
+    <div className="flex items-center gap-1.5 w-full min-w-0 flex-nowrap overflow-hidden">
+      <div className="relative min-w-0 flex-1">
         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           placeholder="Hledat..."
@@ -204,24 +244,42 @@ const Contracts = () => {
           </button>
         )}
       </div>
-      <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-      <Select value={sortBy} onValueChange={setSortBy}>
-        <SelectTrigger className="w-auto h-8 text-xs shrink-0 gap-1">
-          <SelectValue placeholder="Řazení" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="number_desc">Číslo ↓</SelectItem>
-          <SelectItem value="number_asc">Číslo ↑</SelectItem>
-          <SelectItem value="departure_desc">Odjezd ↓</SelectItem>
-          <SelectItem value="departure_asc">Odjezd ↑</SelectItem>
-        </SelectContent>
-      </Select>
+      <DateRangeFilter value={dateFilter} onChange={setDateFilter} triggerClassName={dateFieldClass} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`${sortButtonClass} justify-center font-normal`}
+            title={activeSortOption.label}
+            aria-label={`Řazení: ${activeSortOption.label}`}
+          >
+            <ActiveSortIcon className="h-3.5 w-3.5" />
+            {ActiveSortDirectionIcon && <ActiveSortDirectionIcon className="h-3 w-3" />}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-auto min-w-0">
+          {sortOptions.map(({ Icon, DirectionIcon, ...option }) => (
+            <DropdownMenuItem
+              key={option.value}
+              onSelect={() => setSortBy(option.value)}
+              className="gap-1.5 px-2"
+              title={option.label}
+              aria-label={option.label}
+            >
+              <Check className={`h-4 w-4 ${sortBy === option.value ? "opacity-100" : "opacity-0"}`} />
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              {DirectionIcon && <DirectionIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button onClick={() => navigate("/contracts/new")} size="icon" className="h-8 w-8 shrink-0 sm:hidden">
         <Plus className="h-4 w-4" />
       </Button>
-      <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " gap-1 hidden sm:inline-flex shrink-0"}>
+      <Button onClick={() => navigate("/contracts/new")} className={toolbarButtonClass + " w-[82px] gap-1 hidden sm:inline-flex shrink-0"}>
         <Plus className="h-3.5 w-3.5" />
-        Přidat smlouvu
+        Přidat
       </Button>
     </div>,
     [searchQuery, dateFilter, sortBy]
