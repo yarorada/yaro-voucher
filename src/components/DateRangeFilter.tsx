@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/select";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
 import { cs } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
 export type DateField = "departure" | "arrival";
-export type DatePreset = "all" | "this_month" | "last_month" | "custom";
+export type DatePreset = "all" | "this_month" | "last_month" | "next_month" | "custom";
 
 export interface DateRangeFilterValue {
   preset: DatePreset;
@@ -33,12 +33,15 @@ interface DateRangeFilterProps {
   value: DateRangeFilterValue;
   onChange: (value: DateRangeFilterValue) => void;
   showArrival?: boolean;
+  triggerClassName?: string;
 }
 
 const formatShort = (d: string | null) => {
   if (!d) return "";
   const date = new Date(d + "T00:00:00");
-  return `${date.getDate()}.${date.getMonth() + 1}.`;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}.${month}`;
 };
 
 const formatForDisplay = (d: string | null) => {
@@ -57,7 +60,7 @@ const toDateStr = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
-export function DateRangeFilter({ value, onChange, showArrival = true }: DateRangeFilterProps) {
+export function DateRangeFilter({ value, onChange, showArrival = true, triggerClassName }: DateRangeFilterProps) {
   const [open, setOpen] = useState(false);
 
   const handlePresetChange = (preset: DatePreset) => {
@@ -72,6 +75,10 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
       const lastMonth = subMonths(now, 1);
       from = toDateStr(startOfMonth(lastMonth));
       to = toDateStr(endOfMonth(lastMonth));
+    } else if (preset === "next_month") {
+      const nextMonth = addMonths(now, 1);
+      from = toDateStr(startOfMonth(nextMonth));
+      to = toDateStr(endOfMonth(nextMonth));
     }
 
     onChange({ ...value, preset, from, to });
@@ -102,6 +109,7 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
     if (value.preset === "all") return short ? "" : "Datum";
     if (value.preset === "this_month") return short ? "Teď" : `Tento měsíc`;
     if (value.preset === "last_month") return short ? "Min." : `Minulý měsíc`;
+    if (value.preset === "next_month") return short ? "Příští" : `Příští měsíc`;
     if (value.preset === "custom") {
       const fmt = short ? formatShort : formatForDisplay;
       const parts: string[] = [];
@@ -126,12 +134,11 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
         <Button
           variant={isActive ? "default" : "outline"}
           size="sm"
-          className={cn("h-9 gap-1 text-sm shrink-0", isActive && "pr-2")}
+          className={cn("h-9 gap-1 text-sm shrink-0 justify-between", isActive && "pr-2", triggerClassName)}
           title={getLabel(false)}
         >
           <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden sm:inline truncate max-w-[200px]">{getLabel()}</span>
-          {isActive && <span className="sm:hidden text-xs">{getLabel(true)}</span>}
+          <span className="truncate text-xs sm:text-sm">{value.preset === "custom" ? getLabel(true) : getLabel()}</span>
           {isActive && (
             <span
               role="button"
@@ -176,6 +183,13 @@ export function DateRangeFilter({ value, onChange, showArrival = true }: DateRan
             onClick={() => handlePresetChange("last_month")}
           >
             Minulý měsíc
+          </Button>
+          <Button
+            variant={value.preset === "next_month" ? "default" : "outline"}
+            size="sm"
+            onClick={() => handlePresetChange("next_month")}
+          >
+            Příští měsíc
           </Button>
         </div>
 

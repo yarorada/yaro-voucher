@@ -355,7 +355,7 @@ const Suppliers = () => {
         <Plus className="h-4 w-4" />
       </Button>
       <Button className="hidden sm:inline-flex h-8 text-xs shrink-0 gap-1" onClick={handleAddNew}>
-        <Plus className="h-3.5 w-3.5" /> Přidat partnera
+        <Plus className="h-3.5 w-3.5" /> Přidat
       </Button>
     </div>,
     [searchText, filteredSuppliers.length, loading, activeTab]

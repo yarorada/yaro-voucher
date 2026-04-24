@@ -1185,8 +1185,9 @@ export default function Invoicing() {
           <SelectItem value="unpaid">Nezaplacené</SelectItem>
         </SelectContent>
       </Select>
-      <Button onClick={() => openNewForm(tab)} size="icon" variant="default" className="h-8 w-8 shrink-0">
-        <Plus className="h-4 w-4" />
+      <Button onClick={() => openNewForm(tab)} className="h-8 text-xs bg-zinc-900 text-white hover:bg-zinc-700 w-[82px] gap-1 shrink-0">
+        <Plus className="h-3.5 w-3.5" />
+        Přidat
       </Button>
     </div>,
     [search, paidFilter, tab]
@@ -1217,10 +1218,6 @@ export default function Invoicing() {
             <TabsTrigger value="received">Přijaté</TabsTrigger>
             <TabsTrigger value="issued">Vydané</TabsTrigger>
           </TabsList>
-          <div className="flex-1" />
-          <Button onClick={() => openNewForm(tab)} size="sm" className="hidden sm:inline-flex">
-            <Plus className="h-4 w-4 mr-1" /> Nová faktura
-          </Button>
         </div>
 
         <TabsContent value="received">
